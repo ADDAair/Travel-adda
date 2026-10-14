@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Travel Adda",
+    "slug": "travel-adda",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "app.traveladda.hajumrah",
+      "allowBackup": false
+    },
+    "ios": { "bundleIdentifier": "app.traveladda.hajumrah" },
+    "plugins": ["expo-secure-store"]
+  }
+}
