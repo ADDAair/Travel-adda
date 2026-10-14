@@ -7,10 +7,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: install and verify
+      - name: verify
         run: |
           set +e
           fail=0
-          run() { echo "### $*"; "$@" > step.log 2>&1; code=$?; cat step.log; if [ $code -ne 0 ]; then fail=1; tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' | { read -r m; echo "::error title=FAILED: $*::$m"; }; return 1; fi; }
-          run npm install --legacy-peer-deps && run npx expo install --fix && run npx expo-doctor && run npx expo export --platform android
-          [ $? -eq 0 ] && echo ALL_OK || exit 1
+          run() { echo "### $*"; "$@" > step.log 2>&1; code=$?; cat step.log; if [ $code -ne 0 ]; then fail=1; tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' | { read -r m; echo "::error title=FAILED: $*::$m"; }; fi; return $code; }
+          run npm install --legacy-peer-deps
+          run npx expo install --fix
+          m=$(node -e "const p=require('./package.json');console.log(JSON.stringify(p.dependencies))" | sed 's/%/%25/g')
+          echo "::notice title=RESOLVED DEPENDENCIES::$m"
+          run npx expo-doctor
+          run npx expo export --platform android
+          [ $fail -eq 0 ] && echo ALL_OK || exit 1
