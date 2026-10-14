@@ -116,7 +116,7 @@ const st = StyleSheet.create({
   segT: { fontSize: F.body, color: C.muted, fontWeight: '600' },
   segTOn: { color: C.primary, fontWeight: '700' },
   title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
-  eye: { minHeight: TOUCH, paddingHorizontal: S.md, justifyContent: 'center' },
+  eye: { minHeight: TOUCH, minWidth: 84, paddingLeft: S.sm, paddingRight: S.md, justifyContent: 'center', alignItems: 'flex-end', flexShrink: 0 },
   eyeT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
   forgot: { fontSize: F.small, color: C.muted, textAlign: 'center', marginTop: S.md, lineHeight: 24 },
 });

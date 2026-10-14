@@ -61,7 +61,7 @@ function TabBar({ state, navigation }) {
         if (r.name === 'Dua') {
           return (
             <Pressable key={r.key} {...common} style={s.mid}>
-              {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT}>এখানে চাপুন</Text></View> : null}
+              {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
               <DuaFab pending={handsOnPending} />
               <Text style={[s.lb, on && s.lbOn]}>{label}</Text>
             </Pressable>
@@ -163,7 +163,7 @@ const s = StyleSheet.create({
   mid: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', minHeight: 64 },
   fab: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.gold, alignItems: 'center', justifyContent: 'center', marginTop: -34, borderWidth: 4, borderColor: C.card, elevation: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
   fabPending: { borderColor: C.primary },
-  bubble: { position: 'absolute', top: -84, backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
+  bubble: { position: 'absolute', top: -78, width: 116, alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
   bubbleT: { color: C.onPrimary, fontSize: F.small, fontWeight: '700' },
   lb: { fontSize: 14, marginTop: 4, color: C.muted, fontWeight: '600', textAlign: 'center' },
   lbOn: { color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
