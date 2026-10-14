@@ -1,39 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { C } from '../theme';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { C, F, S, R, TOUCH } from '../theme';
+import { T } from '../strings';
+import { Button, Card, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
+import { useTutorial } from '../tutorial';
+
+const UPCOMING = [
+  ['🤲', 'দোয়া ভল্ট', 'আরবি, বাংলা অর্থ ও অডিও'],
+  ['🕋', 'মিকাত ও ইহরাম গাইড', 'ধাপে ধাপে নিয়ম'],
+  ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার অবস্থান অনুযায়ী'],
+  ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
+  ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
+];
 
 export default function HomeScreen() {
+  const { handsOnPending, skipHandsOn } = useTutorial();
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { data, error } = await supabase.from('profiles').select('full_name,haji_code,role').single();
-        if (!alive) return;
-        if (error || !data) setState('err'); else { setP(data); setState('ok'); }
-      } catch (e) { if (alive) setState('err'); }
-    })();
-    return () => { alive = false; };
+
+  const load = useCallback(async () => {
+    setState('load');
+    try {
+      const { data, error } = await supabase.from('profiles').select('full_name,haji_code').single();
+      if (error || !data) setState('err'); else { setP(data); setState('ok'); }
+    } catch (e) { setState('err'); }
   }, []);
-  if (state === 'load') return <View style={s.c}><ActivityIndicator color={C.primary} size="large" /></View>;
-  if (state === 'err') return <View style={s.c}><Text>তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার খুলুন।</Text></View>;
-  return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16 }}>
-      <View style={s.hero}>
-        <Text style={s.hi}>আস-সালামু আলাইকুম 👋</Text>
-        <Text style={s.nm}>{p.full_name}</Text>
-        <Text style={s.id}>হাজী আইডি: {toBn(p.haji_code)}</Text>
+  useEffect(() => { load(); }, [load]);
+
+  if (state === 'load') {
+    return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
+  }
+  if (state === 'err') {
+    return (
+      <View style={st.center}>
+        <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।" />
+        <Button title={T.retry} icon="🔄" onPress={load} style={{ alignSelf: 'stretch' }} />
       </View>
-      <Text style={s.note}>✅ লগইন ও ডাটাবেজ সংযোগ ঠিক আছে। এরপর দোয়া ভল্ট, মিকাত গাইড ও অন্য মডিউল যুক্ত হবে।</Text>
+    );
+  }
+  return (
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
+      <View style={st.hero} accessible accessibilityLabel={`আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}`}>
+        <Text style={st.hi}>আস-সালামু আলাইকুম 👋</Text>
+        <Text style={st.nm}>{p.full_name}</Text>
+        <View style={st.idPill}><Text style={st.idT}>হাজী আইডি: {toBn(p.haji_code)}</Text></View>
+      </View>
+
+      {handsOnPending ? (
+        <Card style={st.coach}>
+          <Text style={st.coachH}>✋ একবার চেষ্টা করুন</Text>
+          <Text style={st.coachB}>নিচের মাঝখানের <Text style={{ fontWeight: '700' }}>সোনালি "দোয়া"</Text> বাটনে একবার চাপুন।</Text>
+          <Text style={st.arrow} importantForAccessibility="no">👇</Text>
+          <Pressable onPress={skipHandsOn} style={st.skip} accessibilityRole="button" accessibilityLabel="এখন না, পরে করব">
+            <Text style={st.skipT}>এখন না, পরে করব</Text>
+          </Pressable>
+        </Card>
+      ) : null}
+
+      <Text style={st.h2}>যা আসছে</Text>
+      <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text>
+      {UPCOMING.map(([ic, title, what]) => (
+        <View key={title} style={st.row} accessible accessibilityLabel={`${title}, ${what}, ${T.soon}`}>
+          <Text style={st.rowIc} importantForAccessibility="no">{ic}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={st.rowT}>{title}</Text>
+            <Text style={st.rowW}>{what}</Text>
+          </View>
+          <View style={st.soon}><Text style={st.soonT}>{T.soon}</Text></View>
+        </View>
+      ))}
     </ScrollView>
   );
 }
-const s = StyleSheet.create({
-  c: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  hero: { backgroundColor: C.primary, borderRadius: 16, padding: 18 },
-  hi: { color: '#fff' }, nm: { color: '#fff', fontSize: 22, fontWeight: '700', marginVertical: 4 }, id: { color: C.gold, fontWeight: '700' },
-  note: { marginTop: 16, color: C.text, lineHeight: 22 },
+
+const st = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: S.lg, backgroundColor: C.bg, gap: S.md },
+  loadT: { fontSize: F.body, color: C.muted },
+  wrap: { padding: S.md, paddingBottom: S.xl },
+  hero: { backgroundColor: C.primary, borderRadius: R.lg, padding: S.lg, marginBottom: S.md },
+  hi: { color: '#E3F1E9', fontSize: F.body },
+  nm: { color: C.onPrimary, fontSize: F.hero, fontWeight: '700', marginVertical: 4, lineHeight: 38 },
+  idPill: { alignSelf: 'flex-start', backgroundColor: C.gold, borderRadius: R.pill, paddingHorizontal: S.md, paddingVertical: 6, marginTop: 4 },
+  idT: { color: C.text, fontWeight: '700', fontSize: F.body },
+  coach: { borderWidth: 2, borderColor: C.gold, marginBottom: S.md, backgroundColor: C.goldSoft },
+  coachH: { fontSize: F.large, fontWeight: '700', color: C.text },
+  coachB: { fontSize: F.body, color: C.text, marginTop: 6, lineHeight: 28 },
+  arrow: { fontSize: 36, textAlign: 'center', marginTop: 4 },
+  skip: { minHeight: TOUCH, justifyContent: 'center', alignSelf: 'center', paddingHorizontal: S.md },
+  skipT: { fontSize: F.small, color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
+  h2: { fontSize: F.title, fontWeight: '700', color: C.text, marginTop: S.sm },
+  sub: { fontSize: F.small, color: C.muted, marginBottom: S.sm, lineHeight: 24 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.md, padding: S.md, marginBottom: S.sm, borderWidth: 1, borderColor: C.line },
+  rowIc: { fontSize: 30 },
+  rowT: { fontSize: F.large, fontWeight: '700', color: C.text },
+  rowW: { fontSize: F.small, color: C.muted, lineHeight: 22 },
+  soon: { backgroundColor: '#ECEFED', borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  soonT: { fontSize: 14, color: C.muted, fontWeight: '700' },
 });

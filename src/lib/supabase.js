@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
@@ -31,5 +32,6 @@ class LargeSecureStore {
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { storage: new LargeSecureStore(), autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
+  auth: { storage: Platform.OS === 'web' ? AsyncStorage : new LargeSecureStore(), // web is only used for automated screenshots
+          autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
 });

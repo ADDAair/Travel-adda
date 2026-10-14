@@ -1,85 +1,122 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { C } from '../theme';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { C, F, S, R, TOUCH } from '../theme';
+import { T } from '../strings';
+import { Button, Field, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 
-const MSG = {
-  invalid: 'মোবাইল নম্বর বা পাসওয়ার্ড সঠিক নয়।',
-  exists: 'এই নম্বরে আগে থেকেই অ্যাকাউন্ট আছে। লগইন করুন।',
-  net: 'ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।',
-  generic: 'কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।',
-};
+const A = T.auth;
 
 export default function AuthScreen() {
+  const ins = useSafeAreaInsets();
   const [reg, setReg] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [pw, setPw] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
+  const [errs, setErrs] = useState({});
+  const [formErr, setFormErr] = useState('');
+  const phoneRef = useRef(null);
+  const pwRef = useRef(null);
+
+  function switchMode(r) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); }
+
+  function validate() {
+    const e = {};
+    if (reg && name.trim().length < 2) e.name = A.errName;
+    if (!isValidBdPhone(normalizePhone(phone))) e.phone = A.errPhone;
+    if (pw.length < 8) e.pw = A.errPw;
+    setErrs(e);
+    return Object.keys(e).length === 0;
+  }
 
   async function submit() {
-    if (busy) return;
-    setErr('');
-    const p = normalizePhone(phone);
-    if (!isValidBdPhone(p)) return setErr('সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন 017XXXXXXXX)।');
-    if (pw.length < 8) return setErr('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।');
-    if (reg && name.trim().length < 2) return setErr('আপনার নাম লিখুন।');
+    if (busy) return;                 // blocks double submit
+    setFormErr('');
+    if (!validate()) return;
     setBusy(true);
     try {
-      const email = phoneToLoginId(p);
+      const email = phoneToLoginId(normalizePhone(phone));
       const res = reg
         ? await supabase.auth.signUp({ email, password: pw, options: { data: { full_name: name.trim() } } })
         : await supabase.auth.signInWithPassword({ email, password: pw });
       if (res.error) {
         const m = (res.error.message || '').toLowerCase();
-        if (m.includes('already')) setErr(MSG.exists);
-        else if (m.includes('invalid') || m.includes('credentials')) setErr(MSG.invalid);
-        else if (m.includes('network') || m.includes('fetch')) setErr(MSG.net);
-        else setErr(MSG.generic);
+        if (m.includes('already')) setFormErr(A.errExists);
+        else if (m.includes('invalid') || m.includes('credentials')) setFormErr(A.errInvalid);
+        else if (m.includes('network') || m.includes('fetch')) setFormErr(A.errNet);
+        else setFormErr(A.errGeneric);
+      } else if (reg && !res.data?.session) {
+        setFormErr(A.errGeneric);     // never pretend success without a real session
       }
+      // On success the app switches to the home screen automatically.
     } catch (e) {
-      setErr(MSG.net);
+      setFormErr(A.errNet);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.primary }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-        <Text style={s.logo}>🕋</Text>
-        <Text style={s.brand}>Travel Adda</Text>
-        <Text style={s.sub}>হজ ও ওমরাহ অ্যাসিস্ট্যান্ট</Text>
-        <View style={s.card}>
-          <Text style={s.title}>{reg ? 'নতুন অ্যাকাউন্ট (হাজী)' : 'হাজী লগইন'}</Text>
-          {reg && <TextInput style={s.in} placeholder="আপনার নাম" value={name} onChangeText={setName} maxLength={80} />}
-          <TextInput style={s.in} placeholder="মোবাইল নম্বর" keyboardType="phone-pad" value={phone} onChangeText={setPhone} maxLength={16} autoCapitalize="none" />
-          <TextInput style={s.in} placeholder="পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর)" secureTextEntry value={pw} onChangeText={setPw} maxLength={72} autoCapitalize="none" />
-          {!!err && <Text style={s.err} accessibilityRole="alert">{err}</Text>}
-          <TouchableOpacity style={[s.btn, busy && { opacity: 0.6 }]} onPress={submit} disabled={busy} accessibilityRole="button">
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.btnT}>{reg ? 'অ্যাকাউন্ট খুলুন' : 'লগইন করুন'}</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setReg(!reg); setErr(''); }} style={{ marginTop: 14 }}>
-            <Text style={s.link}>{reg ? 'আগে থেকেই অ্যাকাউন্ট আছে? লগইন' : 'নতুন? অ্যাকাউন্ট খুলুন'}</Text>
-          </TouchableOpacity>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg, paddingBottom: ins.bottom + S.xl }]} keyboardShouldPersistTaps="handled">
+        <View style={st.brand}>
+          <Text style={st.logo} importantForAccessibility="no">🕋</Text>
+          <Text style={st.appName} accessibilityRole="header">{T.appName}</Text>
+          <Text style={st.tag}>{T.tagline}</Text>
         </View>
+
+        <View style={st.seg} accessibilityRole="tablist">
+          {[[false, A.loginTab], [true, A.registerTab]].map(([r, label]) => (
+            <Pressable key={label} onPress={() => switchMode(r)} style={[st.segBtn, reg === r && st.segOn]}
+              accessibilityRole="tab" accessibilityState={{ selected: reg === r }} accessibilityLabel={label}>
+              <Text style={[st.segT, reg === r && st.segTOn]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={st.title}>{reg ? A.registerTitle : A.loginTitle}</Text>
+
+        {reg ? (
+          <Field label={A.nameLabel} hint={A.nameHint} value={name} onChangeText={setName} error={errs.name}
+            maxLength={80} autoComplete="name" returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
+        ) : null}
+        <Field inputRef={phoneRef} label={A.phoneLabel} hint={A.phoneHint} value={phone} onChangeText={setPhone} error={errs.phone}
+          keyboardType="phone-pad" maxLength={16} autoComplete="tel" returnKeyType="next" onSubmitEditing={() => pwRef.current?.focus()} />
+        <Field inputRef={pwRef} label={A.pwLabel} hint={A.pwHint} value={pw} onChangeText={setPw} error={errs.pw}
+          secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={submit}
+          right={
+            <Pressable onPress={() => setShowPw(!showPw)} style={st.eye} accessibilityRole="button" accessibilityLabel={showPw ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}>
+              <Text style={st.eyeT}>{showPw ? '🙈 ' + A.hide : '👁️ ' + A.show}</Text>
+            </Pressable>
+          } />
+
+        {formErr ? <Notice kind="bad" title={formErr} /> : null}
+
+        <Button title={busy ? A.working : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} />
+
+        {!reg ? <Text style={st.forgot}>{A.forgot}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const s = StyleSheet.create({
-  wrap: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  logo: { fontSize: 64, textAlign: 'center' },
-  brand: { color: C.gold, fontSize: 30, fontWeight: '700', textAlign: 'center' },
-  sub: { color: '#fff', textAlign: 'center', marginBottom: 20 },
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 18 },
-  title: { fontSize: 20, fontWeight: '700', color: C.primary, marginBottom: 12 },
-  in: { borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 10, backgroundColor: C.bg, color: C.text },
-  err: { color: C.bad, marginBottom: 8 },
-  btn: { backgroundColor: C.primary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  btnT: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  link: { color: C.primary, textAlign: 'center', fontWeight: '600' },
+const st = StyleSheet.create({
+  wrap: { flexGrow: 1, paddingHorizontal: S.lg },
+  brand: { alignItems: 'center', marginBottom: S.lg },
+  logo: { fontSize: 56 },
+  appName: { fontSize: F.hero, fontWeight: '700', color: C.primary },
+  tag: { fontSize: F.body, color: C.muted, marginTop: 2 },
+  seg: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.lg },
+  segBtn: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
+  segOn: { backgroundColor: C.card, borderWidth: 2, borderColor: C.primary },
+  segT: { fontSize: F.body, color: C.muted, fontWeight: '600' },
+  segTOn: { color: C.primary, fontWeight: '700' },
+  title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
+  eye: { minHeight: TOUCH, paddingHorizontal: S.md, justifyContent: 'center' },
+  eyeT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
+  forgot: { fontSize: F.small, color: C.muted, textAlign: 'center', marginTop: S.md, lineHeight: 24 },
 });

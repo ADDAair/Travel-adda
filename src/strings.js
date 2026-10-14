@@ -1,0 +1,26 @@
+// All user-visible text in one place (Bengali first; other languages can be added later).
+export const T = {
+  appName: 'Travel Adda',
+  tagline: 'হজ ও ওমরাহর বিশ্বস্ত সঙ্গী',
+  soon: 'শীঘ্রই আসছে',
+  retry: 'আবার চেষ্টা করুন',
+  goHome: 'হোমে ফিরে যান',
+  tabs: { Home: 'হোম', Map: 'ম্যাপ ও SOS', Dua: 'দোয়া', Offers: 'অফার', Account: 'আমার তথ্য' },
+  auth: {
+    loginTab: 'লগইন', registerTab: 'নতুন অ্যাকাউন্ট',
+    loginTitle: 'আপনার অ্যাকাউন্টে ঢুকুন', registerTitle: 'নতুন অ্যাকাউন্ট খুলুন',
+    nameLabel: 'আপনার নাম', nameHint: 'যেমন: আব্দুল করিম',
+    phoneLabel: 'মোবাইল নম্বর', phoneHint: 'যেমন: 01712345678',
+    pwLabel: 'পাসওয়ার্ড', pwHint: 'কমপক্ষে ৮ অক্ষর',
+    show: 'দেখুন', hide: 'লুকান',
+    loginBtn: 'লগইন করুন', registerBtn: 'অ্যাকাউন্ট খুলুন', working: 'অপেক্ষা করুন…',
+    forgot: 'পাসওয়ার্ড ভুলে গেলে আবার সেট করার সুবিধা শীঘ্রই আসছে।',
+    errName: 'আপনার নাম লিখুন (কমপক্ষে ২ অক্ষর)।',
+    errPhone: 'সঠিক মোবাইল নম্বর দিন। ১১ সংখ্যার নম্বর, 01 দিয়ে শুরু।',
+    errPw: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।',
+    errInvalid: 'মোবাইল নম্বর বা পাসওয়ার্ড মেলেনি। আবার দেখে লিখুন।',
+    errExists: 'এই নম্বরে আগেই অ্যাকাউন্ট আছে। উপরে "লগইন" চাপুন।',
+    errNet: 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।',
+    errGeneric: 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।',
+  },
+};

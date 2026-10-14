@@ -1,85 +1,170 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './src/lib/supabase';
-import { C } from './src/theme';
+import { prefs } from './src/lib/prefs';
+import { C, F, TOUCH } from './src/theme';
+import { T } from './src/strings';
+import { TutorialCtx, useTutorial } from './src/tutorial';
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import Onboarding from './src/screens/Onboarding';
 import { Soon, Account } from './src/screens/Placeholder';
 
 const Tab = createBottomTabNavigator();
-const TABS = [
-  { name: 'Home', label: 'হোম', icon: '🏠' },
-  { name: 'Map', label: 'ম্যাপ ও SOS', icon: '📍' },
-  { name: 'Dua', label: 'দোয়া', icon: '🤲' },
-  { name: 'Offers', label: 'অফার', icon: '🎁' },
-  { name: 'Account', label: 'অ্যাকাউন্ট', icon: '👤' },
-];
+const ICON = { Home: '🏠', Map: '📍', Dua: '🤲', Offers: '🎁', Account: '👤' };
+
+function DuaFab({ pending }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    let loop;
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (cancelled || !pending || reduce) return;
+      loop = Animated.loop(Animated.sequence([
+        Animated.timing(scale, { toValue: 1.1, duration: 600, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]));
+      loop.start();
+    }).catch(() => {});
+    return () => { cancelled = true; if (loop) loop.stop(); scale.setValue(1); };
+  }, [pending, scale]);
+  return (
+    <Animated.View style={[s.fab, pending && s.fabPending, { transform: [{ scale }] }]}>
+      <Text style={{ fontSize: 30 }} importantForAccessibility="no">{ICON.Dua}</Text>
+    </Animated.View>
+  );
+}
 
 function TabBar({ state, navigation }) {
   const ins = useSafeAreaInsets();
+  const { handsOnPending, completeHandsOn } = useTutorial();
   return (
-    <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 6) }]}>
+    <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
       {state.routes.map((r, i) => {
-        const t = TABS.find((x) => x.name === r.name);
         const on = state.index === i;
-        const go = () => { const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true }); if (!on && !e.defaultPrevented) navigation.navigate(r.name); };
+        const label = T.tabs[r.name];
+        const go = () => {
+          const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
+          if (e.defaultPrevented) return;
+          if (r.name === 'Dua' && handsOnPending) {
+            completeHandsOn();
+            navigation.navigate('Dua', { tutorialDone: true });
+          } else if (!on) {
+            navigation.navigate(r.name, { tutorialDone: false });
+          }
+        };
+        const common = { onPress: go, accessibilityRole: 'tab', accessibilityState: { selected: on }, accessibilityLabel: label };
         if (r.name === 'Dua') {
           return (
-            <TouchableOpacity key={r.key} onPress={go} style={s.mid} accessibilityRole="button" accessibilityLabel="দোয়া">
-              <View style={s.fab}><Text style={{ fontSize: 28 }}>{t.icon}</Text></View>
-              <Text style={[s.lb, { color: on ? C.primary : C.muted }]}>{t.label}</Text>
-            </TouchableOpacity>
+            <Pressable key={r.key} {...common} style={s.mid}>
+              {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT}>এখানে চাপুন</Text></View> : null}
+              <DuaFab pending={handsOnPending} />
+              <Text style={[s.lb, on && s.lbOn]}>{label}</Text>
+            </Pressable>
           );
         }
         return (
-          <TouchableOpacity key={r.key} onPress={go} style={s.tab} accessibilityRole="button" accessibilityLabel={t.label}>
-            <Text style={{ fontSize: 22, opacity: on ? 1 : 0.55 }}>{t.icon}</Text>
-            <Text style={[s.lb, { color: on ? C.primary : C.muted, fontWeight: on ? '700' : '400' }]}>{t.label}</Text>
-          </TouchableOpacity>
+          <Pressable key={r.key} {...common} style={s.tab}>
+            <View style={[s.pill, on && s.pillOn]}>
+              <Text style={{ fontSize: 24 }} importantForAccessibility="no">{ICON[r.name]}</Text>
+            </View>
+            <Text style={[s.lb, on && s.lbOn]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+          </Pressable>
         );
       })}
     </View>
   );
 }
 
+const soon = (title, icon, what) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
+const SoonMap = soon('ম্যাপ ও জরুরি সাহায্য', '📍', 'বিপদে এক চাপে আপনার লিডার বা হেল্পলাইনে যোগাযোগ, আর গুরুত্বপূর্ণ জায়গার ম্যাপ।');
+const SoonDua = soon('দোয়া ভল্ট', '🤲', 'নামাজ, ওমরাহ ও হজের দোয়া: আরবি, বাংলা উচ্চারণ, অর্থ ও অডিও। ইন্টারনেট ছাড়াও চলবে।');
+const SoonOffers = soon('অফার ও প্যাকেজ', '🎁', 'যাচাই করা গ্রুপ লিডারদের ওমরাহ ও হজ প্যাকেজ।');
+
 function Main() {
   return (
-    <Tab.Navigator tabBar={(p) => <TabBar {...p} />} screenOptions={{ headerStyle: { backgroundColor: C.primary }, headerTintColor: '#fff' }}>
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Travel Adda' }} />
-      <Tab.Screen name="Map" options={{ title: 'ম্যাপ ও SOS' }}>{() => <Soon title="ম্যাপ ও SOS" />}</Tab.Screen>
-      <Tab.Screen name="Dua" options={{ title: 'দোয়া ভল্ট' }}>{() => <Soon title="দোয়া ভল্ট" />}</Tab.Screen>
-      <Tab.Screen name="Offers" options={{ title: 'অফার ও প্যাকেজ' }}>{() => <Soon title="অফার ও প্যাকেজ" />}</Tab.Screen>
-      <Tab.Screen name="Account" component={Account} options={{ title: 'অ্যাকাউন্ট' }} />
+    <Tab.Navigator
+      tabBar={(p) => <TabBar {...p} />}
+      screenOptions={{ headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' } }}>
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
+      <Tab.Screen name="Map" component={SoonMap} options={{ title: T.tabs.Map }} />
+      <Tab.Screen name="Dua" component={SoonDua} options={{ title: 'দোয়া ভল্ট' }} />
+      <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
+      <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
     </Tab.Navigator>
   );
 }
 
 export default function App() {
   const [session, setSession] = useState(undefined);
+  const [onboarded, setOnboarded] = useState(undefined);
+  const [handsOnPending, setHandsOnPending] = useState(false);
+
   useEffect(() => {
     let alive = true;
-    supabase.auth.getSession().then(({ data }) => { if (alive) setSession(data.session || null); }).catch(() => { if (alive) setSession(null); });
+    supabase.auth.getSession()
+      .then(({ data }) => { if (alive) setSession(data.session || null); })
+      .catch(() => { if (alive) setSession(null); });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => setSession(sess || null));
+    prefs.isOnboarded().then((v) => { if (alive) setOnboarded(v); });
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
-  if (session === undefined) return <View style={s.splash}><ActivityIndicator color={C.gold} size="large" /></View>;
+
+  // After login, offer the hands-on practice once.
+  useEffect(() => {
+    if (!session) { setHandsOnPending(false); return; }
+    let alive = true;
+    prefs.isHandsOnDone().then((done) => { if (alive) setHandsOnPending(!done); });
+    return () => { alive = false; };
+  }, [session]);
+
+  const finishOnboarding = useCallback(() => { prefs.setOnboarded(true); setOnboarded(true); }, []);
+  const tutorial = useMemo(() => ({
+    handsOnPending,
+    completeHandsOn: () => { prefs.setHandsOnDone(true); setHandsOnPending(false); },
+    skipHandsOn: () => { prefs.setHandsOnDone(true); setHandsOnPending(false); },
+    replay: () => {
+      prefs.setOnboarded(false); prefs.setHandsOnDone(false);
+      setOnboarded(false); setHandsOnPending(true);
+    },
+  }), [handsOnPending]);
+
+  let body;
+  if (session === undefined || onboarded === undefined) {
+    body = <View style={s.splash}><Text style={s.splashT}>🕋</Text><ActivityIndicator color={C.gold} size="large" /></View>;
+  } else if (!onboarded) {
+    body = <Onboarding onDone={finishOnboarding} />;
+  } else if (!session) {
+    body = <AuthScreen />;
+  } else {
+    body = <NavigationContainer><Main /></NavigationContainer>;
+  }
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      {session ? <NavigationContainer><Main /></NavigationContainer> : <AuthScreen />}
+      <TutorialCtx.Provider value={tutorial}>
+        <StatusBar style={session && onboarded ? 'light' : 'dark'} />
+        {body}
+      </TutorialCtx.Provider>
     </SafeAreaProvider>
   );
 }
 
 const s = StyleSheet.create({
-  splash: { flex: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  bar: { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: 1, borderColor: C.line, paddingTop: 6, alignItems: 'flex-end' },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 4 },
-  mid: { flex: 1, alignItems: 'center' },
-  fab: { width: 62, height: 62, borderRadius: 31, backgroundColor: C.gold, alignItems: 'center', justifyContent: 'center', marginTop: -30, borderWidth: 4, borderColor: '#fff', elevation: 6 },
-  lb: { fontSize: 11, marginTop: 2 },
+  splash: { flex: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  splashT: { fontSize: 72 },
+  bar: { flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderColor: C.line, paddingTop: 8, alignItems: 'flex-end' },
+  tab: { flex: 1, alignItems: 'center', minHeight: 64, justifyContent: 'flex-end', paddingHorizontal: 2 },
+  pill: { minWidth: TOUCH + 8, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  pillOn: { backgroundColor: '#DCEFE4' },
+  mid: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', minHeight: 64 },
+  fab: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.gold, alignItems: 'center', justifyContent: 'center', marginTop: -34, borderWidth: 4, borderColor: C.card, elevation: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
+  fabPending: { borderColor: C.primary },
+  bubble: { position: 'absolute', top: -84, backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
+  bubbleT: { color: C.onPrimary, fontSize: F.small, fontWeight: '700' },
+  lb: { fontSize: 14, marginTop: 4, color: C.muted, fontWeight: '600', textAlign: 'center' },
+  lbOn: { color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
 });
