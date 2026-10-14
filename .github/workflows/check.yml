@@ -6,8 +6,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm install --legacy-peer-deps
-      - run: npx expo install --fix
-      - run: npx expo-doctor
-      - run: npx expo export --platform android
+        with: { node-version: 22 }
+      - name: install and verify
+        run: |
+          set +e
+          fail=0
+          run() { echo "### $*"; "$@" > step.log 2>&1; code=$?; cat step.log; if [ $code -ne 0 ]; then fail=1; tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' | { read -r m; echo "::error title=FAILED: $*::$m"; }; return 1; fi; }
+          run npm install --legacy-peer-deps && run npx expo install --fix && run npx expo-doctor && run npx expo export --platform android
+          [ $? -eq 0 ] && echo ALL_OK || exit 1
