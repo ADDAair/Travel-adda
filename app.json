@@ -9,7 +9,17 @@
       "package": "app.traveladda.hajumrah",
       "allowBackup": false
     },
-    "ios": { "bundleIdentifier": "app.traveladda.hajumrah" },
-    "plugins": ["expo-secure-store"]
+    "ios": {
+      "bundleIdentifier": "app.traveladda.hajumrah"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "owner": "traveladda",
+    "extra": {
+      "eas": {
+        "projectId": "c1ded2f5-ed4f-4ffd-b39d-343a59272e1b"
+      }
+    }
   }
 }
