@@ -69,7 +69,7 @@ const s = StyleSheet.create({
   btnIcon: { fontSize: 22 },
   label: { fontSize: F.body, fontWeight: '700', color: C.text, marginBottom: S.xs },
   inWrap: { flexDirection: 'row', alignItems: 'center', minHeight: 58, borderWidth: 1.5, borderColor: C.line, borderRadius: R.md, backgroundColor: C.card },
-  in: { flex: 1, fontSize: F.large, color: C.text, paddingHorizontal: S.md, paddingVertical: S.sm, minHeight: TOUCH },
+  in: { flex: 1, minWidth: 0, width: '100%', fontSize: F.large, color: C.text, paddingHorizontal: S.md, paddingVertical: S.sm, minHeight: TOUCH },
   err: { color: C.bad, fontSize: F.small, marginTop: S.xs, lineHeight: 22 },
   card: { backgroundColor: C.card, borderRadius: R.lg, padding: S.lg, ...shadow },
   notice: { borderWidth: 1.5, borderRadius: R.md, padding: S.md, marginBottom: S.md },
