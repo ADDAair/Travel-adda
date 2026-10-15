@@ -21,6 +21,10 @@ with sync_playwright() as p:
         shot(pg, f'{scale_name}-04-login')
         click_text(pg, 'লগইন করুন', True); shot(pg, f'{scale_name}-05-login-empty-errors')
         click_text(pg, 'নতুন অ্যাকাউন্ট', True); shot(pg, f'{scale_name}-06-register')
+        pg.get_by_label('পাসওয়ার্ড', exact=True).fill('12345678'); shot(pg, f'{scale_name}-06b-pw-weak')
+        pg.get_by_label('পাসওয়ার্ড', exact=True).fill('karim2026'); shot(pg, f'{scale_name}-06c-pw-medium')
+        pg.get_by_label('পাসওয়ার্ড', exact=True).fill('Karim2026!'); shot(pg, f'{scale_name}-06d-pw-strong')
+        pg.get_by_label('পাসওয়ার্ড', exact=True).fill('')
         if scale_name == 'normal' and PHONE and PW:
             click_text(pg, 'লগইন', True)
             pg.get_by_label('মোবাইল নম্বর').fill(PHONE); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(PW)

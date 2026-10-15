@@ -1,11 +1,13 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';
 import { Button, Field, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
+import { useKeyboardHeight } from '../lib/keyboard';
+import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
 
 const A = T.auth;
 
@@ -21,6 +23,15 @@ export default function AuthScreen() {
   const [formErr, setFormErr] = useState('');
   const phoneRef = useRef(null);
   const pwRef = useRef(null);
+  const scrollRef = useRef(null);
+  const kb = useKeyboardHeight();
+  const strength = passwordStrength(pw, normalizePhone(phone));
+
+  // When the keyboard opens, move the form up so the fields and the main button stay visible.
+  useEffect(() => {
+    if (kb > 0) { const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60); return () => clearTimeout(t); }
+  }, [kb]);
+  const keepVisible = () => { if (kb > 0) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60); };
 
   function switchMode(r) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); }
 
@@ -29,6 +40,7 @@ export default function AuthScreen() {
     if (reg && name.trim().length < 2) e.name = A.errName;
     if (!isValidBdPhone(normalizePhone(phone))) e.phone = A.errPhone;
     if (pw.length < 8) e.pw = A.errPw;
+    else if (reg && strength.level === 0) e.pw = A.errPwEasy;
     setErrs(e);
     return Object.keys(e).length === 0;
   }
@@ -61,8 +73,8 @@ export default function AuthScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg, paddingBottom: ins.bottom + S.xl }]} keyboardShouldPersistTaps="handled">
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg, paddingBottom: (kb > 0 ? kb : ins.bottom) + S.xl }]} keyboardShouldPersistTaps="handled">
         <View style={st.brand}>
           <Text style={st.logo} importantForAccessibility="no">🕋</Text>
           <Text style={st.appName} accessibilityRole="header">{T.appName}</Text>
@@ -82,17 +94,19 @@ export default function AuthScreen() {
 
         {reg ? (
           <Field label={A.nameLabel} hint={A.nameHint} value={name} onChangeText={setName} error={errs.name}
-            maxLength={80} autoComplete="name" returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
+            maxLength={80} autoComplete="name" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => phoneRef.current?.focus()} />
         ) : null}
         <Field inputRef={phoneRef} label={A.phoneLabel} hint={A.phoneHint} value={phone} onChangeText={setPhone} error={errs.phone}
-          keyboardType="phone-pad" maxLength={16} autoComplete="tel" returnKeyType="next" onSubmitEditing={() => pwRef.current?.focus()} />
+          keyboardType="phone-pad" maxLength={16} autoComplete="tel" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => pwRef.current?.focus()} />
         <Field inputRef={pwRef} label={A.pwLabel} hint={A.pwHint} value={pw} onChangeText={setPw} error={errs.pw}
-          secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={submit}
+          secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onFocus={keepVisible} onSubmitEditing={submit}
           right={
             <Pressable onPress={() => setShowPw(!showPw)} style={st.eye} accessibilityRole="button" accessibilityLabel={showPw ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}>
               <Text style={st.eyeT}>{showPw ? '🙈 ' + A.hide : '👁️ ' + A.show}</Text>
             </Pressable>
           } />
+
+        {reg && pw.length > 0 ? <StrengthMeter s={strength} /> : null}
 
         {formErr ? <Notice kind="bad" title={formErr} /> : null}
 
@@ -100,11 +114,43 @@ export default function AuthScreen() {
 
         {!reg ? <Text style={st.forgot}>{A.forgot}</Text> : null}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+function StrengthMeter({ s }) {
+  const col = [C.bad, C.warn, C.ok][s.level];
+  const tip = s.tooEasy ? 'এটা সহজে অনুমান করা যায় (যেমন 12345678 বা নিজের মোবাইল নম্বর)।'
+    : s.level === 0 ? 'আরও অক্ষর লিখুন।'
+    : s.level === 1 ? 'চলবে। আরও নিরাপদ করতে ১২ অক্ষর বা কোনো চিহ্ন (! @ #) যোগ করুন।'
+    : 'খুব ভালো পাসওয়ার্ড।';
+  const Row = ({ ok, text }) => <Text style={st.chk}>{ok ? '✅' : '⬜'} {text}</Text>;
+  return (
+    <View style={st.meter} accessible accessibilityLiveRegion="polite" accessibilityLabel={`পাসওয়ার্ডের শক্তি: ${STRENGTH_LABEL[s.level]}। ${tip}`}>
+      <View style={st.meterTop}>
+        <Text style={st.meterH}>পাসওয়ার্ডের শক্তি:</Text>
+        <Text style={[st.meterL, { color: col }]}>{STRENGTH_LABEL[s.level]}</Text>
+      </View>
+      <View style={st.bars}>
+        {[0, 1, 2].map((i) => <View key={i} style={[st.bar, { backgroundColor: i <= s.level ? col : C.line }]} />)}
+      </View>
+      <Row ok={s.checks.length} text="কমপক্ষে ৮ অক্ষর" />
+      <Row ok={s.checks.mixed} text="অক্ষর ও সংখ্যা মিশিয়ে" />
+      <Row ok={s.checks.long} text="১২ অক্ষর বা কোনো চিহ্ন (! @ #)" />
+      <Text style={st.tip}>{tip}</Text>
+    </View>
   );
 }
 
 const st = StyleSheet.create({
+  meter: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.md, marginTop: -S.sm, marginBottom: S.md },
+  meterTop: { flexDirection: 'row', alignItems: 'center', gap: S.sm, flexWrap: 'wrap' },
+  meterH: { fontSize: F.body, color: C.text, fontWeight: '600' },
+  meterL: { fontSize: F.large, fontWeight: '700' },
+  bars: { flexDirection: 'row', gap: 6, marginVertical: S.sm },
+  bar: { flex: 1, height: 10, borderRadius: 5 },
+  chk: { fontSize: F.small, color: C.text, lineHeight: 26 },
+  tip: { fontSize: F.small, color: C.muted, marginTop: 4, lineHeight: 24 },
   wrap: { flexGrow: 1, paddingHorizontal: S.lg },
   brand: { alignItems: 'center', marginBottom: S.lg },
   logo: { fontSize: 56 },
