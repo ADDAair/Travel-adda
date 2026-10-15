@@ -17,7 +17,15 @@
       "bundleIdentifier": "app.traveladda.hajumrah"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "আপনার প্রোফাইল ছবি তোলার জন্য ক্যামেরা লাগবে।",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "owner": "traveladda",
     "extra": {

@@ -15,6 +15,8 @@ import Onboarding from './src/screens/Onboarding';
 import Logo from './src/components/Logo';
 import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
+import PhotoCapture from './src/screens/PhotoCapture';
+import { photoGateState } from './src/lib/avatar';
 
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '📍', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -106,6 +108,8 @@ export default function App() {
   const [session, setSession] = useState(undefined);
   const [onboarded, setOnboarded] = useState(undefined);
   const [handsOnPending, setHandsOnPending] = useState(false);
+  const [photoGate, setPhotoGate] = useState(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
+  const userId = session ? session.user.id : null;
 
   useEffect(() => {
     let alive = true;
@@ -125,6 +129,14 @@ export default function App() {
     return () => { alive = false; };
   }, [session]);
 
+  // After sign-in, check once whether this person already has a profile photo.
+  useEffect(() => {
+    if (!userId) { setPhotoGate(undefined); return; }
+    let alive = true;
+    photoGateState().then((v) => { if (alive) setPhotoGate(v); });
+    return () => { alive = false; };
+  }, [userId]);
+
   const finishOnboarding = useCallback(() => { prefs.setOnboarded(true); setOnboarded(true); }, []);
   const tutorial = useMemo(() => ({
     handsOnPending,
@@ -136,20 +148,24 @@ export default function App() {
     },
   }), [handsOnPending]);
 
+  const splash = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>Travel Adda</Text><ActivityIndicator color={C.gold} size="large" /></View>;
+  const checkingPhoto = !!session && onboarded === true && photoGate === undefined;
   let body;
-  if (session === undefined || onboarded === undefined) {
-    body = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>Travel Adda</Text><ActivityIndicator color={C.gold} size="large" /></View>;
+  if (session === undefined || onboarded === undefined || checkingPhoto) {
+    body = splash;
   } else if (!onboarded) {
     body = <Onboarding onDone={finishOnboarding} />;
   } else if (!session) {
     body = <AuthScreen />;
+  } else if (photoGate === 'missing') {
+    body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
     body = <NavigationContainer><Main /></NavigationContainer>;
   }
   return (
     <SafeAreaProvider>
       <TutorialCtx.Provider value={tutorial}>
-        <StatusBar style={session && onboarded ? 'light' : 'dark'} />
+        <StatusBar style={(session && onboarded && photoGate !== 'missing' && photoGate !== undefined) || session === undefined || onboarded === undefined || checkingPhoto ? 'light' : 'dark'} />
         {body}
       </TutorialCtx.Provider>
     </SafeAreaProvider>
