@@ -33,7 +33,7 @@ export default function HajjScreen({ navigation }) {
           </Pressable>
           <Text style={st.title} accessibilityRole="header">{day.icon} {day.title}</Text>
           {day.steps.map((s, k) => (
-            <StepCard key={k} step={/^[০-৯]/.test(s.title) ? s : { ...s, title: `${toBn(k + 1)}. ${s.title}` }} images={IMAGES} />
+            <StepCard key={k} step={day.steps.some((x) => /^[০-৯]/.test(x.title)) ? s : { ...s, title: `${toBn(k + 1)}. ${s.title}` }} images={IMAGES} />
           ))}
           {nextDay ? <Button title={`পরের অংশ: ${nextDay.title}`} icon="›" onPress={() => go(nextDay.id)} /> : null}
           <Button title="হজের সব দিনের তালিকায় ফিরুন" icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.sm }} />
