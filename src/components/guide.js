@@ -9,10 +9,12 @@ import { findDua } from '../content/duas';
 
 // A drawing with a caption that says in words what is right (✅) or wrong (❌), so meaning never depends on colour.
 export function Illustration({ img }) {
+  const [w, setW] = useState(0);
   if (!img) return null;
+  // Height is computed from the measured width, so the picture never leaves an empty gap on any phone.
   return (
-    <View style={g.ill}>
-      <Image source={img.src} style={[g.illImg, { aspectRatio: img.ratio }]} resizeMode="contain" accessibilityLabel={img.caption} />
+    <View style={g.ill} onLayout={(e) => setW(Math.round(e.nativeEvent.layout.width) - 2 * S.sm)}>
+      {w > 0 ? <Image source={img.src} style={{ width: w, height: Math.round(w / img.ratio) }} resizeMode="contain" accessibilityLabel={img.caption} /> : null}
       <Text style={g.illCap}>{img.caption}</Text>
     </View>
   );
@@ -126,7 +128,6 @@ export const g = StyleSheet.create({
   src: { fontSize: F.small, color: C.muted, lineHeight: 24, marginTop: S.sm },
   note: { fontSize: F.small, color: C.text, lineHeight: 24, marginTop: S.md },
   ill: { marginTop: S.md, backgroundColor: C.bg, borderRadius: R.md, padding: S.sm },
-  illImg: { width: '100%', height: undefined },
   illCap: { fontSize: F.small, color: C.text, lineHeight: 24, marginTop: S.xs, fontWeight: '600' },
   duaWrap: { marginTop: S.md, borderRadius: R.md, borderWidth: 1.5, borderColor: C.gold, backgroundColor: C.goldSoft, overflow: 'hidden' },
   duaBtn: { flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 56, paddingHorizontal: S.md, paddingVertical: S.sm },

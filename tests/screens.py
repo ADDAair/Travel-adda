@@ -98,7 +98,8 @@ with sync_playwright() as p:
                 pg.get_by_role('button', name='হজের সব দিনের তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(500)
                 pg.get_by_role('button', name=re.compile('ঈদের দিন')).click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-43{tag}-hajj-eid')
                 # New dua categories
-                pg.get_by_role('tab', name='দোয়া', exact=True).first.click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-50{tag}-dua-cats')
+                pg.get_by_role('tab', name='দোয়া', exact=True).last.click(); pg.wait_for_timeout(1000)
+                pg.get_by_role('tab', name='দোয়া', exact=True).first.click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-50{tag}-dua-cats')
                 pg.get_by_role('tab', name='সফরের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-51{tag}-dua-safar')
                 pg.get_by_role('tab', name='দৈনন্দিন দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-52{tag}-dua-daily')
                 pg.get_by_role('tab', name='মদিনা যিয়ারতের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-53{tag}-dua-madinah')
