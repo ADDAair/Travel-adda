@@ -1,0 +1,18 @@
+name: fetch-quran
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python tools/fetch_quran.py
+      - name: push data to ci-data branch for review
+        run: |
+          mkdir -p /tmp/q && cp -r src/content/quran /tmp/q/
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci-data && git rm -rfq . && cp -r /tmp/q/quran .
+          git add quran && git commit -qm "quran data" && git push -f -q origin ci-data
