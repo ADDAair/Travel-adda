@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';
-import { Button, Field, Notice } from '../components/ui';
+import { Button, Field, Notice, Segmented } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
@@ -81,14 +81,12 @@ export default function AuthScreen() {
           <Text style={st.tag}>{T.tagline}</Text>
         </View>
 
-        <View style={st.seg} accessibilityRole="tablist">
-          {[[false, A.loginTab], [true, A.registerTab]].map(([r, label]) => (
-            <Pressable key={label} onPress={() => switchMode(r)} style={[st.segBtn, reg === r && st.segOn]}
-              accessibilityRole="tab" accessibilityState={{ selected: reg === r }} accessibilityLabel={label}>
-              <Text style={[st.segT, reg === r && st.segTOn]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Segmented
+          value={reg ? 'reg' : 'login'}
+          onChange={(id) => switchMode(id === 'reg')}
+          disabled={busy}
+          options={[{ id: 'login', label: A.loginTab }, { id: 'reg', label: A.registerTab }]}
+        />
 
         <Text style={st.title}>{reg ? A.registerTitle : A.loginTitle}</Text>
 
@@ -102,7 +100,10 @@ export default function AuthScreen() {
           secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onFocus={keepVisible} onSubmitEditing={submit}
           right={
             <Pressable onPress={() => setShowPw(!showPw)} style={st.eye} accessibilityRole="button" accessibilityLabel={showPw ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}>
-              <Text style={st.eyeT}>{showPw ? '🙈 ' + A.hide : '👁️ ' + A.show}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={{ fontSize: 16 }} importantForAccessibility="no">{showPw ? '🙈' : '👁️'}</Text>
+                <Text key={showPw ? 'pw-hide' : 'pw-show'} style={st.eyeT}>{showPw ? A.hide : A.show}</Text>
+              </View>
             </Pressable>
           } />
 
@@ -156,11 +157,6 @@ const st = StyleSheet.create({
   logo: { fontSize: 56 },
   appName: { fontSize: F.hero, fontWeight: '700', color: C.primary },
   tag: { fontSize: F.body, color: C.muted, marginTop: 2 },
-  seg: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.lg },
-  segBtn: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  segOn: { backgroundColor: C.card, borderWidth: 2, borderColor: C.primary },
-  segT: { fontSize: F.body, color: C.muted, fontWeight: '600' },
-  segTOn: { color: C.primary, fontWeight: '700' },
   title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
   eye: { minHeight: TOUCH, minWidth: 84, paddingLeft: S.sm, paddingRight: S.md, justifyContent: 'center', alignItems: 'flex-end', flexShrink: 0 },
   eyeT: { fontSize: F.small, color: C.primary, fontWeight: '700' },

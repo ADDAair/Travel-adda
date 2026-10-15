@@ -49,6 +49,28 @@ export function Field({ label, hint, error, right, inputRef, ...input }) {
   );
 }
 
+// Segmented choice (e.g. Login / New account). Selection is shown by border, background, colour AND a bar,
+// never by changing the font weight: on some Android phones the label disappears when its weight changes.
+export function Segmented({ options, value, onChange, disabled }) {
+  return (
+    <View style={s.seg} accessibilityRole="tablist">
+      {options.map((o) => {
+        const on = value === o.id;
+        return (
+          <Pressable key={o.id} onPress={() => !disabled && onChange(o.id)} style={[s.segBtn, on && s.segOn]}
+            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={o.a11y || o.label}>
+            <View style={s.segRow}>
+              {o.icon ? <Text style={s.segIc} importantForAccessibility="no">{o.icon}</Text> : null}
+              <Text key={o.id + (on ? '-on' : '-off')} style={[s.segT, { color: on ? C.primary : C.muted }]} numberOfLines={1}>{o.label}</Text>
+            </View>
+            <View style={[s.segBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Card({ children, style }) { return <View style={[s.card, style]}>{children}</View>; }
 
 // Message box: kind ok | warn | bad | info. Text is always shown, so meaning never depends on colour alone.
@@ -64,6 +86,13 @@ export function Notice({ kind = 'info', title, text, children }) {
 }
 
 const s = StyleSheet.create({
+  seg: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.md },
+  segBtn: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm, borderWidth: 2, borderColor: 'transparent', paddingTop: 4 },
+  segOn: { backgroundColor: C.card, borderColor: C.primary },
+  segRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  segIc: { fontSize: 20 },
+  segT: { fontSize: F.body, fontWeight: '700' },
+  segBar: { width: 28, height: 3, borderRadius: 2, marginTop: 4 },
   btn: { minHeight: BTN_H, borderRadius: R.md, borderWidth: 2, paddingHorizontal: S.lg, paddingVertical: S.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm },
   btnT: { fontSize: F.large, fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   btnIcon: { fontSize: 22 },

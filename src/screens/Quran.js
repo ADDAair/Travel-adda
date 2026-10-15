@@ -148,7 +148,10 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
       </View>
       <View style={st.tools}>
         <Pressable onPress={toggleTr} style={[st.toolBtn, { flex: 1 }]} accessibilityRole="switch" accessibilityState={{ checked: showTr }} accessibilityLabel="বাংলা অনুবাদ দেখান">
-          <Text style={st.toolT}>{showTr ? '✅ অনুবাদ দেখাচ্ছে' : '⬜ অনুবাদ লুকানো'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 18 }} importantForAccessibility="no">{showTr ? '✅' : '⬜'}</Text>
+            <Text key={showTr ? 'tr-on' : 'tr-off'} style={st.toolT}>{showTr ? 'অনুবাদ দেখাচ্ছে' : 'অনুবাদ লুকানো'}</Text>
+          </View>
         </Pressable>
         <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.toolBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা ছোট করুন"><Text style={st.toolT}>অ−</Text></Pressable>
         <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.toolBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা বড় করুন"><Text style={[st.toolT, { fontSize: 22 }]}>অ+</Text></Pressable>

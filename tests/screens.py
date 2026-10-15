@@ -43,6 +43,8 @@ with sync_playwright() as p:
             pg.mouse.wheel(0, 1500); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-08f-dua-detail-bottom')
             pg.get_by_role('button', name='সব দোয়ার তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(500)
             pg.get_by_role('tab', name='আল-কুরআন').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-11-quran-list')
+            pg.get_by_role('tab', name='দোয়া', exact=True).first.click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-11a-back-to-dua')
+            pg.get_by_role('tab', name='আল-কুরআন').click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-11b-quran-again')
             pg.get_by_role('button', name=re.compile('^সূরা 1,')).first.click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-12-quran-fatiha')
             pg.get_by_role('button', name='সব সূরার তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(600)
             pg.get_by_label('সূরা খুঁজুন').fill('ইয়াসীন'); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-13-quran-search')

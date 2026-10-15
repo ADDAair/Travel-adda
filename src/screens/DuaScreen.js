@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, BackHandler }
 import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
-import { Button, Notice } from '../components/ui';
+import { Button, Notice, Segmented } from '../components/ui';
 import { CATEGORIES, DUAS, CONTENT_REVIEWED, findDua } from '../content/duas';
 import { toBn } from '../lib/phone';
 import { QuranList, QuranReader } from './Quran';
@@ -41,14 +41,11 @@ export default function DuaScreen({ route, navigation }) {
   if (surah) return <QuranReader key={surah.n} n={surah.n} startAyah={surah.a} onBack={() => setSurah(null)} />;
 
   const modeBar = (
-    <View style={st.modes} accessibilityRole="tablist">
-      {[['dua', '🤲', 'দোয়া'], ['quran', '📖', 'আল-কুরআন']].map(([id, ic, label]) => (
-        <Pressable key={id} onPress={() => { setMode(id); setDismissed(true); }} style={[st.mode, mode === id && st.modeOn]}
-          accessibilityRole="tab" accessibilityState={{ selected: mode === id }} accessibilityLabel={label}>
-          <Text style={[st.modeT, mode === id && st.modeTOn]}>{ic} {label}</Text>
-        </Pressable>
-      ))}
-    </View>
+    <Segmented
+      value={mode}
+      onChange={(id) => { setMode(id); setDismissed(true); }}
+      options={[{ id: 'dua', icon: '🤲', label: 'দোয়া' }, { id: 'quran', icon: '📖', label: 'আল-কুরআন' }]}
+    />
   );
 
   if (mode === 'quran') {
@@ -73,7 +70,8 @@ export default function DuaScreen({ route, navigation }) {
             <Pressable key={c.id} onPress={() => { setQ(''); setCat(c.id); setDismissed(true); }} style={[st.cat, on && st.catOn]}
               accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={c.a11y}>
               <Text style={st.catIc} importantForAccessibility="no">{c.icon}</Text>
-              <Text style={[st.catT, on && st.catTOn]}>{c.label}</Text>
+              <Text style={[st.catT, { color: on ? C.primary : C.muted }]}>{c.label}</Text>
+              <View style={[st.catBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
             </Pressable>
           );
         })}
@@ -202,19 +200,14 @@ function DuaDetail({ dua, onBack }) {
 }
 
 const st = StyleSheet.create({
-  modes: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.md },
-  mode: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
-  modeOn: { backgroundColor: C.card, borderWidth: 2, borderColor: C.primary },
-  modeT: { fontSize: F.body, color: C.muted, fontWeight: '600' },
-  modeTOn: { color: C.primary, fontWeight: '700' },
   wrap: { padding: S.md, paddingBottom: S.xl },
   lead: { fontSize: F.body, color: C.text, marginBottom: S.sm, lineHeight: 28 },
   cats: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },
   cat: { flex: 1, minHeight: 72, borderRadius: R.md, borderWidth: 2, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
   catOn: { borderColor: C.primary, backgroundColor: '#E3F1E9' },
   catIc: { fontSize: 26 },
-  catT: { fontSize: F.body, color: C.muted, fontWeight: '600', marginTop: 2 },
-  catTOn: { color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
+  catT: { fontSize: F.body, fontWeight: '700', marginTop: 2 },
+  catBar: { width: 28, height: 3, borderRadius: 2, marginTop: 3 },
   search: { flexDirection: 'row', alignItems: 'center', gap: S.sm, backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.line, paddingLeft: S.md, minHeight: 56, marginBottom: S.md },
   searchIn: { flex: 1, minWidth: 0, fontSize: F.body, color: C.text, minHeight: TOUCH },
   clear: { minHeight: TOUCH, paddingHorizontal: S.md, justifyContent: 'center' },

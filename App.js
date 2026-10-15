@@ -64,7 +64,8 @@ function TabBar({ state, navigation }) {
             <Pressable key={r.key} {...common} style={s.mid}>
               {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
               <DuaFab pending={handsOnPending} />
-              <Text style={[s.lb, on && s.lbOn]}>{label}</Text>
+              <Text style={[s.lb, { color: on ? C.primary : C.muted }]}>{label}</Text>
+              <View style={[s.lbBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
             </Pressable>
           );
         }
@@ -73,7 +74,8 @@ function TabBar({ state, navigation }) {
             <View style={[s.pill, on && s.pillOn]}>
               <Text style={{ fontSize: 24 }} importantForAccessibility="no">{ICON[r.name]}</Text>
             </View>
-            <Text style={[s.lb, on && s.lbOn]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+            <Text style={[s.lb, { color: on ? C.primary : C.muted }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+            <View style={[s.lbBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
           </Pressable>
         );
       })}
@@ -165,6 +167,6 @@ const s = StyleSheet.create({
   fabPending: { borderColor: C.primary },
   bubble: { position: 'absolute', top: -78, width: 116, alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
   bubbleT: { color: C.onPrimary, fontSize: F.small, fontWeight: '700' },
-  lb: { fontSize: 14, marginTop: 4, color: C.muted, fontWeight: '600', textAlign: 'center' },
-  lbOn: { color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
+  lb: { fontSize: 14, marginTop: 4, fontWeight: '700', textAlign: 'center' },
+  lbBar: { width: 24, height: 3, borderRadius: 2, marginTop: 2 },
 });
