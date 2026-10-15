@@ -1,5 +1,7 @@
 name: build-apk
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -24,3 +26,10 @@ jobs:
           name: travel-adda-test-apk
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 14
+      - name: publish to Releases (direct download)
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: |
+          f=$(ls android/app/build/outputs/apk/release/*.apk | head -1); cp "$f" travel-adda-test.apk
+          gh release delete test-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create test-latest travel-adda-test.apk --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title "পরীক্ষামূলক APK (সর্বশেষ)" --notes "শুধু পরীক্ষার জন্য। commit ${GITHUB_SHA::7}"

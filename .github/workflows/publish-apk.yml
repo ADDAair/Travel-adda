@@ -1,0 +1,26 @@
+name: publish-apk
+# Puts an already-built test APK on the Releases page (direct .apk download, no zip).
+on:
+  workflow_dispatch:
+    inputs:
+      run_id: { description: 'build-apk run id', required: true }
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: travel-adda-test-apk
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: apk
+      - name: release
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: |
+          f=$(ls apk/*.apk | head -1); cp "$f" travel-adda-test.apk
+          gh release delete test-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create test-latest travel-adda-test.apk --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title "পরীক্ষামূলক APK (সর্বশেষ)" --notes "শুধু পরীক্ষার জন্য। build run ${{ inputs.run_id }}"
