@@ -14,7 +14,9 @@ export default function DuaScreen({ route, navigation }) {
   const [cat, setCat] = useState('namaz');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState(null);
-  const justTried = !!route?.params?.tutorialDone;
+  const [dismissed, setDismissed] = useState(false);
+  const justTried = !!route?.params?.tutorialDone && !dismissed;
+  useEffect(() => { setDismissed(false); }, [route?.params?.tutorialDone]);
 
   // Android back button: from a dua go back to the list instead of leaving the tab.
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function DuaScreen({ route, navigation }) {
         {CATEGORIES.map((c) => {
           const on = !q.trim() && cat === c.id;
           return (
-            <Pressable key={c.id} onPress={() => { setQ(''); setCat(c.id); }} style={[st.cat, on && st.catOn]}
+            <Pressable key={c.id} onPress={() => { setQ(''); setCat(c.id); setDismissed(true); }} style={[st.cat, on && st.catOn]}
               accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={c.a11y}>
               <Text style={st.catIc} importantForAccessibility="no">{c.icon}</Text>
               <Text style={[st.catT, on && st.catTOn]}>{c.label}</Text>
@@ -54,7 +56,7 @@ export default function DuaScreen({ route, navigation }) {
 
       <View style={st.search}>
         <Text style={{ fontSize: 20 }} importantForAccessibility="no">🔍</Text>
-        <TextInput value={q} onChangeText={setQ} placeholder="দোয়ার নাম লিখে খুঁজুন" placeholderTextColor="#7A857F"
+        <TextInput value={q} onChangeText={(v) => { setQ(v); setDismissed(true); }} placeholder="দোয়ার নাম লিখে খুঁজুন" placeholderTextColor="#7A857F"
           style={st.searchIn} accessibilityLabel="দোয়া খুঁজুন" returnKeyType="search" />
         {q ? (
           <Pressable onPress={() => setQ('')} style={st.clear} accessibilityRole="button" accessibilityLabel="খোঁজা মুছুন">
@@ -67,7 +69,7 @@ export default function DuaScreen({ route, navigation }) {
       {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো দোয়া পাওয়া যায়নি" text="অন্য শব্দ লিখে দেখুন, অথবা ওপরের নামাজ / ওমরাহ / হজ বাটন চাপুন।" /> : null}
 
       {list.map((d, i) => (
-        <Pressable key={d.id} onPress={() => setOpenId(d.id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
+        <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
           accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.when}`} accessibilityHint="দোয়াটি খুলবে">
           <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
           <View style={{ flex: 1 }}>
