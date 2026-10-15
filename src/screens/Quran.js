@@ -13,7 +13,13 @@ const SIZE_KEY = 'ta.duaTextScale.v1';   // same text size as the dua vault
 const TRANS_KEY = 'ta.quranShowTrans.v1';
 const SIZES = [1, 1.2, 1.4, 1.6];
 // Tanzil puts "Bismillah" at the start of verse 1 of every surah except 1 and 9; we show it as a header instead.
-const BISM = /^بِّ?سْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ\s+/;
+const MARKS = /[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/g;
+const BISM_BARE = 'بسم ٱلله ٱلرحمن ٱلرحيم';
+export function stripBismillah(text) {
+  const words = text.split(' ');
+  if (words.length > 4 && words.slice(0, 4).join(' ').replace(MARKS, '') === BISM_BARE) return words.slice(4).join(' ');
+  return text;
+}
 const typeBn = (t) => (t === 'Meccan' ? 'মাক্কী' : 'মাদানী');
 
 export function QuranList({ onOpen }) {
@@ -96,7 +102,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
     const t = setTimeout(() => {
       try {
         const raw = SURAH[n]();
-        const data = raw.map(([ar, bn], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? ar.replace(BISM, '') : ar, bn }));
+        const data = raw.map(([ar, bn], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn }));
         if (alive) setVerses(data);
       } catch (e) { if (alive) setErr(true); }
     }, 30);
