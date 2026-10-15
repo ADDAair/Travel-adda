@@ -7,6 +7,14 @@ import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
 
+// Working features. Every card opens something that really works (no fake buttons).
+const READY = [
+  { route: 'Dua', icon: '🤲', title: 'দোয়া ভল্ট', what: 'দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।' },
+  { route: 'Ihram', icon: '🕋', title: 'মীকাত ও ইহরাম গাইড', what: 'কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।' },
+  { route: 'Umrah', icon: '🔄', title: 'ওমরাহ ধাপে ধাপে', what: 'তাওয়াফ, সাঈ, চুল কাটা। চক্কর গোনার বাটনসহ।' },
+  { route: 'Hajj', icon: '⛺', title: 'হজের দিনগুলো', what: '৮ থেকে ১৩ জিলহজ, দিন অনুযায়ী করণীয়। মদিনা যিয়ারত।' },
+];
+
 const UPCOMING = [
   ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার অবস্থান অনুযায়ী'],
   ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
@@ -58,24 +66,17 @@ export default function HomeScreen({ navigation }) {
       ) : null}
 
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
-      <Pressable onPress={() => navigation.navigate('Dua', { tutorialDone: false })} style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]}
-        accessibilityRole="button" accessibilityLabel="দোয়া ভল্ট খুলুন। দোয়া ও সম্পূর্ণ আল-কুরআন">
-        <Text style={st.readyIc} importantForAccessibility="no">🤲</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={st.readyT}>দোয়া ভল্ট</Text>
-          <Text style={st.readyW}>দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।</Text>
-        </View>
-        <Text style={st.readyGo}>খুলুন ›</Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate('Ihram')} style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]}
-        accessibilityRole="button" accessibilityLabel="মীকাত ও ইহরাম গাইড খুলুন। কোথায়, কীভাবে ইহরাম বাঁধবেন">
-        <Text style={st.readyIc} importantForAccessibility="no">🕋</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={st.readyT}>মীকাত ও ইহরাম গাইড</Text>
-          <Text style={st.readyW}>কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।</Text>
-        </View>
-        <Text style={st.readyGo}>খুলুন ›</Text>
-      </Pressable>
+      {READY.map((x) => (
+        <Pressable key={x.route} onPress={() => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)}
+          style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]} accessibilityRole="button" accessibilityLabel={`${x.title} খুলুন। ${x.what}`}>
+          <Text style={st.readyIc} importantForAccessibility="no">{x.icon}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={st.readyT}>{x.title}</Text>
+            <Text style={st.readyW}>{x.what}</Text>
+          </View>
+          <Text style={st.readyGo}>খুলুন ›</Text>
+        </Pressable>
+      ))}
 
       <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text>
       <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text>

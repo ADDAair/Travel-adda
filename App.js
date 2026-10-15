@@ -17,6 +17,8 @@ import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
 import PhotoCapture from './src/screens/PhotoCapture';
 import IhramScreen from './src/screens/IhramScreen';
+import UmrahScreen from './src/screens/UmrahScreen';
+import HajjScreen from './src/screens/HajjScreen';
 import { photoGateState } from './src/lib/avatar';
 
 const Tab = createBottomTabNavigator();
@@ -103,6 +105,8 @@ function Main() {
       <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
       <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: 'মীকাত ও ইহরাম গাইড' }} />
+      <Tab.Screen name="Umrah" component={UmrahScreen} options={{ title: 'ওমরাহ ধাপে ধাপে' }} />
+      <Tab.Screen name="Hajj" component={HajjScreen} options={{ title: 'হজের দিনগুলো' }} />
     </Tab.Navigator>
   );
 }

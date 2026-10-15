@@ -89,7 +89,7 @@ export default function DuaScreen({ route, navigation }) {
       </View>
 
       {q.trim() ? <Text style={st.count}>{toBn(list.length)}টি দোয়া পাওয়া গেছে</Text> : null}
-      {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো দোয়া পাওয়া যায়নি" text="অন্য শব্দ লিখে দেখুন, অথবা ওপরের নামাজ / ওমরাহ / হজ বাটন চাপুন।" /> : null}
+      {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো দোয়া পাওয়া যায়নি" text="অন্য শব্দ লিখে দেখুন, অথবা ওপরের কোনো বিভাগের বাটন চাপুন।" /> : null}
 
       {list.map((d, i) => (
         <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
@@ -202,8 +202,8 @@ function DuaDetail({ dua, onBack }) {
 const st = StyleSheet.create({
   wrap: { padding: S.md, paddingBottom: S.xl },
   lead: { fontSize: F.body, color: C.text, marginBottom: S.sm, lineHeight: 28 },
-  cats: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },
-  cat: { flex: 1, minHeight: 72, borderRadius: R.md, borderWidth: 2, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  cats: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginBottom: S.md },
+  cat: { flexBasis: '30%', flexGrow: 1, minHeight: 72, borderRadius: R.md, borderWidth: 2, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
   catOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   catIc: { fontSize: 26 },
   catT: { fontSize: F.body, fontWeight: '700', marginTop: 2 },

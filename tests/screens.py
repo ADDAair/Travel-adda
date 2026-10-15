@@ -58,23 +58,51 @@ with sync_playwright() as p:
             pg.get_by_role('button', name=re.compile('^সূরা 2,')).first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-17-quran-baqara')
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-09-account')
             pg.get_by_role('tab', name='ম্যাপ ও SOS').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-10-map-soon')
-            # Mikat & Ihram guide, at normal and at narrow width
+            # Guides, at normal and at narrow width
             for w, tag in ((390, 'n'), (320, 's')):
                 pg.set_viewport_size({'width': w, 'height': 780})
-                pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1200)
+                pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1200); pg.mouse.wheel(0, 600); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-19{tag}-home-cards')
                 pg.get_by_role('button', name=re.compile('^মীকাত ও ইহরাম গাইড খুলুন')).click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-20{tag}-ihram-list')
-                for k, sec in enumerate(['আমার মীকাত কোথায়', 'প্রস্তুতির চেকলিস্ট', 'ধাপে ধাপে ইহরাম বাঁধা', 'নিয়ত ও তালবিয়াহ', 'ইহরামে যা নিষেধ', 'ভুল হয়ে গেলে']):
+                secs = ['আমার মীকাত কোথায়', 'প্রস্তুতির চেকলিস্ট', 'ধাপে ধাপে ইহরাম বাঁধা', 'নিয়ত ও তালবিয়াহ', 'ইহরামে যা নিষেধ', 'যে ভুলগুলো অনেকে করেন', 'বয়স্ক, অসুস্থ ও শিশু', 'ভুল হয়ে গেলে']
+                for k, sec in enumerate(secs):
                     pg.get_by_role('button', name=re.compile(sec)).first.click(); pg.wait_for_timeout(800)
                     shot(pg, f'{scale_name}-2{k+1}{tag}-ihram-{k+1}')
                     if k == 0:
-                        pg.get_by_role('tab', name=re.compile('আগে মদিনা')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-madinah')
+                        pg.get_by_role('radio', name='সৌদি আরবে থাকি').click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-saudi')
                     if k == 1:
                         pg.get_by_role('checkbox').first.click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-checked')
                     if k == 2:
-                        pg.get_by_role('button', name='পরের ধাপ ›').click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-step2')
+                        pg.get_by_role('button', name='পরের ধাপ ›').click(); pg.wait_for_timeout(300)
+                        pg.get_by_role('button', name='পরের ধাপ ›').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-step3')
+                        pg.mouse.wheel(0, 900); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-2{k+1}{tag}c-ihram-step3-pics')
                     if k == 4:
                         pg.get_by_role('tab', name=re.compile('যা করা যায়')).click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-allowed')
                     pg.get_by_role('button', name='গাইডের সব অংশে ফিরে যান').first.click(); pg.wait_for_timeout(600)
+                # Umrah
+                pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(800)
+                pg.get_by_role('button', name=re.compile('^ওমরাহ ধাপে ধাপে খুলুন')).click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-30{tag}-umrah-1')
+                pg.get_by_role('button', name='সব ধাপের তালিকা দেখুন').click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-31{tag}-umrah-list')
+                pg.get_by_role('button', name=re.compile('^ধাপ 6:')).click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-32{tag}-umrah-tawaf')
+                pg.get_by_role('button', name=re.compile('দোয়া দেখুন')).first.click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-33{tag}-umrah-dua-open')
+                pg.get_by_role('button', name='এক চক্কর শেষ হলো').click(); pg.wait_for_timeout(300)
+                pg.get_by_role('button', name='এক চক্কর শেষ হলো').click(); pg.wait_for_timeout(300)
+                pg.get_by_label(re.compile('চক্করের মধ্যে')).first.scroll_into_view_if_needed(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-34{tag}-umrah-counter')
+                pg.get_by_role('button', name='‹ আগের ধাপ').click(); pg.wait_for_timeout(300)
+                for _ in range(4): pg.get_by_role('button', name='পরের ধাপ ›').click(); pg.wait_for_timeout(300)
+                shot(pg, f'{scale_name}-35{tag}-umrah-sai')
+                # Hajj
+                pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(800)
+                pg.get_by_role('button', name=re.compile('^হজের দিনগুলো খুলুন')).click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-40{tag}-hajj-list')
+                pg.get_by_role('button', name=re.compile('আরাফা দিবস')).click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-41{tag}-hajj-arafa')
+                pg.get_by_role('button', name=re.compile('^পরের অংশ')).click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-42{tag}-hajj-muzdalifa')
+                pg.get_by_role('button', name='হজের সব দিনের তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(500)
+                pg.get_by_role('button', name=re.compile('ঈদের দিন')).click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-43{tag}-hajj-eid')
+                # New dua categories
+                pg.get_by_role('tab', name='দোয়া', exact=True).first.click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-50{tag}-dua-cats')
+                pg.get_by_role('tab', name='সফরের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-51{tag}-dua-safar')
+                pg.get_by_role('tab', name='দৈনন্দিন দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-52{tag}-dua-daily')
+                pg.get_by_role('tab', name='মদিনা যিয়ারতের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-53{tag}-dua-madinah')
+                pg.get_by_role('tab', name='নামাজের দোয়া').click(); pg.wait_for_timeout(400)
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))
         ctx.close()
     b.close()

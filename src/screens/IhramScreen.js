@@ -8,7 +8,9 @@ import { toBn } from '../lib/phone';
 import { findDua } from '../content/duas';
 import {
   CONTENT_REVIEWED, SECTIONS, MIKAT_ROUTES, MIKAT_LIST, MIKAT_SOURCE, CHECKLIST, STEPS, FORBIDDEN, ALLOWED, MISTAKES,
+  IMAGES, COMMON, SPECIAL,
 } from '../content/ihram';
+import { StepCard, QA, Illustration } from '../components/guide';
 
 const CHECK_KEY = 'ta.ihramChecklist.v1';
 const ROUTE_KEY = 'ta.ihramRoute.v1';
@@ -43,6 +45,8 @@ export default function IhramScreen({ navigation }) {
           {open === 'steps' ? <Steps onTalbiyah={() => go('talbiyah')} onRules={() => go('rules')} /> : null}
           {open === 'talbiyah' ? <Talbiyah /> : null}
           {open === 'rules' ? <Rules /> : null}
+          {open === 'common' ? <Common /> : null}
+          {open === 'special' ? <Special /> : null}
           {open === 'mistake' ? <Mistakes /> : null}
           <Button title="গাইডের সব অংশে ফিরুন" icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.lg }} />
         </>
@@ -73,14 +77,27 @@ export default function IhramScreen({ navigation }) {
 
 function Mikat() {
   const [route, setRoute] = useState('makkah');
-  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (v === 'makkah' || v === 'madinah') setRoute(v); }).catch(() => {}); }, []);
+  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
   const choose = (id) => { setRoute(id); AsyncStorage.setItem(ROUTE_KEY, id).catch(() => {}); };
   const r = MIKAT_ROUTES.find((x) => x.id === route);
   const [showAll, setShowAll] = useState(false);
   return (
     <>
-      <Text style={st.q}>বাংলাদেশ থেকে প্রথমে কোথায় যাচ্ছেন?</Text>
-      <Segmented value={route} onChange={choose} options={MIKAT_ROUTES.map((x) => ({ id: x.id, label: x.label, icon: x.icon }))} />
+      <Text style={st.q}>আপনার যাত্রা কোনটি? নিচে বেছে নিন।</Text>
+      <View accessibilityRole="radiogroup" style={{ marginBottom: S.md }}>
+        {MIKAT_ROUTES.map((x) => {
+          const on = x.id === route;
+          return (
+            <Pressable key={x.id} onPress={() => choose(x.id)} style={[st.opt, on && st.optOn]}
+              accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={x.label}>
+              <View style={[st.radio, on && st.radioOn]}>{on ? <View style={st.radioDot} /> : null}</View>
+              <Text style={st.optIc} importantForAccessibility="no">{x.icon}</Text>
+              <Text style={[st.optT, { color: on ? C.primary : C.text }]}>{x.label}</Text>
+              {on ? <Text style={st.optSel}>বাছাই করা</Text> : null}
+            </Pressable>
+          );
+        })}
+      </View>
       <View style={st.answer} accessibilityLiveRegion="polite">
         <Text style={st.answerH}>{r.title}</Text>
         <Text style={st.p}>{r.text}</Text>
@@ -92,6 +109,7 @@ function Mikat() {
           <Text style={[st.p, { flex: 1 }]}>{t}</Text>
         </View>
       ))}
+      {r.source ? <Text style={st.source}>📚 সূত্র: {r.source}</Text> : null}
       <Notice kind="warn" title="মীকাত পার হওয়ার পরে ইহরাম বাঁধা যায় না" text="ইহরাম ছাড়া মীকাত পার হলে গুনাহ হয় এবং বদলা দিতে হয়। তাই একটু আগে বাঁধাই নিরাপদ।" />
       <Button title={showAll ? 'সব মীকাতের তালিকা লুকান' : 'সব মীকাতের তালিকা দেখুন'} icon="🗺️" kind="secondary" onPress={() => setShowAll(!showAll)} />
       {showAll ? (
@@ -156,12 +174,7 @@ function Steps({ onTalbiyah, onRules }) {
       <View style={st.dots} importantForAccessibility="no-hide-descendants">
         {STEPS.map((_, k) => <View key={k} style={[st.dot, k <= i && st.dotOn]} />)}
       </View>
-      <View style={st.stepCard}>
-        <Text style={st.stepH} accessibilityRole="header">{s.title}</Text>
-        <Text style={st.p}>{s.text}</Text>
-        {s.tip ? <View style={st.tip}><Text style={st.p}>💡 {s.tip}</Text></View> : null}
-        <Text style={st.source}>📚 সূত্র: {s.source}</Text>
-      </View>
+      <StepCard step={s} images={IMAGES} />
       {i === 4 || i === 5 ? <Button title="নিয়ত ও তালবিয়াহ দেখুন" icon="🤲" kind="gold" onPress={onTalbiyah} style={{ marginBottom: S.sm }} /> : null}
       {last ? <Button title="নিষেধগুলো পড়ুন" icon="🚫" kind="gold" onPress={onRules} style={{ marginBottom: S.sm }} /> : null}
       {!last ? <Button title="পরের ধাপ ›" onPress={() => setI(i + 1)} /> : <Notice kind="ok" title="সব ধাপ শেষ" text="আল্লাহ আপনার ইবাদত কবুল করুন।" />}
@@ -247,19 +260,45 @@ function Mistakes() {
   return (
     <>
       <Notice kind="info" title="ভয় পাবেন না" text="ভুল হলে নিজে সিদ্ধান্ত না নিয়ে আগে আপনার গ্রুপ লিডার বা কোনো আলেমকে জানান।" />
-      {MISTAKES.map((m) => (
-        <View key={m.q} style={st.listItem}>
-          <Text style={st.liT}>❓ {m.q}</Text>
-          <Text style={[st.p, { marginTop: 4 }]}>{m.a}</Text>
-          {m.source ? <Text style={st.ruleS}>📚 {m.source}</Text> : null}
-        </View>
-      ))}
+      {MISTAKES.map((m) => <QA key={m.q} q={m.q} a={m.a} source={m.source} />)}
       <Text style={st.soonNote}>📞 এক চাপে লিডারকে ফোন করার সুবিধা "ম্যাপ ও SOS" অংশে শীঘ্রই আসছে।</Text>
     </>
   );
 }
 
+function Common() {
+  return (
+    <>
+      <Text style={st.p}>নিচের ভুলগুলো অনেক হাজী না জেনে করে ফেলেন। একবার পড়ে নিন।</Text>
+      {COMMON.map((x, i) => (
+        <View key={i} style={[st.rule, { borderLeftColor: C.warn }]}>
+          <Text style={st.ruleT}>⚠️ {x.text}</Text>
+          {x.image ? <Illustration img={IMAGES[x.image]} /> : null}
+          <Text style={st.ruleS}>📚 {x.source}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Special() {
+  return (
+    <>
+      <Notice kind="info" title="ইসলাম সহজ করেছে" text="অসুস্থ, বয়স্ক ও শিশুদের জন্য বেশ কিছু ছাড় আছে। কোনটি আপনার জন্য প্রযোজ্য, লিডার বা আলেমের সাথে মিলিয়ে নিন।" />
+      {SPECIAL.map((x) => <QA key={x.q} q={x.q} a={x.a} source={x.source} icon="🧓" />)}
+    </>
+  );
+}
+
 const st = StyleSheet.create({
+  opt: { flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 60, backgroundColor: C.card, borderRadius: R.md, borderWidth: 2, borderColor: C.line, paddingHorizontal: S.md, paddingVertical: S.sm, marginBottom: S.sm },
+  optOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
+  radio: { width: 28, height: 28, borderRadius: 14, borderWidth: 3, borderColor: C.muted, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: C.primary },
+  radioDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: C.primary },
+  optIc: { fontSize: 22 },
+  optT: { flex: 1, fontSize: F.body, fontWeight: '700', lineHeight: 26 },
+  optSel: { fontSize: 14, fontWeight: '700', color: C.primary },
   wrap: { padding: S.md, paddingBottom: S.xl },
   back: { minHeight: TOUCH, alignSelf: 'flex-start', justifyContent: 'center', paddingRight: S.md, marginBottom: S.xs },
   backT: { fontSize: F.large, color: C.primary, fontWeight: '700' },
