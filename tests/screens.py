@@ -1,5 +1,5 @@
 # Automated visual walk-through of the app (web build) for review screenshots.
-import os, sys
+import os, sys, re
 from playwright.sync_api import sync_playwright
 OUT = 'shots'; os.makedirs(OUT, exist_ok=True)
 PHONE = os.environ.get('TEST_PHONE', ''); PW = os.environ.get('TEST_PW', '')
@@ -36,6 +36,12 @@ with sync_playwright() as p:
                 click_text(pg, 'অ্যাকাউন্ট খুলুন', True); pg.wait_for_timeout(4000)
             shot(pg, f'{scale_name}-07-home')
             pg.get_by_role('tab', name='দোয়া').click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-08-dua-after-practice')
+            pg.get_by_role('tab', name='ওমরাহর দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-08b-dua-umrah')
+            pg.get_by_label('দোয়া খুঁজুন').fill('তালবিয়াহ'); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-08c-dua-search')
+            pg.get_by_role('button', name=re.compile('^তালবিয়াহ')).first.click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-08d-dua-detail')
+            pg.get_by_role('button', name='লেখা বড় করুন').click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-08e-dua-detail-big')
+            pg.mouse.wheel(0, 1500); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-08f-dua-detail-bottom')
+            pg.get_by_role('button', name='সব দোয়ার তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(500)
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-09-account')
             pg.get_by_role('tab', name='ম্যাপ ও SOS').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-10-map-soon')
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))

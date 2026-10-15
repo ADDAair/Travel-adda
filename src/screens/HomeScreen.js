@@ -8,14 +8,13 @@ import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
 
 const UPCOMING = [
-  ['🤲', 'দোয়া ভল্ট', 'আরবি, বাংলা অর্থ ও অডিও'],
   ['🕋', 'মিকাত ও ইহরাম গাইড', 'ধাপে ধাপে নিয়ম'],
   ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার অবস্থান অনুযায়ী'],
   ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
   ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
 ];
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
@@ -59,7 +58,18 @@ export default function HomeScreen() {
         </Card>
       ) : null}
 
-      <Text style={st.h2}>যা আসছে</Text>
+      <Text style={st.h2}>এখন ব্যবহার করুন</Text>
+      <Pressable onPress={() => navigation.navigate('Dua', { tutorialDone: false })} style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]}
+        accessibilityRole="button" accessibilityLabel="দোয়া ভল্ট খুলুন। নামাজ, ওমরাহ ও হজের দোয়া">
+        <Text style={st.readyIc} importantForAccessibility="no">🤲</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={st.readyT}>দোয়া ভল্ট</Text>
+          <Text style={st.readyW}>নামাজ, ওমরাহ ও হজের দোয়া। ইন্টারনেট ছাড়াও চলে।</Text>
+        </View>
+        <Text style={st.readyGo}>খুলুন ›</Text>
+      </Pressable>
+
+      <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text>
       <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text>
       {UPCOMING.map(([ic, title, what]) => (
         <View key={title} style={st.row} accessible accessibilityLabel={`${title}, ${what}, ${T.soon}`}>
@@ -96,6 +106,11 @@ const st = StyleSheet.create({
   rowIc: { fontSize: 30 },
   rowT: { fontSize: F.large, fontWeight: '700', color: C.text },
   rowW: { fontSize: F.small, color: C.muted, lineHeight: 22 },
+  ready: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.lg, padding: S.md, marginTop: S.sm, borderWidth: 2, borderColor: C.primary, minHeight: 84 },
+  readyIc: { fontSize: 36 },
+  readyT: { fontSize: F.large, fontWeight: '700', color: C.primary },
+  readyW: { fontSize: F.small, color: C.text, lineHeight: 22 },
+  readyGo: { fontSize: F.body, color: C.primary, fontWeight: '700' },
   soon: { backgroundColor: '#ECEFED', borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 },
   soonT: { fontSize: 14, color: C.muted, fontWeight: '700' },
 });

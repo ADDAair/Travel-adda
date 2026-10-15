@@ -12,6 +12,7 @@ import { TutorialCtx, useTutorial } from './src/tutorial';
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import Onboarding from './src/screens/Onboarding';
+import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
 
 const Tab = createBottomTabNavigator();
@@ -82,7 +83,6 @@ function TabBar({ state, navigation }) {
 
 const soon = (title, icon, what) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
 const SoonMap = soon('ম্যাপ ও জরুরি সাহায্য', '📍', 'বিপদে এক চাপে আপনার লিডার বা হেল্পলাইনে যোগাযোগ, আর গুরুত্বপূর্ণ জায়গার ম্যাপ।');
-const SoonDua = soon('দোয়া ভল্ট', '🤲', 'নামাজ, ওমরাহ ও হজের দোয়া: আরবি, বাংলা উচ্চারণ, অর্থ ও অডিও। ইন্টারনেট ছাড়াও চলবে।');
 const SoonOffers = soon('অফার ও প্যাকেজ', '🎁', 'যাচাই করা গ্রুপ লিডারদের ওমরাহ ও হজ প্যাকেজ।');
 
 function Main() {
@@ -92,7 +92,7 @@ function Main() {
       screenOptions={{ headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' } }}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
       <Tab.Screen name="Map" component={SoonMap} options={{ title: T.tabs.Map }} />
-      <Tab.Screen name="Dua" component={SoonDua} options={{ title: 'দোয়া ভল্ট' }} />
+      <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
       <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
     </Tab.Navigator>
