@@ -6,6 +6,7 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice } from '../components/ui';
 import { CATEGORIES, DUAS, CONTENT_REVIEWED, findDua } from '../content/duas';
 import { toBn } from '../lib/phone';
+import { QuranList, QuranReader } from './Quran';
 
 const SIZE_KEY = 'ta.duaTextScale.v1';
 const SIZES = [1, 1.2, 1.4, 1.6];
@@ -14,19 +15,21 @@ export default function DuaScreen({ route, navigation }) {
   const [cat, setCat] = useState('namaz');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState(null);
+  const [mode, setMode] = useState('dua');          // 'dua' | 'quran'
+  const [surah, setSurah] = useState(null);         // { n, a } when a surah is open
   const [dismissed, setDismissed] = useState(false);
   const justTried = !!route?.params?.tutorialDone && !dismissed;
   useEffect(() => { setDismissed(false); }, [route?.params?.tutorialDone]);
 
   // Android back button: from a dua go back to the list instead of leaving the tab.
   useEffect(() => {
-    if (!openId) return undefined;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setOpenId(null); return true; });
+    if (!openId && !surah) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setOpenId(null); setSurah(null); return true; });
     return () => sub.remove();
-  }, [openId]);
+  }, [openId, surah]);
 
   // Leaving the tab closes any open dua.
-  useEffect(() => navigation?.addListener?.('blur', () => setOpenId(null)), [navigation]);
+  useEffect(() => navigation?.addListener?.('blur', () => { setOpenId(null); setSurah(null); }), [navigation]);
 
   const list = useMemo(() => {
     const t = q.trim();
@@ -35,11 +38,33 @@ export default function DuaScreen({ route, navigation }) {
   }, [cat, q]);
 
   if (openId) return <DuaDetail dua={findDua(openId)} onBack={() => setOpenId(null)} />;
+  if (surah) return <QuranReader key={surah.n} n={surah.n} startAyah={surah.a} onBack={() => setSurah(null)} />;
+
+  const modeBar = (
+    <View style={st.modes} accessibilityRole="tablist">
+      {[['dua', '🤲', 'দোয়া'], ['quran', '📖', 'আল-কুরআন']].map(([id, ic, label]) => (
+        <Pressable key={id} onPress={() => { setMode(id); setDismissed(true); }} style={[st.mode, mode === id && st.modeOn]}
+          accessibilityRole="tab" accessibilityState={{ selected: mode === id }} accessibilityLabel={label}>
+          <Text style={[st.modeT, mode === id && st.modeTOn]}>{ic} {label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
+  if (mode === 'quran') {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <View style={{ paddingHorizontal: S.md, paddingTop: S.md }}>{modeBar}</View>
+        <QuranList onOpen={(n, a) => setSurah({ n, a })} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       {justTried ? <Notice kind="ok" title="চমৎকার! আপনি নিজেই দোয়া বিভাগ খুলেছেন।" text="এভাবেই নিচের বাটনগুলো চেপে অ্যাপের যেকোনো অংশে যাবেন। এখন যেকোনো দোয়ায় চাপ দিয়ে পড়ে দেখুন।" /> : null}
 
+      {modeBar}
       <Text style={st.lead}>কোন সময়ের দোয়া খুঁজছেন? নিচে বেছে নিন।</Text>
       <View style={st.cats} accessibilityRole="tablist">
         {CATEGORIES.map((c) => {
@@ -177,6 +202,11 @@ function DuaDetail({ dua, onBack }) {
 }
 
 const st = StyleSheet.create({
+  modes: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.md },
+  mode: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
+  modeOn: { backgroundColor: C.card, borderWidth: 2, borderColor: C.primary },
+  modeT: { fontSize: F.body, color: C.muted, fontWeight: '600' },
+  modeTOn: { color: C.primary, fontWeight: '700' },
   wrap: { padding: S.md, paddingBottom: S.xl },
   lead: { fontSize: F.body, color: C.text, marginBottom: S.sm, lineHeight: 28 },
   cats: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },

@@ -60,11 +60,11 @@ export default function HomeScreen({ navigation }) {
 
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
       <Pressable onPress={() => navigation.navigate('Dua', { tutorialDone: false })} style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]}
-        accessibilityRole="button" accessibilityLabel="দোয়া ভল্ট খুলুন। নামাজ, ওমরাহ ও হজের দোয়া">
+        accessibilityRole="button" accessibilityLabel="দোয়া ভল্ট খুলুন। দোয়া ও সম্পূর্ণ আল-কুরআন">
         <Text style={st.readyIc} importantForAccessibility="no">🤲</Text>
         <View style={{ flex: 1 }}>
           <Text style={st.readyT}>দোয়া ভল্ট</Text>
-          <Text style={st.readyW}>নামাজ, ওমরাহ ও হজের দোয়া। ইন্টারনেট ছাড়াও চলে।</Text>
+          <Text style={st.readyW}>দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।</Text>
         </View>
         <Text style={st.readyGo}>খুলুন ›</Text>
       </Pressable>
