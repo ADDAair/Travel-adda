@@ -58,6 +58,23 @@ with sync_playwright() as p:
             pg.get_by_role('button', name=re.compile('^সূরা 2,')).first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-17-quran-baqara')
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-09-account')
             pg.get_by_role('tab', name='ম্যাপ ও SOS').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-10-map-soon')
+            # Mikat & Ihram guide, at normal and at narrow width
+            for w, tag in ((390, 'n'), (320, 's')):
+                pg.set_viewport_size({'width': w, 'height': 780})
+                pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1200)
+                pg.get_by_role('button', name=re.compile('^মীকাত ও ইহরাম গাইড খুলুন')).click(); pg.wait_for_timeout(1000); shot(pg, f'{scale_name}-20{tag}-ihram-list')
+                for k, sec in enumerate(['আমার মীকাত কোথায়', 'প্রস্তুতির চেকলিস্ট', 'ধাপে ধাপে ইহরাম বাঁধা', 'নিয়ত ও তালবিয়াহ', 'ইহরামে যা নিষেধ', 'ভুল হয়ে গেলে']):
+                    pg.get_by_role('button', name=re.compile(sec)).first.click(); pg.wait_for_timeout(800)
+                    shot(pg, f'{scale_name}-2{k+1}{tag}-ihram-{k+1}')
+                    if k == 0:
+                        pg.get_by_role('tab', name=re.compile('আগে মদিনা')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-madinah')
+                    if k == 1:
+                        pg.get_by_role('checkbox').first.click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-checked')
+                    if k == 2:
+                        pg.get_by_role('button', name='পরের ধাপ ›').click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-step2')
+                    if k == 4:
+                        pg.get_by_role('tab', name=re.compile('যা করা যায়')).click(); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-2{k+1}{tag}b-ihram-allowed')
+                    pg.get_by_role('button', name='গাইডের সব অংশে ফিরে যান').first.click(); pg.wait_for_timeout(600)
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))
         ctx.close()
     b.close()

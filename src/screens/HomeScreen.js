@@ -8,7 +8,6 @@ import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
 
 const UPCOMING = [
-  ['🕋', 'মিকাত ও ইহরাম গাইড', 'ধাপে ধাপে নিয়ম'],
   ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার অবস্থান অনুযায়ী'],
   ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
   ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
@@ -65,6 +64,15 @@ export default function HomeScreen({ navigation }) {
         <View style={{ flex: 1 }}>
           <Text style={st.readyT}>দোয়া ভল্ট</Text>
           <Text style={st.readyW}>দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।</Text>
+        </View>
+        <Text style={st.readyGo}>খুলুন ›</Text>
+      </Pressable>
+      <Pressable onPress={() => navigation.navigate('Ihram')} style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]}
+        accessibilityRole="button" accessibilityLabel="মীকাত ও ইহরাম গাইড খুলুন। কোথায়, কীভাবে ইহরাম বাঁধবেন">
+        <Text style={st.readyIc} importantForAccessibility="no">🕋</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={st.readyT}>মীকাত ও ইহরাম গাইড</Text>
+          <Text style={st.readyW}>কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।</Text>
         </View>
         <Text style={st.readyGo}>খুলুন ›</Text>
       </Pressable>

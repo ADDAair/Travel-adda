@@ -16,6 +16,7 @@ import Logo from './src/components/Logo';
 import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
 import PhotoCapture from './src/screens/PhotoCapture';
+import IhramScreen from './src/screens/IhramScreen';
 import { photoGateState } from './src/lib/avatar';
 
 const Tab = createBottomTabNavigator();
@@ -49,6 +50,7 @@ function TabBar({ state, navigation }) {
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
       {state.routes.map((r, i) => {
+        if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
         const label = T.tabs[r.name];
         const go = () => {
@@ -100,6 +102,7 @@ function Main() {
       <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
       <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
+      <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: 'মীকাত ও ইহরাম গাইড' }} />
     </Tab.Navigator>
   );
 }
