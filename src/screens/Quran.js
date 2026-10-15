@@ -11,6 +11,7 @@ import { SURAH_BN, QURAN_CREDIT, TRANSLATION_PERMISSION_OK } from '../content/qu
 const LAST_KEY = 'ta.quranLast.v1';
 const SIZE_KEY = 'ta.duaTextScale.v1';   // same text size as the dua vault
 const TRANS_KEY = 'ta.quranShowTrans.v1';
+const PRON_KEY = 'ta.quranShowPron.v1';
 const SIZES = [1, 1.2, 1.4, 1.6];
 // Tanzil puts "Bismillah" at the start of verse 1 of every surah except 1 and 9; we show it as a header instead.
 const MARKS = /[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/g;
@@ -92,6 +93,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
   const [err, setErr] = useState(false);
   const [scaleIx, setScaleIx] = useState(1);
   const [showTr, setShowTr] = useState(true);
+  const [showPr, setShowPr] = useState(true);
   const listRef = useRef(null);
   const saveTimer = useRef(null);
 
@@ -102,14 +104,15 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
     const t = setTimeout(() => {
       try {
         const raw = SURAH[n]();
-        const data = raw.map(([ar, bn], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn }));
+        const data = raw.map(([ar, bn, pr], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
         if (alive) setVerses(data);
       } catch (e) { if (alive) setErr(true); }
     }, 30);
-    AsyncStorage.multiGet([SIZE_KEY, TRANS_KEY]).then((r) => {
+    AsyncStorage.multiGet([SIZE_KEY, TRANS_KEY, PRON_KEY]).then((r) => {
       if (!alive) return;
       const sz = Number(r[0][1]); if (SIZES[sz]) setScaleIx(sz);
       if (r[1][1] === '0') setShowTr(false);
+      if (r[2][1] === '0') setShowPr(false);
     }).catch(() => {});
     return () => { alive = false; clearTimeout(t); clearTimeout(saveTimer.current); };
   }, [n]);
@@ -133,6 +136,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
     const v = Math.min(SIZES.length - 1, Math.max(0, scaleIx + d));
     setScaleIx(v); AsyncStorage.setItem(SIZE_KEY, String(v)).catch(() => {});
   };
+  const togglePr = () => { const v = !showPr; setShowPr(v); AsyncStorage.setItem(PRON_KEY, v ? '1' : '0').catch(() => {}); };
   const toggleTr = () => { const v = !showTr; setShowTr(v); AsyncStorage.setItem(TRANS_KEY, v ? '1' : '0').catch(() => {}); };
   const k = SIZES[scaleIx];
 
@@ -147,15 +151,15 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
         <Text style={st.titleSub}>{toBn(meta.ayas)} আয়াত · {typeBn(meta.type)} · সূরা নম্বর {toBn(n)}</Text>
       </View>
       <View style={st.tools}>
-        <Pressable onPress={toggleTr} style={[st.toolBtn, { flex: 1 }]} accessibilityRole="switch" accessibilityState={{ checked: showTr }} accessibilityLabel="বাংলা অনুবাদ দেখান">
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 18 }} importantForAccessibility="no">{showTr ? '✅' : '⬜'}</Text>
-            <Text key={showTr ? 'tr-on' : 'tr-off'} style={st.toolT}>{showTr ? 'অনুবাদ দেখাচ্ছে' : 'অনুবাদ লুকানো'}</Text>
-          </View>
-        </Pressable>
+        <Toggle on={showPr} onPress={togglePr} label="উচ্চারণ" />
+        <Toggle on={showTr} onPress={toggleTr} label="অনুবাদ" />
+      </View>
+      <View style={st.tools}>
+        <Text style={st.sizeL}>লেখার আকার</Text>
         <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.toolBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা ছোট করুন"><Text style={st.toolT}>অ−</Text></Pressable>
         <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.toolBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা বড় করুন"><Text style={[st.toolT, { fontSize: 22 }]}>অ+</Text></Pressable>
       </View>
+      {showPr ? <Text style={st.prNote}>ℹ️ বাংলা উচ্চারণ শুধু সহায়তার জন্য। সঠিক তিলাওয়াতের জন্য আরবি দেখে পড়া ও শিক্ষকের কাছে শেখা উত্তম।</Text> : null}
       {n !== 1 && n !== 9 ? <Text style={[st.bism, { fontSize: 26 * k, lineHeight: 26 * k * 1.8 }]} accessibilityLanguage="ar">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</Text> : null}
     </View>
   );
@@ -182,6 +186,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
             <View style={st.vNum}><Text style={st.vNumT}>{toBn(v.a)}</Text></View>
           </View>
           <Text style={[st.ar, { fontSize: 26 * k, lineHeight: 26 * k * 1.95 }]} accessibilityLanguage="ar">{v.ar}</Text>
+          {showPr && v.pr ? <Text style={[st.pr, { fontSize: F.body * k, lineHeight: F.body * k * 1.6 }]}>{v.pr}</Text> : null}
           {showTr ? <Text style={[st.bn, { fontSize: F.body * k, lineHeight: F.body * k * 1.6 }]}>{v.bn}</Text> : null}
         </View>
       )}
@@ -196,11 +201,26 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
   );
 }
 
+function Toggle({ on, onPress, label }) {
+  return (
+    <Pressable onPress={onPress} style={[st.toolBtn, { flex: 1 }, on && st.toolOn]} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label + ' দেখান'}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={{ fontSize: 18 }} importantForAccessibility="no">{on ? '✅' : '⬜'}</Text>
+        <Text key={label + (on ? '-on' : '-off')} style={st.toolT}>{label}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 const st = StyleSheet.create({
+  toolOn: { backgroundColor: C.goldSoft },
+  sizeL: { fontSize: F.small, color: C.muted, flex: 1, alignSelf: 'center' },
+  prNote: { fontSize: 14, color: C.muted, lineHeight: 22, marginBottom: S.sm },
+  pr: { color: C.primary, fontStyle: 'italic', marginBottom: S.sm },
   wrap: { padding: S.md, paddingBottom: S.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: S.lg, backgroundColor: C.bg, gap: S.md },
   loadT: { fontSize: F.body, color: C.muted },
-  resume: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.goldSoft, borderWidth: 2, borderColor: C.gold, borderRadius: R.lg, padding: S.md, marginBottom: S.md, minHeight: 76 },
+  resume: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.accentSoft, borderWidth: 2, borderColor: C.accent, borderRadius: R.lg, padding: S.md, marginBottom: S.md, minHeight: 76 },
   resumeIc: { fontSize: 32 },
   resumeH: { fontSize: F.small, color: C.muted, fontWeight: '700' },
   resumeT: { fontSize: F.large, color: C.text, fontWeight: '700' },
@@ -221,7 +241,7 @@ const st = StyleSheet.create({
   titleBox: { backgroundColor: C.primary, borderRadius: R.lg, padding: S.lg, alignItems: 'center', marginBottom: S.md },
   title: { fontSize: F.title, color: C.onPrimary, fontWeight: '700', textAlign: 'center' },
   titleAr: { fontSize: 30, color: C.gold, marginTop: 4 },
-  titleSub: { fontSize: F.small, color: '#E3F1E9', marginTop: 4, textAlign: 'center' },
+  titleSub: { fontSize: F.small, color: C.onPrimarySoft, marginTop: 4, textAlign: 'center' },
   tools: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },
   toolBtn: { minHeight: TOUCH, minWidth: 64, borderRadius: R.sm, borderWidth: 2, borderColor: C.primary, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingHorizontal: S.sm },
   toolT: { fontSize: F.small, fontWeight: '700', color: C.primary },

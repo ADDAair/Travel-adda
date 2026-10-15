@@ -12,6 +12,7 @@ import { TutorialCtx, useTutorial } from './src/tutorial';
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import Onboarding from './src/screens/Onboarding';
+import Logo from './src/components/Logo';
 import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
 
@@ -65,7 +66,7 @@ function TabBar({ state, navigation }) {
               {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
               <DuaFab pending={handsOnPending} />
               <Text style={[s.lb, { color: on ? C.primary : C.muted }]}>{label}</Text>
-              <View style={[s.lbBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
+              <View style={[s.lbBar, { backgroundColor: on ? C.accent : 'transparent' }]} />
             </Pressable>
           );
         }
@@ -75,7 +76,7 @@ function TabBar({ state, navigation }) {
               <Text style={{ fontSize: 24 }} importantForAccessibility="no">{ICON[r.name]}</Text>
             </View>
             <Text style={[s.lb, { color: on ? C.primary : C.muted }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
-            <View style={[s.lbBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
+            <View style={[s.lbBar, { backgroundColor: on ? C.accent : 'transparent' }]} />
           </Pressable>
         );
       })}
@@ -137,7 +138,7 @@ export default function App() {
 
   let body;
   if (session === undefined || onboarded === undefined) {
-    body = <View style={s.splash}><Text style={s.splashT}>🕋</Text><ActivityIndicator color={C.gold} size="large" /></View>;
+    body = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>Travel Adda</Text><ActivityIndicator color={C.gold} size="large" /></View>;
   } else if (!onboarded) {
     body = <Onboarding onDone={finishOnboarding} />;
   } else if (!session) {
@@ -157,16 +158,16 @@ export default function App() {
 
 const s = StyleSheet.create({
   splash: { flex: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  splashT: { fontSize: 72 },
+  splashName: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   bar: { flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderColor: C.line, paddingTop: 8, alignItems: 'flex-end' },
   tab: { flex: 1, alignItems: 'center', minHeight: 64, justifyContent: 'flex-end', paddingHorizontal: 2 },
   pill: { minWidth: TOUCH + 8, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  pillOn: { backgroundColor: '#DCEFE4' },
+  pillOn: { backgroundColor: C.primarySoft },
   mid: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', minHeight: 64 },
   fab: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.gold, alignItems: 'center', justifyContent: 'center', marginTop: -34, borderWidth: 4, borderColor: C.card, elevation: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
-  fabPending: { borderColor: C.primary },
-  bubble: { position: 'absolute', top: -78, width: 116, alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
-  bubbleT: { color: C.onPrimary, fontSize: F.small, fontWeight: '700' },
+  fabPending: { borderColor: C.accent },
+  bubble: { position: 'absolute', top: -78, width: 116, alignItems: 'center', backgroundColor: C.accent, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
+  bubbleT: { color: C.primary, fontSize: F.small, fontWeight: '700' },
   lb: { fontSize: 14, marginTop: 4, fontWeight: '700', textAlign: 'center' },
   lbBar: { width: 24, height: 3, borderRadius: 2, marginTop: 2 },
 });

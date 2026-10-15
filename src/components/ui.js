@@ -24,6 +24,7 @@ const BTN = {
   primary: { bg: C.primary, fg: C.onPrimary, border: C.primary },
   secondary: { bg: C.card, fg: C.primary, border: C.primary },
   gold: { bg: C.gold, fg: C.text, border: C.gold },
+  accent: { bg: C.accent, fg: C.primary, border: C.accent },
   danger: { bg: C.card, fg: C.bad, border: C.bad },
 };
 
@@ -63,7 +64,7 @@ export function Segmented({ options, value, onChange, disabled }) {
               {o.icon ? <Text style={s.segIc} importantForAccessibility="no">{o.icon}</Text> : null}
               <Text key={o.id + (on ? '-on' : '-off')} style={[s.segT, { color: on ? C.primary : C.muted }]} numberOfLines={1}>{o.label}</Text>
             </View>
-            <View style={[s.segBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
+            <View style={[s.segBar, { backgroundColor: on ? C.accent : 'transparent' }]} />
           </Pressable>
         );
       })}
@@ -75,7 +76,7 @@ export function Card({ children, style }) { return <View style={[s.card, style]}
 
 // Message box: kind ok | warn | bad | info. Text is always shown, so meaning never depends on colour alone.
 export function Notice({ kind = 'info', title, text, children }) {
-  const m = { ok: [C.okSoft, C.ok, '✅'], warn: [C.warnSoft, C.warn, '⚠️'], bad: [C.badSoft, C.bad, '❌'], info: [C.goldSoft, C.primary, 'ℹ️'] }[kind];
+  const m = { ok: [C.okSoft, C.ok, '✅'], warn: [C.warnSoft, C.warn, '⚠️'], bad: [C.badSoft, C.bad, '❌'], info: [C.primarySoft, C.primary, 'ℹ️'] }[kind];
   return (
     <View style={[s.notice, { backgroundColor: m[0], borderColor: m[1] }]} accessibilityRole="alert">
       <Text style={s.noticeT}>{m[2]} {title}</Text>
@@ -86,7 +87,7 @@ export function Notice({ kind = 'info', title, text, children }) {
 }
 
 const s = StyleSheet.create({
-  seg: { flexDirection: 'row', backgroundColor: '#E6EAE7', borderRadius: R.md, padding: 4, marginBottom: S.md },
+  seg: { flexDirection: 'row', backgroundColor: C.primarySoft, borderRadius: R.md, padding: 4, marginBottom: S.md },
   segBtn: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm, borderWidth: 2, borderColor: 'transparent', paddingTop: 4 },
   segOn: { backgroundColor: C.card, borderColor: C.primary },
   segRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -71,7 +71,7 @@ export default function DuaScreen({ route, navigation }) {
               accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={c.a11y}>
               <Text style={st.catIc} importantForAccessibility="no">{c.icon}</Text>
               <Text style={[st.catT, { color: on ? C.primary : C.muted }]}>{c.label}</Text>
-              <View style={[st.catBar, { backgroundColor: on ? C.primary : 'transparent' }]} />
+              <View style={[st.catBar, { backgroundColor: on ? C.accent : 'transparent' }]} />
             </Pressable>
           );
         })}
@@ -204,7 +204,7 @@ const st = StyleSheet.create({
   lead: { fontSize: F.body, color: C.text, marginBottom: S.sm, lineHeight: 28 },
   cats: { flexDirection: 'row', gap: S.sm, marginBottom: S.md },
   cat: { flex: 1, minHeight: 72, borderRadius: R.md, borderWidth: 2, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
-  catOn: { borderColor: C.primary, backgroundColor: '#E3F1E9' },
+  catOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   catIc: { fontSize: 26 },
   catT: { fontSize: F.body, fontWeight: '700', marginTop: 2 },
   catBar: { width: 28, height: 3, borderRadius: 2, marginTop: 3 },

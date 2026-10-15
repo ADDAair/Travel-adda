@@ -53,7 +53,7 @@ export default function Onboarding({ onDone }) {
       </ScrollView>
       <View style={st.nav}>
         {i > 0 ? <Button title="পেছনে" kind="secondary" onPress={() => setI(i - 1)} style={{ flex: 1 }} /> : null}
-        <Button title={last ? 'শুরু করুন' : 'পরবর্তী'} kind={last ? 'gold' : 'primary'} onPress={() => (last ? onDone() : setI(i + 1))} style={{ flex: 2 }} />
+        <Button title={last ? 'শুরু করুন' : 'পরবর্তী'} kind={last ? 'accent' : 'primary'} onPress={() => (last ? onDone() : setI(i + 1))} style={{ flex: 2 }} />
       </View>
     </View>
   );

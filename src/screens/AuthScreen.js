@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';
 import { Button, Field, Notice, Segmented } from '../components/ui';
+import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
@@ -76,7 +77,7 @@ export default function AuthScreen() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView ref={scrollRef} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg, paddingBottom: (kb > 0 ? kb : ins.bottom) + S.xl }]} keyboardShouldPersistTaps="handled">
         <View style={st.brand}>
-          <Text style={st.logo} importantForAccessibility="no">🕋</Text>
+          <Logo size={72} />
           <Text style={st.appName} accessibilityRole="header">{T.appName}</Text>
           <Text style={st.tag}>{T.tagline}</Text>
         </View>
@@ -153,7 +154,7 @@ const st = StyleSheet.create({
   chk: { fontSize: F.small, color: C.text, lineHeight: 26 },
   tip: { fontSize: F.small, color: C.muted, marginTop: 4, lineHeight: 24 },
   wrap: { flexGrow: 1, paddingHorizontal: S.lg },
-  brand: { alignItems: 'center', marginBottom: S.lg },
+  brand: { alignItems: 'center', marginBottom: S.lg, gap: 6 },
   logo: { fontSize: 56 },
   appName: { fontSize: F.hero, fontWeight: '700', color: C.primary },
   tag: { fontSize: F.body, color: C.muted, marginTop: 2 },

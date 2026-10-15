@@ -1,14 +1,18 @@
 // Design tokens. Every screen uses these so the app looks and behaves the same everywhere.
 export const C = {
-  primary: '#005C36',      // brand green
-  primaryDark: '#00432A',
-  gold: '#D4AF37',         // accent: use as background with dark text, never as text on white
+  primary: '#001952',      // brand navy (Travel Adda)
+  primaryDark: '#000F33',
+  primarySoft: '#E6EBF5',  // selected backgrounds
+  onPrimarySoft: '#DCE3F2',// soft text on navy
+  accent: '#FF7C06',       // brand orange: backgrounds/borders/bars with navy text, never small text on white
+  accentSoft: '#FFF1E5',
+  gold: '#D4AF37',         // Islamic accents (dua button, numbers): background with dark text
   goldSoft: '#FBF4DC',
-  bg: '#F6F7F5',
+  bg: '#F5F7FB',
   card: '#FFFFFF',
-  text: '#1A1A1A',
-  muted: '#4A5650',        // secondary text, 7:1 on white
-  line: '#D5DBD7',
+  text: '#141A2B',
+  muted: '#4A5468',        // secondary text, 7:1+ on white
+  line: '#D6DCE8',
   ok: '#2E7D32', okSoft: '#E8F5E9',
   warn: '#ED6C02', warnSoft: '#FFF3E0',
   bad: '#C62828', badSoft: '#FDECEA',

@@ -7,7 +7,11 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "app.traveladda.hajumrah",
-      "allowBackup": false
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#001952"
+      }
     },
     "ios": {
       "bundleIdentifier": "app.traveladda.hajumrah"
@@ -20,6 +24,8 @@
       "eas": {
         "projectId": "c1ded2f5-ed4f-4ffd-b39d-343a59272e1b"
       }
-    }
+    },
+    "icon": "./assets/icon.png",
+    "primaryColor": "#001952"
   }
 }
