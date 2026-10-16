@@ -11,7 +11,7 @@ def click_text(pg, t, exact=False):
 with sync_playwright() as p:
     b = p.chromium.launch()
     for scale_name, vw in (('normal', 390), ('small', 320)):
-        ctx = b.new_context(viewport={'width': vw, 'height': 780}, device_scale_factor=2, locale='bn-BD')
+        ctx = b.new_context(viewport={'width': vw, 'height': 780}, device_scale_factor=2, locale='bn-BD', geolocation={'latitude': 21.4133, 'longitude': 39.8933}, permissions=['geolocation'])
         pg = ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto('http://localhost:8080/'); pg.wait_for_timeout(3000)
@@ -104,6 +104,22 @@ with sync_playwright() as p:
                 pg.get_by_role('tab', name='দৈনন্দিন দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-52{tag}-dua-daily')
                 pg.get_by_role('tab', name='মদিনা যিয়ারতের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-53{tag}-dua-madinah')
                 pg.get_by_role('tab', name='নামাজের দোয়া').click(); pg.wait_for_timeout(400)
+            # Prayer times & qibla
+            if PHONE and PW:
+                for w, tag in ((390, 'n'), (320, 's')):
+                    pg.set_viewport_size({'width': w, 'height': 780})
+                    pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1000)
+                    pg.get_by_role('button', name=re.compile('নামাজের সময় ও কিবলা খুলুন|^পরের নামাজ')).first.click(); pg.wait_for_timeout(1200); shot(pg, f'{scale_name}-60{tag}-prayer-open')
+                    if pg.get_by_role('button', name='ঢাকা বেছে নিন').count() > 0:
+                        pg.get_by_role('button', name='ঢাকা বেছে নিন').click(); pg.wait_for_timeout(800)
+                    shot(pg, f'{scale_name}-61{tag}-prayer-times')
+                    pg.mouse.wheel(0, 900); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-62{tag}-prayer-times-bottom')
+                    pg.get_by_role('tab', name=re.compile('কিবলা')).click(); pg.wait_for_timeout(7000); shot(pg, f'{scale_name}-63{tag}-qibla')
+                    pg.get_by_role('tab', name=re.compile('নামাজের সময়')).click(); pg.wait_for_timeout(400)
+                    if tag == 'n':
+                        pg.get_by_role('button', name='জায়গা বদলান').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-64{tag}-prayer-picker')
+                        pg.get_by_role('button', name=re.compile('আমার অবস্থান বের করুন')).click(); pg.wait_for_timeout(4000); shot(pg, f'{scale_name}-65{tag}-prayer-gps')
+                        pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-66{tag}-home-next-prayer')
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))
         ctx.close()
     b.close()
