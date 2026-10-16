@@ -58,7 +58,7 @@ with sync_playwright() as p:
             pg.get_by_role('button', name='সব সূরার তালিকায় ফিরে যান').first.click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-16-quran-resume')
             pg.get_by_role('button', name=re.compile('^সূরা 2,')).first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-17-quran-baqara')
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1500); shot(pg, f'{scale_name}-09-account')
-            pg.get_by_role('tab', name='ম্যাপ ও SOS').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-10-map-soon')
+            pg.get_by_role('tab', name='জরুরি').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-10-emergency'); pg.mouse.wheel(0, 900); pg.wait_for_timeout(400); shot(pg, f'{scale_name}-10b-emergency-bottom')
             # Guides, at normal and at narrow width
             for w, tag in ((390, 'n'), (320, 's')):
                 pg.set_viewport_size({'width': w, 'height': 780})

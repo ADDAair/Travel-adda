@@ -21,10 +21,11 @@ import UmrahScreen from './src/screens/UmrahScreen';
 import HajjScreen from './src/screens/HajjScreen';
 import PrayerScreen from './src/screens/PrayerScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
+import EmergencyScreen from './src/screens/EmergencyScreen';
 import { photoGateState } from './src/lib/avatar';
 
 const Tab = createBottomTabNavigator();
-const ICON = { Home: '🏠', Map: '📍', Dua: '🤲', Offers: '🎁', Account: '👤' };
+const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
 
 function DuaFab({ pending }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -93,7 +94,6 @@ function TabBar({ state, navigation }) {
 }
 
 const soon = (title, icon, what) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
-const SoonMap = soon('ম্যাপ ও জরুরি সাহায্য', '📍', 'বিপদে এক চাপে আপনার লিডার বা হেল্পলাইনে যোগাযোগ, আর গুরুত্বপূর্ণ জায়গার ম্যাপ।');
 const SoonOffers = soon('অফার ও প্যাকেজ', '🎁', 'যাচাই করা গ্রুপ লিডারদের ওমরাহ ও হজ প্যাকেজ।');
 
 function Main() {
@@ -102,7 +102,7 @@ function Main() {
       tabBar={(p) => <TabBar {...p} />}
       screenOptions={{ headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' } }}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
-      <Tab.Screen name="Map" component={SoonMap} options={{ title: T.tabs.Map }} />
+      <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: 'জরুরি সাহায্য' }} />
       <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
       <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />

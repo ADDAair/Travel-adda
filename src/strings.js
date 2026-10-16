@@ -5,7 +5,7 @@ export const T = {
   soon: 'শীঘ্রই আসছে',
   retry: 'আবার চেষ্টা করুন',
   goHome: 'হোমে ফিরে যান',
-  tabs: { Home: 'হোম', Map: 'ম্যাপ ও SOS', Dua: 'দোয়া', Offers: 'অফার', Account: 'আমার তথ্য' },
+  tabs: { Home: 'হোম', Map: 'জরুরি', Dua: 'দোয়া', Offers: 'অফার', Account: 'আমার তথ্য' },
   auth: {
     loginTab: 'লগইন', registerTab: 'নতুন অ্যাকাউন্ট',
     loginTitle: 'আপনার অ্যাকাউন্টে ঢুকুন', registerTitle: 'নতুন অ্যাকাউন্ট খুলুন',
