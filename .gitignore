@@ -1,7 +1,8 @@
-node_modules/
-.expo/
-dist/
 *.jks
 *.keystore
 .env
 .env.*
+.expo/
+__pycache__/
+dist/
+node_modules/

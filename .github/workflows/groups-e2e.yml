@@ -1,0 +1,39 @@
+name: groups-e2e
+on: [workflow_dispatch]
+permissions:
+  contents: write
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: build web preview (test only, not shipped)
+        run: |
+          npm install --legacy-peer-deps
+          npx expo install react-dom react-native-web @expo/metro-runtime -- --legacy-peer-deps
+          npx expo export --platform web --output-dir web-dist
+      - name: two-phone flow (haji + leader) and security checks
+        run: |
+          # Dedicated test accounts only. H has no rights; L becomes a leader only after the owner approves it by hand.
+          export H_PHONE=01300000001
+          export H_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-screens" | sha256sum | cut -c1-24)"
+          export L_PHONE=01300000002
+          export L_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-leader" | sha256sum | cut -c1-24)"
+          pip install playwright==1.48.0
+          python -m playwright install --with-deps chromium
+          (cd web-dist && python -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 2
+          python tests/groups_e2e.py
+          if grep -q '"phase": "B"' shots-groups/result.json; then node tests/groups_api.mjs; fi
+      - name: publish results to ci-groups branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp -r shots-groups /tmp/out/ 2>/dev/null || true
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci-groups
+          git rm -rfq . && cp -r /tmp/out/shots-groups . 2>/dev/null || mkdir shots-groups
+          git add shots-groups && git commit -qm "groups ${GITHUB_SHA}" && git push -f origin ci-groups
