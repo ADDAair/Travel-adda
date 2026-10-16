@@ -50,6 +50,18 @@ async function schedule(loc) {
       n++;
     }
   }
+  // Reminders are made only for 7 days at a time. If the app is not opened, they would stop silently,
+  // so a day before the end the phone asks the person to open the app once.
+  if (n > 0) {
+    const day = localYMD(now + (DAYS - 2) * 86400000, tz);
+    const at = prayerTimes({ lat: loc.lat, lng: loc.lng, ...day }).isha + 45 * 60000;
+    if (at > now) {
+      await Notifications.scheduleNotificationAsync({
+        content: { title: '🔔 নামাজের রিমাইন্ডার চালু রাখতে অ্যাপটি একবার খুলুন', body: 'Travel Adda না খুললে কাল থেকে নামাজের রিমাইন্ডার আসবে না। খুললেই আবার ৭ দিনের জন্য চালু হবে।', sound: 'default' },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at), channelId: CHANNEL },
+      });
+    }
+  }
   return n;
 }
 

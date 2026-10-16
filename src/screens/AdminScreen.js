@@ -27,11 +27,15 @@ export default function AdminScreen({ navigation }) {
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে পাতাটি আবার খুলুন।" /> : null}
       {state === 'ok' ? (
         <>
+          {/* two rows of two, so the labels never get cut on small phones or with large text */}
           <Segmented value={tab} onChange={setTab} options={[
-            { id: 'apps', icon: '🧭', label: 'আবেদন', a11y: 'লিডার আবেদন' },
-            { id: 'calls', icon: '🙋', label: 'ফোন', a11y: 'ফোন করার অনুরোধ' },
-            { id: 'offers', icon: '🎁', label: 'প্যাকেজ', a11y: 'প্যাকেজ' },
-            { id: 'help', icon: '☎️', label: 'হেল্পলাইন', a11y: 'হেল্পলাইন নম্বর' },
+            { id: 'apps', icon: '🧭', label: 'লিডার আবেদন' },
+            { id: 'calls', icon: '🙋', label: 'ফোনের অনুরোধ' },
+          ]} />
+          <View style={{ height: S.xs }} />
+          <Segmented value={tab} onChange={setTab} options={[
+            { id: 'offers', icon: '🎁', label: 'প্যাকেজ' },
+            { id: 'help', icon: '☎️', label: 'হেল্পলাইন' },
           ]} />
           <View style={{ height: S.md }} />
           {tab === 'apps' ? <AppsTab /> : tab === 'calls' ? <CallsTab /> : tab === 'offers' ? <OffersTab /> : <HelpTab />}

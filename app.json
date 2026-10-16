@@ -28,7 +28,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "আপনার প্রোফাইল ছবি তোলার জন্য ক্যামেরা লাগবে।",
+          "cameraPermission": "প্রোফাইল ছবি এবং পাসপোর্ট-ভিসার মতো কাগজের ছবি তোলার জন্য ক্যামেরা লাগবে। ছবি শুধু আপনি নিজে তুললেই নেওয়া হয়।",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
