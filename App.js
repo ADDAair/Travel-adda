@@ -31,6 +31,8 @@ import GroupScreen from './src/screens/GroupScreen';
 import LeaderApplyScreen from './src/screens/LeaderApplyScreen';
 import LeaderScreen from './src/screens/LeaderScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import OffersScreen from './src/screens/OffersScreen';
+import LeaderOffersScreen from './src/screens/LeaderOffersScreen';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -104,7 +106,6 @@ function TabBar({ state, navigation }) {
 }
 
 const soon = (title, icon, what) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
-const SoonOffers = soon('অফার ও প্যাকেজ', '🎁', 'যাচাই করা গ্রুপ লিডারদের ওমরাহ ও হজ প্যাকেজ।');
 
 function Main() {
   return (
@@ -114,7 +115,7 @@ function Main() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
       <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: 'জরুরি সাহায্য' }} />
       <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
-      <Tab.Screen name="Offers" component={SoonOffers} options={{ title: 'অফার ও প্যাকেজ' }} />
+      <Tab.Screen name="Offers" component={OffersScreen} options={{ title: 'অফার ও প্যাকেজ' }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
       <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: 'মীকাত ও ইহরাম গাইড' }} />
       <Tab.Screen name="Umrah" component={UmrahScreen} options={{ title: 'ওমরাহ ধাপে ধাপে' }} />
@@ -130,6 +131,7 @@ function Main() {
       <Tab.Screen name="LeaderApply" component={LeaderApplyScreen} options={{ title: 'লিডার আবেদন' }} />
       <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: 'লিডার প্যানেল' }} />
       <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
+      <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: 'আমার প্যাকেজ' }} />
     </Tab.Navigator>
   );
 }

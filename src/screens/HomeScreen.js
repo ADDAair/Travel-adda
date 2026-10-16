@@ -30,7 +30,6 @@ const TOOLS = [
 ];
 
 const UPCOMING = [
-  ['🏷️', 'প্যাকেজ ও অফার', 'যাচাই করা এজেন্সির প্যাকেজ এক জায়গায় তুলনা'],
 ];
 
 export default function HomeScreen({ navigation }) {
@@ -132,8 +131,8 @@ export default function HomeScreen({ navigation }) {
         ))}
       </View>
 
-      <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text>
-      <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text>
+      {UPCOMING.length ? <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text> : null}
+      {UPCOMING.length ? <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text> : null}
       {UPCOMING.map(([ic, title, what]) => (
         <View key={title} style={st.row} accessible accessibilityLabel={`${title}, ${what}, ${T.soon}`}>
           <Text style={st.rowIc} importantForAccessibility="no">{ic}</Text>

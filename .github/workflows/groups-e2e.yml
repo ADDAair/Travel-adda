@@ -29,6 +29,12 @@ jobs:
           sleep 2
           python tests/groups_e2e.py
           if grep -q '"phase": "B"' shots-groups/result.json; then node tests/groups_api.mjs; fi
+      - name: hide CI test packages (always)
+        if: always()
+        run: |
+          export L_PHONE=01300000002
+          export L_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-leader" | sha256sum | cut -c1-24)"
+          node tests/cleanup_ci_offers.mjs || true
       - name: publish results to ci-groups branch
         if: always()
         run: |

@@ -55,6 +55,8 @@ export default function LeaderScreen({ navigation }) {
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' ? (
         <>
+          <Button title="আমার প্যাকেজ (অফার)" icon="🎁" kind="gold" onPress={() => navigation.navigate('LeaderOffers')} a11yHint="হাজীদের অফার পাতায় প্যাকেজ দিন" style={{ marginBottom: S.md }} />
+          <Text style={st.h}>👥 আমার দলগুলো</Text>
           {groups.length === 0 ? <Notice kind="info" title="এখনো কোনো দল নেই" text="নিচে দলের নাম লিখে প্রথম দল বানান।" /> : null}
           {groups.map((g) => (
             <Pressable key={g.id} onPress={() => setSel(g)} style={st.card} accessibilityRole="button" accessibilityLabel={`${g.name} দল খুলুন`}>

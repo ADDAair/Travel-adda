@@ -85,6 +85,46 @@ check('লিডার নিজের দলে হাজী হয়ে ঢ�
 r = await L.rpc('group_members_for_leader', { p_group: g2.id });
 check('লিডার দল ছেড়ে যাওয়া হাজীর অবস্থা দেখেন', !r.error && r.data.some((m) => m.user_id === hid && m.status === 'left'), r.error?.message);
 
+// Offers (005), only when that step has been run
+const probe = await H.rpc('list_offers', { p_kind: 'umrah' });
+if (!probe.error) {
+  const lo = await L.from('offers').select('id').order('created_at', { ascending: false }).limit(1);
+  const oid = lo.data && lo.data[0] && lo.data[0].id;
+  check('অফার তালিকায় লিডারের ফোন বা আইডি নেই', !probe.data.length || !Object.keys(probe.data[0]).some((k) => /phone|leader/.test(k)), Object.keys(probe.data[0] || {}).join(','));
+  r = await H.from('offers').insert({ kind: 'umrah', title: 'হাজীর ভুয়া', price_bdt: 1, depart_on: '2030-01-01', return_on: '2030-01-05' });
+  check('হাজী প্যাকেজ দিতে পারেন না', !!r.error, r.error?.message);
+  r = await L.from('offers').insert({ leader_id: hid, kind: 'umrah', title: 'অন্যের নামে', price_bdt: 1, depart_on: '2030-01-01', return_on: '2030-01-05' });
+  check('লিডার অন্যের নামে প্যাকেজ দিতে পারেন না', !!r.error, r.error?.message);
+  if (oid) {
+    r = await L.from('offers').update({ price_bdt: 1 }).eq('id', oid).select('id');
+    check('প্রকাশিত প্যাকেজের দাম বদলানো যায় না', refused(r), r.error?.message);
+    r = await L.from('offers').update({ hidden_by_admin: false }).eq('id', oid).select('id');
+    check('লিডার অ্যাডমিনের লুকানো উঠাতে পারেন না', refused(r), r.error?.message);
+    r = await L.from('offers').delete().eq('id', oid).select('id');
+    check('লিডার প্যাকেজ মুছতে পারেন না', refused(r), r.error?.message);
+    r = await H.from('offers').update({ active: true }).eq('id', oid).select('id');
+    check('হাজী অন্যের প্যাকেজ দেখাতে/লুকাতে পারেন না', refused(r), r.error?.message);
+    r = await H.from('offer_interests').insert({ offer_id: oid });
+    check('লুকানো প্যাকেজে "ফোন করুন" অনুরোধ যায় না', !!r.error, r.error?.message);
+    r = await H.rpc('admin_hide_offer', { p_offer: oid, p_hide: false });
+    check('হাজী অ্যাডমিনের মতো প্যাকেজ লুকাতে/দেখাতে পারেন না', !!r.error, r.error?.message);
+  }
+  r = await L.from('offer_interests').select('*');
+  check('লিডার আগ্রহী হাজীদের নাম-নম্বর দেখেন না', refused(r), r.error?.message);
+  r = await L.rpc('admin_list_interests');
+  check('লিডার অ্যাডমিনের অনুরোধ তালিকা দেখেন না', !r.error && r.data.length === 0, r.error?.message);
+  r = await H.rpc('admin_set_setting', { p_key: 'helpline_phone', p_value: '01900000000' });
+  check('হাজী হেল্পলাইন নম্বর বদলাতে পারেন না', !!r.error, r.error?.message);
+  r = await L.rpc('admin_set_setting', { p_key: 'helpline_phone', p_value: '01900000000' });
+  check('লিডার হেল্পলাইন নম্বর বদলাতে পারেন না', !!r.error, r.error?.message);
+  r = await H.from('app_settings').insert({ key: 'helpline_phone', value: '0190' });
+  check('হেল্পলাইন টেবিলে সরাসরি লেখা যায় না', !!r.error, r.error?.message);
+  r = await A.rpc('list_offers', { p_kind: 'umrah' });
+  check('লগইন ছাড়া প্যাকেজ তালিকা দেখা যায় না', refused(r), r.error?.message);
+} else {
+  console.log('offers step (005) not run yet:', probe.error.message);
+}
+
 // Not signed in
 r = await A.rpc('my_groups');
 check('লগইন ছাড়া কেউ কিছু দেখতে পায় না', refused(r), r.error?.message);

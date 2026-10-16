@@ -81,6 +81,7 @@ export default function GroupScreen({ navigation }) {
             <View key={g.group_id} style={[st.card, st.invite]}>
               <Text style={st.h}>📩 দলে যোগ দেওয়ার আমন্ত্রণ</Text>
               <Text style={st.p}>{g.leader_name} আপনাকে "{g.group_name}" দলে আমন্ত্রণ জানিয়েছেন।{g.agency_name ? ` এজেন্সি: ${g.agency_name}।` : ''}</Text>
+              <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি, মোবাইল নম্বর ও ছবি দেখতে পাবেন।</Text>
               <Button title="রাজি, যোগ দিন" icon="✅" onPress={() => run(() => respondInvite(g.group_id, true), () => 'দলে যোগ দেওয়া হয়েছে।')} loading={busy} style={{ marginTop: S.sm }} />
               <Button title="না, যোগ দেব না" kind="secondary" onPress={() => confirm('আমন্ত্রণ বাতিল করবেন?', '', 'হ্যাঁ, বাতিল', () => run(() => respondInvite(g.group_id, false), () => 'আমন্ত্রণ বাতিল করা হয়েছে।'))} disabled={busy} style={{ marginTop: S.sm }} />
             </View>
@@ -109,6 +110,7 @@ export default function GroupScreen({ navigation }) {
           <View style={st.card}>
             <Text style={st.h}>🔑 কোড দিয়ে দলে যোগ দিন</Text>
             <Field label="লিডারের দেওয়া কোড" hint="যেমন: AB12CD34" value={code} onChangeText={(v) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
+            <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি, মোবাইল নম্বর ও ছবি দেখতে পাবেন।</Text>
             <Button title="দলে যোগ দিন" icon="➕" onPress={join} loading={busy} />
           </View>
 

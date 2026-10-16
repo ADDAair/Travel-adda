@@ -179,6 +179,7 @@ with sync_playwright() as p:
             pg.get_by_role('tab', name='জুমার দোয়া ও নিয়ম').click(); pg.wait_for_timeout(400)
             pg.get_by_role('button', name='সূরা কাহফ পড়ুন').click(); pg.wait_for_timeout(2000); shot(pg, f'{scale_name}-B6-kahf')
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1200); shot(pg, f'{scale_name}-B7-account-textsize')
+            pg.get_by_role('tab', name='অফার').click(); pg.wait_for_timeout(3000); shot(pg, f'{scale_name}-C0-offers')
             # My group & leader (shows "soon" until SQL 004 is run). Nothing is submitted, so the test account stays clean.
             pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(800)
             pg.get_by_role('button', name=re.compile('^আমার দল ও লিডার খুলুন')).click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C1-group')

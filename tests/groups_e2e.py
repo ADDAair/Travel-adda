@@ -145,6 +145,43 @@ with sync_playwright() as p:
             hp.get_by_role('button', name='দল ছেড়ে দিন').first.click(); hp.wait_for_timeout(4000); shot(hp, 'H09-left')
             step('হাজী দল ছেড়ে দিয়েছেন', has(hp, 'দল ছেড়ে দেওয়া হয়েছে।'))
             result['groups'] = [f'CI দল ক {stamp}', f'CI দল খ {stamp}']
+
+            # Offers (005): leader publishes, haji asks for a call and cancels, leader hides it again (cleanup also runs after).
+            btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(2000)
+            btn(lp, 'আমার প্যাকেজ \\(অফার\\)$').click(); lp.wait_for_timeout(3000); shot(lp, 'L20-offers')
+            if has(lp, 'শীঘ্রই চালু হবে', 1500):
+                result['offers'] = 'db-missing (005 not run)'
+            else:
+                title = f'CI পরীক্ষা প্যাকেজ – আসল নয় {stamp}'
+                btn(lp, 'নতুন প্যাকেজ দিন$').click(); lp.wait_for_timeout(800)
+                btn(lp, 'প্যাকেজ প্রকাশ করুন$').click(); lp.wait_for_timeout(600)
+                step('প্যাকেজের খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন', 2000)); shot(lp, 'L21-offer-empty')
+                lp.get_by_label('প্যাকেজের নাম').fill(title)
+                lp.get_by_label('জনপ্রতি মোট দাম (টাকা)').fill("500")
+                d1 = time.strftime('%d-%m-%Y', time.localtime(time.time() + 40 * 86400)); d2 = time.strftime('%d-%m-%Y', time.localtime(time.time() + 53 * 86400))
+                lp.get_by_label('যাওয়ার তারিখ').fill(d1); lp.get_by_label('ফেরার তারিখ').fill(d2)
+                lp.get_by_label('মক্কার হোটেলের নাম (ইচ্ছা করলে)').fill('পরীক্ষা হোটেল')
+                lp.get_by_label('মক্কার হোটেল থেকে হারামের দূরত্ব (মিটার)').fill('৪৫০')
+                lp.get_by_label('এক রুমে কতজন (ইচ্ছা করলে)').fill('4')
+                lp.get_by_role('checkbox', name='খাবার').click(); shot(lp, 'L22-offer-filled')
+                btn(lp, 'প্যাকেজ প্রকাশ করুন$').click(); lp.wait_for_timeout(5000); shot(lp, 'L23-offer-published')
+                step('প্যাকেজ প্রকাশ হয়েছে', has(lp, 'প্যাকেজ প্রকাশ হয়েছে'))
+                hp.get_by_role('tab', name='অফার').click(); hp.wait_for_timeout(4000); shot(hp, 'H20-offers')
+                step('হাজী অফার পাতায় প্যাকেজ দেখছেন (মোট ১৪ দিন)', has(hp, title) and has(hp, 'মোট ১৪ দিন', 2000))
+                card = hp.get_by_text(title).first
+                card.scroll_into_view_if_needed()
+                btn(hp, '^আমাকে ফোন করুন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H21-callback')
+                step('"আমাকে ফোন করুন" অনুরোধ গেছে', has(hp, 'অনুরোধ পাঠানো হয়েছে'))
+                btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(1500)
+                btn(lp, 'আমার প্যাকেজ \\(অফার\\)$').click(); lp.wait_for_timeout(3000); shot(lp, 'L24-offer-interest')
+                step('লিডার শুধু সংখ্যা দেখেন (আগ্রহী ১ জন)', has(lp, 'আগ্রহী: ১ জন'))
+                btn(hp, '^অনুরোধ বাতিল করুন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H22-callback-cancelled')
+                step('হাজী অনুরোধ বাতিল করতে পারেন', has(hp, 'অনুরোধ বাতিল করা হয়েছে'))
+                btn(lp, '^প্যাকেজটি লুকান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L25-offer-hidden')
+                step('লিডার প্যাকেজ লুকাতে পারেন', has(lp, 'প্যাকেজ লুকানো হয়েছে'))
+                hp.get_by_role('tab', name='হোম').click(); hp.wait_for_timeout(500); hp.get_by_role('tab', name='অফার').click(); hp.wait_for_timeout(4000)
+                step('লুকানো প্যাকেজ হাজী আর দেখেন না', not has(hp, title, 2000))
+                result['offers'] = 'ok'
     except SystemExit as e:
         result['failed'] = str(e)
     except Exception as e:
