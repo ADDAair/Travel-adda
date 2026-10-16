@@ -38,7 +38,8 @@ for (const [name, [lat, lng]] of Object.entries(cities)) {
     }
   }
   const q = P.qiblaBearing(lat, lng); const qr = adhan.Qibla(new adhan.Coordinates(lat, lng));
-  if (P.distanceKm(lat, lng) > 5 && Math.abs(q - qr) > 0.5)   // at the Kaaba itself the direction is meaningless (app says so) { bad++; console.log(`QIBLA ${name}: ${q} vs ${qr}`); }
+  // At the Kaaba itself the direction is meaningless (the app says so), so only places further than 5 km are compared.
+  if (P.distanceKm(lat, lng) > 5 && Math.abs(q - qr) > 0.5) { bad++; console.log(`QIBLA ${name}: ${q} vs ${qr}`); }
 }
 console.log(`checked ${n} times, worst difference ${worst.toFixed(2)} min, failures ${bad}`);
 process.exit(bad ? 1 : 0);
