@@ -9,6 +9,7 @@ import { toBn } from '../lib/phone';
 import { QuranList, QuranReader } from './Quran';
 
 const SIZE_KEY = 'ta.duaTextScale.v1';
+const FAV_KEY = 'ta.favDuas.v1';
 const SIZES = [1, 1.2, 1.4, 1.6];
 
 export default function DuaScreen({ route, navigation }) {
@@ -20,6 +21,20 @@ export default function DuaScreen({ route, navigation }) {
   const [dismissed, setDismissed] = useState(false);
   const justTried = !!route?.params?.tutorialDone && !dismissed;
   useEffect(() => { setDismissed(false); }, [route?.params?.tutorialDone]);
+
+  // Opened from elsewhere to read a surah (e.g. Surah Kahf from the Jumu'ah guide).
+  useEffect(() => {
+    const n = route?.params?.openSurah;
+    if (n) { setOpenId(null); setMode('quran'); setSurah({ n, a: 1 }); }
+  }, [route?.params?.t]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Favourite duas, kept on this phone.
+  const [favs, setFavs] = useState([]);
+  useEffect(() => { AsyncStorage.getItem(FAV_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setFavs(a); } catch (e) { /* none */ } }).catch(() => {}); }, []);
+  const toggleFav = (id) => {
+    const next = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id];
+    setFavs(next); AsyncStorage.setItem(FAV_KEY, JSON.stringify(next)).catch(() => {});
+  };
 
   // Android back button: from a dua go back to the list instead of leaving the tab.
   useEffect(() => {
@@ -34,10 +49,11 @@ export default function DuaScreen({ route, navigation }) {
   const list = useMemo(() => {
     const t = q.trim();
     if (t) return DUAS.filter((d) => (d.title + ' ' + d.when).includes(t));
+    if (cat === 'fav') return favs.map(findDua).filter(Boolean);
     return DUAS.filter((d) => d.cat === cat);
-  }, [cat, q]);
+  }, [cat, q, favs]);
 
-  if (openId) return <DuaDetail dua={findDua(openId)} onBack={() => setOpenId(null)} />;
+  if (openId) return <DuaDetail dua={findDua(openId)} onBack={() => setOpenId(null)} fav={favs.includes(openId)} onFav={() => toggleFav(openId)} />;
   if (surah) return <QuranReader key={surah.n} n={surah.n} startAyah={surah.a} onBack={() => setSurah(null)} />;
 
   const modeBar = (
@@ -62,9 +78,14 @@ export default function DuaScreen({ route, navigation }) {
       {justTried ? <Notice kind="ok" title="চমৎকার! আপনি নিজেই দোয়া বিভাগ খুলেছেন।" text="এভাবেই নিচের বাটনগুলো চেপে অ্যাপের যেকোনো অংশে যাবেন। এখন যেকোনো দোয়ায় চাপ দিয়ে পড়ে দেখুন।" /> : null}
 
       {modeBar}
+      <Pressable onPress={() => navigation.navigate('Tasbih')} style={st.tool} accessibilityRole="button" accessibilityLabel="তাসবিহ গণনা খুলুন">
+        <Text style={st.toolIc} importantForAccessibility="no">📿</Text>
+        <Text style={st.toolT}>তাসবিহ গণনা</Text>
+        <Text style={st.open}>খুলুন ›</Text>
+      </Pressable>
       <Text style={st.lead}>কোন সময়ের দোয়া খুঁজছেন? নিচে বেছে নিন।</Text>
       <View style={st.cats} accessibilityRole="tablist">
-        {CATEGORIES.map((c) => {
+        {[...CATEGORIES, { id: 'fav', label: 'প্রিয়', icon: '⭐', a11y: 'প্রিয় দোয়া' }].map((c) => {
           const on = !q.trim() && cat === c.id;
           return (
             <Pressable key={c.id} onPress={() => { setQ(''); setCat(c.id); setDismissed(true); }} style={[st.cat, on && st.catOn]}
@@ -91,6 +112,14 @@ export default function DuaScreen({ route, navigation }) {
       {q.trim() ? <Text style={st.count}>{toBn(list.length)}টি দোয়া পাওয়া গেছে</Text> : null}
       {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো দোয়া পাওয়া যায়নি" text="অন্য শব্দ লিখে দেখুন, অথবা ওপরের কোনো বিভাগের বাটন চাপুন।" /> : null}
 
+      {cat === 'jumuah' && !q.trim() ? (
+        <View style={st.jum}>
+          <Text style={st.jumT}>🕌 জুমার নামাজ: আগে ৪ সুন্নত, খুতবা, ২ রাকাত ফরজ, পরে সুন্নত। জুমার দিনে গোসল, সূরা কাহফ ও বেশি দরুদ সুন্নত।</Text>
+          <Button title="জুমার পুরো নিয়ম ও রাকাত" icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { section: 'jumuah', from: 'Dua', t: Date.now() })} style={{ marginTop: S.sm }} />
+          <Button title="সূরা কাহফ পড়ুন" icon="📖" kind="gold" onPress={() => { setMode('quran'); setSurah({ n: 18, a: 1 }); }} style={{ marginTop: S.sm }} />
+        </View>
+      ) : null}
+      {cat === 'fav' && !q.trim() && list.length === 0 ? <Notice kind="info" title="এখনো কোনো প্রিয় দোয়া নেই" text="যেকোনো দোয়া খুলে ওপরের ⭐ বাটন চাপুন, সেটা এখানে চলে আসবে।" /> : null}
       {list.map((d, i) => (
         <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
           accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.when}`} accessibilityHint="দোয়াটি খুলবে">
@@ -108,7 +137,7 @@ export default function DuaScreen({ route, navigation }) {
   );
 }
 
-function DuaDetail({ dua, onBack }) {
+function DuaDetail({ dua, onBack, fav, onFav }) {
   const [scaleIx, setScaleIx] = useState(1);
   const [speaking, setSpeaking] = useState(false);
   const [ttsMsg, setTtsMsg] = useState('');
@@ -159,6 +188,10 @@ function DuaDetail({ dua, onBack }) {
       </Pressable>
 
       <Text style={st.title} accessibilityRole="header">{dua.title}</Text>
+      <Pressable onPress={onFav} style={[st.favBtn, fav && st.favOn]} accessibilityRole="button" accessibilityState={{ selected: fav }}
+        accessibilityLabel={fav ? 'প্রিয় তালিকা থেকে সরান' : 'প্রিয় তালিকায় রাখুন'}>
+        <Text style={st.favT}>{fav ? '⭐ প্রিয় তালিকায় আছে (সরাতে চাপুন)' : '☆ প্রিয় তালিকায় রাখুন'}</Text>
+      </Pressable>
       <View style={st.when}>
         <Text style={st.whenH}>🕰️ কখন পড়বেন</Text>
         <Text style={st.whenT}>{dua.when}</Text>
@@ -201,6 +234,14 @@ function DuaDetail({ dua, onBack }) {
 
 const st = StyleSheet.create({
   wrap: { padding: S.md, paddingBottom: S.xl },
+  tool: { flexDirection: 'row', alignItems: 'center', gap: S.sm, backgroundColor: C.goldSoft, borderWidth: 1.5, borderColor: C.gold, borderRadius: R.md, minHeight: 56, paddingHorizontal: S.md, marginBottom: S.md },
+  toolIc: { fontSize: 24 },
+  toolT: { flex: 1, fontSize: F.body, fontWeight: '700', color: C.text },
+  jum: { backgroundColor: C.primarySoft, borderRadius: R.md, borderWidth: 1.5, borderColor: C.primary, padding: S.md, marginBottom: S.md },
+  jumT: { fontSize: F.body, color: C.text, lineHeight: 28 },
+  favBtn: { alignSelf: 'flex-start', minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, borderRadius: R.pill, borderWidth: 1.5, borderColor: C.gold, marginBottom: S.md },
+  favOn: { backgroundColor: C.goldSoft },
+  favT: { fontSize: F.body, fontWeight: '700', color: C.text },
   lead: { fontSize: F.body, color: C.text, marginBottom: S.sm, lineHeight: 28 },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginBottom: S.md },
   cat: { flexBasis: '30%', flexGrow: 1, minHeight: 72, borderRadius: R.md, borderWidth: 2, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },

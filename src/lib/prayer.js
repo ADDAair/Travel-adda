@@ -181,6 +181,20 @@ export const ORDER = [
   { key: 'maghrib', name: 'মাগরিব', gen: 'মাগরিবের', icon: '🌇' },
   { key: 'isha', name: 'এশা', gen: 'এশার', icon: '🌙' },
 ];
+export const isFriday = (ymd) => new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d)).getUTCDay() === 5;
+// On Fridays the Dhuhr slot is Jumu'ah.
+export const prayerName = (o, ymd) => (o.key === 'dhuhr' && ymd && isFriday(ymd) ? 'জুমা' : o.name);
+
+// Today's makruh (forbidden) prayer windows, approximate: ~15 min after sunrise, a few minutes before Dhuhr, ~15 min
+// before sunset. Returns [{ label, from, to }] in UTC ms.
+export function makruhWindows(times) {
+  return [
+    { key: 'sunrise', label: 'সূর্যোদয়ের সময়', from: times.sunrise, to: times.sunrise + 15 * 60000 },
+    { key: 'zawal', label: 'ঠিক দুপুর', from: times.dhuhr - 6 * 60000, to: times.dhuhr },
+    { key: 'sunset', label: 'সূর্যাস্তের আগে', from: times.maghrib - 15 * 60000, to: times.maghrib },
+  ];
+}
+
 export function dayPlan(loc, nowMs) {
   const tz = tzFor(loc.lat, loc.lng, loc.deviceTz != null ? loc.deviceTz : -new Date(nowMs).getTimezoneOffset());
   const today = localYMD(nowMs, tz);

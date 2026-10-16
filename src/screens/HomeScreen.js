@@ -8,7 +8,7 @@ import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
 import { loadSavedLocation } from '../lib/location';
-import { dayPlan, fmtTime, fmtLeft } from '../lib/prayer';
+import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -22,6 +22,11 @@ const READY = [
 ];
 
 const PROFILE_CACHE = 'ta.profileCache.v1';
+const TOOLS = [
+  { route: 'Salah', icon: '🧎', title: 'নামাজের রাকাত ও নিয়ম' },
+  { route: 'Tasbih', icon: '📿', title: 'তাসবিহ গণনা' },
+  { route: 'Calendar', icon: '📅', title: 'ইসলামি দিনপঞ্জি' },
+];
 
 const UPCOMING = [
   ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
@@ -60,7 +65,7 @@ export default function HomeScreen({ navigation }) {
     return () => { unsub(); clearInterval(t); };
   }, [navigation]);
   let next = null;
-  if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz, pl.next.key) }; } catch (e) { next = null; } }
+  if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz, pl.next.key), nm: pl.nextAt === pl.times.dhuhr ? prayerName(pl.next, pl.today) : pl.next.name }; } catch (e) { next = null; } }
 
   if (state === 'load') {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
@@ -80,11 +85,11 @@ export default function HomeScreen({ navigation }) {
 
       {next ? (
         <Pressable onPress={() => navigation.navigate('Prayer')} style={({ pressed }) => [st.np, pressed && { opacity: 0.9 }]} accessibilityRole="button"
-          accessibilityLabel={`পরের নামাজ ${next.next.name}, ${next.t.part} ${next.t.time}। আর ${fmtLeft(next.nextAt - now)} বাকি। নামাজের সময় ও কিবলা খুলুন`}>
+          accessibilityLabel={`পরের নামাজ ${next.nm}, ${next.t.part} ${next.t.time}। আর ${fmtLeft(next.nextAt - now)} বাকি। নামাজের সময় ও কিবলা খুলুন`}>
           <Text style={st.npIc} importantForAccessibility="no">🕌</Text>
           <View style={{ flex: 1 }}>
             <Text style={st.npL}>পরের নামাজ · {ploc.label}</Text>
-            <Text style={st.npT}>{next.next.name} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
+            <Text style={st.npT}>{next.nm} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
             <Text style={st.npLeft}>⏳ আর {fmtLeft(next.nextAt - now)} বাকি</Text>
           </View>
           <Text style={st.readyGo}>সব ›</Text>
@@ -114,6 +119,17 @@ export default function HomeScreen({ navigation }) {
           <Text style={st.readyGo}>খুলুন ›</Text>
         </Pressable>
       ))}
+
+      <Text style={[st.h2, { marginTop: S.lg }]}>সহায়ক টুল</Text>
+      <View style={st.tools}>
+        {TOOLS.map((x) => (
+          <Pressable key={x.route} onPress={() => navigation.navigate(x.route, { t: Date.now() })} style={({ pressed }) => [st.toolTile, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button" accessibilityLabel={`${x.title} খুলুন`}>
+            <Text style={st.toolIc} importantForAccessibility="no">{x.icon}</Text>
+            <Text style={st.toolT}>{x.title}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text>
       <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text>
@@ -163,6 +179,10 @@ const st = StyleSheet.create({
   npT: { fontSize: F.title, fontWeight: '700', color: C.text, lineHeight: 34 },
   npP: { fontSize: F.body, fontWeight: '400', color: C.muted },
   npLeft: { fontSize: F.small, fontWeight: '700', color: C.primary },
+  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginTop: S.sm },
+  toolTile: { flexBasis: '30%', flexGrow: 1, minHeight: 96, backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.gold, alignItems: 'center', justifyContent: 'center', padding: S.sm },
+  toolIc: { fontSize: 30 },
+  toolT: { fontSize: F.small, fontWeight: '700', color: C.text, textAlign: 'center', marginTop: 4, lineHeight: 22 },
   soon: { backgroundColor: C.primarySoft, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 },
   soonT: { fontSize: 14, color: C.muted, fontWeight: '700' },
 });

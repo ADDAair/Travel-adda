@@ -6,7 +6,8 @@ import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
 import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders } from '../lib/reminders';
 import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading } from '../lib/location';
-import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion } from '../lib/prayer';
+import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
+import { SALAH } from '../content/salah';
 
 const GPS_ERR = {
   denied: 'অবস্থানের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
@@ -52,7 +53,7 @@ export default function PrayerScreen({ navigation }) {
             </Pressable>
           </View>
           <Segmented value={mode} onChange={setMode} options={[{ id: 'times', icon: '🕌', label: 'নামাজের সময়' }, { id: 'qibla', icon: '🧭', label: 'কিবলা' }]} />
-          {mode === 'times' ? <Times loc={loc} now={now} /> : <Qibla loc={loc} />}
+          {mode === 'times' ? <Times loc={loc} now={now} navigation={navigation} /> : <Qibla loc={loc} />}
         </>
       )}
     </ScrollView>
@@ -101,7 +102,7 @@ function LocationPicker({ hasLoc, onChoose, onCancel }) {
   );
 }
 
-function Times({ loc, now }) {
+function Times({ loc, now, navigation }) {
   let plan;
   try { plan = dayPlan(loc, now); } catch (e) { plan = null; }
   if (!plan) return <Notice kind="bad" title="সময় হিসাব করা যায়নি" text="জায়গা বদলে আবার চেষ্টা করুন।" />;
@@ -114,40 +115,71 @@ function Times({ loc, now }) {
   const between = cur.key === 'fajr' && now >= times.sunrise;   // after sunrise, before Dhuhr
   const saudi = inSaudiRegion(loc.lat, loc.lng);
   const alt = fmtTime(times.asrAlt, tz, 'asr');
+  const friday = isFriday(today);
+  const nextName = next.key === 'dhuhr' && nextAt === times.dhuhr ? prayerName(next, today) : next.name;
+  const openSalah = (section) => navigation.navigate('Salah', { section, from: 'Prayer', t: Date.now() });
+  const mk = makruhWindows(times);
+  const mkNow = mk.find((w) => now >= w.from && now < w.to);
 
   return (
     <>
       <Text style={st.date}>{date.greg}</Text>
       <Text style={st.hijri}>{date.hijri} (আনুমানিক)</Text>
-      <View style={st.hero} accessible accessibilityLabel={`পরের নামাজ ${next.name}, ${nt.part} ${nt.time}। আর ${fmtLeft(nextAt - now)} বাকি।`}>
+      <View style={st.hero} accessible accessibilityLabel={`পরের নামাজ ${nextName}, ${nt.part} ${nt.time}। আর ${fmtLeft(nextAt - now)} বাকি।`}>
         <Text style={st.heroNow}>{between ? 'এখন কোনো ফরজ নামাজের ওয়াক্ত নেই' : `এখন ${cur.gen} ওয়াক্ত চলছে`}</Text>
         <Text style={st.heroL}>পরের নামাজ</Text>
-        <Text style={st.heroN}>{next.icon} {next.name}  <Text style={st.heroT}>{nt.time}</Text> <Text style={st.heroP}>{nt.part}</Text></Text>
+        <Text style={st.heroN}>{next.icon} {nextName}  <Text style={st.heroT}>{nt.time}</Text> <Text style={st.heroP}>{nt.part}</Text></Text>
         <View style={st.leftPill}><Text style={st.leftT}>⏳ আর {fmtLeft(nextAt - now)} বাকি</Text></View>
       </View>
+      {mkNow ? <Notice kind="warn" title={`এখন নামাজ পড়ার মাকরুহ সময় (${mkNow.label})`} text={`আর প্রায় ${fmtLeft(mkNow.to - now)} পর নামাজ পড়ুন।`} /> : null}
+      {friday ? <Notice kind="info" title="আজ শুক্রবার: জুমার দিন" text="যোহরের ওয়াক্তে জুমার নামাজ। জামাতের সময় মসজিদ ঠিক করে, আগে আগে যান। গোসল, সূরা কাহফ ও বেশি বেশি দরুদ পড়া সুন্নত।">
+        <Button title="জুমার নিয়ম ও রাকাত" icon="🕌" kind="secondary" onPress={() => openSalah('jumuah')} style={{ marginTop: S.sm }} />
+      </Notice> : null}
+      <Text style={st.tapHint}>👇 যেকোনো নামাজে চাপ দিলে তার রাকাত ও নিয়ম দেখাবে।</Text>
       {ORDER.map((o) => {
         const t = fmtTime(times[o.key], tz, o.key);
         const isNext = o.key === next.key && times[o.key] === nextAt;
         const past = times[o.key] <= now && !isNext;
+        const name = prayerName(o, today);
+        const section = o.key === 'dhuhr' && friday ? 'jumuah' : o.key;
+        const info = SALAH.find((x) => x.id === section);
         return (
-          <View key={o.key} style={[st.row, isNext && st.rowNext, o.notPrayer && st.rowSun]} accessible
-            accessibilityLabel={`${o.name}${o.notPrayer ? ' (নামাজ নয়, ফজরের শেষ সময়)' : ''}, ${t.part} ${t.time}${isNext ? ', পরের নামাজ' : ''}`}>
+          <Pressable key={o.key} disabled={o.notPrayer} onPress={() => openSalah(section)}
+            style={({ pressed }) => [st.row, isNext && st.rowNext, o.notPrayer && st.rowSun, pressed && { opacity: 0.85 }]}
+            accessibilityRole={o.notPrayer ? 'text' : 'button'}
+            accessibilityLabel={`${name}${o.notPrayer ? ' (নামাজ নয়, ফজরের শেষ সময়)' : ''}, ${t.part} ${t.time}${isNext ? ', পরের নামাজ' : ''}${info ? `। ${info.what}` : ''}`}
+            accessibilityHint={o.notPrayer ? undefined : 'রাকাত ও নিয়ম খুলবে'}>
             <Text style={st.rowIc} importantForAccessibility="no">{o.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[st.rowN, past && { color: C.muted }]}>{o.name}</Text>
+              <Text style={[st.rowN, past && { color: C.muted }]}>{name}</Text>
               {o.notPrayer ? <Text style={st.rowSub}>ফজরের সময় শেষ</Text> : null}
+              {info ? <Text style={st.rowSub}>{info.what} ›</Text> : null}
               {isNext ? <Text style={st.nextTag}>▶ পরের নামাজ</Text> : null}
             </View>
             <Text style={[st.rowT, past && { color: C.muted }]}>{t.time}</Text>
             <Text style={st.rowP}>{t.part}</Text>
-          </View>
+          </Pressable>
         );
       })}
       <Reminders loc={loc} />
       {saudi ? <Notice kind="info" title={`হানাফি মতে আসর শুরু: ${alt.part} ${alt.time}`} text="ওপরের আসরের সময় সৌদি আরবের সরকারি সময় (হারামের আজান)। হারামের জামাতে নামাজ পড়া নিয়ে আপনার আলেমের পরামর্শ মেনে চলুন।" /> : null}
       {times.ramadan && saudi ? <Notice kind="info" title="রমজানে এশা" text="রমজানে মক্কা-মদিনায় এশার আজান মাগরিবের প্রায় দুই ঘণ্টা পরে হয়। ওপরের সময় সেভাবেই হিসাব করা।" /> : null}
+      <View style={st.mk}>
+        <Text style={st.mkH}>⛔ আজ যে সময় নামাজ পড়া নিষেধ (আনুমানিক)</Text>
+        {mk.map((w) => {
+          const a = fmtTime(w.from, tz); const b = fmtTime(w.to, tz);
+          const on = now >= w.from && now < w.to;
+          return (
+            <View key={w.key} style={[st.mkRow, on && st.mkOn]} accessible accessibilityLabel={`${w.label}: ${a.part} ${a.time} থেকে ${b.time}${on ? ', এখন চলছে' : ''}`}>
+              <Text style={st.mkL}>{w.label}{on ? ' · এখন চলছে' : ''}</Text>
+              <Text style={st.mkT}>{a.time} – {b.time} <Text style={st.rowP}>{b.part}</Text></Text>
+            </View>
+          );
+        })}
+        <Text style={st.infoT}>এছাড়া ফজরের পর সূর্যোদয় পর্যন্ত এবং আসরের পর সূর্যাস্ত পর্যন্ত নফল নামাজ নয় (কাজা পড়া যায়)। (মুসলিম ৮৩১; বুখারি ৫৮৬)</Text>
+      </View>
+      <Button title="নামাজের রাকাত ও নিয়ম (সব নামাজ)" icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { t: Date.now() })} style={{ marginTop: S.sm }} />
       <View style={st.info}>
-        <Text style={st.infoT}>⚠️ মাকরুহ সময়: সূর্যোদয়ের পর প্রায় ১৫ মিনিট, ঠিক দুপুরে (যোহরের আগের কয়েক মিনিট) এবং সূর্যাস্তের আগে প্রায় ১৫ মিনিট নামাজ পড়বেন না। (মুসলিম ৮৩১)</Text>
         <Text style={st.infoT}>🧮 হিসাবের পদ্ধতি: {times.method.name}।</Text>
         <Text style={st.infoT}>ℹ️ স্থানীয় মসজিদের সময়সূচির সাথে ১-৩ মিনিট পার্থক্য হতে পারে। মসজিদের আজান অনুযায়ী জামাতে শরিক হোন।</Text>
       </View>
@@ -294,6 +326,13 @@ const st = StyleSheet.create({
   nextTag: { fontSize: 14, fontWeight: '700', color: C.primary },
   rowT: { fontSize: F.large, fontWeight: '700', color: C.text },
   rowP: { fontSize: F.small, color: C.muted, minWidth: 48 },
+  tapHint: { fontSize: F.small, color: C.muted, marginBottom: S.xs, lineHeight: 22 },
+  mk: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.bad, padding: S.md, marginTop: S.sm, gap: 6 },
+  mkH: { fontSize: F.body, fontWeight: '700', color: C.bad },
+  mkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', paddingVertical: 4, paddingHorizontal: 6, borderRadius: R.sm },
+  mkOn: { backgroundColor: C.badSoft },
+  mkL: { fontSize: F.body, color: C.text },
+  mkT: { fontSize: F.body, fontWeight: '700', color: C.text },
   info: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.md, marginTop: S.sm, gap: S.xs },
   infoT: { fontSize: F.small, color: C.text, lineHeight: 24 },
   rem: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.line, padding: S.md, marginVertical: S.sm },

@@ -5,7 +5,10 @@ import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
 import { clearLocalDocs } from '../lib/docs';
-import { C, F, S } from '../theme';
+import { C, F, S, R, TOUCH, TEXT_SCALE, TEXT_SCALE_KEY } from '../theme';
+import * as SecureStore from 'expo-secure-store';
+import { reloadAppAsync } from 'expo';
+import { Platform, Pressable } from 'react-native';
 import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -96,6 +99,7 @@ export function Account({ navigation }) {
         <Text style={st.label}>মোবাইল নম্বর</Text>
         <Text style={st.val}>{p ? toBn(p.phone) : '…'}</Text>
       </Card>
+      <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
@@ -118,7 +122,42 @@ export function Account({ navigation }) {
   );
 }
 
+const SIZES = [{ k: 1, label: 'স্বাভাবিক' }, { k: 1.15, label: 'বড়' }, { k: 1.3, label: 'আরও বড়' }];
+function TextSize() {
+  const [msg, setMsg] = useState('');
+  const choose = async (k) => {
+    if (k === TEXT_SCALE) return;
+    try {
+      await SecureStore.setItemAsync(TEXT_SCALE_KEY, String(k));
+      setMsg('নতুন আকার চালু হচ্ছে…');
+      try { await reloadAppAsync(); } catch (e) { setMsg('সংরক্ষণ হয়েছে। অ্যাপ বন্ধ করে আবার খুললে নতুন আকার দেখা যাবে।'); }
+    } catch (e) { setMsg(Platform.OS === 'web' ? 'এই পরীক্ষামূলক সংস্করণে লেখার আকার বদলানো যায় না।' : 'সংরক্ষণ হয়নি। আবার চেষ্টা করুন।'); }
+  };
+  return (
+    <View style={st.sizeBox}>
+      <Text style={st.sizeH}>🔠 লেখার আকার (পুরো অ্যাপে)</Text>
+      <View style={st.sizeRow} accessibilityRole="radiogroup">
+        {SIZES.map((s) => {
+          const on = Math.abs(s.k - TEXT_SCALE) < 0.01;
+          return (
+            <Pressable key={s.k} onPress={() => choose(s.k)} style={[st.sizeBtn, on && st.sizeOn]} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`লেখার আকার ${s.label}`}>
+              <Text style={[st.sizeT, { fontSize: Math.round(16 * s.k) }, on && { color: C.primary }]}>{on ? '✓ ' : ''}{s.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {msg ? <Notice kind="info" title={msg} /> : <Text style={st.label}>বদলালে অ্যাপ একবার নতুন করে চালু হবে।</Text>}
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  sizeBox: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.md, marginBottom: S.md },
+  sizeH: { fontSize: F.body, fontWeight: '700', color: C.text, marginBottom: S.sm },
+  sizeRow: { flexDirection: 'row', gap: S.xs, flexWrap: 'wrap' },
+  sizeBtn: { flexGrow: 1, minHeight: TOUCH + 4, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm, borderWidth: 1.5, borderColor: C.line, paddingHorizontal: S.sm },
+  sizeOn: { borderColor: C.primary, backgroundColor: C.primarySoft, borderWidth: 2 },
+  sizeT: { fontWeight: '700', color: C.text },
   wrap: { padding: S.lg, paddingBottom: S.xl },
   icon: { fontSize: 72, textAlign: 'center', marginTop: S.md },
   title: { fontSize: F.title, fontWeight: '700', color: C.primary, textAlign: 'center' },

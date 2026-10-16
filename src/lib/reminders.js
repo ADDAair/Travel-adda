@@ -3,7 +3,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ORDER, prayerTimes, tzFor, localYMD, fmtTime } from './prayer';
+import { ORDER, prayerTimes, tzFor, localYMD, fmtTime, isFriday } from './prayer';
 import { loadSavedLocation } from './location';
 
 const KEY = 'ta.reminders.v1';
@@ -40,8 +40,11 @@ async function schedule(loc) {
     for (const o of ORDER) {
       if (o.notPrayer || t[o.key] <= now + 30000) continue;
       const f = fmtTime(t[o.key], tz, o.key);
+      const jumuah = o.key === 'dhuhr' && isFriday(day);
       await Notifications.scheduleNotificationAsync({
-        content: { title: `🕌 ${o.gen} সময় হয়েছে`, body: `${f.part} ${f.time} · ${loc.label}`, sound: 'default' },
+        content: jumuah
+          ? { title: '🕌 জুমার ওয়াক্ত শুরু হয়েছে', body: `${f.part} ${f.time} · ${loc.label} · জামাতে যাওয়ার প্রস্তুতি নিন`, sound: 'default' }
+          : { title: `🕌 ${o.gen} সময় হয়েছে`, body: `${f.part} ${f.time} · ${loc.label}`, sound: 'default' },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(t[o.key]), channelId: CHANNEL },
       });
       n++;

@@ -57,7 +57,7 @@ export default function GuidesScreen({ navigation }) {
   );
 }
 
-function Block({ b }) {
+export function Block({ b }) {
   if (b.type === 'notice') return <Notice kind={b.kind} title={b.title} text={b.text} />;
   if (b.type === 'source') return <Text style={st.src}>📚 সূত্র: {b.text}</Text>;
   if (b.type === 'steps') return b.steps.map((s, k) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);

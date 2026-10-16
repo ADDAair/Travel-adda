@@ -24,6 +24,9 @@ import PrivacyScreen from './src/screens/PrivacyScreen';
 import EmergencyScreen from './src/screens/EmergencyScreen';
 import GuidesScreen from './src/screens/GuidesScreen';
 import DocsScreen from './src/screens/DocsScreen';
+import SalahScreen from './src/screens/SalahScreen';
+import TasbihScreen from './src/screens/TasbihScreen';
+import CalendarScreen from './src/screens/CalendarScreen';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -116,6 +119,9 @@ function Main() {
       <Tab.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'গোপনীয়তা নীতি' }} />
       <Tab.Screen name="Guides" component={GuidesScreen} options={{ title: 'আরও গাইড ও তথ্য' }} />
       <Tab.Screen name="Docs" component={DocsScreen} options={{ title: 'আমার কাগজপত্র' }} />
+      <Tab.Screen name="Salah" component={SalahScreen} options={{ title: 'নামাজের রাকাত ও নিয়ম' }} />
+      <Tab.Screen name="Tasbih" component={TasbihScreen} options={{ title: 'তাসবিহ গণনা' }} />
+      <Tab.Screen name="Calendar" component={CalendarScreen} options={{ title: 'ইসলামি দিনপঞ্জি' }} />
     </Tab.Navigator>
   );
 }

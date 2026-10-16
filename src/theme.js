@@ -1,3 +1,4 @@
+import * as SecureStore from 'expo-secure-store';
 // Design tokens. Every screen uses these so the app looks and behaves the same everywhere.
 export const C = {
   primary: '#001952',      // brand navy (Travel Adda)
@@ -18,7 +19,13 @@ export const C = {
   bad: '#C62828', badSoft: '#FDECEA',
   onPrimary: '#FFFFFF',
 };
-export const F = { small: 16, body: 18, large: 20, title: 24, hero: 28 };   // font sizes
+// Text size chosen on the "আমার তথ্য" page (1 = normal). Read synchronously at start-up, so the whole app uses it.
+export const TEXT_SCALE_KEY = 'ta_text_scale';
+let k = 1;
+try { const n = Number(SecureStore.getItem ? SecureStore.getItem(TEXT_SCALE_KEY) : NaN); if (n >= 1 && n <= 1.4) k = n; } catch (e) { k = 1; }
+export const TEXT_SCALE = k;
+const z = (n) => Math.round(n * k);
+export const F = { small: z(16), body: z(18), large: z(20), title: z(24), hero: z(28) };   // font sizes
 export const S = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32 };                  // spacing
 export const R = { sm: 10, md: 14, lg: 20, pill: 999 };                       // corner radius
 export const TOUCH = 48;     // minimum touch target (dp)
