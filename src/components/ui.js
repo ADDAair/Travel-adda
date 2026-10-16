@@ -36,7 +36,7 @@ export function Field({ label, hint, error, right, inputRef, ...input }) {
       <View style={[s.inWrap, error ? { borderColor: C.bad, borderWidth: 2 } : null]}>
         <TextInput
           ref={inputRef}
-          style={s.in}
+          style={[s.in, input.multiline ? { minHeight: 120, textAlignVertical: 'top', paddingTop: S.sm } : null]}
           placeholder={hint}
           placeholderTextColor="#7A857F"
           accessibilityLabel={label}

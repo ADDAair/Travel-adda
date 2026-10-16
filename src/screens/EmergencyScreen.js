@@ -6,6 +6,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
+import { myGroups, cachedLeader, telBd } from '../lib/groups';
 
 const KEY = 'ta.emergency.v1';
 const PROFILE_CACHE = 'ta.profileCache.v1';
@@ -51,11 +52,14 @@ export default function EmergencyScreen({ navigation }) {
   const [lost, setLost] = useState(false);
   const [me, setMe] = useState(null);
   const [showMore, setShowMore] = useState(false);
+  const [grp, setGrp] = useState(null);   // leader of my group in the app (used when none is typed below)
 
   useEffect(() => {
     const load = async () => {
       try { setInfo(JSON.parse((await AsyncStorage.getItem(KEY)) || '{}') || {}); } catch (e) { setInfo({}); }
       try { setMe(JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null')); } catch (e) { setMe(null); }
+      setGrp(await cachedLeader());
+      myGroups().then(cachedLeader).then(setGrp).catch(() => {});   // refresh quietly when online
     };
     load();
     return navigation?.addListener?.('focus', load);
@@ -75,6 +79,8 @@ export default function EmergencyScreen({ navigation }) {
   };
 
   const has = Object.keys(info).length > 0;
+  // A leader typed here wins; otherwise the verified leader of my group in the app (dialled with +88 so it works abroad).
+  const lead = info.leaderPhone ? { name: info.leaderName, phone: info.leaderPhone } : grp ? { name: grp.name, phone: telBd(grp.phone) } : {};
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <View style={st.sos}>
@@ -102,8 +108,8 @@ export default function EmergencyScreen({ navigation }) {
         {showMore ? <Text style={st.sosSub}>বাংলাদেশে থাকলে: জাতীয় জরুরি সেবা ৯৯৯।</Text> : null}
       </View>
 
-      {info.leaderPhone ? (
-        <Button title={`লিডারকে ফোন করুন${info.leaderName ? ` (${info.leaderName})` : ''}`} icon="📞" onPress={() => call(info.leaderPhone)} style={{ marginBottom: S.sm }} />
+      {lead.phone ? (
+        <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone)} style={{ marginBottom: S.sm }} />
       ) : null}
       <Button title="পথ হারিয়েছি কার্ড দেখান" icon="🪪" kind="gold" onPress={() => setLost(true)} a11yHint="পুলিশ বা ট্যাক্সিচালককে দেখানোর জন্য আরবি ও ইংরেজি কার্ড খুলবে" />
 
@@ -143,7 +149,7 @@ export default function EmergencyScreen({ navigation }) {
       <Notice kind="info" title="ম্যাপ ও লাইভ লোকেশন শেয়ার শীঘ্রই আসছে" text="লিডারের সাথে নিজের অবস্থান শেয়ার করার সুবিধা এখনো তৈরি হচ্ছে।" />
 
       <Modal visible={lost} animationType="slide" onRequestClose={() => setLost(false)}>
-        <SafeAreaProvider><LostCard info={info} me={me} onClose={() => setLost(false)} /></SafeAreaProvider>
+        <SafeAreaProvider><LostCard info={{ ...info, leaderName: lead.name, leaderPhone: lead.phone }} me={me} onClose={() => setLost(false)} /></SafeAreaProvider>
       </Modal>
     </ScrollView>
   );

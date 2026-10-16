@@ -58,7 +58,7 @@ export function Account({ navigation }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.removeItem('ta.profileCache.v1').catch(() => {}); clearLocalDocs(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1']).catch(() => {}); clearLocalDocs(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;
@@ -101,6 +101,7 @@ export function Account({ navigation }) {
       </Card>
       <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />
+      <Button title="আমার দল ও লিডার" icon="👥" kind="secondary" onPress={() => navigation.navigate('Group')} a11yHint="দল, গ্রুপ লিডার, লিডার আবেদন ও লিডার প্যানেল" style={{ marginBottom: S.md }} />
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
       <View style={st.delBox}>

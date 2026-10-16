@@ -27,6 +27,10 @@ import DocsScreen from './src/screens/DocsScreen';
 import SalahScreen from './src/screens/SalahScreen';
 import TasbihScreen from './src/screens/TasbihScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
+import GroupScreen from './src/screens/GroupScreen';
+import LeaderApplyScreen from './src/screens/LeaderApplyScreen';
+import LeaderScreen from './src/screens/LeaderScreen';
+import AdminScreen from './src/screens/AdminScreen';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -122,6 +126,10 @@ function Main() {
       <Tab.Screen name="Salah" component={SalahScreen} options={{ title: 'নামাজের রাকাত ও নিয়ম' }} />
       <Tab.Screen name="Tasbih" component={TasbihScreen} options={{ title: 'তাসবিহ গণনা' }} />
       <Tab.Screen name="Calendar" component={CalendarScreen} options={{ title: 'ইসলামি দিনপঞ্জি' }} />
+      <Tab.Screen name="Group" component={GroupScreen} options={{ title: 'আমার দল ও লিডার' }} />
+      <Tab.Screen name="LeaderApply" component={LeaderApplyScreen} options={{ title: 'লিডার আবেদন' }} />
+      <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: 'লিডার প্যানেল' }} />
+      <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
     </Tab.Navigator>
   );
 }

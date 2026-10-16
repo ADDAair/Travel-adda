@@ -171,7 +171,7 @@ export default function DocsScreen({ navigation }) {
   );
 }
 
-function DocCamera({ onCancel, onUse }) {
+export function DocCamera({ onCancel, onUse }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
   const camRef = useRef(null);

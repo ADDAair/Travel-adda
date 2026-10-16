@@ -22,20 +22,20 @@ const cacheKey = (uid) => `ta.docsCache.v1.${uid}`;
 const isPdf = (path) => /\.pdf$/i.test(path);
 export const docIsPdf = (row) => isPdf(row.file_path);
 
-async function uid() {
+export async function uid() {
   const { data } = await supabase.auth.getSession();
   const id = data && data.session && data.session.user ? data.session.user.id : null;
   if (!id) { const e = new Error('no session'); e.code = 'no-session'; throw e; }
   return id;
 }
 
-function randomId() {
+export function randomId() {
   const b = global.crypto.getRandomValues(new Uint8Array(16));
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 // Photos are made smaller (long side 1800 px, JPEG) so they upload fast on weak mobile data and stay under 5 MB.
-async function shrink(uri) {
+export async function shrink(uri) {
   try {
     if (IM.ImageManipulator && IM.ImageManipulator.manipulate) {
       const ctx = IM.ImageManipulator.manipulate(uri);
