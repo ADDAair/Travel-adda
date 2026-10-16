@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
+import { clearLocalDocs } from '../lib/docs';
 import { C, F, S } from '../theme';
 import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
@@ -54,7 +55,7 @@ export function Account({ navigation }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.removeItem('ta.profileCache.v1').catch(() => {}); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.removeItem('ta.profileCache.v1').catch(() => {}); clearLocalDocs(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;

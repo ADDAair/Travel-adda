@@ -140,6 +140,18 @@ with sync_playwright() as p:
             pg.get_by_role('button', name='গোপনীয়তা নীতি').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-83-privacy')
             pg.get_by_role('tab', name='দোয়া', exact=True).last.click(); pg.wait_for_timeout(800)
             pg.get_by_role('tab', name='কুরআনের দোয়া').click(); pg.wait_for_timeout(600); shot(pg, f'{scale_name}-84-dua-quran')
+            # My documents: real upload to the private bucket with the CI test account, view, then delete
+            pg.on('dialog', lambda d: d.accept())
+            pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1000)
+            pg.get_by_role('button', name=re.compile('^আমার কাগজপত্র খুলুন')).click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-90-docs')
+            pg.get_by_role('button', name='নতুন কাগজ যোগ করুন').click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-91-docs-type')
+            pg.get_by_role('button', name='পাসপোর্ট', exact=True).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-92-docs-source')
+            with pg.expect_file_chooser() as fc:
+                pg.get_by_role('button', name='ফোন থেকে ছবি বা PDF বেছে নিন').click()
+            fc.value.set_files('assets/ihram/ihram-man.png'); pg.wait_for_timeout(8000); shot(pg, f'{scale_name}-93-docs-uploaded')
+            pg.get_by_role('button', name=re.compile('দেখুন$')).first.click(); pg.wait_for_timeout(4000); shot(pg, f'{scale_name}-94-docs-view')
+            pg.get_by_role('button', name='বন্ধ করুন').first.click(); pg.wait_for_timeout(600)
+            pg.get_by_role('button', name=re.compile('মুছুন$')).first.click(); pg.wait_for_timeout(5000); shot(pg, f'{scale_name}-95-docs-deleted')
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))
         ctx.close()
     b.close()

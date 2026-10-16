@@ -1,6 +1,7 @@
 // Permanent account deletion (Google Play requires it inside the app).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { clearLocalDocs } from './docs';
 
 // 1) delete the user's own files (storage policies allow only their own folder)
 // 2) call delete_my_account() (supabase/003_delete_account.sql), which removes the login, profile and document rows
@@ -25,5 +26,6 @@ export async function deleteMyAccount() {
     const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('ta.') && k !== 'ta.onboarded.v1');
     if (keys.length) await AsyncStorage.multiRemove(keys);
   } catch (e) { /* local cleanup is best effort */ }
+  await clearLocalDocs();
   await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 }
