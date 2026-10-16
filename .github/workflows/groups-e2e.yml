@@ -27,6 +27,7 @@ jobs:
           python -m playwright install --with-deps chromium
           (cd web-dist && python -m http.server 8080 >/dev/null 2>&1 &)
           sleep 2
+          node tests/db_probe.mjs || true
           python tests/groups_e2e.py
           if grep -q '"phase": "B"' shots-groups/result.json; then node tests/groups_api.mjs; fi
       - name: hide CI test packages (always)
