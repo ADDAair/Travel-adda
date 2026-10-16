@@ -6,6 +6,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { C, F, S } from '../theme';
 import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
@@ -50,7 +51,7 @@ export function Account() {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.removeItem('ta.profileCache.v1').catch(() => {}); supabase.auth.signOut().catch(() => {}); } },
   ]);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>

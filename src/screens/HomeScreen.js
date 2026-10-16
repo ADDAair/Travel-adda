@@ -5,6 +5,7 @@ import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
 import { loadSavedLocation } from '../lib/location';
 import { dayPlan, fmtTime, fmtLeft } from '../lib/prayer';
@@ -18,6 +19,8 @@ const READY = [
   { route: 'Hajj', icon: '⛺', title: 'হজের দিনগুলো', what: '৮ থেকে ১৩ জিলহজ, দিন অনুযায়ী করণীয়। মদিনা যিয়ারত।' },
 ];
 
+const PROFILE_CACHE = 'ta.profileCache.v1';
+
 const UPCOMING = [
   ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
   ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
@@ -28,11 +31,19 @@ export default function HomeScreen({ navigation }) {
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
 
+  // The guides work offline (e.g. inside the Haram without data), so Home must never be blocked by a failed fetch:
+  // the last known name and ID are kept on the phone and shown when the internet is not available.
   const load = useCallback(async () => {
-    setState('load');
+    setState((x) => (x === 'ok' ? 'ok' : 'load'));
+    let cached = null;
+    try { cached = JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null'); } catch (e) { cached = null; }
+    if (cached) { setP(cached); setState('ok'); }
     try {
-      const { data, error } = await supabase.from('profiles').select('full_name,haji_code').single();
-      if (error || !data) setState('err'); else { setP(data); setState('ok'); }
+      const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: 'timeout' }), 8000));
+      const { data, error } = await Promise.race([supabase.from('profiles').select('full_name,haji_code').single(), timeout]);
+      if (error || !data) { setState('err'); return; }
+      setP(data); setState('ok');
+      AsyncStorage.setItem(PROFILE_CACHE, JSON.stringify({ full_name: data.full_name, haji_code: data.haji_code })).catch(() => {});
     } catch (e) { setState('err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -53,21 +64,18 @@ export default function HomeScreen({ navigation }) {
   if (state === 'load') {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
   }
-  if (state === 'err') {
-    return (
-      <View style={st.center}>
-        <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।" />
-        <Button title={T.retry} icon="🔄" onPress={load} style={{ alignSelf: 'stretch' }} />
-      </View>
-    );
-  }
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <View style={st.hero} accessible accessibilityLabel={`আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}`}>
+      <View style={st.hero} accessible accessibilityLabel={p ? `আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}` : 'আস-সালামু আলাইকুম'}>
         <Text style={st.hi}>আস-সালামু আলাইকুম 👋</Text>
-        <Text style={st.nm}>{p.full_name}</Text>
-        <View style={st.idPill}><Text style={st.idT}>হাজী আইডি: {toBn(p.haji_code)}</Text></View>
+        {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
+        {p ? <View style={st.idPill}><Text style={st.idT}>হাজী আইডি: {toBn(p.haji_code)}</Text></View> : null}
       </View>
+      {state === 'err' ? (
+        <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
+          <Button title={T.retry} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} />
+        </Notice>
+      ) : null}
 
       {next ? (
         <Pressable onPress={() => navigation.navigate('Prayer')} style={({ pressed }) => [st.np, pressed && { opacity: 0.9 }]} accessibilityRole="button"
