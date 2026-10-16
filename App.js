@@ -22,6 +22,7 @@ import HajjScreen from './src/screens/HajjScreen';
 import PrayerScreen from './src/screens/PrayerScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import EmergencyScreen from './src/screens/EmergencyScreen';
+import GuidesScreen from './src/screens/GuidesScreen';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -112,6 +113,7 @@ function Main() {
       <Tab.Screen name="Hajj" component={HajjScreen} options={{ title: 'হজের দিনগুলো' }} />
       <Tab.Screen name="Prayer" component={PrayerScreen} options={{ title: 'নামাজের সময় ও কিবলা' }} />
       <Tab.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'গোপনীয়তা নীতি' }} />
+      <Tab.Screen name="Guides" component={GuidesScreen} options={{ title: 'আরও গাইড ও তথ্য' }} />
     </Tab.Navigator>
   );
 }
