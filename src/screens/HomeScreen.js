@@ -6,9 +6,12 @@ import { Button, Card, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
+import { loadSavedLocation } from '../lib/location';
+import { dayPlan, fmtTime, fmtLeft } from '../lib/prayer';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
+  { route: 'Prayer', icon: '🕌', title: 'নামাজের সময় ও কিবলা', what: 'আপনার জায়গা অনুযায়ী সময় ও কিবলার দিক। ইন্টারনেট ছাড়াও চলে।' },
   { route: 'Dua', icon: '🤲', title: 'দোয়া ভল্ট', what: 'দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।' },
   { route: 'Ihram', icon: '🕋', title: 'মীকাত ও ইহরাম গাইড', what: 'কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।' },
   { route: 'Umrah', icon: '🔄', title: 'ওমরাহ ধাপে ধাপে', what: 'তাওয়াফ, সাঈ, চুল কাটা। চক্কর গোনার বাটনসহ।' },
@@ -16,7 +19,6 @@ const READY = [
 ];
 
 const UPCOMING = [
-  ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার অবস্থান অনুযায়ী'],
   ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেট নিরাপদে'],
   ['👨‍✈️', 'বিশ্বস্ত গ্রুপ লিডার', 'যাচাই করা লিডার খুঁজুন'],
 ];
@@ -34,6 +36,19 @@ export default function HomeScreen({ navigation }) {
     } catch (e) { setState('err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
+  const [ploc, setPloc] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const refresh = () => { setNow(Date.now()); loadSavedLocation().then(setPloc); };
+    refresh();
+    const unsub = navigation.addListener('focus', refresh);
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => { unsub(); clearInterval(t); };
+  }, [navigation]);
+  let next = null;
+  if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz) }; } catch (e) { next = null; } }
 
   if (state === 'load') {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
@@ -53,6 +68,19 @@ export default function HomeScreen({ navigation }) {
         <Text style={st.nm}>{p.full_name}</Text>
         <View style={st.idPill}><Text style={st.idT}>হাজী আইডি: {toBn(p.haji_code)}</Text></View>
       </View>
+
+      {next ? (
+        <Pressable onPress={() => navigation.navigate('Prayer')} style={({ pressed }) => [st.np, pressed && { opacity: 0.9 }]} accessibilityRole="button"
+          accessibilityLabel={`পরের নামাজ ${next.next.name}, ${next.t.part} ${next.t.time}। আর ${fmtLeft(next.nextAt - now)} বাকি। নামাজের সময় ও কিবলা খুলুন`}>
+          <Text style={st.npIc} importantForAccessibility="no">🕌</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={st.npL}>পরের নামাজ · {ploc.label}</Text>
+            <Text style={st.npT}>{next.next.name} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
+            <Text style={st.npLeft}>⏳ আর {fmtLeft(next.nextAt - now)} বাকি</Text>
+          </View>
+          <Text style={st.readyGo}>সব ›</Text>
+        </Pressable>
+      ) : null}
 
       {handsOnPending ? (
         <Card style={st.coach}>
@@ -120,6 +148,12 @@ const st = StyleSheet.create({
   readyT: { fontSize: F.large, fontWeight: '700', color: C.primary },
   readyW: { fontSize: F.small, color: C.text, lineHeight: 22 },
   readyGo: { fontSize: F.body, color: C.primary, fontWeight: '700' },
+  np: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.accentSoft, borderRadius: R.lg, borderWidth: 2, borderColor: C.accent, padding: S.md, marginBottom: S.md },
+  npIc: { fontSize: 32 },
+  npL: { fontSize: F.small, color: C.muted },
+  npT: { fontSize: F.title, fontWeight: '700', color: C.text, lineHeight: 34 },
+  npP: { fontSize: F.body, fontWeight: '400', color: C.muted },
+  npLeft: { fontSize: F.small, fontWeight: '700', color: C.primary },
   soon: { backgroundColor: C.primarySoft, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 },
   soonT: { fontSize: 14, color: C.muted, fontWeight: '700' },
 });

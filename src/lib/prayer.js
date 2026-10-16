@@ -172,12 +172,12 @@ export function fmtDate(y, m, d) {
 
 // Today's list plus which prayer is next. After Isha the next prayer is tomorrow's Fajr.
 export const ORDER = [
-  { key: 'fajr', name: 'ফজর', icon: '🌄' },
-  { key: 'sunrise', name: 'সূর্যোদয়', icon: '🌅', notPrayer: true },
-  { key: 'dhuhr', name: 'যোহর', icon: '☀️' },
-  { key: 'asr', name: 'আসর', icon: '🌤️' },
-  { key: 'maghrib', name: 'মাগরিব', icon: '🌇' },
-  { key: 'isha', name: 'এশা', icon: '🌙' },
+  { key: 'fajr', name: 'ফজর', gen: 'ফজরের', icon: '🌄' },
+  { key: 'sunrise', name: 'সূর্যোদয়', gen: 'সূর্যোদয়ের', icon: '🌅', notPrayer: true },
+  { key: 'dhuhr', name: 'যোহর', gen: 'যোহরের', icon: '☀️' },
+  { key: 'asr', name: 'আসর', gen: 'আসরের', icon: '🌤️' },
+  { key: 'maghrib', name: 'মাগরিব', gen: 'মাগরিবের', icon: '🌇' },
+  { key: 'isha', name: 'এশা', gen: 'এশার', icon: '🌙' },
 ];
 export function dayPlan(loc, nowMs) {
   const tz = tzFor(loc.lat, loc.lng, loc.deviceTz != null ? loc.deviceTz : -new Date(nowMs).getTimezoneOffset());

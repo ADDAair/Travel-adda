@@ -19,6 +19,7 @@ import PhotoCapture from './src/screens/PhotoCapture';
 import IhramScreen from './src/screens/IhramScreen';
 import UmrahScreen from './src/screens/UmrahScreen';
 import HajjScreen from './src/screens/HajjScreen';
+import PrayerScreen from './src/screens/PrayerScreen';
 import { photoGateState } from './src/lib/avatar';
 
 const Tab = createBottomTabNavigator();
@@ -107,6 +108,7 @@ function Main() {
       <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: 'মীকাত ও ইহরাম গাইড' }} />
       <Tab.Screen name="Umrah" component={UmrahScreen} options={{ title: 'ওমরাহ ধাপে ধাপে' }} />
       <Tab.Screen name="Hajj" component={HajjScreen} options={{ title: 'হজের দিনগুলো' }} />
+      <Tab.Screen name="Prayer" component={PrayerScreen} options={{ title: 'নামাজের সময় ও কিবলা' }} />
     </Tab.Navigator>
   );
 }
