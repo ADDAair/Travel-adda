@@ -14,6 +14,8 @@ jobs:
           run() { echo "### $*"; "$@" > step.log 2>&1; code=$?; cat step.log; if [ $code -ne 0 ]; then fail=1; tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' | { read -r m; echo "::error title=FAILED: $*::$m"; }; fi; return $code; }
           run npm install --legacy-peer-deps
           run npx expo install --check
+          run npm install --no-save --prefix /tmp/adh adhan@4.4.3
+          run node tests/prayer.test.mjs /tmp/adh/node_modules
           m=$(node -e "const p=require('./package.json');console.log(JSON.stringify(p.dependencies))" | sed 's/%/%25/g')
           echo "::notice title=RESOLVED DEPENDENCIES::$m"
           run npx expo-doctor
