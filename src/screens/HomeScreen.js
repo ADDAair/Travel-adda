@@ -48,7 +48,7 @@ export default function HomeScreen({ navigation }) {
     return () => { unsub(); clearInterval(t); };
   }, [navigation]);
   let next = null;
-  if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz) }; } catch (e) { next = null; } }
+  if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz, pl.next.key) }; } catch (e) { next = null; } }
 
   if (state === 'load') {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;

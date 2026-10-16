@@ -106,13 +106,13 @@ function Times({ loc, now }) {
   if (!plan) return <Notice kind="bad" title="সময় হিসাব করা যায়নি" text="জায়গা বদলে আবার চেষ্টা করুন।" />;
   const { tz, today, times, next, nextAt } = plan;
   const date = fmtDate(today.y, today.m, today.d);
-  const nt = fmtTime(nextAt, tz);
+  const nt = fmtTime(nextAt, tz, next.key);
   const prayers = ORDER.filter((o) => !o.notPrayer);
   const started = prayers.filter((o) => times[o.key] <= now);
   const cur = started.length ? started[started.length - 1] : ORDER[5];
   const between = cur.key === 'fajr' && now >= times.sunrise;   // after sunrise, before Dhuhr
   const saudi = inSaudiRegion(loc.lat, loc.lng);
-  const alt = fmtTime(times.asrAlt, tz);
+  const alt = fmtTime(times.asrAlt, tz, 'asr');
 
   return (
     <>
@@ -125,7 +125,7 @@ function Times({ loc, now }) {
         <View style={st.leftPill}><Text style={st.leftT}>⏳ আর {fmtLeft(nextAt - now)} বাকি</Text></View>
       </View>
       {ORDER.map((o) => {
-        const t = fmtTime(times[o.key], tz);
+        const t = fmtTime(times[o.key], tz, o.key);
         const isNext = o.key === next.key && times[o.key] === nextAt;
         const past = times[o.key] <= now && !isNext;
         return (

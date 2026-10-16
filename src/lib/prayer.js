@@ -141,15 +141,17 @@ export function distanceKm(lat1, lng1, lat2 = KAABA.lat, lng2 = KAABA.lng) {
 const DIRS = ['উত্তর', 'উত্তর-পূর্ব', 'পূর্ব', 'দক্ষিণ-পূর্ব', 'দক্ষিণ', 'দক্ষিণ-পশ্চিম', 'পশ্চিম', 'উত্তর-পশ্চিম'];
 export const directionName = (b) => DIRS[Math.round(fixAngle(b) / 45) % 8];
 
-// "৫:১২" and a Bengali part-of-day word, shown in the location's own time.
-export function fmtTime(ms, tzMin) {
+// "৫:১২" and a Bengali part-of-day word, shown in the location's own time. With a prayer key the word follows the
+// prayer (Isha is always "রাত", Maghrib "সন্ধ্যা"), so it never looks odd in long summer evenings.
+const PART = { fajr: 'ভোর', sunrise: 'সকাল', dhuhr: 'দুপুর', asr: 'বিকাল', maghrib: 'সন্ধ্যা', isha: 'রাত' };
+export function fmtTime(ms, tzMin, key) {
   const t = new Date(ms + tzMin * 60000);
   const H = t.getUTCHours();
   const mi = t.getUTCMinutes();
   const mins = H * 60 + mi;
   const part = mins < 240 ? 'রাত' : mins < 360 ? 'ভোর' : mins < 720 ? 'সকাল' : mins < 900 ? 'দুপুর' : mins < 1050 ? 'বিকাল' : mins < 1140 ? 'সন্ধ্যা' : 'রাত';
   const h12 = H % 12 === 0 ? 12 : H % 12;
-  return { time: toBn(`${h12}:${String(mi).padStart(2, '0')}`), part };
+  return { time: toBn(`${h12}:${String(mi).padStart(2, '0')}`), part: PART[key] || part };
 }
 
 // "১ ঘণ্টা ৫ মিনিট"
