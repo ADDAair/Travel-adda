@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,6 +23,7 @@ import PrayerScreen from './src/screens/PrayerScreen';
 import PrivacyScreen from './src/screens/PrivacyScreen';
 import EmergencyScreen from './src/screens/EmergencyScreen';
 import { photoGateState } from './src/lib/avatar';
+import { refreshReminders } from './src/lib/reminders';
 
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -139,6 +140,13 @@ export default function App() {
     prefs.isHandsOnDone().then((done) => { if (alive) setHandsOnPending(!done); });
     return () => { alive = false; };
   }, [session]);
+
+  // Prayer reminders cover the next 7 days; re-make them whenever the app is opened.
+  useEffect(() => {
+    refreshReminders();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshReminders(); });
+    return () => sub.remove();
+  }, []);
 
   // After sign-in, check once whether this person already has a profile photo.
   useEffect(() => {

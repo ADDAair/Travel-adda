@@ -4,6 +4,7 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
+import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders } from '../lib/reminders';
 import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading } from '../lib/location';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion } from '../lib/prayer';
 
@@ -28,7 +29,7 @@ export default function PrayerScreen({ navigation }) {
     return () => sub.remove();
   }, [picking, loc]);
 
-  const choose = (l) => { setLoc(l); saveLocation(l); setPicking(false); };
+  const choose = (l) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
 
   if (loc === undefined) return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /></View>;
 
@@ -142,15 +143,50 @@ function Times({ loc, now }) {
           </View>
         );
       })}
+      <Reminders loc={loc} />
       {saudi ? <Notice kind="info" title={`হানাফি মতে আসর শুরু: ${alt.part} ${alt.time}`} text="ওপরের আসরের সময় সৌদি আরবের সরকারি সময় (হারামের আজান)। হারামের জামাতে নামাজ পড়া নিয়ে আপনার আলেমের পরামর্শ মেনে চলুন।" /> : null}
       {times.ramadan && saudi ? <Notice kind="info" title="রমজানে এশা" text="রমজানে মক্কা-মদিনায় এশার আজান মাগরিবের প্রায় দুই ঘণ্টা পরে হয়। ওপরের সময় সেভাবেই হিসাব করা।" /> : null}
       <View style={st.info}>
         <Text style={st.infoT}>⚠️ মাকরুহ সময়: সূর্যোদয়ের পর প্রায় ১৫ মিনিট, ঠিক দুপুরে (যোহরের আগের কয়েক মিনিট) এবং সূর্যাস্তের আগে প্রায় ১৫ মিনিট নামাজ পড়বেন না। (মুসলিম ৮৩১)</Text>
         <Text style={st.infoT}>🧮 হিসাবের পদ্ধতি: {times.method.name}।</Text>
         <Text style={st.infoT}>ℹ️ স্থানীয় মসজিদের সময়সূচির সাথে ১-৩ মিনিট পার্থক্য হতে পারে। মসজিদের আজান অনুযায়ী জামাতে শরিক হোন।</Text>
-        <Text style={st.infoT}>🔔 নামাজের সময় হলে মনে করিয়ে দেওয়ার সুবিধা শীঘ্রই আসছে।</Text>
       </View>
     </>
+  );
+}
+
+const REM_ERR = {
+  unsupported: 'এই ফোনে রিমাইন্ডার চালু করা যায় না।',
+  denied: 'নোটিফিকেশনের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন।',
+  blocked: 'নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।',
+  failed: 'রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।',
+};
+function Reminders({ loc }) {
+  const [on, setOn] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(() => { remindersOn().then(setOn); }, []);
+  if (on === null) return null;
+  const turnOn = async () => {
+    if (busy) return;
+    setBusy(true); setErr('');
+    const r = await enableReminders(loc);
+    setBusy(false);
+    if (r.ok) setOn(true); else setErr(r.error);
+  };
+  const turnOff = async () => { if (busy) return; setBusy(true); await disableReminders(); setBusy(false); setOn(false); };
+  return (
+    <View style={[st.rem, on && st.remOn]}>
+      <Text style={st.remH}>🔔 নামাজের রিমাইন্ডার: {on ? 'চালু আছে' : 'বন্ধ'}</Text>
+      <Text style={st.remT}>{on ? `প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে (${loc.label} অনুযায়ী)। কয়েক মিনিট এদিক-ওদিক হতে পারে।` : 'চালু করলে প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে। ইন্টারনেট লাগবে না।'}</Text>
+      {err ? <Notice kind="warn" title={REM_ERR[err] || REM_ERR.failed}>
+        {err === 'blocked' ? <Button title="ফোনের সেটিংস খুলুন" icon="⚙️" kind="secondary" onPress={() => Linking.openSettings().catch(() => {})} style={{ marginTop: S.sm }} /> : null}
+      </Notice> : null}
+      {remindersSupported ? (on
+        ? <Button title="রিমাইন্ডার বন্ধ করুন" icon="🔕" kind="secondary" onPress={turnOff} loading={busy} />
+        : <Button title="রিমাইন্ডার চালু করুন" icon="🔔" onPress={turnOn} loading={busy} a11yHint="ফোন নোটিফিকেশনের অনুমতি চাইতে পারে" />)
+        : <Text style={st.remT}>{REM_ERR.unsupported}</Text>}
+    </View>
   );
 }
 
@@ -260,6 +296,10 @@ const st = StyleSheet.create({
   rowP: { fontSize: F.small, color: C.muted, minWidth: 48 },
   info: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.md, marginTop: S.sm, gap: S.xs },
   infoT: { fontSize: F.small, color: C.text, lineHeight: 24 },
+  rem: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.line, padding: S.md, marginVertical: S.sm },
+  remOn: { borderColor: C.ok, backgroundColor: C.okSoft },
+  remH: { fontSize: F.body, fontWeight: '700', color: C.text },
+  remT: { fontSize: F.small, color: C.text, lineHeight: 24, marginVertical: S.xs },
   qInfo: { backgroundColor: C.card, borderRadius: R.lg, padding: S.md, alignItems: 'center', marginBottom: S.md, ...shadow },
   qBig: { fontSize: 44, fontWeight: '700', color: C.primary },
   dialWrap: { alignItems: 'center', marginVertical: S.md },
