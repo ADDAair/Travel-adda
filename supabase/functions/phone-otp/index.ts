@@ -78,8 +78,9 @@ async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: 
   if (!o || o.expires_at < now) return fail(400, 'expired');
   if (o.attempts >= MAX_TRIES) { await d.updateOtp(o.id, { used: true }); return fail(400, 'too_many_tries'); }
   if ((await d.hash(`${purpose}:${phone}:${c}`)) !== o.code_hash) {
-    await d.updateOtp(o.id, { attempts: o.attempts + 1, used: o.attempts + 1 >= MAX_TRIES });
-    return fail(400, 'wrong_code', { tries_left: Math.max(0, MAX_TRIES - o.attempts - 1) });
+    const tries = o.attempts + 1;
+    await d.updateOtp(o.id, { attempts: tries, used: tries >= MAX_TRIES });
+    return fail(400, 'wrong_code', { tries_left: Math.max(0, MAX_TRIES - tries) });
   }
   await d.updateOtp(o.id, { used: true });
   return o;
