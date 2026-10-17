@@ -21,7 +21,10 @@ with sync_playwright() as p:
         shot(pg, f'{scale_name}-03b-onboarding-4'); click_text(pg, 'শুরু করুন', True)
         shot(pg, f'{scale_name}-04-login')
         click_text(pg, 'লগইন করুন', True); shot(pg, f'{scale_name}-05-login-empty-errors')
-        click_text(pg, 'নতুন অ্যাকাউন্ট', True); shot(pg, f'{scale_name}-06-register')
+        click_text(pg, 'নতুন অ্যাকাউন্ট', True); shot(pg, f'{scale_name}-06-register-choose')
+        pg.get_by_role('button', name=re.compile('^আমি গ্রুপ লিডার')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-06-register-leader')
+        pg.get_by_role('button', name=re.compile('^অ্যাকাউন্টের ধরন')).click(); pg.wait_for_timeout(300)
+        pg.get_by_role('button', name=re.compile('^আমি হাজী')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-06-register')
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('12345678'); shot(pg, f'{scale_name}-06b-pw-weak')
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('karim2026'); shot(pg, f'{scale_name}-06c-pw-medium')
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('Karim2026!'); shot(pg, f'{scale_name}-06d-pw-strong')
@@ -38,6 +41,7 @@ with sync_playwright() as p:
             click_text(pg, 'লগইন করুন', True); pg.wait_for_timeout(4000)
             if pg.get_by_text('মেলেনি').count() > 0:
                 click_text(pg, 'নতুন অ্যাকাউন্ট', True)
+                if pg.get_by_role('button', name=re.compile('^আমি হাজী')).count(): pg.get_by_role('button', name=re.compile('^আমি হাজী')).click(); pg.wait_for_timeout(400)
                 pg.get_by_label('আপনার নাম').fill('পরীক্ষা ব্যবহারকারী CI')
                 pg.get_by_label('মোবাইল নম্বর').fill(PHONE); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(PW)
                 click_text(pg, 'অ্যাকাউন্ট খুলুন', True); pg.wait_for_timeout(4000)
@@ -185,10 +189,24 @@ with sync_playwright() as p:
             pg.get_by_role('tab', name='জুমার দোয়া ও নিয়ম').click(); pg.wait_for_timeout(400)
             pg.get_by_role('button', name='সূরা কাহফ পড়ুন').click(); pg.wait_for_timeout(2000); shot(pg, f'{scale_name}-B6-kahf')
             pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1200); shot(pg, f'{scale_name}-B7-account-textsize')
+            pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(1200); shot(pg, f'{scale_name}-B8-home-trip')
+            pg.get_by_role('button', name=re.compile('^আরও গাইড ও তথ্য খুলুন')).click(); pg.wait_for_timeout(1000)
+            for k, g in enumerate(['বয়স্কদের হুইলচেয়ার', 'পাসপোর্ট বানানোর নিয়ম']):
+                if pg.get_by_role('button', name=re.compile('^' + g)).count():
+                    pg.get_by_role('button', name=re.compile('^' + g)).first.click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-B9{k}-guide')
+                    pg.mouse.wheel(0, 1200); pg.wait_for_timeout(300); shot(pg, f'{scale_name}-B9{k}b-guide')
+                    pg.go_back() if False else None
+                    if pg.get_by_role('button', name=re.compile('ফিরে যান')).count(): pg.get_by_role('button', name=re.compile('ফিরে যান')).first.click(); pg.wait_for_timeout(600)
             pg.get_by_role('tab', name='অফার').click(); pg.wait_for_timeout(3000); shot(pg, f'{scale_name}-C0-offers')
             # My group & leader (shows "soon" until SQL 004 is run). Nothing is submitted, so the test account stays clean.
             pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(800)
-            pg.get_by_role('button', name=re.compile('^আমার দল ও লিডার খুলুন')).click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C1-group')
+            pg.get_by_role('button', name=re.compile('^লিডার ও চুক্তি খুলুন')).click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C0b-myleader')
+            pg.mouse.wheel(0, 900); pg.wait_for_timeout(300); shot(pg, f'{scale_name}-C0c-myleader-bottom')
+            if pg.get_by_role('button', name='যাচাই করা লিডার খুঁজুন').count():
+                pg.get_by_role('button', name='যাচাই করা লিডার খুঁজুন').click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C0d-leaders')
+                pg.get_by_role('button', name='লিডার ও চুক্তি পাতায় ফিরে যান').click(); pg.wait_for_timeout(1200)
+            pg.get_by_role('button', name='আমার দল ও লিডারের ঘোষণা').click() if pg.get_by_role('button', name='আমার দল ও লিডারের ঘোষণা').count() else None
+            pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C1-group')
             if pg.get_by_label('লিডারের দেওয়া কোড').count():
                 pg.get_by_label('লিডারের দেওয়া কোড').fill('ZZZZ2222'); pg.get_by_role('button', name=re.compile('দলে যোগ দিন$')).last.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-C2-group-badcode')
                 pg.mouse.wheel(0, 1400); pg.wait_for_timeout(300); shot(pg, f'{scale_name}-C3-group-bottom')
