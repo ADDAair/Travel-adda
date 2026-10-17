@@ -33,6 +33,7 @@ import LeaderScreen from './src/screens/LeaderScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import OffersScreen from './src/screens/OffersScreen';
 import LeaderOffersScreen from './src/screens/LeaderOffersScreen';
+import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -132,6 +133,7 @@ function Main() {
       <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: 'লিডার প্যানেল' }} />
       <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
       <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: 'আমার প্যাকেজ' }} />
+      <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: 'নম্বর যাচাই' }} />
     </Tab.Navigator>
   );
 }

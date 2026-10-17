@@ -44,7 +44,8 @@ export function Account({ navigation }) {
 
   const load = useCallback(async () => {
     try {
-      let r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path').single();
+      let r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path,phone_verified').single();
+      if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path').single();   // step 006 not applied yet
       if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone').single();   // photo step not applied yet
       if (r.data) {
         setP(r.data);
@@ -53,7 +54,7 @@ export function Account({ navigation }) {
       }
     } catch (e) { /* the card keeps showing "…" */ }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
   const hasPhoto = !!(p && p.avatar_path);
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
@@ -99,6 +100,10 @@ export function Account({ navigation }) {
         <Text style={st.val}>{p ? toBn(p.haji_code) : '…'}</Text>
         <Text style={st.label}>মোবাইল নম্বর</Text>
         <Text style={st.val}>{p ? toBn(p.phone) : '…'}</Text>
+        {p && p.phone_verified === true ? <Text style={st.label}>✔️ নম্বরটি এসএমএস কোডে যাচাই করা</Text> : null}
+        {p && p.phone_verified === false ? (
+          <Button title="মোবাইল নম্বর যাচাই করুন" icon="📱" kind="secondary" onPress={() => navigation.navigate('VerifyPhone')} a11yHint="এসএমএসে আসা কোড দিয়ে নম্বর যাচাই" style={{ marginTop: S.sm }} />
+        ) : null}
       </Card>
       <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />

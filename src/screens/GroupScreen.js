@@ -95,6 +95,11 @@ export default function GroupScreen({ navigation }) {
             </View>
           ))}
 
+          {me && me.phone_verified === false ? (
+            <Notice kind="info" title="আপনার মোবাইল নম্বর যাচাই করুন" text="যাচাই করলে লিডার আপনার নম্বর দিয়ে আপনাকে দলে আমন্ত্রণ জানাতে পারবেন।">
+              <Button title="নম্বর যাচাই করুন" icon="📱" kind="secondary" onPress={() => navigation.navigate('VerifyPhone')} style={{ marginTop: S.sm }} />
+            </Notice>
+          ) : null}
           {active.length === 0 && invites.length === 0 ? (
             <Notice kind="info" title="আপনি এখনো কোনো দলে নেই" text="আপনার গ্রুপ লিডারের কাছ থেকে ৮ অক্ষরের কোড নিয়ে নিচে লিখুন। অথবা লিডারকে আপনার মোবাইল নম্বর দিন, তিনি আমন্ত্রণ পাঠাবেন।" />
           ) : null}

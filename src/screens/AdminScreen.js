@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'r
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
+import { supabase } from '../lib/supabase';
 import { myProfile, adminApplications, reviewApplication, leaderDocUrl, notReady, telBd } from '../lib/groups';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffers, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
@@ -174,7 +175,22 @@ function HelpTab() {
   const [state, setState] = useState('load');
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { getHelpline().then((h) => { setPhone(h.phone); setHours(h.hours); setState('ok'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err')); }, []);
+  const [otpLive, setOtpLive] = useState(false);
+  useEffect(() => { getHelpline().then((h) => { setPhone(h.phone); setHours(h.hours); setOtpLive(!!h.otpLive); setState('ok'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err')); }, []);
+  const toggleOtp = () => confirm(otpLive ? 'নম্বর যাচাই বাধ্যতামূলক বন্ধ করবেন?' : 'নম্বর যাচাই বাধ্যতামূলক করবেন?',
+    otpLive ? 'তখন যাচাই না করা নম্বরেও আমন্ত্রণ যাবে।' : 'এরপর লিডারের আমন্ত্রণ শুধু যাচাই করা নম্বরে যাবে, আর লিডার আবেদনেও যাচাই করা নম্বর লাগবে। আগে নিজের নম্বর যাচাই করে দেখে নিন যে কোড আসছে।',
+    otpLive ? 'হ্যাঁ, বন্ধ করুন' : 'হ্যাঁ, চালু করুন', async () => {
+      setBusy(true); setMsg(null);
+      try {
+        if (!otpLive) {
+          const me = await supabase.from('profiles').select('phone_verified').single();
+          if (me.error || !me.data?.phone_verified) { setMsg({ kind: 'warn', text: 'আগে "আমার তথ্য" থেকে নিজের নম্বর যাচাই করুন। এতে নিশ্চিত হবে এসএমএস ঠিকমতো আসছে।' }); return; }
+        }
+        await setSetting('otp_live', otpLive ? '' : 'yes'); setOtpLive(!otpLive);
+        setMsg({ kind: 'ok', text: otpLive ? 'নম্বর যাচাই বাধ্যতামূলক বন্ধ করা হয়েছে।' : 'নম্বর যাচাই এখন বাধ্যতামূলক।' });
+      } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
+      finally { setBusy(false); }
+    });
   const save = async () => {
     if (busy) return;
     const p = cleanHelpline(phone);
@@ -194,6 +210,12 @@ function HelpTab() {
       <Field label="হেল্পলাইন নম্বর" hint="যেমন: +8801XXXXXXXXX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={16} />
       <Field label="কখন ফোন ধরা হয় (ইচ্ছা করলে)" hint="যেমন: প্রতিদিন সকাল ১০টা – রাত ৮টা" value={hours} onChangeText={setHours} maxLength={80} />
       <Button title="সংরক্ষণ করুন" icon="💾" onPress={save} loading={busy} />
+      <View style={[st.card, { marginTop: S.lg }]}>
+        <Text style={st.h}>📱 এসএমএস কোডে নম্বর যাচাই</Text>
+        <Text style={st.val}>{otpLive ? '✅ বাধ্যতামূলক চালু আছে' : '⏸️ বাধ্যতামূলক নয়'}</Text>
+        <Text style={st.small}>চালু থাকলে লিডারের আমন্ত্রণ শুধু যাচাই করা নম্বরে যায়, আর লিডার আবেদনেও যাচাই করা নম্বর লাগে।</Text>
+        <Button title={otpLive ? 'বাধ্যতামূলক বন্ধ করুন' : 'বাধ্যতামূলক চালু করুন'} kind={otpLive ? 'danger' : 'secondary'} onPress={toggleOtp} disabled={busy} style={{ marginTop: S.sm }} />
+      </View>
     </>
   );
 }

@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
+import ForgotPassword from './ForgotPassword';
 
 const A = T.auth;
 
@@ -22,6 +23,7 @@ export default function AuthScreen() {
   const [busy, setBusy] = useState(false);
   const [errs, setErrs] = useState({});
   const [formErr, setFormErr] = useState('');
+  const [forgot, setForgot] = useState(false);
   const phoneRef = useRef(null);
   const pwRef = useRef(null);
   const scrollRef = useRef(null);
@@ -73,6 +75,8 @@ export default function AuthScreen() {
     }
   }
 
+  if (forgot) return <ForgotPassword initialPhone={phone} onClose={() => setForgot(false)} />;
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView ref={scrollRef} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg, paddingBottom: (kb > 0 ? kb : ins.bottom) + S.xl }]} keyboardShouldPersistTaps="handled">
@@ -114,7 +118,11 @@ export default function AuthScreen() {
 
         <Button title={busy ? A.working : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} />
 
-        {!reg ? <Text style={st.forgot}>{A.forgot}</Text> : null}
+        {!reg ? (
+          <Pressable onPress={() => !busy && setForgot(true)} style={st.forgotBtn} accessibilityRole="button" accessibilityLabel={A.forgot}>
+            <Text style={st.forgotT}>🔑 {A.forgot}</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -161,5 +169,6 @@ const st = StyleSheet.create({
   title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
   eye: { minHeight: TOUCH, minWidth: 84, paddingLeft: S.sm, paddingRight: S.md, justifyContent: 'center', alignItems: 'flex-end', flexShrink: 0 },
   eyeT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
-  forgot: { fontSize: F.small, color: C.muted, textAlign: 'center', marginTop: S.md, lineHeight: 24 },
+  forgotBtn: { minHeight: TOUCH, justifyContent: 'center', alignItems: 'center', marginTop: S.md },
+  forgotT: { fontSize: F.body, color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
 });

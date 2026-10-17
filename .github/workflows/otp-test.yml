@@ -14,4 +14,4 @@ jobs:
         run: |
           set -o pipefail
           deno check supabase/functions/phone-otp/index.ts 2>&1 | tee /tmp/check.log || { echo "::error title=deno check::$(tail -c 1500 /tmp/check.log | tr '\n' ' ')"; exit 1; }
-          deno test --allow-none supabase/functions/phone-otp/ 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }
+          deno test supabase/functions/phone-otp/ 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }

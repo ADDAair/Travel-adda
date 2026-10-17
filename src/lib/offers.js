@@ -26,7 +26,7 @@ export async function getHelpline() {
   try {
     const rows = check(await supabase.from('app_settings').select('key,value')) || [];
     const h = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-    const v = { phone: h.helpline_phone || '', hours: h.helpline_hours || '' };
+    const v = { phone: h.helpline_phone || '', hours: h.helpline_hours || '', otpLive: h.otp_live === 'yes' };
     AsyncStorage.setItem(HELP_CACHE, JSON.stringify(v)).catch(() => {});
     return v;
   } catch (e) {
