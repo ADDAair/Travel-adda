@@ -98,7 +98,8 @@ revoke all on function public.review_leader_application(uuid, boolean, text) fro
 grant execute on function public.review_leader_application(uuid, boolean, text) to authenticated;
 
 -- Admin list of applications with the applicant's name and phone.
-create or replace function public.admin_list_applications()
+drop function if exists public.admin_list_applications();   -- 007 adds columns; re-running must not clash
+create function public.admin_list_applications()
 returns table (id uuid, user_id uuid, full_name text, phone text, haji_code text, agency_name text, license_no text,
                doc_path text, status text, admin_note text, created_at timestamptz)
 language sql stable security definer set search_path = '' as $$
