@@ -9,12 +9,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
 import { loadSavedLocation } from '../lib/location';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
+import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
+import { processPendingReferral } from '../lib/market';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
   { route: 'Prayer', icon: '🕌', title: 'নামাজের সময় ও কিবলা', what: 'আপনার জায়গা অনুযায়ী সময় ও কিবলার দিক। ইন্টারনেট ছাড়াও চলে।' },
   { route: 'Dua', icon: '🤲', title: 'দোয়া ভল্ট', what: 'দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।' },
-  { route: 'Group', icon: '👥', title: 'আমার দল ও লিডার', what: 'যাচাই করা গ্রুপ লিডার, ফোন, প্যাকেজের শর্ত ও সম্মতি। কোড দিয়ে দলে যোগ দিন।' },
+  { route: 'MyLeader', icon: '🤝', title: 'লিডার ও চুক্তি', what: 'যাচাই করা লিডার খুঁজুন, রেফারেল কোড, চুক্তি পড়ে সম্মতি, দলের ঘোষণা।', hajiOnly: true },
   { route: 'Docs', icon: '📄', title: 'আমার কাগজপত্র', what: 'পাসপোর্ট, ভিসা, টিকেটের ছবি নিরাপদে। একবার খুললে ইন্টারনেট ছাড়াও দেখা যায়।' },
   { route: 'Ihram', icon: '🕋', title: 'মীকাত ও ইহরাম গাইড', what: 'কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।' },
   { route: 'Umrah', icon: '🔄', title: 'ওমরাহ ধাপে ধাপে', what: 'তাওয়াফ, সাঈ, চুল কাটা। চক্কর গোনার বাটনসহ।' },
@@ -22,7 +24,7 @@ const READY = [
   { route: 'Guides', icon: '📚', title: 'আরও গাইড ও তথ্য', what: 'স্বাস্থ্য ও গরম, দরকারি আরবি কথা, প্রস্তুতি চেকলিস্ট, জানাজা, কসর, যিয়ারত।' },
 ];
 
-const PROFILE_CACHE = 'ta.profileCache.v1';
+const PROFILE_CACHE = ME_CACHE;
 const TOOLS = [
   { route: 'Salah', icon: '🧎', title: 'নামাজের রাকাত ও নিয়ম' },
   { route: 'Tasbih', icon: '📿', title: 'তাসবিহ গণনা' },
@@ -34,6 +36,11 @@ const UPCOMING = [
 
 export default function HomeScreen({ navigation }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
+  const { me } = useMe();
+  const leaderAcc = isLeaderAccount(me);
+  const [refMsg, setRefMsg] = useState(null);
+  // A referral code typed at sign-up is attached once the account exists.
+  useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); }, [me]);
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
 
@@ -49,7 +56,7 @@ export default function HomeScreen({ navigation }) {
       const { data, error } = await Promise.race([supabase.from('profiles').select('full_name,haji_code').single(), timeout]);
       if (error || !data) { setState('err'); return; }
       setP(data); setState('ok');
-      AsyncStorage.setItem(PROFILE_CACHE, JSON.stringify({ full_name: data.full_name, haji_code: data.haji_code })).catch(() => {});
+      // (the full profile is cached by the app itself; see src/lib/me.js)
     } catch (e) { setState('err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -75,7 +82,7 @@ export default function HomeScreen({ navigation }) {
       <View style={st.hero} accessible accessibilityLabel={p ? `আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}` : 'আস-সালামু আলাইকুম'}>
         <Text style={st.hi}>আস-সালামু আলাইকুম 👋</Text>
         {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
-        {p ? <View style={st.idPill}><Text style={st.idT}>হাজী আইডি: {toBn(p.haji_code)}</Text></View> : null}
+        {p ? <View style={st.idPill}><Text style={st.idT}>{leaderAcc ? 'লিডার আইডি' : 'হাজী আইডি'}: {toBn(p.haji_code)}</Text></View> : null}
       </View>
       {state === 'err' ? (
         <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
@@ -107,8 +114,11 @@ export default function HomeScreen({ navigation }) {
         </Card>
       ) : null}
 
+      {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
+      {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : null}
+
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
-      {READY.map((x) => (
+      {READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => (
         <Pressable key={x.route} onPress={() => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)}
           style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]} accessibilityRole="button" accessibilityLabel={`${x.title} খুলুন। ${x.what}`}>
           <Text style={st.readyIc} importantForAccessibility="no">{x.icon}</Text>
@@ -144,6 +154,22 @@ export default function HomeScreen({ navigation }) {
         </View>
       ))}
     </ScrollView>
+  );
+}
+
+// Leader accounts: the panel when approved, otherwise where the application stands.
+function LeaderHomeCard({ me, navigation }) {
+  const approved = me.role === 'leader';
+  return (
+    <Pressable onPress={() => navigation.navigate(approved ? 'Leader' : 'LeaderApply')} style={({ pressed }) => [st.ready, { borderWidth: 2, borderColor: C.gold }, pressed && { opacity: 0.9 }]}
+      accessibilityRole="button" accessibilityLabel={approved ? 'লিডার প্যানেল খুলুন' : 'লিডার আবেদনের অবস্থা দেখুন'}>
+      <Text style={st.readyIc} importantForAccessibility="no">🧭</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={st.readyT}>{approved ? 'লিডার প্যানেল' : 'লিডার অ্যাকাউন্ট: অনুমোদন বাকি'}</Text>
+        <Text style={st.readyW}>{approved ? 'হাজী, চুক্তি, দল, প্যাকেজ ও ঘোষণা এক জায়গায়।' : 'এজেন্সির তথ্য ও কাগজ জমা দিন, অ্যাডমিন যাচাই করে অনুমোদন দেবেন।'}</Text>
+      </View>
+      <Text style={st.readyGo}>খুলুন ›</Text>
+    </Pressable>
   );
 }
 

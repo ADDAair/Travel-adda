@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
-import { applyLeader, notReady } from '../lib/groups';
+import DistrictPicker from '../components/DistrictPicker';
+import { applyLeader, myApplication, notReady } from '../lib/groups';
+import { useMe } from '../lib/me';
 import { DocCamera } from './DocsScreen';
-import { st, errText } from './GroupScreen';
+import { st, errText, fmtDay } from './GroupScreen';
 
-// A haji asks to become a verified group leader. The admin checks the agency and licence by hand before approving.
+// Last step of a LEADER account: agency, Umrah and Hajj licence numbers, district and the licence picture.
+// The admin checks them by hand; until then the leader panel stays locked. (Haji accounts never see this.)
 export default function LeaderApplyScreen({ navigation }) {
-  const [agency, setAgency] = useState('');
-  const [license, setLicense] = useState('');
-  const [file, setFile] = useState(null);        // { uri, kind, name }
+  const { me, refreshMe } = useMe();
+  const [app, setApp] = useState(undefined);      // undefined = loading, null = none yet
+  const [state, setState] = useState('load');
+  const [f, setF] = useState({ agency: '', umrah: '', hajj: '', upazila: '' });
+  const [district, setDistrict] = useState('');
+  const [file, setFile] = useState(null);
   const [cam, setCam] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState({});
   const [msg, setMsg] = useState(null);
-  const [done, setDone] = useState(false);
+  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+
+  const load = useCallback(async () => {
+    try { setApp(await myApplication()); setState('ok'); if (refreshMe) refreshMe(); }
+    catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
+  }, [refreshMe]);
+  useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
   const pick = async () => {
     try {
@@ -33,19 +45,21 @@ export default function LeaderApplyScreen({ navigation }) {
   const submit = async () => {
     if (busy) return;
     const e = {};
-    if (agency.trim().length < 2) e.agency = 'এজেন্সির নাম লিখুন।';
-    if (license.trim().length < 1) e.license = 'লাইসেন্স নম্বর লিখুন।';
+    if (f.agency.trim().length < 2) e.agency = 'এজেন্সির নাম লিখুন।';
+    if (!f.umrah.trim() && !f.hajj.trim()) e.umrah = 'ওমরাহ বা হজ, অন্তত একটি লাইসেন্স নম্বর লিখুন।';
+    if (!district) e.district = 'জেলা বাছুন।';
+    if (!file) e.file = 'লাইসেন্সের ছবি বা PDF দিন।';
     setErr(e); setMsg(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length) { setMsg({ kind: 'bad', text: 'লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।' }); return; }
     setBusy(true);
-    try { await applyLeader({ agency, license, file }); setDone(true); }
+    try { await applyLeader({ agency: f.agency, umrah: f.umrah, hajj: f.hajj, district, upazila: f.upazila, file }); await load(); }
     catch (x) {
       const m = String((x && x.message) || '');
-      if (notReady(x)) setMsg({ kind: 'info', text: 'লিডার আবেদন শীঘ্রই চালু হবে।' });
+      if (notReady(x)) setMsg({ kind: 'info', text: 'লিডার নিবন্ধন শীঘ্রই চালু হবে।' });
       else if (x && x.code === 'too-big') setMsg({ kind: 'bad', text: 'ছবি বা ফাইলটি ৫ এমবির বেশি বড়।' });
-      else if (x && x.code === '23505') setMsg({ kind: 'info', text: 'আপনার একটি আবেদন আগে থেকেই যাচাই হচ্ছে।' });
-      else if ((x && x.code === '42501') || /row-level security|not allowed/i.test(m)) setMsg({ kind: 'info', text: 'আপনি এখন আবেদন করতে পারবেন না (হয়তো আগেই লিডার হয়েছেন)।' });
-      else setMsg({ kind: 'bad', text: errText(x) });   // typed text stays in the form
+      else if (x && x.code === '23505') { setMsg({ kind: 'info', text: 'আপনার একটি আবেদন আগে থেকেই যাচাই হচ্ছে।' }); load(); }
+      else if ((x && x.code === '42501') || /row-level security|not allowed/i.test(m)) setMsg({ kind: 'warn', text: 'এখন জমা দেওয়া যাচ্ছে না। মোবাইল নম্বর যাচাই বাধ্যতামূলক থাকলে আগে "আমার তথ্য" থেকে নম্বর যাচাই করুন।' });
+      else setMsg({ kind: 'bad', text: errText(x) });   // what was typed stays in the form
     } finally { setBusy(false); }
   };
 
@@ -57,24 +71,50 @@ export default function LeaderApplyScreen({ navigation }) {
     );
   }
 
+  const approved = me && me.role === 'leader';
+  const pending = app && app.status === 'pending';
+  const showForm = state === 'ok' && !approved && !pending && me && me.account_type === 'leader';
+
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Group')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার দল পাতায় ফিরে যান"><Text style={st.backT}>‹ আমার দল</Text></Pressable>
-      <Text style={st.title} accessibilityRole="header">📝 লিডার হতে আবেদন</Text>
-      {done ? (
+      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
+      <Text style={st.title} accessibilityRole="header">🧭 লিডার নিবন্ধন</Text>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
+      {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="লিডার নিবন্ধনের শেষ ধাপ চালু হওয়া বাকি আছে।" /> : null}
+      {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
+      {state === 'ok' && me && me.account_type !== 'leader' && !approved ? <Notice kind="info" title="এটি হাজী অ্যাকাউন্ট" text="লিডার হিসেবে কাজ করতে আলাদা লিডার অ্যাকাউন্ট খুলতে হয় (নতুন অ্যাকাউন্ট খোলার সময় 'আমি গ্রুপ লিডার' বাছুন)।" /> : null}
+      {approved ? (
         <>
-          <Notice kind="ok" title="আবেদন জমা হয়েছে" text="অ্যাডমিন আপনার এজেন্সি ও লাইসেন্স যাচাই করবেন। অনুমোদন হলে 'আমার দল' পাতায় 'লিডার প্যানেল' বাটন দেখবেন।" />
-          <Button title="আমার দল পাতায় যান" icon="👥" onPress={() => navigation.navigate('Group')} />
+          <Notice kind="ok" title="আপনি অনুমোদিত লিডার" />
+          <Button title="লিডার প্যানেল খুলুন" icon="🧭" onPress={() => navigation.navigate('Leader')} />
         </>
-      ) : (
+      ) : null}
+      {pending ? (
         <>
-          <Text style={[st.p, { marginBottom: S.md }]}>শুধু হজ বা ওমরাহ এজেন্সির লিডাররা আবেদন করুন। হাজীরা লিডারের নাম দেখে ভরসা করবেন, তাই সঠিক তথ্য দিন।</Text>
-          {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-          <Field label="এজেন্সির নাম" value={agency} onChangeText={setAgency} maxLength={120} error={err.agency} />
-          <Field label="এজেন্সির লাইসেন্স নম্বর" hint="ধর্ম মন্ত্রণালয়ের হজ লাইসেন্স নম্বর" value={license} onChangeText={setLicense} maxLength={40} error={err.license} autoCapitalize="characters" />
+          <Notice kind="info" title="আপনার আবেদন যাচাই হচ্ছে" text={`জমা দিয়েছেন: ${fmtDay(app.created_at)}। অ্যাডমিন লাইসেন্স মিলিয়ে দেখবেন, দরকার হলে ফোন করবেন। অনুমোদন হলে হোমে "লিডার প্যানেল" চালু হবে।`} />
           <View style={st.card}>
-            <Text style={st.h}>লাইসেন্সের কাগজ (ইচ্ছা করলে)</Text>
-            <Text style={st.small}>কাগজ দিলে যাচাই দ্রুত হয়। শুধু অ্যাডমিন দেখতে পারবেন।</Text>
+            <Text style={st.lbl}>এজেন্সি</Text><Text style={st.p}>{app.agency_name}</Text>
+            {app.umrah_license ? <><Text style={st.lbl}>ওমরাহ লাইসেন্স</Text><Text style={st.p}>{app.umrah_license}</Text></> : null}
+            {app.hajj_license ? <><Text style={st.lbl}>হজ লাইসেন্স</Text><Text style={st.p}>{app.hajj_license}</Text></> : null}
+            {app.district ? <><Text style={st.lbl}>এলাকা</Text><Text style={st.p}>{[app.upazila, app.district].filter(Boolean).join(', ')}</Text></> : null}
+          </View>
+          <Button title="আবার দেখুন" icon="🔄" kind="secondary" onPress={load} />
+        </>
+      ) : null}
+      {showForm ? (
+        <>
+          {app && app.status === 'rejected' ? <Notice kind="warn" title="আগের আবেদন অনুমোদন হয়নি" text={app.admin_note || 'সঠিক তথ্য দিয়ে আবার জমা দিন।'} /> : null}
+          <Text style={[st.p, { marginBottom: S.md }]}>হাজীরা লিডারের তালিকায় আপনার এজেন্সি ও লাইসেন্স দেখে ভরসা করবেন, তাই সঠিক তথ্য দিন। আপনার ফোন নম্বর তালিকায় দেখানো হবে না।</Text>
+          <Field label="এজেন্সির নাম" value={f.agency} onChangeText={set('agency')} maxLength={120} error={err.agency} />
+          <Field label="ওমরাহ লাইসেন্স নম্বর" hint="ধর্ম মন্ত্রণালয়ের ওমরাহ লাইসেন্স" value={f.umrah} onChangeText={set('umrah')} maxLength={40} error={err.umrah} autoCapitalize="characters" />
+          <Field label="হজ লাইসেন্স নম্বর" hint="হজ লাইসেন্স থাকলে" value={f.hajj} onChangeText={set('hajj')} maxLength={40} autoCapitalize="characters" />
+          <DistrictPicker label="অফিসের জেলা" value={district} onChange={setDistrict} error={err.district} />
+          <Field label="উপজেলা / থানা" hint="যেমন: বিয়ানীবাজার" value={f.upazila} onChangeText={set('upazila')} maxLength={60} />
+          <View style={[st.card, err.file ? { borderWidth: 2, borderColor: C.bad } : null]}>
+            <Text style={st.h}>লাইসেন্সের ছবি বা PDF</Text>
+            <Text style={st.small}>শুধু অ্যাডমিন দেখতে পারবেন।</Text>
+            {err.file ? <Text style={[st.small, { color: C.bad }]}>⚠️ {err.file}</Text> : null}
             {file ? (
               <>
                 <Notice kind="ok" title={`যুক্ত হয়েছে: ${file.kind === 'pdf' ? '📕 ' : '🖼️ '}${file.name}`} />
@@ -87,9 +127,9 @@ export default function LeaderApplyScreen({ navigation }) {
               </>
             )}
           </View>
-          <Button title="আবেদন জমা দিন" icon="📨" onPress={submit} loading={busy} />
+          <Button title="নিবন্ধন জমা দিন" icon="📨" onPress={submit} loading={busy} />
         </>
-      )}
+      ) : null}
     </ScrollView>
   );
 }

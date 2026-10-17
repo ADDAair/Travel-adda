@@ -34,6 +34,8 @@ import AdminScreen from './src/screens/AdminScreen';
 import OffersScreen from './src/screens/OffersScreen';
 import LeaderOffersScreen from './src/screens/LeaderOffersScreen';
 import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
+import Suspended from './src/screens/Suspended';
+import { MeCtx, loadMe } from './src/lib/me';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -143,6 +145,7 @@ export default function App() {
   const [onboarded, setOnboarded] = useState(undefined);
   const [handsOnPending, setHandsOnPending] = useState(false);
   const [photoGate, setPhotoGate] = useState(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
+  const [me, setMe] = useState(null);                      // profile: account type, role, status (offline copy if no internet)
   const userId = session ? session.user.id : null;
 
   useEffect(() => {
@@ -178,6 +181,16 @@ export default function App() {
     return () => { alive = false; };
   }, [userId]);
 
+  // Who is signed in (haji / leader / admin, active / suspended). Re-checked when the app comes back to the front.
+  const refreshMe = useCallback(async () => { const m = await loadMe(); setMe(m); return m; }, []);
+  useEffect(() => {
+    if (!userId) { setMe(null); return undefined; }
+    refreshMe();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshMe(); });
+    return () => sub.remove();
+  }, [userId, refreshMe]);
+  const meCtx = useMemo(() => ({ me, refreshMe }), [me, refreshMe]);
+
   const finishOnboarding = useCallback(() => { prefs.setOnboarded(true); setOnboarded(true); }, []);
   const tutorial = useMemo(() => ({
     handsOnPending,
@@ -198,6 +211,8 @@ export default function App() {
     body = <Onboarding onDone={finishOnboarding} />;
   } else if (!session) {
     body = <AuthScreen />;
+  } else if (me && me.status === 'suspended') {
+    body = <Suspended />;
   } else if (photoGate === 'missing') {
     body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
@@ -205,10 +220,12 @@ export default function App() {
   }
   return (
     <SafeAreaProvider>
+      <MeCtx.Provider value={meCtx}>
       <TutorialCtx.Provider value={tutorial}>
         <StatusBar style={(session && onboarded && photoGate !== 'missing' && photoGate !== undefined) || session === undefined || onboarded === undefined || checkingPhoto ? 'light' : 'dark'} />
         {body}
       </TutorialCtx.Provider>
+      </MeCtx.Provider>
     </SafeAreaProvider>
   );
 }

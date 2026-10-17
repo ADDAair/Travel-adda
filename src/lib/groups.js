@@ -25,11 +25,15 @@ export async function myProfile() {
 
 // ---------- Leader application ----------
 export async function myApplication() {
-  const rows = check(await supabase.from('leader_applications').select('id,agency_name,license_no,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1));
+  let r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  if (r.error && (r.error.code === '42703' || /column/i.test(r.error.message || ''))) {
+    r = await supabase.from('leader_applications').select('id,agency_name,license_no,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  }
+  const rows = check(r);
   return rows && rows[0] ? rows[0] : null;
 }
 
-export async function applyLeader({ agency, license, file }) {
+export async function applyLeader({ agency, license, umrah, hajj, district, upazila, file }) {
   const me = await uid();
   let path = null;
   if (file) {
@@ -41,7 +45,9 @@ export async function applyLeader({ agency, license, file }) {
     const up = await supabase.storage.from('leader-docs').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg' });
     if (up.error) throw up.error;
   }
-  const ins = await supabase.from('leader_applications').insert({ agency_name: agency.trim(), license_no: license.trim(), doc_path: path }).select('id').single();
+  const row = { agency_name: agency.trim(), license_no: (license || umrah || hajj || '').trim(), doc_path: path };
+  if (umrah !== undefined) Object.assign(row, { umrah_license: (umrah || '').trim() || null, hajj_license: (hajj || '').trim() || null, district: district || null, upazila: (upazila || '').trim() || null });
+  const ins = await supabase.from('leader_applications').insert(row).select('id').single();
   if (ins.error) {
     if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
     throw ins.error;

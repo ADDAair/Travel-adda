@@ -132,9 +132,7 @@ function GroupAdmin({ g, onBack }) {
 
   const load = useCallback(async () => {
     try {
-      const [m, c] = await Promise.all([groupMembers(g.id), groupContracts(g.id)]);
-      setMembers(m); setContracts(c);
-      setAcc(await acceptancesFor(c.map((x) => x.id)));
+      setMembers(await groupMembers(g.id));
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); setMembers((x) => x || []); }
   }, [g]);
   useEffect(() => { load(); }, [load]);
@@ -192,23 +190,7 @@ function GroupAdmin({ g, onBack }) {
         {(members || []).map((m) => <MemberRow key={m.user_id} m={m} onRemove={() => remove(m)} busy={busy} />)}
       </View>
 
-      <Text style={[st.h, { marginTop: S.sm }]}>📜 প্যাকেজের শর্ত</Text>
-      <Notice kind="info" title="শর্ত একবার সংরক্ষণ করলে আর বদলানো বা মোছা যায় না" text="এতে হাজী ও লিডার দুপক্ষই নিশ্চিত থাকেন। ভুল হলে নতুন শর্ত লিখুন, হাজীরা নতুনটিতে আবার সম্মতি দেবেন।" />
-      <Button title="নতুন শর্ত লিখুন" icon="✍️" onPress={() => setForm(true)} style={{ marginBottom: S.md }} />
-      {contracts.map((c) => {
-        const who = acc.filter((a) => a.contract_id === c.id);
-        const ids = new Set(who.map((a) => a.user_id));
-        const waiting = active.filter((m) => !ids.has(m.user_id));
-        return (
-          <ContractCard key={c.id} c={c} footer={(
-            <View style={st.cRow}>
-              <Text style={st.val}>✍️ সম্মতি দিয়েছেন: {toBn(who.length)} জন</Text>
-              {who.map((a) => <Text key={a.user_id} style={st.small}>✅ {nameOf[a.user_id] || 'সাবেক সদস্য'} – {fmtDay(a.accepted_at)}</Text>)}
-              {waiting.length ? <Text style={st.small}>⏳ এখনো বাকি: {waiting.map((m) => m.full_name).join(', ')}</Text> : null}
-            </View>
-          )} />
-        );
-      })}
+      <Notice kind="info" title="চুক্তি এখন প্রতিটি হাজীর সাথে আলাদা" text='লিডার প্যানেলের "চুক্তি" অংশ থেকে হাজীর আইডিতে চুক্তির অনুরোধ পাঠান।' />
     </ScrollView>
   );
 }

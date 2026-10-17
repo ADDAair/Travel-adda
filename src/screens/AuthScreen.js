@@ -10,6 +10,8 @@ import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
+import { rememberReferral, getTerms } from '../lib/market';
+import { Modal } from 'react-native';
 
 const A = T.auth;
 
@@ -24,6 +26,12 @@ export default function AuthScreen() {
   const [errs, setErrs] = useState({});
   const [formErr, setFormErr] = useState('');
   const [forgot, setForgot] = useState(false);
+  const [accType, setAccType] = useState(null);      // 'haji' | 'leader' (only when opening a new account)
+  const [refCode, setRefCode] = useState('');
+  const [terms, setTerms] = useState(null);          // { body } when the admin has written terms
+  const [agree, setAgree] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  useEffect(() => { getTerms().then(setTerms).catch(() => {}); }, []);
   const phoneRef = useRef(null);
   const pwRef = useRef(null);
   const scrollRef = useRef(null);
@@ -36,7 +44,7 @@ export default function AuthScreen() {
   }, [kb]);
   const keepVisible = () => { if (kb > 0) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60); };
 
-  function switchMode(r) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); }
+  function switchMode(r) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); if (!r) setAccType(null); }
 
   function validate() {
     const e = {};
@@ -44,6 +52,8 @@ export default function AuthScreen() {
     if (!isValidBdPhone(normalizePhone(phone))) e.phone = A.errPhone;
     if (pw.length < 8) e.pw = A.errPw;
     else if (reg && strength.level === 0) e.pw = A.errPwEasy;
+    if (reg && refCode.trim() && !/^TL-?\d{1,6}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';
+    if (reg && terms && !agree) e.agree = 'শর্তাবলি পড়ে টিক দিন।';
     setErrs(e);
     return Object.keys(e).length === 0;
   }
@@ -56,7 +66,10 @@ export default function AuthScreen() {
     try {
       const email = phoneToLoginId(normalizePhone(phone));
       const res = reg
-        ? await supabase.auth.signUp({ email, password: pw, options: { data: { full_name: name.trim() } } })
+        ? await (async () => {
+          if (accType === 'haji' && refCode.trim()) await rememberReferral(refCode.trim().toUpperCase().replace(/\s/g, '').replace(/^TL(\d)/, 'TL-$1'));
+          return supabase.auth.signUp({ email, password: pw, options: { data: { full_name: name.trim(), account_type: accType === 'leader' ? 'leader' : 'haji' } } });
+        })()
         : await supabase.auth.signInWithPassword({ email, password: pw });
       if (res.error) {
         const m = (res.error.message || '').toLowerCase();
@@ -95,6 +108,26 @@ export default function AuthScreen() {
 
         <Text style={st.title}>{reg ? A.registerTitle : A.loginTitle}</Text>
 
+        {reg && !accType ? (
+          <>
+            <Text style={[st.tag, { textAlign: 'left', marginBottom: S.sm }]}>আপনি কে? একটি বাছুন:</Text>
+            <Pressable onPress={() => setAccType('haji')} style={st.choice} accessibilityRole="button" accessibilityLabel="আমি হাজী, হজ বা ওমরাহ যাত্রী">
+              <Text style={st.choiceIc} importantForAccessibility="no">🕋</Text>
+              <View style={{ flex: 1 }}><Text style={st.choiceT}>আমি হাজী</Text><Text style={st.choiceW}>হজ বা ওমরাহ যাত্রী</Text></View>
+            </Pressable>
+            <Pressable onPress={() => setAccType('leader')} style={st.choice} accessibilityRole="button" accessibilityLabel="আমি গ্রুপ লিডার বা এজেন্সি">
+              <Text style={st.choiceIc} importantForAccessibility="no">🧭</Text>
+              <View style={{ flex: 1 }}><Text style={st.choiceT}>আমি গ্রুপ লিডার</Text><Text style={st.choiceW}>হজ/ওমরাহ এজেন্সি। লাইসেন্স ও কাগজ দিয়ে নিবন্ধন, অ্যাডমিন যাচাই করবেন।</Text></View>
+            </Pressable>
+          </>
+        ) : null}
+        {reg && accType ? (
+          <Pressable onPress={() => !busy && setAccType(null)} style={st.chosen} accessibilityRole="button" accessibilityLabel={`অ্যাকাউন্টের ধরন: ${accType === 'leader' ? 'গ্রুপ লিডার' : 'হাজী'}। বদলাতে চাপুন`}>
+            <Text style={st.chosenT}>{accType === 'leader' ? '🧭 গ্রুপ লিডার অ্যাকাউন্ট' : '🕋 হাজী অ্যাকাউন্ট'} · <Text style={{ textDecorationLine: 'underline' }}>বদলান</Text></Text>
+          </Pressable>
+        ) : null}
+
+        {reg && !accType ? null : (<>
         {reg ? (
           <Field label={A.nameLabel} hint={A.nameHint} value={name} onChangeText={setName} error={errs.name}
             maxLength={80} autoComplete="name" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => phoneRef.current?.focus()} />
@@ -114,6 +147,21 @@ export default function AuthScreen() {
 
         {reg && pw.length > 0 ? <StrengthMeter s={strength} /> : null}
 
+        {reg && accType === 'haji' ? (
+          <Field label="লিডারের রেফারেল কোড (থাকলে)" hint="যেমন: TL-00012" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} error={errs.ref}
+            maxLength={12} autoCapitalize="characters" autoCorrect={false} onFocus={keepVisible} />
+        ) : null}
+        {reg && accType === 'leader' ? <Notice kind="info" title="অ্যাকাউন্ট খোলার পর শেষ ধাপ" text="এজেন্সির নাম, ওমরাহ ও হজ লাইসেন্স নম্বর এবং লাইসেন্সের ছবি দিতে হবে। অ্যাডমিন যাচাই করে অনুমোদন দিলে লিডার প্যানেল চালু হবে।" /> : null}
+        {reg && terms ? (
+          <View style={{ marginBottom: S.md }}>
+            <Pressable onPress={() => setAgree(!agree)} style={st.agree} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel="আমি শর্তাবলি পড়েছি ও মেনে নিচ্ছি">
+              <Text style={st.agreeT}>{agree ? '☑️' : '⬜'} আমি শর্তাবলি পড়েছি ও মেনে নিচ্ছি</Text>
+            </Pressable>
+            <Pressable onPress={() => setShowTerms(true)} style={st.forgotBtn} accessibilityRole="button"><Text style={st.forgotT}>📜 শর্তাবলি পড়ুন</Text></Pressable>
+            {errs.agree ? <Text style={st.agreeErr}>⚠️ {errs.agree}</Text> : null}
+          </View>
+        ) : null}
+
         {formErr ? <Notice kind="bad" title={formErr} /> : null}
 
         <Button title={busy ? A.working : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} />
@@ -123,6 +171,14 @@ export default function AuthScreen() {
             <Text style={st.forgotT}>🔑 {A.forgot}</Text>
           </Pressable>
         ) : null}
+        </>)}
+        <Modal visible={showTerms} animationType="slide" onRequestClose={() => setShowTerms(false)}>
+          <ScrollView contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg }]}>
+            <Text style={st.title}>📜 শর্তাবলি</Text>
+            <Text style={st.termsT} selectable>{terms ? terms.body : ''}</Text>
+            <Button title="পড়েছি, বন্ধ করুন" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
+          </ScrollView>
+        </Modal>
       </ScrollView>
     </View>
   );
@@ -169,6 +225,16 @@ const st = StyleSheet.create({
   title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
   eye: { minHeight: TOUCH, minWidth: 84, paddingLeft: S.sm, paddingRight: S.md, justifyContent: 'center', alignItems: 'flex-end', flexShrink: 0 },
   eyeT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
+  choice: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.lg, borderWidth: 2, borderColor: C.primary, padding: S.md, marginBottom: S.md, minHeight: 88 },
+  choiceIc: { fontSize: 40 },
+  choiceT: { fontSize: F.large, fontWeight: '700', color: C.primary },
+  choiceW: { fontSize: F.small, color: C.muted, lineHeight: 22 },
+  chosen: { minHeight: TOUCH, justifyContent: 'center', marginBottom: S.sm },
+  chosenT: { fontSize: F.body, color: C.primary, fontWeight: '700' },
+  agree: { minHeight: TOUCH, justifyContent: 'center' },
+  agreeT: { fontSize: F.body, color: C.text },
+  agreeErr: { fontSize: F.small, color: C.bad },
+  termsT: { fontSize: F.body, color: C.text, lineHeight: 30 },
   forgotBtn: { minHeight: TOUCH, justifyContent: 'center', alignItems: 'center', marginTop: S.md },
   forgotT: { fontSize: F.body, color: C.primary, fontWeight: '700', textDecorationLine: 'underline' },
 });

@@ -42,7 +42,6 @@ export default function GroupScreen({ navigation }) {
       setMe(p); setRows(g);
       const ids = g.filter((x) => x.status === 'active').map((x) => x.group_id);
       groupAnnouncements(ids).then(setAnn).catch(() => setAnn(null));
-      if (p.role === 'haji') { try { setApp(await myApplication()); } catch (e) { setApp(null); } }
       setState('ok');
     } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
@@ -89,7 +88,7 @@ export default function GroupScreen({ navigation }) {
             <View key={g.group_id} style={[st.card, st.invite]}>
               <Text style={st.h}>📩 দলে যোগ দেওয়ার আমন্ত্রণ</Text>
               <Text style={st.p}>{g.leader_name} আপনাকে "{g.group_name}" দলে আমন্ত্রণ জানিয়েছেন।{g.agency_name ? ` এজেন্সি: ${g.agency_name}।` : ''}</Text>
-              <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি, মোবাইল নম্বর ও ছবি দেখতে পাবেন।</Text>
+              <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি ও ছবি দেখতে পাবেন। চুক্তি চালু হলে মোবাইল নম্বরও দেখবেন।</Text>
               <Button title="রাজি, যোগ দিন" icon="✅" onPress={() => run(() => respondInvite(g.group_id, true), () => 'দলে যোগ দেওয়া হয়েছে।')} loading={busy} style={{ marginTop: S.sm }} />
               <Button title="না, যোগ দেব না" kind="secondary" onPress={() => confirm('আমন্ত্রণ বাতিল করবেন?', '', 'হ্যাঁ, বাতিল', () => run(() => respondInvite(g.group_id, false), () => 'আমন্ত্রণ বাতিল করা হয়েছে।'))} disabled={busy} style={{ marginTop: S.sm }} />
             </View>
@@ -114,8 +113,8 @@ export default function GroupScreen({ navigation }) {
                 <Text style={st.small}>অ্যাপের অ্যাডমিন যাচাই করে লিডার হিসেবে অনুমোদন দিয়েছেন।</Text>
               </View>
               <Announcements rows={ann ? ann.rows.filter((a) => a.group_id === g.group_id) : null} offline={ann && ann.offline} />
-              <Button title={`লিডারকে ফোন করুন (${toBn(g.leader_phone)})`} icon="📞" onPress={() => call(g.leader_phone)} />
-              <Button title="প্যাকেজের শর্ত ও সম্মতি" icon="📜" kind="secondary" onPress={() => setOpen(g)} style={{ marginTop: S.sm }} />
+              {g.leader_phone ? <Button title={`লিডারকে ফোন করুন (${toBn(g.leader_phone)})`} icon="📞" onPress={() => call(g.leader_phone)} />
+                : <Text style={st.small}>🔒 লিডারের সাথে চুক্তি চালু হলে এখানে তাঁর ফোন নম্বর দেখাবে। তার আগে যোগাযোগ Travel Adda হেল্পলাইনের মাধ্যমে।</Text>}
               <Pressable onPress={() => confirm('এই দল ছেড়ে দেবেন?', 'আবার যোগ দিতে লিডারের কোড লাগবে।', 'হ্যাঁ, ছেড়ে দিন', () => run(() => leaveGroup(g.group_id), () => 'দল ছেড়ে দেওয়া হয়েছে।'))}
                 style={st.leave} accessibilityRole="button" accessibilityLabel="দল ছেড়ে দিন"><Text style={st.leaveT}>দল ছেড়ে দিন</Text></Pressable>
             </View>
@@ -124,23 +123,10 @@ export default function GroupScreen({ navigation }) {
           <View style={st.card}>
             <Text style={st.h}>🔑 কোড দিয়ে দলে যোগ দিন</Text>
             <Field label="লিডারের দেওয়া কোড" hint="যেমন: AB12CD34" value={code} onChangeText={(v) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
-            <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি, মোবাইল নম্বর ও ছবি দেখতে পাবেন।</Text>
+            <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি ও ছবি দেখতে পাবেন। চুক্তি চালু হলে মোবাইল নম্বরও দেখবেন।</Text>
             <Button title="দলে যোগ দিন" icon="➕" onPress={join} loading={busy} />
           </View>
 
-          {me && me.role === 'haji' ? (
-            <View style={st.card}>
-              <Text style={st.h}>🧭 আপনি কি গ্রুপ লিডার?</Text>
-              {app && app.status === 'pending' ? <Notice kind="info" title="আপনার আবেদন যাচাই হচ্ছে" text={`জমা দিয়েছেন: ${fmtDay(app.created_at)}। অনুমোদন হলে এখানে "লিডার প্যানেল" বাটন আসবে।`} /> : null}
-              {app && app.status === 'rejected' ? <Notice kind="warn" title="আগের আবেদন অনুমোদন হয়নি" text={app.admin_note || 'চাইলে সঠিক তথ্য দিয়ে আবার আবেদন করুন।'} /> : null}
-              {!app || app.status === 'rejected' ? (
-                <>
-                  <Text style={st.p}>হজ বা ওমরাহ এজেন্সির লিডার হলে আবেদন করুন। অ্যাডমিন যাচাই করে অনুমোদন দেবেন।</Text>
-                  <Button title="লিডার হতে আবেদন করুন" icon="📝" kind="secondary" onPress={() => navigation.navigate('LeaderApply')} style={{ marginTop: S.sm }} />
-                </>
-              ) : null}
-            </View>
-          ) : null}
         </>
       ) : null}
     </ScrollView>
