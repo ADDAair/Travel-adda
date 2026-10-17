@@ -6,7 +6,7 @@ import { toBn, normalizeDigits, normalizePhone, isValidBdPhone } from '../lib/ph
 import { signedAvatarUrl } from '../lib/avatar';
 import { parseDate } from '../lib/dates';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, groupContracts, createContract, acceptancesFor, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
-import { st, errText, confirm, fmtDay, fmtWhen, ContractCard } from './GroupScreen';
+import { st, errText, confirm, fmtDay, fmtWhen } from './GroupScreen';
 
 const STATUS = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
 const call = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
@@ -48,7 +48,7 @@ export default function LeaderScreen({ navigation }) {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Group')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার দল পাতায় ফিরে যান"><Text style={st.backT}>‹ আমার দল</Text></Pressable>
+      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">🧭 লিডার প্যানেল</Text>
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" /> : null}
@@ -56,7 +56,9 @@ export default function LeaderScreen({ navigation }) {
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' ? (
         <>
-          <Button title="আমার প্যাকেজ (অফার)" icon="🎁" kind="gold" onPress={() => navigation.navigate('LeaderOffers')} a11yHint="হাজীদের অফার পাতায় প্যাকেজ দিন" style={{ marginBottom: S.md }} />
+          <Button title="চুক্তি ও রেফারেল হাজী" icon="📜" onPress={() => navigation.navigate('LeaderContracts')} a11yHint="হাজীর আইডিতে চুক্তি পাঠান, উত্তর দেখুন" style={{ marginBottom: S.sm }} />
+          <Button title="আমার প্যাকেজ (অফার)" icon="🎁" kind="gold" onPress={() => navigation.navigate('LeaderOffers')} a11yHint="হাজীদের অফার পাতায় প্যাকেজ দিন" style={{ marginBottom: S.sm }} />
+          <Button title="আমার লিডার প্রোফাইল" icon="👤" kind="secondary" onPress={() => navigation.navigate('LeaderMe')} a11yHint="হাজীরা তালিকায় আপনাকে কীভাবে দেখেন" style={{ marginBottom: S.md }} />
           <Text style={st.h}>👥 আমার দলগুলো</Text>
           {groups.length === 0 ? <Notice kind="info" title="এখনো কোনো দল নেই" text="নিচে দলের নাম লিখে প্রথম দল বানান।" /> : null}
           {groups.map((g) => (

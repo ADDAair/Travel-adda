@@ -6,6 +6,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
 import { clearLocalDocs } from '../lib/docs';
 import { cancelDocs } from '../lib/notify';
+import { useMe, isLeaderAccount, isStaff } from '../lib/me';
 import { C, F, S, R, TOUCH, TEXT_SCALE, TEXT_SCALE_KEY } from '../theme';
 import * as SecureStore from 'expo-secure-store';
 import { reloadAppAsync } from 'expo';
@@ -34,6 +35,7 @@ export function Soon({ title, icon, what, route, navigation }) {
 
 export function Account({ navigation }) {
   const { replay } = useTutorial();
+  const { me } = useMe();
   const [p, setP] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [imgFail, setImgFail] = useState(false);
@@ -60,7 +62,7 @@ export function Account({ navigation }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;
@@ -107,7 +109,13 @@ export function Account({ navigation }) {
       </Card>
       <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />
-      <Button title="আমার দল ও লিডার" icon="👥" kind="secondary" onPress={() => navigation.navigate('Group')} a11yHint="দল, গ্রুপ লিডার, লিডার আবেদন ও লিডার প্যানেল" style={{ marginBottom: S.md }} />
+      {isLeaderAccount(me) ? (
+        <Button title={me.role === 'leader' ? 'লিডার প্যানেল' : 'লিডার নিবন্ধনের অবস্থা'} icon="🧭" kind="secondary" onPress={() => navigation.navigate(me.role === 'leader' ? 'Leader' : 'LeaderApply')} style={{ marginBottom: S.md }} />
+      ) : (
+        <Button title="লিডার ও চুক্তি" icon="🤝" kind="secondary" onPress={() => navigation.navigate('MyLeader')} a11yHint="লিডার খুঁজুন, রেফারেল কোড, চুক্তি, দলের ঘোষণা" style={{ marginBottom: S.md }} />
+      )}
+      {isStaff(me) ? <Button title="অ্যাডমিন প্যানেল" icon="🛡️" kind="gold" onPress={() => navigation.navigate('Admin')} style={{ marginBottom: S.md }} /> : null}
+      <Button title="শর্তাবলি" icon="📜" kind="secondary" onPress={() => navigation.navigate('Terms')} style={{ marginBottom: S.md }} />
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
       <View style={st.delBox}>

@@ -11,6 +11,7 @@ import { loadSavedLocation } from '../lib/location';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
 import { processPendingReferral } from '../lib/market';
+import TripCard from '../components/TripCard';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -115,7 +116,7 @@ export default function HomeScreen({ navigation }) {
       ) : null}
 
       {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
-      {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : null}
+      {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripCard navigation={navigation} />}
 
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
       {READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => (

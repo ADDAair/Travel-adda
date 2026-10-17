@@ -35,6 +35,11 @@ import OffersScreen from './src/screens/OffersScreen';
 import LeaderOffersScreen from './src/screens/LeaderOffersScreen';
 import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
 import Suspended from './src/screens/Suspended';
+import MyLeaderScreen from './src/screens/MyLeaderScreen';
+import LeadersScreen from './src/screens/LeadersScreen';
+import LeaderContractsScreen from './src/screens/LeaderContractsScreen';
+import LeaderMeScreen from './src/screens/LeaderMeScreen';
+import TermsScreen from './src/screens/TermsScreen';
 import { MeCtx, loadMe } from './src/lib/me';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
@@ -136,6 +141,11 @@ function Main() {
       <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
       <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: 'আমার প্যাকেজ' }} />
       <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: 'নম্বর যাচাই' }} />
+      <Tab.Screen name="MyLeader" component={MyLeaderScreen} options={{ title: 'লিডার ও চুক্তি' }} />
+      <Tab.Screen name="Leaders" component={LeadersScreen} options={{ title: 'যাচাই করা লিডার' }} />
+      <Tab.Screen name="LeaderContracts" component={LeaderContractsScreen} options={{ title: 'চুক্তি ও হাজী' }} />
+      <Tab.Screen name="LeaderMe" component={LeaderMeScreen} options={{ title: 'আমার লিডার প্রোফাইল' }} />
+      <Tab.Screen name="Terms" component={TermsScreen} options={{ title: 'শর্তাবলি' }} />
     </Tab.Navigator>
   );
 }

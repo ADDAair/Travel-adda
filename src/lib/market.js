@@ -79,7 +79,20 @@ export const withdrawContract = (id) => rpc('leader_withdraw_contract', { p_id: 
 export const respondContract = (id, accept) => rpc('haji_respond_contract', { p_id: id, p_accept: accept });
 export const cancelContract = (id, reason) => rpc('cancel_contract', { p_id: id, p_reason: reason });
 export const completeContract = (id) => rpc('leader_complete_contract', { p_id: id });
-export const myContracts = async () => (await rpc('my_contracts')) || [];
+// The leader of my ACTIVE contract is kept on this phone, so the Emergency page can call them without internet.
+const CONTRACT_LEADER = 'ta.contractLeader.v1';
+export async function myContracts() {
+  const rows = (await rpc('my_contracts')) || [];
+  const a = rows.find((c) => c.status === 'accepted');
+  try {
+    if (a && a.leader_phone) await AsyncStorage.setItem(CONTRACT_LEADER, JSON.stringify({ name: a.leader_name, phone: a.leader_phone, travel_from: a.travel_from, title: a.title }));
+    else await AsyncStorage.removeItem(CONTRACT_LEADER);
+  } catch (e) { /* best effort */ }
+  return rows;
+}
+export async function cachedContractLeader() {
+  try { const v = JSON.parse((await AsyncStorage.getItem(CONTRACT_LEADER)) || 'null'); return v && v.phone ? v : null; } catch (e) { return null; }
+}
 export const leaderContracts = async () => (await rpc('leader_contracts')) || [];
 
 // ---------- Rating & complaints ----------

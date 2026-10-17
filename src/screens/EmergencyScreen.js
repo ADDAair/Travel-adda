@@ -6,7 +6,9 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
-import { myGroups, cachedLeader, telBd } from '../lib/groups';
+import { telBd } from '../lib/groups';
+import { myContracts, cachedContractLeader } from '../lib/market';
+import { getHelpline } from '../lib/offers';
 
 const KEY = 'ta.emergency.v1';
 const PROFILE_CACHE = 'ta.profileCache.v1';
@@ -26,8 +28,10 @@ const MORE = [
 const FIELDS = [
   { k: 'leaderName', label: 'গ্রুপ লিডারের নাম', hint: 'যেমন: মাওলানা আব্দুর রহিম' },
   { k: 'leaderPhone', label: 'গ্রুপ লিডারের মোবাইল', hint: 'যেমন: +966 5X XXX XXXX', phone: true },
-  { k: 'hotelName', label: 'হোটেলের নাম', hint: 'ইংরেজি বা আরবিতে লিখলে ভালো' },
-  { k: 'hotelAddr', label: 'হোটেলের ঠিকানা / এলাকা', hint: 'যেমন: Ibrahim Khalil Road, Makkah' },
+  { k: 'hotelName', label: 'মক্কার হোটেলের নাম', hint: 'ইংরেজি বা আরবিতে লিখলে ভালো' },
+  { k: 'hotelAddr', label: 'মক্কার হোটেলের ঠিকানা / এলাকা', hint: 'যেমন: Ibrahim Khalil Road, Makkah' },
+  { k: 'madHotel', label: 'মদিনার হোটেলের নাম', hint: 'ইংরেজি বা আরবিতে লিখলে ভালো' },
+  { k: 'madAddr', label: 'মদিনার হোটেলের ঠিকানা / এলাকা', hint: 'যেমন: King Faisal Road, Madinah' },
   { k: 'maktab', label: 'মুয়াল্লিম / মাকতাব নম্বর', hint: 'হজ কার্ডে লেখা থাকে' },
   { k: 'agency', label: 'এজেন্সির নাম', hint: 'যে এজেন্সির মাধ্যমে যাচ্ছেন' },
 ];
@@ -52,14 +56,16 @@ export default function EmergencyScreen({ navigation }) {
   const [lost, setLost] = useState(false);
   const [me, setMe] = useState(null);
   const [showMore, setShowMore] = useState(false);
-  const [grp, setGrp] = useState(null);   // leader of my group in the app (used when none is typed below)
+  const [grp, setGrp] = useState(null);   // leader of my active contract (used when none is typed below)
+  const [help, setHelp] = useState(null); // Travel Adda helpline, when there is no contracted leader
 
   useEffect(() => {
     const load = async () => {
       try { setInfo(JSON.parse((await AsyncStorage.getItem(KEY)) || '{}') || {}); } catch (e) { setInfo({}); }
       try { setMe(JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null')); } catch (e) { setMe(null); }
-      setGrp(await cachedLeader());
-      myGroups().then(cachedLeader).then(setGrp).catch(() => {});   // refresh quietly when online
+      setGrp(await cachedContractLeader());
+      myContracts().then(cachedContractLeader).then(setGrp).catch(() => {});   // refresh quietly when online
+      getHelpline().then(setHelp).catch(() => {});
     };
     load();
     return navigation?.addListener?.('focus', load);
@@ -79,8 +85,8 @@ export default function EmergencyScreen({ navigation }) {
   };
 
   const has = Object.keys(info).length > 0;
-  // A leader typed here wins; otherwise the verified leader of my group in the app (dialled with +88 so it works abroad).
-  const lead = info.leaderPhone ? { name: info.leaderName, phone: info.leaderPhone } : grp ? { name: grp.name, phone: telBd(grp.phone) } : {};
+  // SOS order (from the design): the leader of my active contract, otherwise a leader typed here, otherwise the helpline.
+  const lead = grp ? { name: grp.name, phone: telBd(grp.phone) } : info.leaderPhone ? { name: info.leaderName, phone: info.leaderPhone } : {};
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <View style={st.sos}>
@@ -110,6 +116,8 @@ export default function EmergencyScreen({ navigation }) {
 
       {lead.phone ? (
         <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone)} style={{ marginBottom: S.sm }} />
+      ) : help && help.phone ? (
+        <Button title="Travel Adda হেল্পলাইনে ফোন করুন" icon="📞" onPress={() => call(help.phone)} a11yHint="চুক্তি করা লিডার না থাকায় হেল্পলাইনে কল যাবে" style={{ marginBottom: S.sm }} />
       ) : null}
       <Button title="পথ হারিয়েছি কার্ড দেখান" icon="🪪" kind="gold" onPress={() => setLost(true)} a11yHint="পুলিশ বা ট্যাক্সিচালককে দেখানোর জন্য আরবি ও ইংরেজি কার্ড খুলবে" />
 
@@ -190,12 +198,14 @@ function LostCard({ info, me, onClose }) {
       <Text style={lc.bn}>আমি বাংলাদেশের হাজী, পথ হারিয়েছি। আমাকে হোটেলে পৌঁছাতে বা লিডারকে ফোন করতে সাহায্য করুন।</Text>
       <Row ar="الاسم" en="Name" v={me && me.full_name} />
       <Row ar="رقم الحاج" en="Pilgrim ID" v={me && me.haji_code} />
-      <Row ar="الفندق" en="Hotel" v={info.hotelName} />
+      <Row ar="فندق مكة" en="Makkah hotel" v={info.hotelName} />
       <Row ar="العنوان" en="Address" v={info.hotelAddr} />
+      <Row ar="فندق المدينة" en="Madinah hotel" v={info.madHotel} />
+      <Row ar="العنوان" en="Address" v={info.madAddr} />
       <Row ar="قائد المجموعة" en="Group leader" v={[info.leaderName, info.leaderPhone].filter(Boolean).join(' – ')} />
       <Row ar="رقم المكتب" en="Maktab No." v={info.maktab} />
       <Row ar="الوكالة" en="Agency" v={info.agency} />
-      {!info.hotelName && !info.leaderPhone ? <Notice kind="warn" title="হোটেল ও লিডারের তথ্য লেখা নেই" text='কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।' /> : null}
+      {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title="হোটেল ও লিডারের তথ্য লেখা নেই" text='কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।' /> : null}
       <Button title={speaking ? 'থামান' : 'আরবিতে বলে শোনান'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak} style={{ marginTop: S.md }} />
       {ttsErr ? <Notice kind="warn" title={ttsErr} /> : null}
       {info.leaderPhone ? <Button title="লিডারকে ফোন করুন" icon="📞" onPress={() => call(info.leaderPhone)} style={{ marginTop: S.sm }} /> : null}
