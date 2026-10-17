@@ -14,22 +14,30 @@ const COLS = [
   'full_name,haji_code,phone,role,status',
 ];
 
+// The choice made at sign-up ("I am a haji / a group leader") is also kept with the login itself, so a leader
+// account still opens the leader screens even before the database step that stores it (007) has been run.
+async function signupType() {
+  try { const { data } = await supabase.auth.getSession(); return data?.session?.user?.user_metadata?.account_type === 'leader' ? 'leader' : 'haji'; }
+  catch (e) { return 'haji'; }
+}
+
 export async function loadMe() {
   let cached = null;
+  const signedUpAs = await signupType();
   try { cached = JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null'); } catch (e) { cached = null; }
   for (const cols of COLS) {
     const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 8000));
     // eslint-disable-next-line no-await-in-loop
     const r = await Promise.race([supabase.from('profiles').select(cols).single(), timeout]);
     if (!r.error && r.data) {
-      const me = { account_type: 'haji', ...r.data, offline: false };
+      const me = { ...r.data, account_type: r.data.account_type || signedUpAs, offline: false };
       AsyncStorage.setItem(PROFILE_CACHE, JSON.stringify(me)).catch(() => {});
       return me;
     }
     const m = String(r.error?.message || '');
     if (r.error?.code !== '42703' && !/column/i.test(m)) break;    // not a "missing column" problem: stop trying
   }
-  return cached ? { account_type: 'haji', ...cached, offline: true } : null;
+  return cached ? { ...cached, account_type: cached.account_type || signedUpAs, offline: true } : null;
 }
 
 export const isLeaderAccount = (me) => !!me && (me.account_type === 'leader' || me.role === 'leader');
