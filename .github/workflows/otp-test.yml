@@ -16,4 +16,4 @@ jobs:
           # run outside the app folder, so Deno does not try to use the app's node_modules
           mkdir -p /tmp/fn && cp supabase/functions/phone-otp/*.ts /tmp/fn/ && cd /tmp/fn
           deno check index.ts 2>&1 | tee /tmp/check.log || { echo "::error title=deno check::$(tail -c 1500 /tmp/check.log | tr '\n' ' ')"; exit 1; }
-          deno test 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }
+          deno test 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -A12 'AssertionError' | head -40 | tail -c 1800 | tr '\n' ' ')"; exit 1; }
