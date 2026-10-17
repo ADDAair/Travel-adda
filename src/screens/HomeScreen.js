@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from
 import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
+import NoticeBar from '../components/NoticeBar';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -85,6 +86,7 @@ export default function HomeScreen({ navigation }) {
         {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
         {p ? <View style={st.idPill}><Text style={st.idT}>{leaderAcc ? 'লিডার আইডি' : 'হাজী আইডি'}: {toBn(p.haji_code)}</Text></View> : null}
       </View>
+      <NoticeBar navigation={navigation} />
       {state === 'err' ? (
         <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
           <Button title={T.retry} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} />

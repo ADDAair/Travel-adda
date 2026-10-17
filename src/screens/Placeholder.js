@@ -6,6 +6,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
 import { clearLocalDocs } from '../lib/docs';
 import { cancelDocs } from '../lib/notify';
+import { resetUnread } from '../lib/notifications';
 import { useMe, isLeaderAccount, isStaff } from '../lib/me';
 import { C, F, S, R, TOUCH, TEXT_SCALE, TEXT_SCALE_KEY } from '../theme';
 import * as SecureStore from 'expo-secure-store';
@@ -62,7 +63,7 @@ export function Account({ navigation }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;

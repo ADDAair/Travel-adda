@@ -11,6 +11,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import MoneyTab from './AdminMoney';
+import NotifyTab from './AdminNotify';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffers, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 
 const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
@@ -23,6 +24,7 @@ const SECTIONS = [
   { id: 'complaints', icon: '🚩', label: 'অভিযোগ', perm: 'complaints' },
   { id: 'reports', icon: '📮', label: 'রিপোর্ট', perm: 'reports' },
   { id: 'users', icon: '👥', label: 'ব্যবহারকারী', perm: 'users' },
+  { id: 'notify', icon: '📣', label: 'নোটিফিকেশন পাঠান', perm: 'notify' },
   { id: 'money', icon: '💳', label: 'টাকা ও কমিশন', perm: 'payments' },
   { id: 'offers', icon: '🎁', label: 'প্যাকেজ', perm: 'offers' },
   { id: 'staff', icon: '🪪', label: 'স্টাফ', perm: 'admin' },
@@ -70,6 +72,7 @@ export default function AdminScreen({ navigation }) {
                 : cur.id === 'reports' ? <ReportsTab canUsers={perms.includes('users')} />
                   : cur.id === 'users' ? <UsersTab />
                     : cur.id === 'money' ? <MoneyTab owner={perms.includes('admin')} />
+                    : cur.id === 'notify' ? <NotifyTab />
                     : cur.id === 'offers' ? <OffersTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />

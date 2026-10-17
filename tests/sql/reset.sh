@@ -1,7 +1,7 @@
 bash /var/tmp/pgt/start.sh
 P="psql -h /var/tmp/pgt -p 5544 -U postgres -v ON_ERROR_STOP=1 -q"
 $P -c "drop database if exists t" -c "create database t" && $P -d t -f /var/tmp/pgt/stub.sql && for f in /home/claude/travel-adda/supabase/00[1-4]*.sql; do $P -d t -f $f 2>&1 | grep -v NOTICE; done
-$P -d t -f /home/claude/travel-adda/supabase/005_offers.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/006_announce_expiry_otp.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/007_marketplace.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/007_marketplace.sql 2>&1 | grep -v NOTICE
+$P -d t -f /home/claude/travel-adda/supabase/005_offers.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/006_announce_expiry_otp.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/007_marketplace.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/007_marketplace.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/008_payments.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/008_payments.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/009_notifications.sql 2>&1 | grep -v NOTICE; $P -d t -f /home/claude/travel-adda/supabase/009_notifications.sql 2>&1 | grep -v NOTICE
 $P -d t <<'Q'
 insert into auth.users (id, email, raw_user_meta_data) values
  ('00000000-0000-0000-0000-00000000000a','01710000001@users.traveladda.app','{"full_name":"Admin"}'),

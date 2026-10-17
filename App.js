@@ -34,6 +34,8 @@ import AdminScreen from './src/screens/AdminScreen';
 import OffersScreen from './src/screens/OffersScreen';
 import LeaderOffersScreen from './src/screens/LeaderOffersScreen';
 import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+import Bell from './src/components/Bell';
 import Suspended from './src/screens/Suspended';
 import MyLeaderScreen from './src/screens/MyLeaderScreen';
 import LeadersScreen from './src/screens/LeadersScreen';
@@ -119,7 +121,10 @@ function Main() {
   return (
     <Tab.Navigator
       tabBar={(p) => <TabBar {...p} />}
-      screenOptions={{ headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' } }}>
+      screenOptions={({ navigation, route }) => ({
+        headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' },
+        headerRight: route.name === 'Notifications' ? undefined : () => <Bell onPress={() => navigation.navigate('Notifications')} />,
+      })}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
       <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: 'জরুরি সাহায্য' }} />
       <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
@@ -145,6 +150,7 @@ function Main() {
       <Tab.Screen name="Leaders" component={LeadersScreen} options={{ title: 'যাচাই করা লিডার' }} />
       <Tab.Screen name="LeaderContracts" component={LeaderContractsScreen} options={{ title: 'চুক্তি ও হাজী' }} />
       <Tab.Screen name="LeaderMe" component={LeaderMeScreen} options={{ title: 'আমার লিডার প্রোফাইল' }} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'নোটিফিকেশন' }} />
       <Tab.Screen name="Terms" component={TermsScreen} options={{ title: 'শর্তাবলি' }} />
     </Tab.Navigator>
   );

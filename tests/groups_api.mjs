@@ -137,6 +137,25 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('payments step (008) not run yet:', probe.error.message);
 }
 
+// --- Notifications (009)
+{
+  const probe = await H.rpc('my_unread_count');
+  if (!probe.error) {
+    let x = await H.from('user_notifications').insert({ user_id: lid, title: 'ভুয়া নোটিশ' });
+    check('অন্যের নোটিফিকেশন বক্সে কিছু লেখা যায় না', !!x.error, err(x));
+    x = await L.from('user_notifications').select('id').eq('user_id', hid);
+    check('অন্যের নোটিফিকেশন পড়া যায় না', refused(x), err(x));
+    x = await H.rpc('admin_send_notification', { p_audience: 'all', p_title: 'ভুয়া', p_body: null, p_target: null, p_important: true });
+    check('হাজী সবাইকে নোটিফিকেশন পাঠাতে পারেন না', !!x.error, err(x));
+    x = await L.rpc('admin_send_notification', { p_audience: 'haji', p_title: 'ভুয়া', p_body: null, p_target: null, p_important: false });
+    check('লিডার সবাইকে নোটিফিকেশন পাঠাতে পারেন না', !!x.error, err(x));
+    x = await H.from('broadcasts').select('id');
+    check('নোটিশের মূল টেবিল সরাসরি পড়া যায় না', !!x.error || refused(x), err(x));
+    x = await A.rpc('my_notifications', { p_limit: 10 });
+    check('লগইন ছাড়া নোটিফিকেশন দেখা যায় না', refused(x), err(x));
+  } else console.log('notifications step (009) not run yet:', probe.error.message);
+}
+
 fs.writeFileSync('shots-groups/api.json', JSON.stringify(out, null, 1));
 console.log(`\n${out.length - bad}/${out.length} passed`);
 process.exit(bad ? 1 : 0);

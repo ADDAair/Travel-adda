@@ -19,6 +19,7 @@ out['006 phone_verified'] = msg(await sb.from('profiles').select('phone_verified
 out['007 leader_profiles'] = msg(await sb.from('leader_profiles').select('user_id').limit(1));
 out['007 my_contracts'] = msg(await sb.rpc('my_contracts'));
 out['008 haji_payments'] = msg(await sb.from('haji_payments').select('id').limit(1));
+out['009 notifications'] = msg(await sb.rpc('my_unread_count'));
 try { const f = await sb.functions.invoke('phone-otp', { body: { action: 'ping' } }); out['otp function'] = f.error ? `${f.error.name} ${f.error.context?.status || ''}` : JSON.stringify(f.data); } catch (e) { out['otp function'] = String(e); }
 fs.mkdirSync('shots-groups', { recursive: true });
 fs.writeFileSync('shots-groups/probe.json', JSON.stringify(out, null, 1));

@@ -16,6 +16,7 @@ export const PERMS = [
   { id: 'reports', label: 'রিপোর্ট ও পরিসংখ্যান' },
   { id: 'users', label: 'ব্যবহারকারী বন্ধ/চালু, রেফারেল বাতিল' },
   { id: 'payments', label: 'টাকা জমা যাচাই, কমিশন ও লিডারকে টাকা' },
+  { id: 'notify', label: 'নোটিফিকেশন পাঠানো' },
 ];
 
 export async function myPerms() {

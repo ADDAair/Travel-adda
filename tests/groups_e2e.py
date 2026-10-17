@@ -109,6 +109,13 @@ with sync_playwright() as p:
 
             # 2) haji reads and accepts; phones become visible on both sides
             tab(hp, 'হোম'); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(3500); shot(hp, 'H02-request')
+            if hp.get_by_role('button', name=re.compile('^নোটিফিকেশন')).count():   # 009: the bell shows the new contract
+                hp.get_by_role('button', name=re.compile('^নোটিফিকেশন')).first.click(); hp.wait_for_timeout(3000); shot(hp, 'H02n-notifications')
+                step('নোটিফিকেশনে নতুন চুক্তির খবর', has(hp, 'নতুন চুক্তির অনুরোধ এসেছে'))
+                hp.get_by_role('button', name=re.compile('^নতুন। নতুন চুক্তির অনুরোধ এসেছে')).first.click(); hp.wait_for_timeout(3000)
+                result['notifications'] = 'ok'
+            else:
+                result['notifications'] = 'db-missing (009 not run)'
             step('হাজী চুক্তির অনুরোধ দেখছেন', has(hp, 'নতুন চুক্তির অনুরোধ') and has(hp, '১,৫০,০০০ টাকা', 2000))
             step('রাজি হওয়ার আগে লিডারের ফোন বাটন নেই', hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() == 0)
             btn(hp, '^পড়েছি, আমি রাজি$').click(); hp.wait_for_timeout(4500); shot(hp, 'H03-accepted')
