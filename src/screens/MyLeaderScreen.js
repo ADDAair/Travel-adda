@@ -9,6 +9,7 @@ import { notReady, telBd } from '../lib/groups';
 import { signedAvatarUrl } from '../lib/avatar';
 import { myContracts, respondContract, cancelContract, rateLeader, fileComplaint, myComplaints, myReferral, setReferral, requestReferralCancel } from '../lib/market';
 import { shareContractPdf } from '../lib/contractPdf';
+import PaymentBox from '../components/PaymentBox';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
 
 const COMPLAINT_STATUS = { pending: '⏳ অ্যাডমিন যাচাই করছেন', verified: '✅ যাচাই হয়েছে (সবাই দেখতে পাবেন)', rejected: '✖️ প্রমাণ পাওয়া যায়নি' };
@@ -107,12 +108,13 @@ function ActiveContract({ c, busy, act, setMsg }) {
     <View style={[st.card, { borderWidth: 2, borderColor: C.ok }]}>
       <ContractDetails c={c} />
       {c.leader_phone ? <Button title={`লিডারকে ফোন করুন (${toBn(c.leader_phone)})`} icon="📞" onPress={() => Linking.openURL(`tel:${telBd(c.leader_phone)}`).catch(() => {})} style={{ marginTop: S.md }} /> : null}
+      <PaymentBox contract={c} />
       <PdfButton c={c} setMsg={setMsg} />
       <RateBox c={c} busy={busy} act={act} />
       <ComplaintBox c={c} setMsg={setMsg} />
       {cancel ? (
         <ReasonBox title="চুক্তি বাতিল" hint="যেমন: লিডার ভিসার কাজ শুরু করেননি" button="চুক্তি বাতিল করুন" busy={busy} onClose={() => setCancel(false)}
-          onSubmit={(reason) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে। টাকা-পয়সার হিসাব দুপক্ষ মিলে মিটিয়ে নেবেন; দরকার হলে হেল্পলাইনে যোগাযোগ করুন।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
+          onSubmit={(reason) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে। Travel Adda-তে জমা দেওয়া টাকা চুক্তির ফেরতের নিয়ম অনুযায়ী মেটানো হবে; Travel Adda হেল্পলাইনে যোগাযোগ করুন।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
       ) : (
         <Pressable onPress={() => setCancel(true)} style={st.leave} accessibilityRole="button" accessibilityLabel="চুক্তি বাতিল করুন"><Text style={st.leaveT}>চুক্তি বাতিল করুন</Text></Pressable>
       )}

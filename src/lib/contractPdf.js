@@ -29,7 +29,7 @@ export function contractHtml(c) {
     ${row('লিডার পাঠিয়েছেন', day(c.created_at))}${row(c.status === 'declined' ? 'হাজী না বলেছেন' : 'হাজী সম্মতি দিয়েছেন', c.responded_at ? day(c.responded_at) : '')}
     ${row('বাতিল', c.cancelled_at ? `${day(c.cancelled_at)} – কারণ: ${c.cancel_reason || ''}` : '')}${row('সম্পন্ন', c.completed_at ? day(c.completed_at) : '')}
   </table>
-  <div class="foot">এই চুক্তি Travel Adda অ্যাপে দুপক্ষ নিজ নিজ অ্যাকাউন্ট থেকে পাঠিয়েছেন ও সম্মতি দিয়েছেন। টাকা-পয়সার লেনদেন সরাসরি হাজী ও লিডারের মধ্যে; Travel Adda কোনো টাকা নেয় না। তৈরি: ${day(new Date().toISOString())}</div>
+  <div class="foot">এই চুক্তি Travel Adda অ্যাপে দুপক্ষ নিজ নিজ অ্যাকাউন্ট থেকে পাঠিয়েছেন ও সম্মতি দিয়েছেন। হাজী টাকা দেবেন শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে; Travel Adda যাচাই করে কমিশন রেখে বাকি টাকা লিডারকে দেয়। তৈরি: ${day(new Date().toISOString())}</div>
   </body></html>`;
 }
 

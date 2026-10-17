@@ -10,6 +10,7 @@ import { getTerms } from '../lib/market';
 import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
+import MoneyTab from './AdminMoney';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffers, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 
 const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
@@ -22,6 +23,7 @@ const SECTIONS = [
   { id: 'complaints', icon: '🚩', label: 'অভিযোগ', perm: 'complaints' },
   { id: 'reports', icon: '📮', label: 'রিপোর্ট', perm: 'reports' },
   { id: 'users', icon: '👥', label: 'ব্যবহারকারী', perm: 'users' },
+  { id: 'money', icon: '💳', label: 'টাকা ও কমিশন', perm: 'payments' },
   { id: 'offers', icon: '🎁', label: 'প্যাকেজ', perm: 'offers' },
   { id: 'staff', icon: '🪪', label: 'স্টাফ', perm: 'admin' },
   { id: 'terms', icon: '📜', label: 'শর্তাবলি', perm: 'admin' },
@@ -67,6 +69,7 @@ export default function AdminScreen({ navigation }) {
               : cur.id === 'complaints' ? <ComplaintsTab />
                 : cur.id === 'reports' ? <ReportsTab canUsers={perms.includes('users')} />
                   : cur.id === 'users' ? <UsersTab />
+                    : cur.id === 'money' ? <MoneyTab owner={perms.includes('admin')} />
                     : cur.id === 'offers' ? <OffersTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
@@ -300,7 +303,9 @@ const STAT_LABELS = [
   ['hajis', 'হাজী অ্যাকাউন্ট'], ['leaders', 'অনুমোদিত লিডার'], ['leaders_pending', 'লিডার আবেদন বাকি'], ['suspended', 'বন্ধ অ্যাকাউন্ট'],
   ['contracts_active', 'চালু চুক্তি'], ['contracts_sent', 'উত্তরের অপেক্ষায় চুক্তি'], ['contracts_completed', 'সম্পন্ন চুক্তি'], ['contracts_cancelled', 'বাতিল চুক্তি'],
   ['complaints_pending', 'অভিযোগ যাচাই বাকি'], ['reports_new', 'নতুন রিপোর্ট'], ['calls_new', 'ফোনের অনুরোধ বাকি'], ['offers_visible', 'দেখানো প্যাকেজ'], ['new_users_7d', 'গত ৭ দিনে নতুন অ্যাকাউন্ট'],
+  ['payments_pending', 'টাকার জমা যাচাই বাকি'], ['money_in', 'মোট পাওয়া টাকা'], ['money_out_leaders', 'লিডারদের দেওয়া'], ['money_refunded', 'হাজীদের ফেরত'],
 ];
+const MONEY_STATS = ['money_in', 'money_out_leaders', 'money_refunded'];
 function StatsTab({ admin }) {
   const { state, data, gate } = useLoad(stats);
   const [busy, setBusy] = useState(null);
@@ -316,7 +321,7 @@ function StatsTab({ admin }) {
       {gate}
       {state === 'ok' && data ? (
         <View style={st.card}>
-          {STAT_LABELS.map(([k, l]) => <View key={k} style={[st.cRow, { flexDirection: 'row', justifyContent: 'space-between' }]}><Text style={st.p}>{l}</Text><Text style={st.val}>{toBn(data[k] ?? 0)}</Text></View>)}
+          {STAT_LABELS.map(([k, l]) => <View key={k} style={[st.cRow, { flexDirection: 'row', justifyContent: 'space-between' }]}><Text style={st.p}>{l}</Text><Text style={st.val}>{MONEY_STATS.includes(k) ? fmtTaka(data[k] ?? 0) : toBn(data[k] ?? 0)}</Text></View>)}
         </View>
       ) : null}
       {admin ? (
@@ -327,6 +332,8 @@ function StatsTab({ admin }) {
           <Button title="সব ব্যবহারকারী" icon="👥" kind="secondary" onPress={() => dl('users')} loading={busy === 'users'} disabled={!!busy} style={{ marginTop: S.sm }} />
           <Button title="সব চুক্তি" icon="📜" kind="secondary" onPress={() => dl('contracts')} loading={busy === 'contracts'} disabled={!!busy} style={{ marginTop: S.sm }} />
           <Button title="সব অভিযোগ" icon="🚩" kind="secondary" onPress={() => dl('complaints')} loading={busy === 'complaints'} disabled={!!busy} style={{ marginTop: S.sm }} />
+          <Button title="সব টাকা জমা" icon="💳" kind="secondary" onPress={() => dl('payments')} loading={busy === 'payments'} disabled={!!busy} style={{ marginTop: S.sm }} />
+          <Button title="চুক্তিভিত্তিক হিসাব ও কমিশন" icon="📒" kind="secondary" onPress={() => dl('ledger')} loading={busy === 'ledger'} disabled={!!busy} style={{ marginTop: S.sm }} />
         </View>
       ) : null}
     </>

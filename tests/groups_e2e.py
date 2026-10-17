@@ -1,14 +1,14 @@
-# End-to-end test of "my group & leader" with two dedicated CI accounts on the real database:
-#   H = haji test account (01300000001), L = leader test account (01300000002).
-# Phase A (L is not a leader yet): L applies to become a leader -> the owner approves it in the app (Admin page).
-# Phase B (L is a leader): invite by phone, accept, package terms, agreement, emergency call button, remove,
-#   "removed" code check, second group joined by code, leave. Screenshots go to shots-groups/.
+# End-to-end test on the real database with two dedicated CI accounts ("two phones"):
+#   H = haji account (01300000001), L = LEADER account (01300000003, opened with "আমি গ্রুপ লিডার").
+# Phase A (L not approved yet): L completes the leader registration -> the owner approves it in the app (Admin).
+# Phase B (L approved): contract request to H's ID, H accepts, phones become visible, rating, directory & profile,
+#   "please call me", SOS button, cancel with a reason, group with code + announcement, packages. Screenshots: shots-groups/.
 import os, re, json, time
 from playwright.sync_api import sync_playwright
 
 OUT = 'shots-groups'; os.makedirs(OUT, exist_ok=True)
-H = (os.environ['H_PHONE'], os.environ['H_PW'], 'পরীক্ষা ব্যবহারকারী CI')
-L = (os.environ['L_PHONE'], os.environ['L_PW'], 'CI লিডার পরীক্ষা')
+H = (os.environ['H_PHONE'], os.environ['H_PW'], 'পরীক্ষা ব্যবহারকারী CI', 'haji')
+L = (os.environ['L_PHONE'], os.environ['L_PW'], 'CI লিডার পরীক্ষা', 'leader')
 steps = []; result = {'phase': None, 'steps': steps, 'errors': []}
 
 def shot(pg, name):
@@ -25,173 +25,151 @@ def has(pg, text, t=6000):
 def btn(pg, pattern):
     return pg.get_by_role('button', name=re.compile(pattern)).first
 
+def tab(pg, name):
+    pg.get_by_role('tab', name=name, exact=True).last.click(); pg.wait_for_timeout(1500)
+
+def home(pg):
+    tab(pg, 'হোম')
+
 def login(ctx, who, tag):
-    phone, pw, name = who
+    phone, pw, name, kind = who
     pg = ctx.new_page(); pg.on('dialog', lambda d: d.accept()); pg.on('pageerror', lambda e: result['errors'].append(f'{tag}: {e}'))
     pg.goto('http://localhost:8080/'); pg.wait_for_timeout(3000)
     for _ in range(3): pg.get_by_text('পরবর্তী', exact=True).first.click(); pg.wait_for_timeout(400)
     pg.get_by_text('শুরু করুন', exact=True).first.click(); pg.wait_for_timeout(800)
     pg.get_by_label('মোবাইল নম্বর').fill(phone); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(pw)
     pg.get_by_text('লগইন করুন', exact=True).first.click(); pg.wait_for_timeout(4500)
-    if pg.get_by_text('মেলেনি').count() > 0:    # first run: create the test account
+    if pg.get_by_text('মেলেনি').count() > 0:    # first run: open the test account with the right type
         pg.get_by_text('নতুন অ্যাকাউন্ট', exact=True).first.click(); pg.wait_for_timeout(500)
+        btn(pg, '^আমি গ্রুপ লিডার' if kind == 'leader' else '^আমি হাজী').click(); pg.wait_for_timeout(500)
         pg.get_by_label('আপনার নাম').fill(name); pg.get_by_label('মোবাইল নম্বর').fill(phone); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(pw)
+        if pg.get_by_role('checkbox', name=re.compile('শর্তাবলি')).count(): pg.get_by_role('checkbox', name=re.compile('শর্তাবলি')).click()
         pg.get_by_text('অ্যাকাউন্ট খুলুন', exact=True).first.click(); pg.wait_for_timeout(5000)
     pg.wait_for_timeout(1500)
     if pg.get_by_text('পরে তুলব', exact=True).count() > 0: pg.get_by_text('পরে তুলব', exact=True).first.click(); pg.wait_for_timeout(1500)
     step(f'{tag}: লগইন', pg.get_by_role('tab', name='হোম').count() > 0)
     return pg
 
-def open_group(pg):
-    pg.get_by_role('tab', name='হোম').click(); pg.wait_for_timeout(900)
-    btn(pg, '^আমার দল ও লিডার খুলুন').click(); pg.wait_for_timeout(3000)
-
-def read_code(pg):
-    lab = pg.get_by_label(re.compile('^কোড ')).first.get_attribute('aria-label')
-    return lab.replace('কোড', '').replace(' ', '')
+def my_code(pg):
+    home(pg)
+    lab = pg.get_by_label(re.compile('আইডি (TA|TL)-')).first.get_attribute('aria-label') or ''
+    m = re.search(r'(T[AL]-\d+)', lab)
+    return m.group(1) if m else None
 
 with sync_playwright() as p:
     b = p.chromium.launch()
     mk = lambda: b.new_context(viewport={'width': 390, 'height': 780}, device_scale_factor=2, locale='bn-BD')
     try:
         lp = login(mk(), L, 'লিডার')
-        open_group(lp); shot(lp, 'L01-group')
-        if has(lp, 'শীঘ্রই চালু হবে', 2000):
-            result['phase'] = 'db-missing'; step('ডেটাবেস ধাপ (SQL 004) চালানো হয়েছে', False, 'অ্যাপে এখনো "শীঘ্রই চালু হবে" দেখাচ্ছে')
-        step('দল পাতা খুলেছে', has(lp, 'কোড দিয়ে দলে যোগ দিন'))
-
-        if lp.get_by_role('button', name=re.compile('লিডার প্যানেল খুলুন$')).count() == 0:
+        home(lp); shot(lp, 'L01-home')
+        if lp.get_by_role('button', name='লিডার প্যানেল খুলুন').count() == 0:
             result['phase'] = 'A'
+            step('লিডার অ্যাকাউন্টের হোমে "অনুমোদন বাকি" কার্ড', lp.get_by_role('button', name='লিডার আবেদনের অবস্থা দেখুন').count() > 0)
+            lp.get_by_role('button', name='লিডার আবেদনের অবস্থা দেখুন').click(); lp.wait_for_timeout(3000); shot(lp, 'L02-apply')
+            if has(lp, 'শীঘ্রই চালু হবে', 1500):
+                result['phase'] = 'db-missing'; step('ডেটাবেস ধাপ (০০৭) চালানো হয়েছে', False, 'অ্যাপে "শীঘ্রই চালু হবে"')
             if not has(lp, 'আপনার আবেদন যাচাই হচ্ছে', 1500):
-                btn(lp, 'লিডার হতে আবেদন করুন$').click(); lp.wait_for_timeout(1000); shot(lp, 'L02-apply-form')
-                btn(lp, 'আবেদন জমা দিন$').click(); lp.wait_for_timeout(600)
+                btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(600)
                 step('খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'এজেন্সির নাম লিখুন', 2000)); shot(lp, 'L03-apply-empty')
                 lp.get_by_label('এজেন্সির নাম').fill('CI পরীক্ষা এজেন্সি (আসল নয়)')
-                lp.get_by_label('এজেন্সির লাইসেন্স নম্বর').fill('CI-TEST-0001')
+                lp.get_by_label('ওমরাহ লাইসেন্স নম্বর').fill('CI-UMRAH-01')
+                lp.get_by_role('button', name=re.compile('^অফিসের জেলা')).click(); lp.wait_for_timeout(600)
+                lp.get_by_label('খুঁজুন').fill('সিলেট'); lp.get_by_role('button', name='সিলেট', exact=True).click(); lp.wait_for_timeout(400)
+                lp.get_by_label('উপজেলা / থানা').fill('সদর')
                 with lp.expect_file_chooser() as fc: btn(lp, 'ফোন থেকে ফাইল বাছুন$').click()
                 fc.value.set_files('assets/ihram/ihram-man.png'); lp.wait_for_timeout(800); shot(lp, 'L04-apply-filled')
-                btn(lp, 'আবেদন জমা দিন$').click(); lp.wait_for_timeout(6000); shot(lp, 'L05-apply-done')
-                step('লিডার আবেদন জমা হয়েছে', has(lp, 'আবেদন জমা হয়েছে'))
-                open_group(lp)
-            shot(lp, 'L06-pending'); step('আবেদন "যাচাই হচ্ছে" দেখাচ্ছে', has(lp, 'আপনার আবেদন যাচাই হচ্ছে'))
-            result['next'] = 'অ্যাডমিনকে অ্যাপের অ্যাডমিন পাতা থেকে "CI লিডার পরীক্ষা" আবেদনটি অনুমোদন দিতে হবে'
+                btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(6000)
+            shot(lp, 'L05-pending'); step('নিবন্ধন "যাচাই হচ্ছে" দেখাচ্ছে', has(lp, 'আপনার আবেদন যাচাই হচ্ছে'))
+            result['next'] = 'অ্যাডমিন → লিডার আবেদন থেকে "CI লিডার পরীক্ষা" অনুমোদন দিন'
         else:
             result['phase'] = 'B'
-            hp = login(mk(), H, 'হাজী')
-            open_group(hp); shot(hp, 'H01-group-start')
-            for _ in range(5):   # leftovers from an earlier run
-                if hp.get_by_role('button', name='দল ছেড়ে দিন').count() == 0: break
-                hp.get_by_role('button', name='দল ছেড়ে দিন').first.click(); hp.wait_for_timeout(3000)
-
-            # Group 1: invite by phone
             stamp = time.strftime('%d%m-%H%M')
-            btn(lp, 'লিডার প্যানেল খুলুন$').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
-            lp.get_by_label('দলের নাম').fill(f'CI দল ক {stamp}'); btn(lp, 'দল বানান$').click(); lp.wait_for_timeout(4000)
-            code1 = read_code(lp); shot(lp, 'L11-group1-created')
-            step('দল ১ তৈরি ও কোড দেখা যায়', re.fullmatch(r'[A-Z2-9]{8}', code1 or '') is not None, code1)
-            lp.get_by_label('হাজীর মোবাইল নম্বর').fill('0130000000'); btn(lp, 'আমন্ত্রণ পাঠান$').click(); lp.wait_for_timeout(700)
-            step('ভুল নম্বরে আমন্ত্রণ আটকায়', has(lp, 'সঠিক ১১ সংখ্যার', 2000))
-            lp.get_by_label('হাজীর মোবাইল নম্বর').fill(H[0]); btn(lp, 'আমন্ত্রণ পাঠান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L12-invited')
-            step('আমন্ত্রণ পাঠানো হয়েছে', has(lp, 'আমন্ত্রণ পাঠানো হয়েছে।'))
+            hp = login(mk(), H, 'হাজী')
+            hcode = my_code(hp); step('হাজীর আইডি পাওয়া গেছে', bool(hcode), hcode or '')
+            tab(hp, 'হোম'); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(3000); shot(hp, 'H01-myleader')
+            # leftovers from an earlier run: cancel an active contract
+            if hp.get_by_role('button', name='চুক্তি বাতিল করুন').count():
+                hp.get_by_role('button', name='চুক্তি বাতিল করুন').first.click(); hp.wait_for_timeout(500)
+                hp.get_by_label('কারণ লিখুন').fill('আগের পরীক্ষার চুক্তি বন্ধ করা হচ্ছে'); btn(hp, '^চুক্তি বাতিল করুন$').click(); hp.wait_for_timeout(4000)
 
-            open_group(hp); shot(hp, 'H02-invite')
-            step('হাজী আমন্ত্রণ দেখছেন', has(hp, 'দলে যোগ দেওয়ার আমন্ত্রণ'))
-            btn(hp, 'রাজি, যোগ দিন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H03-joined')
-            step('হাজী দলে যোগ দিয়েছেন, লিডারের নাম ও ফোন বাটন আছে', has(hp, f'CI দল ক {stamp}') and hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() > 0)
-
-            # Package terms
-            btn(lp, 'নতুন শর্ত লিখুন$').click(); lp.wait_for_timeout(800)
-            btn(lp, 'শর্ত সংরক্ষণ করুন$').click(); lp.wait_for_timeout(600)
-            step('শর্তের খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'প্যাকেজের নাম লিখুন', 2000)); shot(lp, 'L13-terms-empty')
-            lp.get_by_label('প্যাকেজের নাম').fill('CI পরীক্ষা ওমরাহ প্যাকেজ')
+            # 1) leader sends a contract to the haji's ID
+            lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
+            btn(lp, '^চুক্তি ও রেফারেল হাজী$').click(); lp.wait_for_timeout(3000); shot(lp, 'L11-contracts')
+            btn(lp, '^নতুন চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(800)
+            btn(lp, '^চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(600)
+            step('চুক্তির খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'হাজীর আইডি লিখুন', 2000)); shot(lp, 'L12-contract-empty')
+            lp.get_by_label('হাজীর আইডি').fill(hcode)
+            lp.get_by_label('প্যাকেজের নাম').fill(f'CI পরীক্ষা ওমরাহ {stamp}')
             lp.get_by_label('জনপ্রতি মোট দাম (টাকা)').fill('১৫০০০০')
-            lp.get_by_label('প্যাকেজে যা আছে').fill('বিমান টিকেট, ভিসা, হারাম থেকে ৫০০ মিটার দূরে হোটেল, সকালের নাশতা')
-            lp.get_by_label('যা নেই (ইচ্ছা করলে)').fill('ব্যক্তিগত খরচ')
-            lp.get_by_label('যাওয়ার তারিখ (ইচ্ছা করলে)').fill('২০-০১-২০২৭'); lp.get_by_label('ফেরার তারিখ (ইচ্ছা করলে)').fill('১০-০১-২০২৭')
-            lp.get_by_label('বাতিল ও টাকা ফেরতের নিয়ম').fill('ভিসার আগে বাতিল করলে পুরো টাকা ফেরত, ভিসার পরে ভিসার খরচ বাদে')
-            btn(lp, 'শর্ত সংরক্ষণ করুন$').click(); lp.wait_for_timeout(700)
-            step('উল্টো তারিখ আটকায়', has(lp, 'ফেরার তারিখ যাওয়ার তারিখের পরে', 2000))
-            lp.get_by_label('ফেরার তারিখ (ইচ্ছা করলে)').fill('০৫-০২-২০২৭'); shot(lp, 'L14-terms-filled')
-            btn(lp, 'শর্ত সংরক্ষণ করুন$').click(); lp.wait_for_timeout(5000); shot(lp, 'L15-terms-saved')
-            step('শর্ত সংরক্ষণ হয়েছে', has(lp, 'শর্ত সংরক্ষণ হয়েছে'))
+            lp.get_by_label('যা অন্তর্ভুক্ত').fill('বিমান টিকেট, ভিসা, হারাম থেকে ৫০০ মিটারের হোটেল')
+            lp.get_by_label('বাতিল ও টাকা ফেরতের নিয়ম').fill('ভিসার আগে বাতিলে পুরো টাকা ফেরত')
+            shot(lp, 'L13-contract-filled')
+            btn(lp, '^চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(5000); shot(lp, 'L14-contract-sent')
+            step('চুক্তির অনুরোধ পাঠানো হয়েছে', has(lp, 'চুক্তির অনুরোধ পাঠানো হয়েছে'))
 
-            btn(hp, 'প্যাকেজের শর্ত ও সম্মতি$').click(); hp.wait_for_timeout(3000); shot(hp, 'H04-terms')
-            step('হাজী শর্ত পড়তে পারছেন (দাম বাংলায়)', has(hp, 'CI পরীক্ষা ওমরাহ প্যাকেজ') and has(hp, '১,৫০,০০০ টাকা', 2000))
-            btn(hp, 'আমি পড়েছি ও সম্মত$').click(); hp.wait_for_timeout(4000); shot(hp, 'H05-agreed')
-            step('হাজীর সম্মতি সংরক্ষণ হয়েছে', has(hp, 'আপনি সম্মতি দিয়েছেন'))
-            btn(hp, 'দলের পাতায় ফিরে যান').click(); hp.wait_for_timeout(1500)
-            # Announcement (006): leader writes once, the whole group sees it
-            if lp.get_by_label('ঘোষণা', exact=True).count() and not has(lp, 'ঘোষণা পাঠানো শীঘ্রই চালু হবে', 1500):
-                lp.get_by_label('ঘোষণা', exact=True).fill('CI পরীক্ষা ঘোষণা: কাল ভোর ৫টায় বাস ছাড়বে')
-                btn(lp, '^সবাইকে পাঠান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L15b-announce-sent')
-                step('লিডার ঘোষণা পাঠিয়েছেন', has(lp, 'ঘোষণা পাঠানো হয়েছে'))
-                open_group(hp); shot(hp, 'H05b-announcement')
-                step('হাজী দলের পাতায় ঘোষণা দেখছেন', has(hp, 'কাল ভোর ৫টায় বাস ছাড়বে'))
-                result['announce'] = 'ok'
+            # 2) haji reads and accepts; phones become visible on both sides
+            tab(hp, 'হোম'); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(3500); shot(hp, 'H02-request')
+            step('হাজী চুক্তির অনুরোধ দেখছেন', has(hp, 'নতুন চুক্তির অনুরোধ') and has(hp, '১,৫০,০০০ টাকা', 2000))
+            step('রাজি হওয়ার আগে লিডারের ফোন বাটন নেই', hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() == 0)
+            btn(hp, '^পড়েছি, আমি রাজি$').click(); hp.wait_for_timeout(4500); shot(hp, 'H03-accepted')
+            step('চুক্তি চালু হয়েছে', has(hp, 'চুক্তি চালু হয়েছে'))
+            step('এখন লিডারের ফোন বাটন আছে', hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() > 0)
+            btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(1500); btn(lp, '^চুক্তি ও রেফারেল হাজী$').click(); lp.wait_for_timeout(3000); shot(lp, 'L15-contract-active')
+            step('লিডার হাজীর ফোন বাটন দেখছেন', lp.get_by_role('button', name=re.compile('^হাজীকে ফোন করুন')).count() > 0)
+            # payment box (008): shown on the active contract; only the form checks are tested, nothing is submitted
+            if has(hp, 'টাকা জমা', 2500):
+                hp.get_by_text('টাকা জমা').first.scroll_into_view_if_needed(); shot(hp, 'H03b-payment-box')
+                step('টাকা Travel Adda-তে দেওয়ার সতর্কতা দেখাচ্ছে', has(hp, 'টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন', 2000))
+                btn(hp, '^টাকা পাঠিয়েছি, তথ্য দিন$').click(); hp.wait_for_timeout(600)
+                btn(hp, '^জমার তথ্য পাঠান$').click(); hp.wait_for_timeout(600); shot(hp, 'H03c-payment-empty')
+                step('খালি জমার ফর্মে ভুল ধরা পড়ে', has(hp, 'শুধু সংখ্যায় লিখুন', 2000) and has(hp, 'লেনদেন নম্বর (TrxID) বা রসিদ নম্বর লিখুন', 2000))
+                btn(hp, '^বাতিল$').click(); hp.wait_for_timeout(400)
+                result['payments'] = 'form ok'
             else:
-                result['announce'] = 'db-missing (006 not run)'
+                result['payments'] = 'db-missing (008 not run)'
 
-            hp.get_by_role('tab', name='জরুরি').click(); hp.wait_for_timeout(3500); shot(hp, 'H06-emergency')
-            step('জরুরি পাতায় দলের লিডারকে ফোনের বাটন', hp.get_by_role('button', name=re.compile('লিডারকে ফোন করুন \\(CI লিডার')).count() > 0)
+            # 3) rating, directory, profile, call request, SOS
+            btn(hp, '^লিডারকে রেটিং দিন$').click(); hp.wait_for_timeout(500)
+            hp.get_by_role('radio', name=re.compile('^৫ তারা')).click(); hp.get_by_label(re.compile('^মন্তব্য')).fill('CI পরীক্ষার রেটিং')
+            btn(hp, '^রেটিং জমা দিন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H04-rated')
+            step('রেটিং জমা হয়েছে', has(hp, 'রেটিং জমা হয়েছে'))
+            btn(hp, '^যাচাই করা লিডার খুঁজুন$').click(); hp.wait_for_timeout(3000)
+            hp.get_by_label(re.compile('^নাম, এজেন্সি')).fill('CI লিডার'); hp.wait_for_timeout(2500); shot(hp, 'H05-directory')
+            step('তালিকায় লিডার আছেন, ফোন নম্বর নেই', has(hp, 'CI লিডার পরীক্ষা') and not has(hp, L[0], 1000))
+            btn(hp, '^CI লিডার পরীক্ষা').click(); hp.wait_for_timeout(3500); shot(hp, 'H06-profile')
+            step('প্রোফাইলে রেটিং দেখাচ্ছে', has(hp, 'জনের রেটিং'))
+            if hp.get_by_role('button', name='আমাকে ফোন করুন').count():
+                btn(hp, '^আমাকে ফোন করুন$').click(); hp.wait_for_timeout(4000)
+            step('"আমাকে ফোন করুন" অনুরোধ আছে', has(hp, 'অনুরোধ পাঠানো') or has(hp, 'আগেই পাঠানো আছে', 1500)); shot(hp, 'H07-call-request')
+            tab(hp, 'জরুরি'); hp.wait_for_timeout(3000); shot(hp, 'H08-sos')
+            step('জরুরি পাতায় চুক্তির লিডারকে ফোনের বাটন', hp.get_by_role('button', name=re.compile('লিডারকে ফোন করুন \\(CI লিডার')).count() > 0)
 
-            btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(2500)
-            btn(lp, f'CI দল ক {stamp} দল খুলুন').click(); lp.wait_for_timeout(4000); shot(lp, 'L16-members-acceptance')
-            step('লিডার সদস্য ও সম্মতি দেখছেন', has(lp, 'সদস্য: ১ জন') and has(lp, 'সম্মতি দিয়েছেন: ১ জন'))
+            # 4) haji cancels with a reason (also leaves the account clean for the next run)
+            tab(hp, 'হোম'); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(3000)
+            btn(hp, '^চুক্তি বাতিল করুন$').click(); hp.wait_for_timeout(500)
+            btn(hp, '^চুক্তি বাতিল করুন$').click(); hp.wait_for_timeout(500)
+            step('কারণ ছাড়া বাতিল হয় না', has(hp, 'কারণটি একটু বিস্তারিত লিখুন', 2000))
+            hp.get_by_label('কারণ লিখুন').fill('CI পরীক্ষা শেষ, চুক্তি বন্ধ করা হচ্ছে')
+            btn(hp, '^চুক্তি বাতিল করুন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H09-cancelled')
+            step('চুক্তি বাতিল হয়েছে', has(hp, 'চুক্তি বাতিল হয়েছে'))
 
-            lp.get_by_role('button', name=re.compile('-কে দল থেকে সরান$')).first.click(); lp.wait_for_timeout(4000); shot(lp, 'L17-removed')
-            step('লিডার সদস্যকে সরিয়েছেন', has(lp, 'সরানো হয়েছে।'))
-            open_group(hp)
-            hp.get_by_label('লিডারের দেওয়া কোড').fill(code1); btn(hp, 'দলে যোগ দিন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H07-removed-code')
-            step('সরানো হাজী কোড দিয়ে আবার ঢুকতে পারেন না', has(hp, 'সরিয়ে দিয়েছেন'))
-            hp.get_by_label('লিডারের দেওয়া কোড').fill('ZZZZ2222'); btn(hp, 'দলে যোগ দিন$').click(); hp.wait_for_timeout(4000)
-            step('ভুল কোডে "দল পাওয়া যায়নি"', has(hp, 'কোনো দল পাওয়া যায়নি'))
-
-            # Group 2: join with code, then leave
-            btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(2500)
-            lp.get_by_label('দলের নাম').fill(f'CI দল খ {stamp}'); btn(lp, 'দল বানান$').click(); lp.wait_for_timeout(4000)
-            code2 = read_code(lp)
-            hp.get_by_label('লিডারের দেওয়া কোড').fill(code2.lower()); btn(hp, 'দলে যোগ দিন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H08-joined-by-code')
-            step('কোড দিয়ে দলে যোগ (ছোট হাতের অক্ষরেও)', has(hp, 'দলে যোগ দেওয়া হয়েছে।') and has(hp, f'CI দল খ {stamp}'))
-            hp.get_by_role('button', name='দল ছেড়ে দিন').first.click(); hp.wait_for_timeout(4000); shot(hp, 'H09-left')
-            step('হাজী দল ছেড়ে দিয়েছেন', has(hp, 'দল ছেড়ে দেওয়া হয়েছে।'))
-            result['groups'] = [f'CI দল ক {stamp}', f'CI দল খ {stamp}']
-
-            # Offers (005): leader publishes, haji asks for a call and cancels, leader hides it again (cleanup also runs after).
+            # 5) group by code + announcement (no phone without an active contract)
             btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(2000)
-            btn(lp, 'আমার প্যাকেজ \\(অফার\\)$').click(); lp.wait_for_timeout(3000); shot(lp, 'L20-offers')
-            if has(lp, 'শীঘ্রই চালু হবে', 1500):
-                result['offers'] = 'db-missing (005 not run)'
-            else:
-                title = f'CI পরীক্ষা প্যাকেজ – আসল নয় {stamp}'
-                btn(lp, 'নতুন প্যাকেজ দিন$').click(); lp.wait_for_timeout(800)
-                btn(lp, 'প্যাকেজ প্রকাশ করুন$').click(); lp.wait_for_timeout(600)
-                step('প্যাকেজের খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন', 2000)); shot(lp, 'L21-offer-empty')
-                lp.get_by_label('প্যাকেজের নাম').fill(title)
-                lp.get_by_label('জনপ্রতি মোট দাম (টাকা)').fill("500")
-                d1 = time.strftime('%d-%m-%Y', time.localtime(time.time() + 40 * 86400)); d2 = time.strftime('%d-%m-%Y', time.localtime(time.time() + 53 * 86400))
-                lp.get_by_label('যাওয়ার তারিখ').fill(d1); lp.get_by_label('ফেরার তারিখ').fill(d2)
-                lp.get_by_label('মক্কার হোটেলের নাম (ইচ্ছা করলে)').fill('পরীক্ষা হোটেল')
-                lp.get_by_label('মক্কার হোটেল থেকে হারামের দূরত্ব (মিটার)').fill('৪৫০')
-                lp.get_by_label('এক রুমে কতজন (ইচ্ছা করলে)').fill('4')
-                lp.get_by_role('checkbox', name='খাবার').click(); shot(lp, 'L22-offer-filled')
-                btn(lp, 'প্যাকেজ প্রকাশ করুন$').click(); lp.wait_for_timeout(5000); shot(lp, 'L23-offer-published')
-                step('প্যাকেজ প্রকাশ হয়েছে', has(lp, 'প্যাকেজ প্রকাশ হয়েছে'))
-                hp.get_by_role('tab', name='অফার').click(); hp.wait_for_timeout(4000); shot(hp, 'H20-offers')
-                step('হাজী অফার পাতায় প্যাকেজ দেখছেন (মোট ১৪ দিন)', has(hp, title) and has(hp, 'মোট ১৪ দিন', 2000))
-                card = hp.get_by_text(title).first
-                card.scroll_into_view_if_needed()
-                btn(hp, '^আমাকে ফোন করুন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H21-callback')
-                step('"আমাকে ফোন করুন" অনুরোধ গেছে', has(hp, 'অনুরোধ পাঠানো হয়েছে'))
-                btn(lp, 'লিডার প্যানেলে ফিরে যান').click(); lp.wait_for_timeout(1500)
-                btn(lp, 'আমার প্যাকেজ \\(অফার\\)$').click(); lp.wait_for_timeout(3000); shot(lp, 'L24-offer-interest')
-                step('লিডার শুধু সংখ্যা দেখেন (আগ্রহী ১ জন)', has(lp, 'আগ্রহী: ১ জন'))
-                btn(hp, '^অনুরোধ বাতিল করুন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H22-callback-cancelled')
-                step('হাজী অনুরোধ বাতিল করতে পারেন', has(hp, 'অনুরোধ বাতিল করা হয়েছে'))
-                btn(lp, '^প্যাকেজটি লুকান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L25-offer-hidden')
-                step('লিডার প্যাকেজ লুকাতে পারেন', has(lp, 'প্যাকেজ লুকানো হয়েছে'))
-                hp.get_by_role('tab', name='হোম').click(); hp.wait_for_timeout(500); hp.get_by_role('tab', name='অফার').click(); hp.wait_for_timeout(4000)
-                step('লুকানো প্যাকেজ হাজী আর দেখেন না', not has(hp, title, 2000))
-                result['offers'] = 'ok'
+            lp.get_by_label('দলের নাম').fill(f'CI দল {stamp}'); btn(lp, '^দল বানান$').click(); lp.wait_for_timeout(4000)
+            code = (lp.get_by_label(re.compile('^কোড ')).first.get_attribute('aria-label') or '').replace('কোড', '').replace(' ', '')
+            step('দল তৈরি ও কোড দেখা যায়', re.fullmatch(r'[A-Z2-9]{8}', code) is not None, code)
+            ann = lp.get_by_label('ঘোষণা', exact=True)
+            if ann.count():
+                ann.fill('CI পরীক্ষা ঘোষণা: কাল ভোর ৫টায় বাস'); btn(lp, '^সবাইকে পাঠান$').click(); lp.wait_for_timeout(4000)
+                step('ঘোষণা পাঠানো হয়েছে', has(lp, 'ঘোষণা পাঠানো হয়েছে'))
+            btn(hp, '^আমার দল ও লিডারের ঘোষণা$').click(); hp.wait_for_timeout(3000)
+            hp.get_by_label('লিডারের দেওয়া কোড').fill(code); btn(hp, 'দলে যোগ দিন$').click(); hp.wait_for_timeout(4000); shot(hp, 'H10-group')
+            step('কোড দিয়ে দলে যোগ', has(hp, 'দলে যোগ দেওয়া হয়েছে।'))
+            step('চুক্তি ছাড়া লিডারের নম্বর দেখা যায় না', hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() == 0)
+            if ann.count(): step('দলের পাতায় ঘোষণা দেখা যায়', has(hp, 'কাল ভোর ৫টায় বাস'))
+            hp.get_by_role('button', name='দল ছেড়ে দিন').first.click(); hp.wait_for_timeout(3500)
+            step('দল ছেড়ে দেওয়া যায়', has(hp, 'দল ছেড়ে দেওয়া হয়েছে।'))
+            result['stamp'] = stamp
     except SystemExit as e:
         result['failed'] = str(e)
     except Exception as e:

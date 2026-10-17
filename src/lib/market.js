@@ -85,7 +85,7 @@ export async function myContracts() {
   const rows = (await rpc('my_contracts')) || [];
   const a = rows.find((c) => c.status === 'accepted');
   try {
-    if (a && a.leader_phone) await AsyncStorage.setItem(CONTRACT_LEADER, JSON.stringify({ name: a.leader_name, phone: a.leader_phone, travel_from: a.travel_from, title: a.title }));
+    if (a && a.leader_phone) await AsyncStorage.setItem(CONTRACT_LEADER, JSON.stringify({ id: a.id, name: a.leader_name, phone: a.leader_phone, travel_from: a.travel_from, title: a.title }));
     else await AsyncStorage.removeItem(CONTRACT_LEADER);
   } catch (e) { /* best effort */ }
   return rows;

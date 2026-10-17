@@ -9,7 +9,8 @@ import { parseDate } from '../lib/dates';
 import { INCLUDES, myOffers } from '../lib/offers';
 import { leaderContracts, sendContract, withdrawContract, cancelContract, completeContract, leaderReferralList, leaderDecideReferral } from '../lib/market';
 import { shareContractPdf } from '../lib/contractPdf';
-import { st, confirm, errText, fmtDay } from './GroupScreen';
+import { contractMoney } from '../lib/payments';
+import { st, confirm, errText, fmtDay, fmtTaka } from './GroupScreen';
 
 const SEND_RESULT = {
   sent: { kind: 'ok', text: 'চুক্তির অনুরোধ পাঠানো হয়েছে। হাজী অ্যাপে পড়ে রাজি হলে চুক্তি চালু হবে।' },
@@ -104,6 +105,7 @@ function LeaderContract({ c, busy, act, setMsg }) {
       </Pressable>
       {open ? <ContractDetails c={c} who="leader" /> : <Text style={st.val}>{c.title} · {c.haji_name} ({c.haji_code}) · {c.status === 'declined' ? '✖️' : c.status === 'cancelled' ? '⛔' : c.status === 'completed' ? '🏁' : '↩️'}</Text>}
       {c.status === 'accepted' && c.haji_phone ? <Button title={`হাজীকে ফোন করুন (${toBn(c.haji_phone)})`} icon="📞" onPress={() => Linking.openURL(`tel:${telBd(c.haji_phone)}`).catch(() => {})} style={{ marginTop: S.sm }} /> : null}
+      {open && ['accepted', 'completed', 'cancelled'].includes(c.status) ? <LeaderMoney contractId={c.id} /> : null}
       {c.status === 'sent' ? <Button title="অনুরোধ ফিরিয়ে নিন" kind="secondary" onPress={() => confirm('অনুরোধটি ফিরিয়ে নেবেন?', '', 'হ্যাঁ', () => act(() => withdrawContract(c.id), () => ({ kind: 'ok', text: 'অনুরোধ ফিরিয়ে নেওয়া হয়েছে।' })))} disabled={busy} style={{ marginTop: S.sm }} /> : null}
       {['accepted', 'completed', 'cancelled'].includes(c.status) ? (
         <Button title="চুক্তির PDF নিন" icon="📄" kind="secondary" loading={pdf} style={{ marginTop: S.sm }}
@@ -119,6 +121,27 @@ function LeaderContract({ c, busy, act, setMsg }) {
         </>
       ) : null}
       {open && c.haji_id ? <ReportBlock targetId={c.haji_id} targetName={c.haji_name} /> : null}
+    </View>
+  );
+}
+
+// Money for one contract as the leader sees it: what Travel Adda received, its commission, what was paid to the leader.
+function LeaderMoney({ contractId }) {
+  const [m, setM] = useState(null);
+  useEffect(() => { contractMoney(contractId).then(setM).catch(() => setM(null)); }, [contractId]);
+  if (!m) return null;     // step 008 not run yet or no internet
+  const L = ({ l, v, b }) => <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}><Text style={st.p}>{l}</Text><Text style={[st.p, b && { fontWeight: '700' }]}>{v}</Text></View>;
+  return (
+    <View style={[st.cRow, { paddingTop: S.sm }]}>
+      <Text style={st.h}>💳 টাকার হিসাব</Text>
+      <Text style={st.small}>হাজী টাকা দেন Travel Adda-কে। Travel Adda যাচাই করে কমিশন রেখে বাকি টাকা আপনাকে পাঠায়।</Text>
+      <L l="Travel Adda পেয়েছে (নিশ্চিত)" v={fmtTaka(m.paid_in)} />
+      {Number(m.pending_in) > 0 ? <L l="যাচাই চলছে" v={fmtTaka(m.pending_in)} /> : null}
+      <L l="কমিশন" v={fmtTaka(m.commission || 0)} />
+      <L l="আপনাকে পাঠানো হয়েছে" v={fmtTaka(m.paid_to_leader)} />
+      {Number(m.refunded) > 0 ? <L l="হাজীকে ফেরত" v={fmtTaka(m.refunded)} /> : null}
+      <L l="আপনার পাওনা" v={fmtTaka(m.due_to_leader || 0)} b />
+      <L l="হাজীর বাকি" v={fmtTaka(m.still_to_pay)} />
     </View>
   );
 }

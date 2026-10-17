@@ -16,6 +16,9 @@ out['005 list_offers'] = msg(await sb.rpc('list_offers', { p_kind: 'umrah' }));
 out['005 app_settings'] = msg(await sb.from('app_settings').select('key').limit(1));
 out['006 announcements'] = msg(await sb.from('group_announcements').select('id').limit(1));
 out['006 phone_verified'] = msg(await sb.from('profiles').select('phone_verified').limit(1));
+out['007 leader_profiles'] = msg(await sb.from('leader_profiles').select('user_id').limit(1));
+out['007 my_contracts'] = msg(await sb.rpc('my_contracts'));
+out['008 haji_payments'] = msg(await sb.from('haji_payments').select('id').limit(1));
 try { const f = await sb.functions.invoke('phone-otp', { body: { action: 'ping' } }); out['otp function'] = f.error ? `${f.error.name} ${f.error.context?.status || ''}` : JSON.stringify(f.data); } catch (e) { out['otp function'] = String(e); }
 fs.mkdirSync('shots-groups', { recursive: true });
 fs.writeFileSync('shots-groups/probe.json', JSON.stringify(out, null, 1));

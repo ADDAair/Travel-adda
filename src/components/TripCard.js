@@ -7,8 +7,10 @@ import { toBn } from '../lib/phone';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import { myContracts, cachedContractLeader } from '../lib/market';
 import { supabase } from '../lib/supabase';
+import { contractMoney } from '../lib/payments';
 
 const TRIP_KEY = 'ta.trip.v1';
+const MONEY_KEY = 'ta.tripMoney.v1';
 const docsKey = (id) => `ta.docsCache.v1.${id}`;
 
 // Haji's trip at a glance: days to departure, active contract, documents. Works offline from what the phone kept.
@@ -16,6 +18,7 @@ export default function TripCard({ navigation }) {
   const [c, setC] = useState(null);            // active contract (cached)
   const [own, setOwn] = useState(null);        // date typed by the haji when there is no contract
   const [docs, setDocs] = useState(null);      // { count, passport }
+  const [money, setMoney] = useState(null);    // { paid_in, pending_in, still_to_pay } of the active contract
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState('');
   const [err, setErr] = useState('');
@@ -30,7 +33,13 @@ export default function TripCard({ navigation }) {
       const pass = rows.find((r) => r.doc_type === 'passport' && r.expires_on);
       setDocs({ count: rows.length, hasPassport: rows.some((r) => r.doc_type === 'passport'), hasVisa: rows.some((r) => r.doc_type === 'visa'), passLeft: pass ? daysUntil(pass.expires_on) : null });
     } catch (e) { setDocs(null); }
-    myContracts().then(cachedContractLeader).then(setC).catch(() => {});
+    try { setMoney(JSON.parse((await AsyncStorage.getItem(MONEY_KEY)) || 'null')); } catch (e) { setMoney(null); }
+    myContracts().then(cachedContractLeader).then(async (x) => {
+      setC(x);
+      if (!x || !x.id) { setMoney(null); AsyncStorage.removeItem(MONEY_KEY).catch(() => {}); return; }
+      const m = await contractMoney(x.id).catch(() => null);
+      if (m) { setMoney(m); AsyncStorage.setItem(MONEY_KEY, JSON.stringify(m)).catch(() => {}); }
+    }).catch(() => {});
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
@@ -58,6 +67,11 @@ export default function TripCard({ navigation }) {
           <Text style={t.rowT}>🤝 এখনো কোনো চুক্তি নেই · লিডার খুঁজুন ›</Text>
         </Pressable>
       )}
+      {c && money ? (
+        <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button">
+          <Text style={t.rowT}>💳 জমা হয়েছে ৳{toBn(Number(money.paid_in).toLocaleString('en-IN'))}{Number(money.pending_in) > 0 ? ` (যাচাই চলছে ৳${toBn(Number(money.pending_in).toLocaleString('en-IN'))})` : ''} · বাকি ৳{toBn(Number(money.still_to_pay).toLocaleString('en-IN'))} ›</Text>
+        </Pressable>
+      ) : null}
       <Pressable onPress={() => navigation.navigate('Docs')} style={t.row} accessibilityRole="button">
         <Text style={t.rowT}>{docs && docs.hasPassport ? '✅' : '⬜'} পাসপোর্ট  {docs && docs.hasVisa ? '✅' : '⬜'} ভিসা{docs && docs.passLeft != null && docs.passLeft < 183 ? `  ⚠️ পাসপোর্টের মেয়াদ ${docs.passLeft < 0 ? 'শেষ' : `আর ${toBn(docs.passLeft)} দিন`}` : ''} ›</Text>
       </Pressable>

@@ -79,7 +79,8 @@ create policy "offers_update" on public.offers for update to authenticated
   using (leader_id = (select auth.uid())) with check (leader_id = (select auth.uid()));
 
 -- Public list: visible packages with the agency name only (no phone, no leader id). Cheapest first.
-create or replace function public.list_offers(p_kind text)
+drop function if exists public.list_offers(text);   -- 008 adds a column; re-running must not clash
+create function public.list_offers(p_kind text)
 returns table (id uuid, kind text, title text, price_bdt numeric, depart_on date, return_on date, makkah_hotel text,
                makkah_distance_m int, madinah_hotel text, madinah_distance_m int, room_share int, includes text[],
                notes text, agency_name text, created_at timestamptz)

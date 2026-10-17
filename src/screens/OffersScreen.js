@@ -22,6 +22,7 @@ export function OfferCard({ o, children }) {
       <Text style={{ fontSize: 28, fontWeight: '800', color: C.primary, marginTop: S.xs }}>{fmtTaka(o.price_bdt)}</Text>
       <Text style={st.small}>জনপ্রতি মোট দাম</Text>
       <Row l="যাত্রা" v={`${fmtDay(o.depart_on)} থেকে ${fmtDay(o.return_on)} · মোট ${toBn(daysOf(o))} দিন`} />
+      <Row l="অফার চলবে" v={o.valid_until ? `${fmtDay(o.valid_until)} পর্যন্ত` : ''} />
       <Row l="মক্কার হোটেল" v={[o.makkah_hotel, dist(o.makkah_distance_m)].filter(Boolean).join(' · ')} />
       <Row l="মদিনার হোটেল" v={[o.madinah_hotel, dist(o.madinah_distance_m)].filter(Boolean).join(' · ')} />
       <Row l="এক রুমে" v={o.room_share ? `${toBn(o.room_share)} জন` : ''} />
@@ -115,7 +116,7 @@ export default function OffersScreen({ navigation }) {
           </OfferCard>
         );
       }) : null}
-      <Notice kind="info" title="জেনে রাখুন" text="Travel Adda কোনো টাকা নেয় না। টাকা দেওয়ার আগে এজেন্সির লাইসেন্স দেখে নিন, আর দলে যোগ দিয়ে প্যাকেজের শর্ত পড়ে সম্মতি দিন।" />
+      <Notice kind="info" title="জেনে রাখুন" text="চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।" />
     </ScrollView>
   );
 }

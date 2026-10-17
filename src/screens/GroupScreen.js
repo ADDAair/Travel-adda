@@ -180,7 +180,7 @@ function GroupTerms({ group, onBack }) {
       {rows === null ? <ActivityIndicator color={C.primary} /> : null}
       {rows && rows.length === 0 && !err ? <Notice kind="info" title="এখনো কোনো শর্ত দেওয়া হয়নি" text="লিডার প্যাকেজের শর্ত লিখলে এখানে দেখা যাবে।" /> : null}
       {(rows || []).map((c) => <ContractCard key={c.id} c={c} acceptedAt={acc[c.id]} onAgree={() => agree(c)} busy={busy} />)}
-      <Notice kind="info" title="জেনে রাখুন" text="শর্ত একবার লেখার পর লিডারও আর বদলাতে পারেন না। নতুন শর্ত দিলে আলাদা করে দেখাবে। Travel Adda টাকা নেয় না, লেনদেন সরাসরি এজেন্সির সাথে।" />
+      <Notice kind="info" title="জেনে রাখুন" text="শর্ত একবার লেখার পর লিডারও আর বদলাতে পারেন না। নতুন শর্ত দিলে আলাদা করে দেখাবে। টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়।" />
     </ScrollView>
   );
 }

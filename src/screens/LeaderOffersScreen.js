@@ -10,7 +10,8 @@ import { parseDate } from '../lib/dates';
 import { OfferCard } from './OffersScreen';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে' : '✅ হাজীরা দেখতে পাচ্ছেন');
+const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
+  : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ হাজীরা দেখতে পাচ্ছেন');
 
 // Verified leaders publish packages for the Offers page. A published package cannot be changed, only hidden.
 export default function LeaderOffersScreen({ navigation }) {
@@ -93,7 +94,7 @@ function OfferForm({ onDone }) {
   const save = () => {
     if (busy) return;
     const e = {};
-    const price = num(f.price); const from = parseDate(f.from); const to = parseDate(f.to);
+    const price = num(f.price); const from = parseDate(f.from); const to = parseDate(f.to); const until = parseDate(f.until || '');
     const mDist = num(f.dh); const dDist = num(f.dd); const room = num(f.room);
     if (f.title.trim().length < 2) e.title = 'প্যাকেজের নাম লিখুন।';
     if (!Number.isFinite(price) || price <= 0 || price >= 1e8) e.price = 'জনপ্রতি দাম শুধু সংখ্যায় লিখুন (যেমন: 150000)।';
@@ -102,6 +103,9 @@ function OfferForm({ onDone }) {
     if (!to) e.to = 'ফেরার তারিখ লিখুন, যেমন: ০৩-০২-২০২৭';
     else if (from && to < from) e.to = 'ফেরার তারিখ যাওয়ার তারিখের পরে হতে হবে।';
     else if (from && (Date.parse(to) - Date.parse(from)) / 86400000 > 120) e.to = 'সফর ১২০ দিনের বেশি হতে পারে না।';
+    if (until === null) e.until = 'তারিখ এভাবে লিখুন: ১০-০১-২০২৭';
+    else if (until && until < today()) e.until = 'শেষ তারিখ আজ বা পরের কোনো দিন হতে হবে।';
+    else if (until && from && until > from) e.until = 'অফারের শেষ তারিখ যাওয়ার তারিখের আগে বা সেদিন হতে হবে।';
     if (mDist !== null && !(Number.isInteger(mDist) && mDist >= 0 && mDist <= 50000)) e.dh = 'দূরত্ব মিটারে লিখুন (যেমন: 500)।';
     if (dDist !== null && !(Number.isInteger(dDist) && dDist >= 0 && dDist <= 50000)) e.dd = 'দূরত্ব মিটারে লিখুন (যেমন: 300)।';
     if (room !== null && !(Number.isInteger(room) && room >= 1 && room <= 10)) e.room = '১ থেকে ১০ এর মধ্যে লিখুন।';
@@ -111,6 +115,7 @@ function OfferForm({ onDone }) {
       setBusy(true);
       try {
         await createOffer({
+          ...(until ? { valid_until: until } : {}),
           kind, title: f.title.trim(), price_bdt: price, depart_on: from, return_on: to,
           makkah_hotel: f.mh.trim() || null, makkah_distance_m: mDist, madinah_hotel: f.md.trim() || null, madinah_distance_m: dDist,
           room_share: room, includes: INCLUDES.map((x) => x.id).filter((id) => inc.has(id)), notes: f.notes.trim() || null,
@@ -135,6 +140,7 @@ function OfferForm({ onDone }) {
       <Field label="জনপ্রতি মোট দাম (টাকা)" hint="যেমন: 150000" value={f.price} onChangeText={set('price')} keyboardType="numeric" maxLength={12} error={err.price} />
       <Field label="যাওয়ার তারিখ" hint="দিন-মাস-বছর, যেমন: ২০-০১-২০২৭" value={f.from} onChangeText={set('from')} maxLength={10} error={err.from} />
       <Field label="ফেরার তারিখ" hint="দিন-মাস-বছর, যেমন: ০৩-০২-২০২৭" value={f.to} onChangeText={set('to')} maxLength={10} error={err.to} />
+      <Field label="অফার কোন তারিখ পর্যন্ত দেখাবে (ইচ্ছা করলে)" hint="যেমন: ১০-০১-২০২৭। খালি রাখলে যাত্রার আগ পর্যন্ত" value={f.until || ''} onChangeText={set('until')} maxLength={10} error={err.until} />
       <Field label="মক্কার হোটেলের নাম (ইচ্ছা করলে)" value={f.mh} onChangeText={set('mh')} maxLength={100} />
       <Field label="মক্কার হোটেল থেকে হারামের দূরত্ব (মিটার)" hint="যেমন: 500" value={f.dh} onChangeText={set('dh')} keyboardType="numeric" maxLength={6} error={err.dh} />
       <Field label="মদিনার হোটেলের নাম (ইচ্ছা করলে)" value={f.md} onChangeText={set('md')} maxLength={100} />

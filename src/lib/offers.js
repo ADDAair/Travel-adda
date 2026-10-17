@@ -56,7 +56,12 @@ export async function myOffers() {
   const me = (await supabase.auth.getSession()).data?.session?.user?.id;
   return check(await supabase.from('offers').select('*').eq('leader_id', me).order('created_at', { ascending: false })) || [];
 }
-export const createOffer = async (o) => check(await supabase.from('offers').insert(o).select('id').single());
+export async function createOffer(o) {
+  const r = await supabase.from('offers').insert(o).select('id').single();
+  // database step 008 (end date) not run yet: publish without the end date rather than failing
+  if (r.error && o.valid_until && /valid_until/.test(r.error.message || '')) { const { valid_until: _x, ...rest } = o; return check(await supabase.from('offers').insert(rest).select('id').single()); }
+  return check(r);
+}
 export async function setOfferActive(id, active) {
   const r = check(await supabase.from('offers').update({ active }).eq('id', id).select('id'));
   if (!r || !r.length) { const e = new Error('not changed'); e.code = 'not-changed'; throw e; }
