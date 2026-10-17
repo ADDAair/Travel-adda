@@ -255,7 +255,8 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Leader: members of one of their own groups. Only name, Haji ID, phone and photo path, as decided.
-create or replace function public.group_members_for_leader(p_group uuid)
+drop function if exists public.group_members_for_leader(uuid);   -- 006 adds a column; re-running must not clash
+create function public.group_members_for_leader(p_group uuid)
 returns table (user_id uuid, full_name text, haji_code text, phone text, avatar_path text, status text, joined_at timestamptz)
 language sql stable security definer set search_path = '' as $$
   select p.id, p.full_name, p.haji_code, p.phone, p.avatar_path, m.status, m.joined_at

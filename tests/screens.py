@@ -26,6 +26,12 @@ with sync_playwright() as p:
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('karim2026'); shot(pg, f'{scale_name}-06c-pw-medium')
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('Karim2026!'); shot(pg, f'{scale_name}-06d-pw-strong')
         pg.get_by_label('পাসওয়ার্ড', exact=True).fill('')
+        if scale_name == 'normal':   # forgot password (the SMS server step may not be live yet: then an honest message)
+            click_text(pg, 'লগইন', True)
+            pg.get_by_role('button', name='পাসওয়ার্ড ভুলে গেছেন?').click(); pg.wait_for_timeout(800); shot(pg, f'{scale_name}-06f-forgot')
+            pg.get_by_label('মোবাইল নম্বর').fill('0130000'); pg.get_by_role('button', name='কোড পাঠান').click(); pg.wait_for_timeout(700); shot(pg, f'{scale_name}-06g-forgot-badphone')
+            pg.get_by_label('মোবাইল নম্বর').fill('01300000009'); pg.get_by_role('button', name='কোড পাঠান').click(); pg.wait_for_timeout(5000); shot(pg, f'{scale_name}-06h-forgot-sent')
+            pg.get_by_role('button', name='লগইন পাতায় ফিরে যান').click(); pg.wait_for_timeout(800)
         if scale_name == 'normal' and PHONE and PW:
             click_text(pg, 'লগইন', True)
             pg.get_by_label('মোবাইল নম্বর').fill(PHONE); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(PW)

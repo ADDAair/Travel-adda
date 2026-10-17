@@ -120,6 +120,16 @@ with sync_playwright() as p:
             btn(hp, 'আমি পড়েছি ও সম্মত$').click(); hp.wait_for_timeout(4000); shot(hp, 'H05-agreed')
             step('হাজীর সম্মতি সংরক্ষণ হয়েছে', has(hp, 'আপনি সম্মতি দিয়েছেন'))
             btn(hp, 'দলের পাতায় ফিরে যান').click(); hp.wait_for_timeout(1500)
+            # Announcement (006): leader writes once, the whole group sees it
+            if lp.get_by_label('ঘোষণা', exact=True).count() and not has(lp, 'ঘোষণা পাঠানো শীঘ্রই চালু হবে', 1500):
+                lp.get_by_label('ঘোষণা', exact=True).fill('CI পরীক্ষা ঘোষণা: কাল ভোর ৫টায় বাস ছাড়বে')
+                btn(lp, '^সবাইকে পাঠান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L15b-announce-sent')
+                step('লিডার ঘোষণা পাঠিয়েছেন', has(lp, 'ঘোষণা পাঠানো হয়েছে'))
+                open_group(hp); shot(hp, 'H05b-announcement')
+                step('হাজী দলের পাতায় ঘোষণা দেখছেন', has(hp, 'কাল ভোর ৫টায় বাস ছাড়বে'))
+                result['announce'] = 'ok'
+            else:
+                result['announce'] = 'db-missing (006 not run)'
 
             hp.get_by_role('tab', name='জরুরি').click(); hp.wait_for_timeout(3500); shot(hp, 'H06-emergency')
             step('জরুরি পাতায় দলের লিডারকে ফোনের বাটন', hp.get_by_role('button', name=re.compile('লিডারকে ফোন করুন \\(CI লিডার')).count() > 0)

@@ -85,6 +85,26 @@ check('লিডার নিজের দলে হাজী হয়ে ঢ�
 r = await L.rpc('group_members_for_leader', { p_group: g2.id });
 check('দল ছেড়ে যাওয়া হাজীর তথ্য লিডার আর দেখেন না', !r.error && !r.data.some((m) => m.user_id === hid), r.error?.message);
 
+// Announcements (006), only when that step has been run
+const annProbe = await L.from('group_announcements').select('id').eq('group_id', g1.id);
+if (!annProbe.error) {
+  r = await H.from('group_announcements').insert({ group_id: g2.id, body: 'হাজীর ভুয়া ঘোষণা' });
+  check('হাজী ঘোষণা পাঠাতে পারেন না', !!r.error, r.error?.message);
+  r = await H.from('group_announcements').select('id').eq('group_id', g1.id);
+  check('দল থেকে সরানো হাজী আর ঘোষণা দেখেন না', refused(r), r.error?.message);
+  r = await H.from('group_announcements').delete().eq('group_id', g1.id).select('id');
+  check('হাজী ঘোষণা মুছতে পারেন না', refused(r), r.error?.message);
+  r = await L.from('group_announcements').update({ body: 'বদলানো' }).eq('group_id', g1.id).select('id');
+  check('ঘোষণা চুপিচুপি বদলানো যায় না', refused(r), r.error?.message);
+  r = await H.from('phone_otps').select('*');
+  check('এসএমএস কোডের টেবিল কেউ পড়তে পারে না', !!r.error || (r.data || []).length === 0, r.error?.message);
+  r = await H.from('profiles').update({ phone_verified: true }).eq('id', hid).select('phone_verified');
+  const pv = await H.from('profiles').select('phone_verified').eq('id', hid).single();
+  check('হাজী নিজে নম্বর "যাচাই করা" বানাতে পারেন না', pv.data?.phone_verified === false, r.error?.message);
+} else {
+  console.log('announcements step (006) not run yet:', annProbe.error.message);
+}
+
 // Offers (005), only when that step has been run
 const probe = await H.rpc('list_offers', { p_kind: 'umrah' });
 if (!probe.error) {
