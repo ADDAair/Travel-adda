@@ -4,9 +4,11 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
-import { Button, Notice } from '../components/ui';
+import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
-import { DOC_TYPES, typeOf, uploadDoc, listDocs, openDoc, deleteDoc, docIsPdf } from '../lib/docs';
+import { DOC_TYPES, typeOf, uploadDoc, listDocs, openDoc, deleteDoc, docIsPdf, setDocExpiry } from '../lib/docs';
+import { scheduleDocReminders } from '../lib/docReminders';
+import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 const fmtDay = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
@@ -32,7 +34,7 @@ export default function DocsScreen({ navigation }) {
 
   const load = useCallback(async () => {
     setLoadErr('');
-    try { const r = await listDocs(); setRows(r.rows); setOffline(r.offline); }
+    try { const r = await listDocs(); setRows(r.rows); setOffline(r.offline); if (!r.offline) scheduleDocReminders(r.rows); }
     catch (e) { setRows((x) => x || []); setLoadErr(errText(e)); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -142,7 +144,8 @@ export default function DocsScreen({ navigation }) {
             <View key={g.t.id}>
               <Text style={st.group}>{g.t.icon} {g.t.label}</Text>
               {g.items.map((r, i) => (
-                <View key={r.id} style={st.row}>
+                <React.Fragment key={r.id}>
+                <View style={st.row}>
                   <View style={{ flex: 1 }}>
                     <Text style={st.rowT}>{g.t.label}{g.items.length > 1 ? ` ${toBn(g.items.length - i)}` : ''}</Text>
                     <Text style={st.rowW}>{docIsPdf(r) ? 'PDF' : 'ছবি'} · যোগ করা: {fmtDay(r.created_at)}</Text>
@@ -154,6 +157,8 @@ export default function DocsScreen({ navigation }) {
                     <Text style={[st.rowBtnT, { color: C.bad }]}>মুছুন</Text>
                   </Pressable>
                 </View>
+                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr, note) => { setRows((x) => x.map((y) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
+                </React.Fragment>
               ))}
             </View>
           ))}
@@ -168,6 +173,50 @@ export default function DocsScreen({ navigation }) {
         <SafeAreaProvider>{viewing ? <Viewer row={viewing} onClose={() => setViewing(null)} onDelete={() => askDelete(viewing)} /> : null}</SafeAreaProvider>
       </Modal>
     </ScrollView>
+  );
+}
+
+// Expiry date of a passport / visa, with a warning and phone reminders.
+function Expiry({ row, onSaved }) {
+  const [edit, setEdit] = useState(false);
+  const [val, setVal] = useState(ymdToInput(row.expires_on));
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const left = row.expires_on ? daysUntil(row.expires_on) : null;
+  const save = async (clear) => {
+    if (busy) return;
+    const ymd = clear ? null : parseDate(val, 2000);
+    if (!clear && !ymd) { setErr('তারিখ এভাবে লিখুন: ২০-০৫-২০৩০'); return; }
+    setBusy(true); setErr('');
+    try {
+      const nr = await setDocExpiry(row, ymd);
+      const all = await listDocs().catch(() => null);
+      const res = await scheduleDocReminders(all ? all.rows : [nr], { ask: !clear });
+      setEdit(false);
+      onSaved(nr, clear ? 'মেয়াদের তারিখ সরানো হয়েছে।' : res.ok ? 'মেয়াদের তারিখ সংরক্ষণ হয়েছে। মেয়াদ শেষের আগে ফোনে মনে করিয়ে দেওয়া হবে।' : 'মেয়াদের তারিখ সংরক্ষণ হয়েছে। নোটিফিকেশনের অনুমতি না থাকায় ফোনে মনে করানো যাবে না।');
+    } catch (e) { setErr(errText(e)); }   // the typed date stays
+    finally { setBusy(false); }
+  };
+  let warn = null;
+  if (left !== null && left < 0) warn = <Notice kind="bad" title="মেয়াদ শেষ হয়ে গেছে" text="নতুন করে করতে হবে। এজেন্সি বা পাসপোর্ট অফিসে যোগাযোগ করুন।" />;
+  else if (left !== null && row.doc_type === 'passport' && left < 183) warn = <Notice kind="warn" title="পাসপোর্টের মেয়াদ ৬ মাসের কম" text="সৌদি ভিসার জন্য সাধারণত পাসপোর্টের মেয়াদ অন্তত ৬ মাস থাকতে হয়। আগেই নবায়ন করুন।" />;
+  return (
+    <View style={st.exp}>
+      {row.expires_on ? <Text style={st.rowW}>⏳ মেয়াদ শেষ: {ymdToInput(row.expires_on)}{left >= 0 ? ` (আর ${toBn(left)} দিন)` : ''}</Text> : <Text style={st.rowW}>মেয়াদের তারিখ লিখলে শেষ হওয়ার আগে ফোনে মনে করিয়ে দেবে।</Text>}
+      {warn}
+      {edit ? (
+        <>
+          <Field label="মেয়াদ শেষের তারিখ" hint="দিন-মাস-বছর, যেমন: ২০-০৫-২০৩০" value={val} onChangeText={setVal} maxLength={10} error={err} />
+          <Button title="তারিখ সংরক্ষণ করুন" icon="💾" onPress={() => save(false)} loading={busy} />
+          {row.expires_on ? <Button title="তারিখ সরিয়ে দিন" kind="danger" onPress={() => save(true)} disabled={busy} style={{ marginTop: S.xs }} /> : null}
+          <Button title="বাতিল" kind="secondary" onPress={() => { setEdit(false); setErr(''); }} disabled={busy} style={{ marginTop: S.xs }} />
+        </>
+      ) : (
+        <Pressable onPress={() => setEdit(true)} style={st.expBtn} accessibilityRole="button" accessibilityLabel={`${typeOf(row.doc_type).label}-এর মেয়াদের তারিখ ${row.expires_on ? 'বদলান' : 'লিখুন'}`}>
+          <Text style={st.rowBtnT}>📅 মেয়াদের তারিখ {row.expires_on ? 'বদলান' : 'লিখুন'}</Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -268,6 +317,8 @@ const st = StyleSheet.create({
   optT: { flex: 1, fontSize: F.large, fontWeight: '700', color: C.text, lineHeight: 28 },
   go: { fontSize: F.title, color: C.primary },
   group: { fontSize: F.large, fontWeight: '700', color: C.primary, marginTop: S.md, marginBottom: S.xs },
+  exp: { marginTop: -S.xs + 2, marginBottom: S.sm, padding: S.sm, backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line },
+  expBtn: { minHeight: TOUCH, justifyContent: 'center', alignItems: 'center', borderRadius: R.sm, borderWidth: 1.5, borderColor: C.primary, marginTop: S.xs, paddingHorizontal: S.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.sm, backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.sm, paddingLeft: S.md, marginBottom: S.xs, minHeight: 64 },
   rowT: { fontSize: F.body, fontWeight: '700', color: C.text },
   rowW: { fontSize: 14, color: C.muted },

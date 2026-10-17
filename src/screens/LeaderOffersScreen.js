@@ -6,7 +6,7 @@ import { toBn, normalizeDigits } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { INCLUDES, myOffers, createOffer, setOfferActive, myInterestCounts } from '../lib/offers';
 import { st, errText, confirm } from './GroupScreen';
-import { parseDate } from './LeaderScreen';
+import { parseDate } from '../lib/dates';
 import { OfferCard } from './OffersScreen';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

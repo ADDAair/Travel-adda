@@ -88,7 +88,9 @@ export async function listDocs() {
   const me = await uid();
   try {
     const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 10000));
-    const r = await Promise.race([supabase.from('user_documents').select('id,doc_type,file_path,created_at').order('created_at', { ascending: false }), timeout]);
+    const q = (cols) => Promise.race([supabase.from('user_documents').select(cols).order('created_at', { ascending: false }), timeout]);
+    let r = await q('id,doc_type,file_path,created_at,expires_on');
+    if (r.error && (r.error.code === '42703' || /expires_on/.test(r.error.message || ''))) r = await q('id,doc_type,file_path,created_at');   // database step 006 not run yet
     if (r.error) throw r.error;
     AsyncStorage.setItem(cacheKey(me), JSON.stringify(r.data || [])).catch(() => {});
     return { rows: r.data || [], offline: false };
@@ -116,6 +118,14 @@ export async function openDoc(row) {
     try { await ensureLocalDir(); const d = await FileSystem.downloadAsync(data.signedUrl, lp); if (d && d.status === 200) return { uri: lp, local: true }; } catch (e) { /* show online */ }
   }
   return { uri: data.signedUrl, local: false };
+}
+
+// Saves (or clears, with null) the expiry date of a passport / visa. Throws if the server did not confirm.
+export async function setDocExpiry(row, ymd) {
+  const r = await supabase.from('user_documents').update({ expires_on: ymd || null }).eq('id', row.id).select('id,doc_type,file_path,created_at,expires_on');
+  if (r.error) throw r.error;
+  if (!r.data || !r.data.length) { const e = new Error('not saved'); e.code = 'not-saved'; throw e; }
+  return r.data[0];
 }
 
 // Deletes the row and the file (and this phone's copy). Throws if the server did not confirm.

@@ -5,6 +5,7 @@ import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
 import { clearLocalDocs } from '../lib/docs';
+import { cancelDocs } from '../lib/notify';
 import { C, F, S, R, TOUCH, TEXT_SCALE, TEXT_SCALE_KEY } from '../theme';
 import * as SecureStore from 'expo-secure-store';
 import { reloadAppAsync } from 'expo';
@@ -58,7 +59,7 @@ export function Account({ navigation }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1']).catch(() => {}); clearLocalDocs(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: () => { AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;

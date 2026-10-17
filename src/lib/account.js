@@ -2,6 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { clearLocalDocs } from './docs';
+import { cancelEverything } from './notify';
 
 // 1) delete the user's own files (storage policies allow only their own folder)
 // 2) call delete_my_account() (supabase/003_delete_account.sql), which removes the login, profile and document rows
@@ -12,7 +13,7 @@ export async function deleteMyAccount() {
   const uid = data && data.session && data.session.user ? data.session.user.id : null;
   if (!uid) { const e = new Error('no session'); e.code = 'no-session'; throw e; }
 
-  for (const bucket of ['avatars', 'documents']) {
+  for (const bucket of ['avatars', 'documents', 'leader-docs']) {
     try {
       const { data: files } = await supabase.storage.from(bucket).list(uid, { limit: 1000 });
       if (files && files.length) await supabase.storage.from(bucket).remove(files.map((f) => `${uid}/${f.name}`));
@@ -27,5 +28,6 @@ export async function deleteMyAccount() {
     if (keys.length) await AsyncStorage.multiRemove(keys);
   } catch (e) { /* local cleanup is best effort */ }
   await clearLocalDocs();
+  await cancelEverything();   // prayer and document reminders
   await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 }

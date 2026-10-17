@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ORDER, prayerTimes, tzFor, localYMD, fmtTime, isFriday } from './prayer';
 import { loadSavedLocation } from './location';
+import { cancelPrayer } from './notify';
 
 const KEY = 'ta.reminders.v1';
 const CHANNEL = 'prayer';
@@ -24,7 +25,7 @@ export async function remindersOn() {
 }
 
 async function schedule(loc) {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  await cancelPrayer();   // document-expiry reminders are kept
   if (!loc) return 0;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
@@ -83,7 +84,7 @@ export async function enableReminders(loc) {
 
 export async function disableReminders() {
   try { await AsyncStorage.setItem(KEY, '0'); } catch (e) { /* ignore */ }
-  if (remindersSupported) { try { await Notifications.cancelAllScheduledNotificationsAsync(); } catch (e) { /* ignore */ } }
+  if (remindersSupported) await cancelPrayer();
 }
 
 // Called when the app opens and when the place changes. Silent: never asks for permission here.

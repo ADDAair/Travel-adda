@@ -4,8 +4,9 @@ import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn, normalizeDigits, normalizePhone, isValidBdPhone } from '../lib/phone';
 import { signedAvatarUrl } from '../lib/avatar';
-import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, groupContracts, createContract, acceptancesFor, notReady, telBd } from '../lib/groups';
-import { st, errText, confirm, fmtDay, ContractCard } from './GroupScreen';
+import { parseDate } from '../lib/dates';
+import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, groupContracts, createContract, acceptancesFor, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
+import { st, errText, confirm, fmtDay, fmtWhen, ContractCard } from './GroupScreen';
 
 const STATUS = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
 const call = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
@@ -77,6 +78,49 @@ export default function LeaderScreen({ navigation }) {
   );
 }
 
+function AnnounceBox({ g }) {
+  const [rows, setRows] = useState(null);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const load = useCallback(async () => {
+    try { setRows((await groupAnnouncements([g.id])).rows); } catch (e) { setRows([]); if (notReady(e)) setMsg({ kind: 'info', text: 'ঘোষণা পাঠানো শীঘ্রই চালু হবে।' }); }
+  }, [g]);
+  useEffect(() => { load(); }, [load]);
+  const send = () => {
+    if (busy) return;
+    if (text.trim().length < 2) { setMsg({ kind: 'bad', text: 'ঘোষণাটি লিখুন।' }); return; }
+    confirm('দলের সবাইকে ঘোষণাটি পাঠাবেন?', text.trim(), 'হ্যাঁ, পাঠান', async () => {
+      setBusy(true); setMsg(null);
+      try { await postAnnouncement(g.id, text); setText(''); setMsg({ kind: 'ok', text: 'ঘোষণা পাঠানো হয়েছে। হাজীরা "আমার দল" পাতায় দেখবেন।' }); await load(); }
+      catch (e) { setMsg({ kind: 'bad', text: e?.code === '42501' ? 'পাঠানো যায়নি। একদিনে ৩০টির বেশি ঘোষণা পাঠানো যায় না।' : errText(e) }); }   // the text stays in the box
+      finally { setBusy(false); }
+    });
+  };
+  const del = (a) => confirm('ঘোষণাটি মুছে ফেলবেন?', 'হাজীরা আর এটি দেখবেন না।', 'হ্যাঁ, মুছুন', async () => {
+    setBusy(true); setMsg(null);
+    try { await deleteAnnouncement(a.id); setMsg({ kind: 'ok', text: 'ঘোষণা মুছে ফেলা হয়েছে।' }); await load(); }
+    catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
+    finally { setBusy(false); }
+  });
+  return (
+    <View style={st.card}>
+      <Text style={st.h}>📢 দলের সবাইকে ঘোষণা</Text>
+      <Text style={st.small}>যেমন বাসের সময়, দেখা করার জায়গা। দলের সবাই অ্যাপের "আমার দল" পাতায় দেখবেন। জরুরি হলে ফোনও করুন।</Text>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      <Field label="ঘোষণা" hint="যেমন: কাল ভোর ৫টায় বাস ছাড়বে, হোটেলের নিচে থাকুন" value={text} onChangeText={setText} multiline maxLength={500} />
+      <Button title="সবাইকে পাঠান" icon="📢" onPress={send} loading={busy} />
+      {(rows || []).slice(0, 10).map((a) => (
+        <View key={a.id} style={st.cRow}>
+          <Text style={st.small}>{fmtWhen(a.created_at)}</Text>
+          <Text style={st.p}>{a.body}</Text>
+          <Pressable onPress={() => del(a)} disabled={busy} style={st.leave} accessibilityRole="button" accessibilityLabel="এই ঘোষণা মুছুন"><Text style={st.leaveT}>মুছুন</Text></Pressable>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function GroupAdmin({ g, onBack }) {
   const [members, setMembers] = useState(null);
   const [contracts, setContracts] = useState([]);
@@ -133,6 +177,8 @@ function GroupAdmin({ g, onBack }) {
         <Button title="কোডটি পাঠান (হোয়াটসঅ্যাপ/এসএমএস)" icon="📤" kind="secondary" onPress={share} />
       </View>
 
+      <AnnounceBox g={g} />
+
       <View style={st.card}>
         <Text style={st.h}>📱 মোবাইল নম্বরে আমন্ত্রণ</Text>
         <Field label="হাজীর মোবাইল নম্বর" hint="যেমন: 01712345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={14} />
@@ -180,6 +226,8 @@ function MemberRow({ m, onRemove, busy }) {
           <Text style={st.val}>{m.full_name}</Text>
           <Text style={st.small}>আইডি: {m.haji_code} · {toBn(m.phone)}</Text>
           <Text style={st.small}>{STATUS[m.status] || m.status}</Text>
+          {m.phone_verified === true ? <Text style={st.small}>✔️ মোবাইল নম্বর এসএমএস কোডে যাচাই করা</Text> : null}
+          {m.phone_verified === false ? <Text style={st.small}>⚠️ নম্বর এখনো যাচাই হয়নি, ফোন করে নিশ্চিত হোন</Text> : null}
         </View>
       </View>
       {m.status === 'active' ? <Button title={`ফোন করুন (${toBn(m.phone)})`} icon="📞" kind="secondary" onPress={() => call(m.phone)} style={{ marginTop: S.sm }} /> : null}
@@ -188,18 +236,6 @@ function MemberRow({ m, onRemove, busy }) {
       ) : null}
     </View>
   );
-}
-
-// Accepts "2027-05-20", "20-05-2027", "20/05/2027" and Bengali digits; returns 'YYYY-MM-DD', '' (empty) or null (wrong).
-export function parseDate(s) {
-  const t = String(s || '').replace(/[০-৯]/g, (d) => String('০১২৩৪৫৬৭৮৯'.indexOf(d))).trim();
-  if (!t) return '';
-  let y; let mo; let d;
-  let m = t.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
-  if (m) { [, y, mo, d] = m; } else { m = t.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/); if (!m) return null; [, d, mo, y] = m; }
-  const dt = new Date(Date.UTC(+y, +mo - 1, +d));
-  if (dt.getUTCFullYear() !== +y || dt.getUTCMonth() !== +mo - 1 || dt.getUTCDate() !== +d || +y < 2024 || +y > 2100) return null;
-  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 function ContractForm({ g, onDone }) {

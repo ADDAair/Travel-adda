@@ -1,0 +1,17 @@
+name: otp-test
+on:
+  push:
+    paths: ['supabase/functions/**', '.github/workflows/otp-test.yml']
+  workflow_dispatch:
+jobs:
+  deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - name: type check and tests of the SMS code server function
+        run: |
+          set -o pipefail
+          deno check supabase/functions/phone-otp/index.ts 2>&1 | tee /tmp/check.log || { echo "::error title=deno check::$(tail -c 1500 /tmp/check.log | tr '\n' ' ')"; exit 1; }
+          deno test --allow-none supabase/functions/phone-otp/ 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }

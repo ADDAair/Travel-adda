@@ -3,10 +3,15 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Alert, Activity
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
-import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, myApplication, notReady, telBd } from '../lib/groups';
+import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, myApplication, notReady, telBd, groupAnnouncements } from '../lib/groups';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 export const fmtDay = (iso) => { if (!iso) return ''; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
+export const fmtWhen = (iso) => {
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return '';
+  const h = d.getHours(); const part = h < 4 ? 'রাত' : h < 6 ? 'ভোর' : h < 12 ? 'সকাল' : h < 15 ? 'দুপুর' : h < 18 ? 'বিকেল' : h < 20 ? 'সন্ধ্যা' : 'রাত';
+  return `${fmtDay(iso)}, ${part} ${toBn(`${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`)}`;
+};
 export const fmtTaka = (n) => `${toBn(Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }))} টাকা`;
 export const errText = (e) => {
   const m = String((e && e.message) || '').toLowerCase();
@@ -29,11 +34,14 @@ export default function GroupScreen({ navigation }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [open, setOpen] = useState(null);           // group shown with its terms
+  const [ann, setAnn] = useState(null);             // { rows, offline } leader announcements
 
   const load = useCallback(async () => {
     try {
       const [p, g] = await Promise.all([myProfile(), myGroups()]);
       setMe(p); setRows(g);
+      const ids = g.filter((x) => x.status === 'active').map((x) => x.group_id);
+      groupAnnouncements(ids).then(setAnn).catch(() => setAnn(null));
       if (p.role === 'haji') { try { setApp(await myApplication()); } catch (e) { setApp(null); } }
       setState('ok');
     } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
@@ -100,6 +108,7 @@ export default function GroupScreen({ navigation }) {
                 <Text style={st.val}>✔️ {g.leader_name}</Text>
                 <Text style={st.small}>অ্যাপের অ্যাডমিন যাচাই করে লিডার হিসেবে অনুমোদন দিয়েছেন।</Text>
               </View>
+              <Announcements rows={ann ? ann.rows.filter((a) => a.group_id === g.group_id) : null} offline={ann && ann.offline} />
               <Button title={`লিডারকে ফোন করুন (${toBn(g.leader_phone)})`} icon="📞" onPress={() => call(g.leader_phone)} />
               <Button title="প্যাকেজের শর্ত ও সম্মতি" icon="📜" kind="secondary" onPress={() => setOpen(g)} style={{ marginTop: S.sm }} />
               <Pressable onPress={() => confirm('এই দল ছেড়ে দেবেন?', 'আবার যোগ দিতে লিডারের কোড লাগবে।', 'হ্যাঁ, ছেড়ে দিন', () => run(() => leaveGroup(g.group_id), () => 'দল ছেড়ে দেওয়া হয়েছে।'))}
@@ -130,6 +139,29 @@ export default function GroupScreen({ navigation }) {
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+function Announcements({ rows, offline }) {
+  const [all, setAll] = useState(false);
+  if (!rows || rows.length === 0) return null;
+  const list = all ? rows : rows.slice(0, 3);
+  return (
+    <View style={st.ann}>
+      <Text style={st.h}>📢 লিডারের ঘোষণা</Text>
+      {offline ? <Text style={st.small}>ইন্টারনেট নেই, ফোনে রাখা শেষ ঘোষণাগুলো দেখানো হচ্ছে।</Text> : null}
+      {list.map((a, i) => (
+        <View key={a.id} style={[st.annRow, i === 0 && { borderTopWidth: 0 }]} accessible accessibilityLabel={`ঘোষণা, ${fmtWhen(a.created_at)}: ${a.body}`}>
+          <Text style={st.small}>{i === 0 ? '🆕 ' : ''}{fmtWhen(a.created_at)}</Text>
+          <Text style={st.p} selectable>{a.body}</Text>
+        </View>
+      ))}
+      {rows.length > 3 ? (
+        <Pressable onPress={() => setAll((x) => !x)} style={st.leave} accessibilityRole="button">
+          <Text style={[st.leaveT, { color: C.primary }]}>{all ? 'কম দেখান' : `সব ঘোষণা দেখুন (${toBn(rows.length)}টি)`}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -197,5 +229,7 @@ export const st = StyleSheet.create({
   val: { fontSize: F.large, fontWeight: '700', color: C.text },
   leave: { minHeight: TOUCH, justifyContent: 'center', alignSelf: 'center', marginTop: S.xs },
   leaveT: { fontSize: F.small, color: C.bad, fontWeight: '700', textDecorationLine: 'underline' },
+  ann: { backgroundColor: C.goldSoft, borderRadius: R.md, padding: S.sm, marginBottom: S.sm, borderWidth: 1, borderColor: C.gold },
+  annRow: { borderTopWidth: 1, borderColor: C.line, paddingTop: S.xs, marginTop: S.xs },
   cRow: { borderTopWidth: 1, borderColor: C.line, paddingTop: S.xs, marginTop: S.xs },
 });

@@ -79,6 +79,27 @@ export async function acceptContract(contractId) {
   check(await supabase.from('contract_acceptances').insert({ contract_id: contractId }));
 }
 
+// ---------- Announcements (leader -> whole group) ----------
+// The last list is kept on the phone so announcements can be read inside the Haram without internet.
+const ANN_CACHE = 'ta.announce.v1';
+export async function groupAnnouncements(groupIds) {
+  if (!groupIds.length) return { rows: [], offline: false };
+  try {
+    const rows = check(await supabase.from('group_announcements').select('id,group_id,body,created_at').in('group_id', groupIds).order('created_at', { ascending: false }).limit(60)) || [];
+    AsyncStorage.setItem(ANN_CACHE, JSON.stringify(rows)).catch(() => {});
+    return { rows, offline: false };
+  } catch (e) {
+    if (notReady(e)) throw e;
+    try { const c = JSON.parse((await AsyncStorage.getItem(ANN_CACHE)) || 'null'); if (Array.isArray(c)) return { rows: c.filter((r) => groupIds.includes(r.group_id)), offline: true }; } catch (x) { /* none */ }
+    throw e;
+  }
+}
+export const postAnnouncement = async (groupId, body) => check(await supabase.from('group_announcements').insert({ group_id: groupId, body: body.trim() }));
+export async function deleteAnnouncement(id) {
+  const r = check(await supabase.from('group_announcements').delete().eq('id', id).select('id'));
+  if (!r || !r.length) { const e = new Error('not deleted'); e.code = 'not-deleted'; throw e; }
+}
+
 // ---------- Leader ----------
 export async function leaderGroups() {
   return check(await supabase.from('groups').select('id,name,season,join_code,active,created_at').order('created_at', { ascending: false })) || [];

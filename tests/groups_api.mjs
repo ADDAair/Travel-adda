@@ -83,7 +83,7 @@ check('লিডার হাজীর প্রোফাইল টেবিল 
 r = await L.rpc('join_group', { p_code: g1.join_code });
 check('লিডার নিজের দলে হাজী হয়ে ঢোকেন না', r.data === 'own_group', r.error?.message || r.data);
 r = await L.rpc('group_members_for_leader', { p_group: g2.id });
-check('লিডার দল ছেড়ে যাওয়া হাজীর অবস্থা দেখেন', !r.error && r.data.some((m) => m.user_id === hid && m.status === 'left'), r.error?.message);
+check('দল ছেড়ে যাওয়া হাজীর তথ্য লিডার আর দেখেন না', !r.error && !r.data.some((m) => m.user_id === hid), r.error?.message);
 
 // Offers (005), only when that step has been run
 const probe = await H.rpc('list_offers', { p_kind: 'umrah' });
