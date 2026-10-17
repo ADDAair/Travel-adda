@@ -14,7 +14,12 @@ export async function otp(action, body = {}) {
       if (ctx.status === 404) return { ok: false, error: 'not_ready' };
     }
     const m = String(error.message || '').toLowerCase();
-    if (error.name === 'FunctionsFetchError' || m.includes('fetch') || m.includes('network')) return { ok: false, error: 'network' };
+    if (error.name === 'FunctionsFetchError' || m.includes('fetch') || m.includes('network')) {
+      // Is it really the internet, or only the SMS service that is not reachable? Ask the database once.
+      const probe = await supabase.from('app_settings').select('key').limit(1).then((r) => r, () => ({ error: { message: 'fetch' } }));
+      const net = probe.error && /fetch|network|timeout/i.test(String(probe.error.message || ''));
+      return { ok: false, error: net ? 'network' : 'not_ready' };
+    }
     if (error.name === 'FunctionsRelayError' || m.includes('not found')) return { ok: false, error: 'not_ready' };
     return { ok: false, error: 'server' };
   } catch (e) {
@@ -37,7 +42,7 @@ export function otpText(r) {
     case 'bad_phone': return 'সঠিক ১১ সংখ্যার মোবাইল নম্বর লিখুন (০১ দিয়ে শুরু)।';
     case 'not_signed_in': return 'আবার লগইন করে চেষ্টা করুন।';
     case 'network': return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';
-    case 'not_ready': return 'এসএমএস কোডের সুবিধা এখনো চালু হয়নি। শীঘ্রই আসছে।';
+    case 'not_ready': return 'এসএমএস কোড পাঠানোর সুবিধা এখন পাওয়া যাচ্ছে না (শীঘ্রই চালু হবে)। পরে আবার চেষ্টা করুন, অথবা হেল্পলাইনে যোগাযোগ করুন।';
     default: return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
   }
 }
