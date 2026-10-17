@@ -13,5 +13,7 @@ jobs:
       - name: type check and tests of the SMS code server function
         run: |
           set -o pipefail
-          deno check supabase/functions/phone-otp/index.ts 2>&1 | tee /tmp/check.log || { echo "::error title=deno check::$(tail -c 1500 /tmp/check.log | tr '\n' ' ')"; exit 1; }
-          deno test supabase/functions/phone-otp/ 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }
+          # run outside the app folder, so Deno does not try to use the app's node_modules
+          mkdir -p /tmp/fn && cp supabase/functions/phone-otp/*.ts /tmp/fn/ && cd /tmp/fn
+          deno check index.ts 2>&1 | tee /tmp/check.log || { echo "::error title=deno check::$(tail -c 1500 /tmp/check.log | tr '\n' ' ')"; exit 1; }
+          deno test 2>&1 | tee /tmp/test.log || { echo "::error title=deno test::$(grep -E 'FAILED|error|=>' /tmp/test.log | tail -c 1500 | tr '\n' ' ')"; exit 1; }
