@@ -74,6 +74,7 @@ function DuaFab({ pending }) {
 function TabBar({ state, navigation }) {
   const ins = useSafeAreaInsets();
   const { handsOnPending, completeHandsOn } = useTutorial();
+  const onHome = state.routes[state.index]?.name === 'Home';   // the "tap here" bubble belongs to the Home practice card only; elsewhere it covered page content
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
       {state.routes.map((r, i) => {
@@ -94,7 +95,7 @@ function TabBar({ state, navigation }) {
         if (r.name === 'Dua') {
           return (
             <Pressable key={r.key} {...common} style={s.mid}>
-              {handsOnPending ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
+              {handsOnPending && onHome ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
               <DuaFab pending={handsOnPending} />
               <Text style={[s.lb, { color: on ? C.primary : C.muted }]}>{label}</Text>
               <View style={[s.lbBar, { backgroundColor: on ? C.accent : 'transparent' }]} />

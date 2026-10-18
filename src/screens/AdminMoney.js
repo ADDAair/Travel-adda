@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator } from 'react-native';
-import { C, S, R, TOUCH } from '../theme';
+import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
 import { notReady, telBd } from '../lib/groups';

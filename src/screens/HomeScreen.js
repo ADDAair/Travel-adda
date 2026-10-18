@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
   }
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={[st.wrap, handsOnPending && { paddingBottom: 96 }]}>
       <View style={st.hero} accessible accessibilityLabel={p ? `আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}` : 'আস-সালামু আলাইকুম'}>
         <Text style={st.hi}>আস-সালামু আলাইকুম 👋</Text>
         {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
