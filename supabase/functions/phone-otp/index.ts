@@ -132,7 +132,7 @@ export async function sendSmsVia(provider: string, env: (k: string) => string | 
     if (provider === 'bulksmsbd') {
       const u = `https://bulksmsbd.net/api/smsapi?api_key=${encodeURIComponent(key)}&type=text&number=${to880}&senderid=${encodeURIComponent(sender)}&message=${encodeURIComponent(text)}`;
       const r = await fetcher(u); const j = await r.json().catch(() => ({}));
-      if (!(r.ok && Number(j.response_code) === 202)) console.error('bulksmsbd refused', r.status, j.response_code, String(j.error_message ?? '').slice(0, 200));   // reason only, never the key
+      if (!(r.ok && Number(j.response_code) === 202)) console.error('bulksmsbd refused', r.status, j.response_code, String(j.error_message ?? '').split(key).join('***').slice(0, 200));   // reason only; the company may echo the key, so it is blanked
       return r.ok && Number(j.response_code) === 202;
     }
     if (provider === 'alphasms') {
