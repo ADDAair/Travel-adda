@@ -68,4 +68,4 @@ Travel Adda – Haj & Umrah Assistant অ্যাপ আপনার কোন 
 
 ## যোগাযোগ
 
-(অ্যাপ প্রকাশের আগে সাপোর্ট ইমেইল এখানে যুক্ত হবে।)
+traveladda.z@gmail.com

@@ -1,6 +1,6 @@
 // Privacy policy shown inside the app. Keep docs/privacy-policy-bn.md in step with this file.
 export const PRIVACY_UPDATED = '১৭ অক্টোবর ২০২৬';
-export const PRIVACY_CONTACT = null;   // TODO before Play Store release: the owner's support email
+export const PRIVACY_CONTACT = 'traveladda.z@gmail.com';
 
 export const PRIVACY = [
   {
