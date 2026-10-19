@@ -6,6 +6,7 @@ import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { KIND_ICON, listNotifications, markRead, hideNotification, markAllRead } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
+import PushCard from '../components/PushCard';
 
 // Notification box: everything Travel Adda or the app told this person, newest first.
 export default function NotificationsScreen({ navigation }) {
@@ -45,6 +46,7 @@ export default function NotificationsScreen({ navigation }) {
       <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">🔔 নোটিফিকেশন</Text>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {state === 'ok' ? <PushCard /> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} style={{ marginTop: S.lg }} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="Travel Adda-র নোটিশ ও আপনার চুক্তি, টাকা, দলের খবর এখানে আসবে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="নোটিফিকেশন আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}

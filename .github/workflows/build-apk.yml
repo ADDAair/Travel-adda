@@ -12,6 +12,10 @@ jobs:
         with: { node-version: 22 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
+      - name: Firebase file for push (from secret; skipped if not set)
+        env: { GSJ: '${{ secrets.GOOGLE_SERVICES_JSON }}' }
+        run: |
+          if [ -n "$GSJ" ]; then printf '%s' "$GSJ" > google-services.json; node -e "const j=require('./google-services.json'); if(!j.client.some(c=>c.client_info.android_client_info.package_name==='app.traveladda.hajumrah')) { console.log('::error::google-services.json is for another package'); process.exit(1) } console.log('push: Firebase file ready')"; else echo "::warning::GOOGLE_SERVICES_JSON not set: APK built without push"; fi
       - name: build
         run: |
           set +e

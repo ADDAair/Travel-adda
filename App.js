@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
+import { pushSupported, syncPush, isPushTap } from './src/lib/push';
+import { refreshUnread } from './src/lib/notifications';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './src/lib/supabase';
@@ -157,6 +160,8 @@ function Main() {
   );
 }
 
+const navRef = createNavigationContainerRef();
+
 export default function App() {
   const [session, setSession] = useState(undefined);
   const [onboarded, setOnboarded] = useState(undefined);
@@ -189,6 +194,28 @@ export default function App() {
     const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshReminders(); });
     return () => sub.remove();
   }, []);
+
+  // Push: refresh this phone's registration after login; a tap on a Travel Adda alert opens the 🔔 page.
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const [navReady, setNavReady] = useState(0);            // counts each time the app's pages become ready
+  useEffect(() => {
+    if (pendingOpen && navReady && navRef.isReady()) {
+      setPendingOpen(false);
+      try { Notifications.clearLastNotificationResponseAsync?.()?.catch?.(() => {}); } catch (e) { /* older versions */ }
+      navRef.navigate('Notifications');
+    }
+  }, [pendingOpen, navReady]);
+  useEffect(() => {
+    if (!userId || !pushSupported) return undefined;
+    syncPush();
+    let subA = null; let subB = null;
+    try {
+      subA = Notifications.addNotificationResponseReceivedListener((r) => { if (isPushTap(r)) setPendingOpen(true); });
+      subB = Notifications.addNotificationReceivedListener((n) => { if (n?.request?.content?.data?.route === 'Notifications') refreshUnread(); });
+      Notifications.getLastNotificationResponseAsync().then((r) => { if (isPushTap(r)) setPendingOpen(true); }).catch(() => {});
+    } catch (e) { /* push not available in this build */ }
+    return () => { subA?.remove?.(); subB?.remove?.(); };
+  }, [userId]);
 
   // After sign-in, check once whether this person already has a profile photo.
   useEffect(() => {
@@ -233,7 +260,7 @@ export default function App() {
   } else if (photoGate === 'missing') {
     body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
-    body = <NavigationContainer><Main /></NavigationContainer>;
+    body = <NavigationContainer ref={navRef} onReady={() => setNavReady((x) => x + 1)}><Main /></NavigationContainer>;
   }
   return (
     <SafeAreaProvider>

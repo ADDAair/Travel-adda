@@ -13,6 +13,7 @@ import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
 import { processPendingReferral } from '../lib/market';
 import TripCard from '../components/TripCard';
+import PushCard from '../components/PushCard';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -117,6 +118,7 @@ export default function HomeScreen({ navigation }) {
         </Card>
       ) : null}
 
+      {!handsOnPending ? <PushCard mode="home" /> : null}
       {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
       {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripCard navigation={navigation} />}
 
