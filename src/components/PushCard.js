@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button, Notice } from './ui';
-import { pushSupported, pushState, enablePush, disablePush, notNow, openPhoneSettings } from '../lib/push';
+import { pushSupported, pushState, pushPref, enablePush, disablePush, notNow, openPhoneSettings } from '../lib/push';
 
 // Turning on phone alerts (push). mode 'home': asks once, disappears after a choice.
 // mode 'settings' (🔔 page): always shows the current state and the one action that fits it.
@@ -10,7 +10,10 @@ export default function PushCard({ mode = 'settings' }) {
   const [st, setSt] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
-  const load = useCallback(async () => setSt(await pushState()), []);
+  const load = useCallback(async () => {
+    if (mode === 'home' && (await pushPref())) { setSt('decided'); return; }   // already chosen on this phone: no server call
+    setSt(await pushState());
+  }, [mode]);
   useEffect(() => { if (pushSupported) load(); }, [load]);
 
   if (!pushSupported || st === null || st === 'soon') return null;

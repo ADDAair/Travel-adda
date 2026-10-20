@@ -21,6 +21,7 @@ out['007 my_contracts'] = msg(await sb.rpc('my_contracts'));
 out['008 haji_payments'] = msg(await sb.from('haji_payments').select('id').limit(1));
 out['009 notifications'] = msg(await sb.rpc('my_unread_count'));
 out['011 push'] = msg(await sb.rpc('my_push_count'));
+out['012 terms'] = msg(await sb.rpc('my_terms'));
 try { const f = await sb.functions.invoke('phone-otp', { body: { action: 'ping' } }); out['otp function'] = f.error ? `${f.error.name} ${f.error.context?.status || ''}` : JSON.stringify(f.data); } catch (e) { out['otp function'] = String(e); }
 // The CI leader account: what it chose at sign-up vs. what the database says (step 010 fixes old leader sign-ups).
 if (process.env.L_PHONE) {

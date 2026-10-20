@@ -227,8 +227,9 @@ export default function App() {
   const refreshMe = useCallback(async () => { const m = await loadMe(); setMe(m); return m; }, []);
   useEffect(() => {
     if (!userId) { setMe(null); return undefined; }
-    refreshMe();
-    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshMe(); });
+    refreshMe(); let lastMe = Date.now();
+    // back to the front: check again (e.g. suspended) at most every 5 minutes, so many phones don't ask all the time
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active' && Date.now() - lastMe > 300000) { lastMe = Date.now(); refreshMe(); } });
     return () => sub.remove();
   }, [userId, refreshMe]);
   const meCtx = useMemo(() => ({ me, refreshMe }), [me, refreshMe]);

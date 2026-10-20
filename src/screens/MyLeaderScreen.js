@@ -234,7 +234,7 @@ function ReferralCard({ r, busy, act, hasContract }) {
       <Field label="রেফারেল কোড" hint="যেমন: TL-00012" value={code} onChangeText={(v) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
       <Button title="কোড যুক্ত করুন" icon="➕" kind="secondary" loading={busy} onPress={() => {
         const c = code.trim().replace(/\s/g, '').replace(/^TL(\d)/, 'TL-$1');
-        if (!/^TL-\d{1,6}$/.test(c)) return act(async () => 'format', () => ({ kind: 'bad', text: 'কোড এমন হয়: TL-00012' }));
+        if (!/^TL-\d{1,8}$/.test(c)) return act(async () => 'format', () => ({ kind: 'bad', text: 'কোড এমন হয়: TL-00012' }));
         return act(() => setReferral(c), (x) => (x === 'ok' ? { kind: 'ok', text: 'রেফারেল কোড যুক্ত হয়েছে। লিডার নিশ্চিত করলে এখানে দেখবেন।' } : x === 'already' ? { kind: 'info', text: 'আপনার একজন লিডার আগে থেকেই যুক্ত আছেন।' } : { kind: 'bad', text: 'এই কোডে কোনো লিডার পাওয়া যায়নি।' }));
       }} />
     </View>

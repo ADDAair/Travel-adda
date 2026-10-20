@@ -174,7 +174,7 @@ function SendForm({ onDone }) {
     const code = f.hajiCode.trim().toUpperCase().replace(/\s/g, '').replace(/^TA(\d)/, 'TA-$1');
     const price = Number(normalizeDigits(f.price).replace(/[,\s]/g, ''));
     const from = parseDate(f.from); const to = parseDate(f.to);
-    if (!/^TA-\d{1,6}$/.test(code)) e.hajiCode = 'হাজীর আইডি লিখুন, যেমন TA-00123।';
+    if (!/^TA-\d{1,8}$/.test(code)) e.hajiCode = 'হাজীর আইডি লিখুন, যেমন TA-00123।';
     if (f.title.trim().length < 2) e.title = 'প্যাকেজের নাম লিখুন।';
     if (!Number.isFinite(price) || price <= 0 || price >= 1e8) e.price = 'জনপ্রতি দাম শুধু সংখ্যায় লিখুন।';
     if (f.includes.trim().length < 2) e.includes = 'কী কী থাকছে লিখুন।';

@@ -4,7 +4,6 @@ import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';
 import { Button, Card, Notice } from '../components/ui';
 import NoticeBar from '../components/NoticeBar';
-import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
@@ -39,7 +38,7 @@ const UPCOMING = [
 
 export default function HomeScreen({ navigation }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
-  const { me } = useMe();
+  const { me, refreshMe } = useMe();
   const leaderAcc = isLeaderAccount(me);
   const [refMsg, setRefMsg] = useState(null);
   // A referral code typed at sign-up is attached once the account exists.
@@ -47,22 +46,20 @@ export default function HomeScreen({ navigation }) {
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
 
-  // The guides work offline (e.g. inside the Haram without data), so Home must never be blocked by a failed fetch:
-  // the last known name and ID are kept on the phone and shown when the internet is not available.
+  // The guides work offline (e.g. inside the Haram without data), so Home must never be blocked by a failed fetch.
+  // Name and ID come from the profile the app already loaded (no second request); the phone's copy is shown meanwhile.
   const load = useCallback(async () => {
-    setState((x) => (x === 'ok' ? 'ok' : 'load'));
     let cached = null;
     try { cached = JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null'); } catch (e) { cached = null; }
     if (cached) { setP(cached); setState('ok'); }
-    try {
-      const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: 'timeout' }), 8000));
-      const { data, error } = await Promise.race([supabase.from('profiles').select('full_name,haji_code').single(), timeout]);
-      if (error || !data) { setState('err'); return; }
-      setP(data); setState('ok');
-      // (the full profile is cached by the app itself; see src/lib/me.js)
-    } catch (e) { setState('err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (me) { setP({ full_name: me.full_name, haji_code: me.haji_code }); setState(me.offline ? 'err' : 'ok'); return undefined; }
+    const t = setTimeout(() => setState((x) => (x === 'load' ? 'err' : x)), 9000);    // nothing after 9 s: show the offline note
+    return () => clearTimeout(t);
+  }, [me]);
+  const retry = useCallback(async () => { setState((x) => (x === 'err' && !p ? 'load' : x)); const m = await refreshMe(); if (!m) setState('err'); }, [refreshMe, p]);
 
   // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
   const [ploc, setPloc] = useState(null);
@@ -90,7 +87,7 @@ export default function HomeScreen({ navigation }) {
       <NoticeBar navigation={navigation} />
       {state === 'err' ? (
         <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
-          <Button title={T.retry} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} />
+          <Button title={T.retry} icon="🔄" kind="secondary" onPress={retry} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
 

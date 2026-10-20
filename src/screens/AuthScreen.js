@@ -6,7 +6,7 @@ import { T } from '../strings';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
-import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
+import { normalizePhone, isValidBdPhone, phoneToLoginId, toBn } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
@@ -31,6 +31,10 @@ export default function AuthScreen() {
   const [allTerms, setAllTerms] = useState({});      // { haji, leader }: each { body } when written
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [waitUntil, setWaitUntil] = useState(0);     // after "server busy": the button waits a minute (protects the server when many log in at once)
+  const [, tick] = useState(0);
+  useEffect(() => { if (waitUntil <= Date.now()) return undefined; const t = setInterval(() => { tick((x) => x + 1); if (Date.now() >= waitUntil) clearInterval(t); }, 1000); return () => clearInterval(t); }, [waitUntil]);
+  const waitLeft = Math.max(0, Math.ceil((waitUntil - Date.now()) / 1000));
   useEffect(() => {
     getTerms('haji').then((t) => setAllTerms((x) => ({ ...x, haji: t }))).catch(() => {});
     getTerms('leader').then((t) => setAllTerms((x) => ({ ...x, leader: t }))).catch(() => {});
@@ -58,7 +62,7 @@ export default function AuthScreen() {
     if (!isValidBdPhone(normalizePhone(phone))) e.phone = A.errPhone;
     if (pw.length < 8) e.pw = A.errPw;
     else if (reg && strength.level === 0) e.pw = A.errPwEasy;
-    if (reg && refCode.trim() && !/^TL-?\d{1,6}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';
+    if (reg && refCode.trim() && !/^TL-?\d{1,8}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';
     if (reg && terms && !agree) e.agree = 'শর্তাবলি পড়ে টিক দিন।';
     setErrs(e);
     return Object.keys(e).length === 0;
@@ -66,6 +70,7 @@ export default function AuthScreen() {
 
   async function submit() {
     if (busy) return;                 // blocks double submit
+    if (waitUntil > Date.now()) { setFormErr(A.errBusy); return; }   // asked to wait: no new request yet
     setFormErr('');
     if (!validate()) return;
     setBusy(true);
@@ -80,7 +85,9 @@ export default function AuthScreen() {
         : await supabase.auth.signInWithPassword({ email, password: pw });
       if (res.error) {
         const m = (res.error.message || '').toLowerCase();
-        if (m.includes('already')) setFormErr(A.errExists);
+        const code = Number(res.error.status) || 0;
+        if (code === 429 || code >= 500 || m.includes('rate limit') || m.includes('too many')) { setFormErr(A.errBusy); setWaitUntil(Date.now() + 60000); }   // server busy: pause, don't hammer it
+        else if (m.includes('already')) setFormErr(A.errExists);
         else if (m.includes('invalid') || m.includes('credentials')) setFormErr(A.errInvalid);
         else if (m.includes('network') || m.includes('fetch')) setFormErr(A.errNet);
         else setFormErr(A.errGeneric);
@@ -171,7 +178,7 @@ export default function AuthScreen() {
 
         {formErr ? <Notice kind="bad" title={formErr} /> : null}
 
-        <Button title={busy ? A.working : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} />
+        <Button title={busy ? A.working : waitLeft > 0 ? `${toBn(waitLeft)} সেকেন্ড পরে আবার চাপুন` : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} disabled={waitLeft > 0} />
 
         {!reg ? (
           <Pressable onPress={() => !busy && setForgot(true)} style={st.forgotBtn} accessibilityRole="button" accessibilityLabel={A.forgot}>

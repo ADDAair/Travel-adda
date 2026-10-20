@@ -3,7 +3,7 @@
 -- This moves them to a leader account (TL- code) -- only if they have never been used as a haji
 -- (no group, no contract, no payment). Run once in SQL Editor after 002-009. Safe to run again (nothing left to move).
 do $$
-declare r record; n int := 0;
+declare r record; n int := 0; v_n bigint;
 begin
   for r in
     select p.id from public.profiles p join auth.users u on u.id = p.id
@@ -13,9 +13,10 @@ begin
        and not exists (select 1 from public.haji_contracts c where c.haji_id = p.id)
        and not exists (select 1 from public.haji_payments x where x.haji_id = p.id)
   loop
+    v_n := nextval('public.leader_code_seq');
     update public.profiles
        set account_type = 'leader',
-           haji_code = 'TL-' || lpad(nextval('public.leader_code_seq')::text, 5, '0')
+           haji_code = 'TL-' || lpad(v_n::text, greatest(5, length(v_n::text)), '0')   -- never cut long numbers (see 013)
      where id = r.id;
     n := n + 1;
   end loop;

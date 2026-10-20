@@ -88,23 +88,30 @@ export async function disablePush() {
 export async function notNow() { try { await AsyncStorage.setItem(KEY, 'off'); } catch (e) { /* ignore */ } }
 
 // Called when the app opens / after login: keeps the server copy fresh (tokens can change). Silent.
+// At most once a day (with 1 lakh people, re-registering at every app open would be pure extra load).
+const SYNCED = 'ta.pushSynced.v1';
 export async function syncPush() {
   if (!pushSupported) return;
   try {
     if ((await AsyncStorage.getItem(KEY)) !== 'on') return;
+    const lastSync = Number(await AsyncStorage.getItem(SYNCED)) || 0;
+    if (Date.now() - lastSync < 24 * 3600000 && (await AsyncStorage.getItem(TOKEN))) return;
     const p = await Notifications.getPermissionsAsync();
     if (!p.granted) return;
     await channels();
     await register();
+    await AsyncStorage.setItem(SYNCED, String(Date.now()));
   } catch (e) { /* next time */ }
 }
+// This phone's saved choice only (no server call): 'on' | 'off' | null (never asked).
+export async function pushPref() { try { return await AsyncStorage.getItem(KEY); } catch (e) { return null; } }
 
 // Before logout: this phone must stop getting this account's notices. Keeps the phone's on/off choice.
 export async function pushLogout() {
   try {
     const t = await AsyncStorage.getItem(TOKEN);
     if (t) await Promise.race([supabase.rpc('unregister_push_token', { p_token: t }), new Promise((r) => setTimeout(r, 4000))]);
-    await AsyncStorage.removeItem(TOKEN);
+    await AsyncStorage.multiRemove([TOKEN, SYNCED]);
   } catch (e) { /* the next login on this phone moves the token anyway */ }
 }
 

@@ -29,9 +29,13 @@ export async function refreshUnread() {
 }
 // One timer for the whole app, however many bells are on screen (every page header has one).
 let timer = null; let appSub = null; let last = 0;
+// Every 5 minutes while the app is open, and when it comes back to the front (at most once a minute).
+// (With 1 lakh people a 1-minute check alone would be ~1,700 requests per second; phone alerts refresh it anyway.)
+const POLL = 5 * 60000;
+function maybeRefresh() { if (Date.now() - last > 60000) { last = Date.now(); refreshUnread(); } }
 function start() {
-  timer = setInterval(() => { if (AppState.currentState === 'active') refreshUnread(); }, 60000);
-  appSub = AppState.addEventListener('change', (s) => { if (s === 'active') refreshUnread(); });
+  timer = setInterval(() => { if (AppState.currentState === 'active') { last = Date.now(); refreshUnread(); } }, POLL + Math.floor(Math.random() * 30000));
+  appSub = AppState.addEventListener('change', (s) => { if (s === 'active') maybeRefresh(); });
 }
 function stop() { clearInterval(timer); timer = null; if (appSub) appSub.remove(); appSub = null; }
 export function useUnread() {
