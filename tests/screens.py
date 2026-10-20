@@ -214,6 +214,9 @@ with sync_playwright() as p:
                 if pg.get_by_role('button', name=re.compile('লিডার হতে আবেদন করুন$')).count():
                     pg.get_by_role('button', name=re.compile('লিডার হতে আবেদন করুন$')).click(); pg.wait_for_timeout(900); shot(pg, f'{scale_name}-C4-leader-apply')
                     pg.get_by_role('button', name=re.compile('আবেদন জমা দিন$')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-C5-leader-apply-empty')
+            # Notification page (bell in the top bar). Read-only: nothing is marked or removed.
+            if pg.get_by_role('button', name=re.compile('^নোটিফিকেশন,')).count():
+                pg.get_by_role('button', name=re.compile('^নোটিফিকেশন,')).first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-D0-notifications')
         open(f'{OUT}/{scale_name}-errors.txt', 'w').write('\n'.join(errs))
         ctx.close()
     b.close()
