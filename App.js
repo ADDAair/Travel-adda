@@ -77,7 +77,6 @@ function DuaFab({ pending }) {
 function TabBar({ state, navigation }) {
   const ins = useSafeAreaInsets();
   const { handsOnPending, completeHandsOn } = useTutorial();
-  const onHome = state.routes[state.index]?.name === 'Home';   // the "tap here" bubble belongs to the Home practice card only; elsewhere it covered page content
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
       {state.routes.map((r, i) => {
@@ -98,7 +97,6 @@ function TabBar({ state, navigation }) {
         if (r.name === 'Dua') {
           return (
             <Pressable key={r.key} {...common} style={s.mid}>
-              {handsOnPending && onHome ? <View style={s.bubble}><Text style={s.bubbleT} numberOfLines={1}>এখানে চাপুন 👇</Text></View> : null}
               <DuaFab pending={handsOnPending} />
               <Text style={[s.lb, { color: on ? C.primary : C.muted }]}>{label}</Text>
               <View style={[s.lbBar, { backgroundColor: on ? C.accent : 'transparent' }]} />
@@ -284,8 +282,6 @@ const s = StyleSheet.create({
   mid: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', minHeight: 64 },
   fab: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.gold, alignItems: 'center', justifyContent: 'center', marginTop: -34, borderWidth: 4, borderColor: C.card, elevation: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
   fabPending: { borderColor: C.accent },
-  bubble: { position: 'absolute', top: -78, width: 116, alignItems: 'center', backgroundColor: C.accent, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12, zIndex: 2 },
-  bubbleT: { color: C.primary, fontSize: F.small, fontWeight: '700' },
   lb: { fontSize: 14, marginTop: 4, fontWeight: '700', textAlign: 'center' },
   lbBar: { width: 24, height: 3, borderRadius: 2, marginTop: 2 },
 });
