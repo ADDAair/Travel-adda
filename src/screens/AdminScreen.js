@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
-import { Button, Field, Notice } from '../components/ui';
+import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { supabase } from '../lib/supabase';
 import { adminApplications, reviewApplication, leaderDocUrl, notReady, telBd } from '../lib/groups';
-import { myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, listAudit, setText, stats, exportCsv } from '../lib/admin';
+import { myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, listAudit, setText, termsCounts, stats, exportCsv } from '../lib/admin';
 import { getTerms } from '../lib/market';
 import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
@@ -523,24 +523,42 @@ function StaffTab() {
 }
 
 function TermsTab() {
+  const [kind, setKind] = useState('haji');
   const [body, setBody] = useState('');
+  const [key, setKey] = useState(null);             // which stored text was loaded ('terms' = the old single text)
+  const [counts, setCounts] = useState({});
   const [state, setState] = useState('load');
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { getTerms().then((t) => { setBody(t ? t.body : ''); setState('ok'); }).catch(() => setState('ok')); }, []);
-  const save = () => confirm('শর্তাবলি সংরক্ষণ করবেন?', 'নতুন অ্যাকাউন্ট খোলার সময় সবাই এটা দেখবেন ও টিক দেবেন। সবার অ্যাপে সঙ্গে সঙ্গে বদলে যাবে।', 'হ্যাঁ, সংরক্ষণ', async () => {
+  const load = useCallback(async () => {
+    setState('load'); setMsg(null);
+    try { const t = await getTerms(kind); setBody(t ? t.body : ''); setKey(t ? t.key : null); } catch (e) { setBody(''); }
+    termsCounts().then((r) => setCounts(Object.fromEntries(r.map((x) => [x.key, x.agreed])))).catch(() => setCounts({}));
+    setState('ok');
+  }, [kind]);
+  useEffect(() => { load(); }, [load]);
+  const name = kind === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
+  const k = kind === 'leader' ? 'terms_leader' : 'terms_haji';
+  const save = () => confirm(`${name} সংরক্ষণ করবেন?`, `সবার অ্যাপে সঙ্গে সঙ্গে বদলে যাবে। যাঁরা আগের লেখা মেনে নিয়েছিলেন, তাঁদের "শর্তাবলি" পাতায় নতুনটি মেনে নিতে বলা হবে।`, 'হ্যাঁ, সংরক্ষণ', async () => {
     setBusy(true); setMsg(null);
-    try { await setText('terms', body.trim()); setMsg({ kind: 'ok', text: body.trim() ? 'শর্তাবলি সংরক্ষণ হয়েছে।' : 'শর্তাবলি সরানো হয়েছে।' }); }
-    catch (e) { setMsg({ kind: 'bad', text: notReady(e) ? 'শীঘ্রই চালু হবে।' : errText(e) }); }   // text stays in the box
+    try { await setText(k, body.trim()); setMsg({ kind: 'ok', text: body.trim() ? `${name} সংরক্ষণ হয়েছে।` : `${name} সরানো হয়েছে।` }); setKey(body.trim() ? k : null); }
+    catch (e) { setMsg({ kind: 'bad', text: notReady(e) || /bad key/.test(String(e?.message)) ? 'হাজী ও লিডারের আলাদা শর্তাবলির ডেটাবেস ধাপ (০১২) এখনো চালানো হয়নি।' : errText(e) }); }   // text stays in the box
     finally { setBusy(false); }
   });
-  if (state === 'load') return <ActivityIndicator color={C.primary} />;
   return (
     <>
+      <Segmented value={kind} onChange={(v) => !busy && setKind(v)} options={[{ id: 'haji', label: 'হাজীদের' }, { id: 'leader', label: 'লিডারদের' }]} />
+      <View style={{ height: S.md }} />
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-      <Notice kind="warn" title="আইনি লেখা" text="শর্তাবলি আপনার কোম্পানির পক্ষ থেকে একজন আইনজীবীকে দিয়ে দেখিয়ে নিন। এখানে যা লিখবেন, অ্যাপে হুবহু তাই দেখাবে।" />
-      <Field label="শর্তাবলির পুরো লেখা" value={body} onChangeText={setBody} multiline maxLength={20000} />
-      <Button title="সংরক্ষণ করুন" icon="💾" onPress={save} loading={busy} />
+      {state === 'load' ? <ActivityIndicator color={C.primary} /> : (
+        <>
+          <Notice kind="warn" title="আইনি লেখা" text="প্রথম খসড়া অ্যাপের নিয়ম মিলিয়ে লেখা হয়েছে। প্রকাশের আগে একজন আইনজীবীকে দিয়ে দেখিয়ে নিন। এখানে যা লিখবেন, অ্যাপে হুবহু তাই দেখাবে।" />
+          {key === 'terms' ? <Notice kind="info" title="এখন পুরোনো একক শর্তাবলি দেখানো হচ্ছে" text={`সংরক্ষণ করলে এটি শুধু ${name} হিসেবে থাকবে।`} /> : null}
+          {counts[k] != null ? <Text style={[st.small, { marginBottom: S.sm }]}>বর্তমান লেখাটি মেনে নিয়েছেন: {toBn(counts[k])} জন</Text> : null}
+          <Field label={`${name}র পুরো লেখা`} value={body} onChangeText={setBody} multiline maxLength={20000} />
+          <Button title="সংরক্ষণ করুন" icon="💾" onPress={save} loading={busy} />
+        </>
+      )}
     </>
   );
 }

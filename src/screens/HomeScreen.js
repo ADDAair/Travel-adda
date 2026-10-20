@@ -11,7 +11,7 @@ import { useTutorial } from '../tutorial';
 import { loadSavedLocation } from '../lib/location';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
-import { processPendingReferral } from '../lib/market';
+import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 
@@ -43,7 +43,7 @@ export default function HomeScreen({ navigation }) {
   const leaderAcc = isLeaderAccount(me);
   const [refMsg, setRefMsg] = useState(null);
   // A referral code typed at sign-up is attached once the account exists.
-  useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); }, [me]);
+  useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); processPendingTerms(); }, [me]);
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
 

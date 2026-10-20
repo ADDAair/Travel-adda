@@ -214,6 +214,12 @@ with sync_playwright() as p:
                 if pg.get_by_role('button', name=re.compile('লিডার হতে আবেদন করুন$')).count():
                     pg.get_by_role('button', name=re.compile('লিডার হতে আবেদন করুন$')).click(); pg.wait_for_timeout(900); shot(pg, f'{scale_name}-C4-leader-apply')
                     pg.get_by_role('button', name=re.compile('আবেদন জমা দিন$')).click(); pg.wait_for_timeout(500); shot(pg, f'{scale_name}-C5-leader-apply-empty')
+            # Terms page (haji and leader tabs). Read-only.
+            pg.get_by_role('tab', name='আমার তথ্য').click(); pg.wait_for_timeout(1500)
+            if pg.get_by_role('button', name='শর্তাবলি').count():
+                pg.get_by_role('button', name='শর্তাবলি').first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-D1-terms-haji')
+                if pg.get_by_role('tab', name='লিডারদের জন্য').count():
+                    pg.get_by_role('tab', name='লিডারদের জন্য').first.click(); pg.wait_for_timeout(2000); shot(pg, f'{scale_name}-D2-terms-leader')
             # Notification page (bell in the top bar). Read-only: nothing is marked or removed.
             if pg.get_by_role('button', name=re.compile('^নোটিফিকেশন,')).count():
                 pg.get_by_role('button', name=re.compile('^নোটিফিকেশন,')).first.click(); pg.wait_for_timeout(2500); shot(pg, f'{scale_name}-D0-notifications')

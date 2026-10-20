@@ -10,7 +10,7 @@ import { normalizePhone, isValidBdPhone, phoneToLoginId } from '../lib/phone';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
-import { rememberReferral, getTerms } from '../lib/market';
+import { rememberReferral, getTerms, rememberTermsAgreement } from '../lib/market';
 import { Modal } from 'react-native';
 
 const A = T.auth;
@@ -28,10 +28,16 @@ export default function AuthScreen() {
   const [forgot, setForgot] = useState(false);
   const [accType, setAccType] = useState(null);      // 'haji' | 'leader' (only when opening a new account)
   const [refCode, setRefCode] = useState('');
-  const [terms, setTerms] = useState(null);          // { body } when the admin has written terms
+  const [allTerms, setAllTerms] = useState({});      // { haji, leader }: each { body } when written
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  useEffect(() => { getTerms().then(setTerms).catch(() => {}); }, []);
+  useEffect(() => {
+    getTerms('haji').then((t) => setAllTerms((x) => ({ ...x, haji: t }))).catch(() => {});
+    getTerms('leader').then((t) => setAllTerms((x) => ({ ...x, leader: t }))).catch(() => {});
+  }, []);
+  const terms = accType === 'leader' ? allTerms.leader : allTerms.haji;      // the terms for the account type being opened
+  const termsName = accType === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
+  useEffect(() => { setAgree(false); }, [accType]);                       // a different type means different terms: tick again
   const phoneRef = useRef(null);
   const pwRef = useRef(null);
   const scrollRef = useRef(null);
@@ -68,6 +74,7 @@ export default function AuthScreen() {
       const res = reg
         ? await (async () => {
           if (accType === 'haji' && refCode.trim()) await rememberReferral(refCode.trim().toUpperCase().replace(/\s/g, '').replace(/^TL(\d)/, 'TL-$1'));
+          if (terms) await rememberTermsAgreement(accType === 'leader' ? 'leader' : 'haji');   // recorded on the server after the first login
           return supabase.auth.signUp({ email, password: pw, options: { data: { full_name: name.trim(), account_type: accType === 'leader' ? 'leader' : 'haji' } } });
         })()
         : await supabase.auth.signInWithPassword({ email, password: pw });
@@ -154,10 +161,10 @@ export default function AuthScreen() {
         {reg && accType === 'leader' ? <Notice kind="info" title="অ্যাকাউন্ট খোলার পর শেষ ধাপ" text="এজেন্সির নাম, ওমরাহ ও হজ লাইসেন্স নম্বর এবং লাইসেন্সের ছবি দিতে হবে। অ্যাডমিন যাচাই করে অনুমোদন দিলে লিডার প্যানেল চালু হবে।" /> : null}
         {reg && terms ? (
           <View style={{ marginBottom: S.md }}>
-            <Pressable onPress={() => setAgree(!agree)} style={st.agree} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel="আমি শর্তাবলি পড়েছি ও মেনে নিচ্ছি">
-              <Text style={st.agreeT}>{agree ? '☑️' : '⬜'} আমি শর্তাবলি পড়েছি ও মেনে নিচ্ছি</Text>
+            <Pressable onPress={() => setAgree(!agree)} style={st.agree} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel={`আমি ${termsName} পড়েছি ও মেনে নিচ্ছি`}>
+              <Text style={st.agreeT}>{agree ? '☑️' : '⬜'} আমি {termsName} পড়েছি ও মেনে নিচ্ছি</Text>
             </Pressable>
-            <Pressable onPress={() => setShowTerms(true)} style={st.forgotBtn} accessibilityRole="button"><Text style={st.forgotT}>📜 শর্তাবলি পড়ুন</Text></Pressable>
+            <Pressable onPress={() => setShowTerms(true)} style={st.forgotBtn} accessibilityRole="button"><Text style={st.forgotT}>📜 {termsName} পড়ুন</Text></Pressable>
             {errs.agree ? <Text style={st.agreeErr}>⚠️ {errs.agree}</Text> : null}
           </View>
         ) : null}
@@ -174,9 +181,10 @@ export default function AuthScreen() {
         </>)}
         <Modal visible={showTerms} animationType="slide" onRequestClose={() => setShowTerms(false)}>
           <ScrollView contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg }]}>
-            <Text style={st.title}>📜 শর্তাবলি</Text>
+            <Text style={st.title}>📜 {termsName}</Text>
             <Text style={st.termsT} selectable>{terms ? terms.body : ''}</Text>
-            <Button title="পড়েছি, বন্ধ করুন" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
+            <Button title="পড়েছি, মেনে নিচ্ছি" icon="✅" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
+            <Button title="বন্ধ করুন (টিক দেব না)" kind="secondary" onPress={() => setShowTerms(false)} style={{ marginTop: S.sm, marginBottom: S.xl }} />
           </ScrollView>
         </Modal>
       </ScrollView>

@@ -77,7 +77,12 @@ with sync_playwright() as p:
                 lp.get_by_label('খুঁজুন').fill('সিলেট'); lp.get_by_role('button', name='সিলেট', exact=True).click(); lp.wait_for_timeout(400)
                 lp.get_by_label('উপজেলা / থানা').fill('সদর')
                 with lp.expect_file_chooser() as fc: btn(lp, 'ফোন থেকে ফাইল বাছুন$').click()
-                fc.value.set_files('assets/ihram/ihram-man.png'); lp.wait_for_timeout(800); shot(lp, 'L04-apply-filled')
+                fc.value.set_files('assets/ihram/ihram-man.png'); lp.wait_for_timeout(800)
+                if lp.get_by_role('checkbox', name=re.compile('লিডারদের শর্তাবলি')).count():
+                    btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(600)
+                    step('শর্তাবলিতে টিক ছাড়া জমা হয় না', has(lp, 'লিডারদের শর্তাবলি পড়ে টিক দিন', 2000))
+                    lp.get_by_role('checkbox', name=re.compile('লিডারদের শর্তাবলি')).click(); lp.wait_for_timeout(300)
+                shot(lp, 'L04-apply-filled')
                 btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(6000)
             shot(lp, 'L05-pending'); step('নিবন্ধন "যাচাই হচ্ছে" দেখাচ্ছে', has(lp, 'আপনার আবেদন যাচাই হচ্ছে'))
             result['next'] = 'অ্যাডমিন → লিডার আবেদন থেকে "CI লিডার পরীক্ষা" অনুমোদন দিন'

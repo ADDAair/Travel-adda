@@ -133,8 +133,32 @@ export async function unblock(otherId) { check(await supabase.from('user_blocks'
 export const report = async (targetId, reason, details) => check(await supabase.from('user_reports').insert({ target: targetId, reason, details: (details || '').trim() || null }));
 
 // ---------- Terms (readable before sign-up) ----------
-export async function getTerms() {
-  const r = await supabase.from('app_texts').select('body,updated_at').eq('key', 'terms').maybeSingle();
-  if (r.error) return null;
-  return r.data || null;
+// kind 'haji' | 'leader' (supabase/012_terms.sql). Before step 012 the single old text 'terms' is used for both.
+export async function getTerms(kind = 'haji') {
+  const key = kind === 'leader' ? 'terms_leader' : 'terms_haji';
+  const r = await supabase.from('app_texts').select('key,body,updated_at').in('key', [key, 'terms']);
+  if (r.error || !r.data) return null;
+  return r.data.find((x) => x.key === key) || r.data.find((x) => x.key === 'terms') || null;
+}
+// Records the agreement on the server. 'ok' | 'none' (no such text) | 'soon' (step 012 not run). Throws only on network errors.
+export async function agreeTerms(kind) {
+  const { data, error } = await supabase.rpc('agree_terms', { p_key: kind === 'leader' ? 'terms_leader' : 'terms_haji' });
+  if (error) { if (notReady(error)) return 'soon'; throw error; }
+  return data;
+}
+export async function myTermsStatus() {
+  const { data, error } = await supabase.rpc('my_terms');
+  if (error) { if (notReady(error)) return null; throw error; }
+  const out = {};
+  (data || []).forEach((r) => { out[r.key === 'terms_leader' ? 'leader' : 'haji'] = { at: r.agreed_at, current: !!r.current_version }; });
+  return out;
+}
+// The sign-up agreement is sent once the new account can talk to the server (right after the first login).
+const TERMS_KEY = 'ta.pendingTerms.v1';
+export const rememberTermsAgreement = (kind) => AsyncStorage.setItem(TERMS_KEY, kind).catch(() => {});
+export async function processPendingTerms() {
+  let kind = null;
+  try { kind = await AsyncStorage.getItem(TERMS_KEY); } catch (e) { return; }
+  if (!kind) return;
+  try { await agreeTerms(kind); await AsyncStorage.removeItem(TERMS_KEY); } catch (e) { /* no internet: next time */ }
 }

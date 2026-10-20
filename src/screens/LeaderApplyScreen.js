@@ -7,6 +7,7 @@ import { Button, Field, Notice } from '../components/ui';
 import DistrictPicker from '../components/DistrictPicker';
 import { applyLeader, myApplication, notReady } from '../lib/groups';
 import { useMe } from '../lib/me';
+import { getTerms, agreeTerms } from '../lib/market';
 import { DocCamera } from './DocsScreen';
 import { st, errText, fmtDay } from './GroupScreen';
 
@@ -23,6 +24,10 @@ export default function LeaderApplyScreen({ navigation }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState({});
   const [msg, setMsg] = useState(null);
+  const [terms, setTerms] = useState(null);          // leader terms text (null = none written)
+  const [agree, setAgree] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  useEffect(() => { getTerms('leader').then(setTerms).catch(() => {}); }, []);
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
 
   const load = useCallback(async () => {
@@ -49,10 +54,13 @@ export default function LeaderApplyScreen({ navigation }) {
     if (!f.umrah.trim() && !f.hajj.trim()) e.umrah = 'ওমরাহ বা হজ, অন্তত একটি লাইসেন্স নম্বর লিখুন।';
     if (!district) e.district = 'জেলা বাছুন।';
     if (!file) e.file = 'লাইসেন্সের ছবি বা PDF দিন।';
+    if (terms && !agree) e.agree = 'লিডারদের শর্তাবলি পড়ে টিক দিন।';
     setErr(e); setMsg(null);
     if (Object.keys(e).length) { setMsg({ kind: 'bad', text: 'লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।' }); return; }
     setBusy(true);
-    try { await applyLeader({ agency: f.agency, umrah: f.umrah, hajj: f.hajj, district, upazila: f.upazila, file }); await load(); }
+    try {
+      if (terms) await agreeTerms('leader');           // recorded first: the database refuses an application without it
+      await applyLeader({ agency: f.agency, umrah: f.umrah, hajj: f.hajj, district, upazila: f.upazila, file }); await load(); }
     catch (x) {
       const m = String((x && x.message) || '');
       if (notReady(x)) setMsg({ kind: 'info', text: 'লিডার নিবন্ধন শীঘ্রই চালু হবে।' });
@@ -127,7 +135,27 @@ export default function LeaderApplyScreen({ navigation }) {
               </>
             )}
           </View>
+          {terms ? (
+            <View style={[st.card, err.agree && { borderColor: C.bad, borderWidth: 2 }]}>
+              <Pressable onPress={() => setAgree(!agree)} style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel="আমি লিডারদের শর্তাবলি পড়েছি ও মেনে নিচ্ছি">
+                <Text style={st.p}>{agree ? '☑️' : '⬜'} আমি লিডারদের শর্তাবলি পড়েছি ও মেনে নিচ্ছি</Text>
+              </Pressable>
+              <Pressable onPress={() => setShowTerms(true)} style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="লিডারদের শর্তাবলি পড়ুন">
+                <Text style={[st.p, { color: C.primary, fontWeight: '700', textDecorationLine: 'underline' }]}>📜 লিডারদের শর্তাবলি পড়ুন</Text>
+              </Pressable>
+              <Text style={st.small}>বিশেষ করে: অ্যাপের হাজীদের কাছ থেকে সরাসরি টাকা নেওয়া যাবে না, সব টাকা Travel Adda-র মাধ্যমে আসবে।</Text>
+              {err.agree ? <Text style={[st.p, { color: C.bad, fontWeight: '700' }]}>⚠️ {err.agree}</Text> : null}
+            </View>
+          ) : null}
           <Button title="নিবন্ধন জমা দিন" icon="📨" onPress={submit} loading={busy} />
+          <Modal visible={showTerms} animationType="slide" onRequestClose={() => setShowTerms(false)}>
+            <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={[st.wrap, { paddingTop: 48 }]}>
+              <Text style={st.title}>📜 লিডারদের শর্তাবলি</Text>
+              <Text style={[st.p, { lineHeight: 30 }]} selectable>{terms ? terms.body : ''}</Text>
+              <Button title="পড়েছি, মেনে নিচ্ছি" icon="✅" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
+              <Button title="বন্ধ করুন (টিক দেব না)" kind="secondary" onPress={() => setShowTerms(false)} style={{ marginTop: S.sm, marginBottom: S.xl }} />
+            </ScrollView>
+          </Modal>
         </>
       ) : null}
     </ScrollView>

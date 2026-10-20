@@ -44,6 +44,7 @@ export const listStaff = async () => (await rpc('admin_list_staff')) || [];
 export const setStaff = (phone, perms) => rpc('admin_set_staff', { p_phone: phone, p_perms: perms });
 export const listAudit = async () => (await rpc('admin_list_audit')) || [];
 export const setText = (key, body) => rpc('admin_set_text', { p_key: key, p_body: body });
+export const termsCounts = async () => (await rpc('admin_terms_counts')) || [];
 export const stats = () => rpc('admin_stats');
 
 // Spreadsheet (CSV that Excel opens, Bengali-safe) shared with the phone's own menu. Returns the row count.
