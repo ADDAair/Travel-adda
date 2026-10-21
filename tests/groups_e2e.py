@@ -111,7 +111,7 @@ with sync_playwright() as p:
             lp.get_by_label('হাজীর আইডি').fill(hcode)
             lp.get_by_label('প্যাকেজের নাম').fill(f'CI পরীক্ষা ওমরাহ {stamp}')
             lp.get_by_label('জনপ্রতি মোট দাম (টাকা)').fill('১৫০০০০')
-            lp.get_by_label('যা অন্তর্ভুক্ত').fill('বিমান টিকেট, ভিসা, হারাম থেকে ৫০০ মিটারের হোটেল')
+            lp.get_by_label('যা অন্তর্ভুক্ত', exact=True).fill('বিমান টিকেট, ভিসা, হারাম থেকে ৫০০ মিটারের হোটেল')
             lp.get_by_label('বাতিল ও টাকা ফেরতের নিয়ম').fill('ভিসার আগে বাতিলে পুরো টাকা ফেরত')
             shot(lp, 'L13-contract-filled')
             btn(lp, '^চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(5000); shot(lp, 'L14-contract-sent')
