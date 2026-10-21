@@ -2,43 +2,38 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
-import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
-import { INCLUDES, KIND, refOf, daysOf, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
-import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
+import { KIND, refOf, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
+import { st, errText, confirm, fmtDay } from './GroupScreen';
+import { useMe, isLeaderAccount } from '../lib/me';
+import LeaderOffersScreen from './LeaderOffersScreen';
 
-const dist = (m) => (m == null ? '' : m >= 1000 ? `হারাম থেকে প্রায় ${toBn((m / 1000).toFixed(1))} কিমি` : `হারাম থেকে প্রায় ${toBn(m)} মিটার`);
+import { OfferCard } from '../components/OfferCard';
 
-// One package. Used on the Offers page (haji) and in the leader's own list.
-export function OfferCard({ o, children }) {
-  const has = new Set(o.includes || []);
-  const Row = ({ l, v }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p}>{v}</Text></View> : null);
+export { OfferCard };
+
+// The "অফার" tab: hajis browse packages; a leader account manages its own packages here.
+export default function OffersScreen({ navigation }) {
+  const { me } = useMe();
+  const leader = isLeaderAccount(me);
+  useEffect(() => { navigation?.setOptions?.({ title: leader ? 'আমার প্যাকেজ' : 'অফার ও প্যাকেজ' }); }, [leader, navigation]);
+  if (!leader) return <HajiOffers navigation={navigation} />;
+  if (me.role !== 'leader') return <PendingLeader navigation={navigation} />;
+  return <LeaderOffersScreen navigation={navigation} inTab />;
+}
+
+// Leader account not approved yet: packages can be added after the admin's approval.
+function PendingLeader({ navigation }) {
   return (
-    <View style={st.card}>
-      <Text style={st.small}>{KIND[o.kind]?.icon} {KIND[o.kind]?.label} · প্যাকেজ নম্বর {refOf(o.id)}</Text>
-      <Text style={st.gName}>{o.title}</Text>
-      {o.agency_name ? <Text style={st.val}>✔️ {o.agency_name}</Text> : null}
-      {o.agency_name ? <Text style={st.small}>অ্যাডমিন যাচাই করা গ্রুপ লিডারের এজেন্সি</Text> : null}
-      <Text style={{ fontSize: 28, fontWeight: '800', color: C.primary, marginTop: S.xs }}>{fmtTaka(o.price_bdt)}</Text>
-      <Text style={st.small}>জনপ্রতি মোট দাম</Text>
-      <Row l="যাত্রা" v={`${fmtDay(o.depart_on)} থেকে ${fmtDay(o.return_on)} · মোট ${toBn(daysOf(o))} দিন`} />
-      <Row l="অফার চলবে" v={o.valid_until ? `${fmtDay(o.valid_until)} পর্যন্ত` : ''} />
-      <Row l="মক্কার হোটেল" v={[o.makkah_hotel, dist(o.makkah_distance_m)].filter(Boolean).join(' · ')} />
-      <Row l="মদিনার হোটেল" v={[o.madinah_hotel, dist(o.madinah_distance_m)].filter(Boolean).join(' · ')} />
-      <Row l="এক রুমে" v={o.room_share ? `${toBn(o.room_share)} জন` : ''} />
-      <View style={st.cRow}>
-        <Text style={st.lbl}>প্যাকেজে যা আছে / নেই</Text>
-        {INCLUDES.map((x) => (
-          <Text key={x.id} style={[st.p, { color: has.has(x.id) ? C.text : C.muted }]}>{has.has(x.id) ? '✅ আছে:' : '✖️ নেই:'} {x.label}</Text>
-        ))}
-      </View>
-      <Row l="আরও তথ্য" v={o.notes} />
-      {children}
-    </View>
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
+      <Text style={st.title} accessibilityRole="header">🎁 আমার প্যাকেজ</Text>
+      <Notice kind="info" title="অনুমোদনের পর প্যাকেজ দিতে পারবেন" text={'অ্যাডমিন আপনার লাইসেন্স যাচাই করে অনুমোদন দিলে এখানে ওমরাহ ও হজ প্যাকেজ যোগ করতে পারবেন। হাজীরা তখন "অফার" পাতায় আপনার প্যাকেজ দেখবেন।'} />
+      <Button title="লিডার নিবন্ধনের অবস্থা দেখুন" icon="🧭" onPress={() => navigation.navigate('LeaderApply')} />
+    </ScrollView>
   );
 }
 
-export default function OffersScreen({ navigation }) {
+function HajiOffers({ navigation }) {
   const [kind, setKind] = useState('umrah');
   const [rows, setRows] = useState(null);
   const [state, setState] = useState('load');

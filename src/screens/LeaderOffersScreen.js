@@ -7,14 +7,14 @@ import { notReady } from '../lib/groups';
 import { INCLUDES, myOffers, createOffer, setOfferActive, myInterestCounts } from '../lib/offers';
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
-import { OfferCard } from './OffersScreen';
+import { OfferCard } from '../components/OfferCard';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
   : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ হাজীরা দেখতে পাচ্ছেন');
 
 // Verified leaders publish packages for the Offers page. A published package cannot be changed, only hidden.
-export default function LeaderOffersScreen({ navigation }) {
+export default function LeaderOffersScreen({ navigation, inTab }) {
   const [rows, setRows] = useState(null);
   const [counts, setCounts] = useState({});
   const [state, setState] = useState('load');
@@ -38,8 +38,9 @@ export default function LeaderOffersScreen({ navigation }) {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.navigate('Leader')} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ লিডার প্যানেল</Text></Pressable>
+      {!inTab ? <Pressable onPress={() => navigation.navigate('Leader')} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ লিডার প্যানেল</Text></Pressable> : null}
       <Text style={st.title} accessibilityRole="header">🎁 আমার প্যাকেজ (অফার)</Text>
+      {state === 'ok' ? <Text style={[st.small, { marginBottom: S.sm }]}>ওমরাহ ও হজ প্যাকেজ এখান থেকে দিন। যেগুলো দিয়েছেন সেগুলো নিচে দেখবেন, চাইলে লুকাতে পারবেন।</Text> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" /> : null}

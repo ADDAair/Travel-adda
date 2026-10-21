@@ -85,6 +85,8 @@ with sync_playwright() as p:
                 shot(lp, 'L04-apply-filled')
                 btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(6000)
             shot(lp, 'L05-pending'); step('নিবন্ধন "যাচাই হচ্ছে" দেখাচ্ছে', has(lp, 'আপনার আবেদন যাচাই হচ্ছে'))
+            tab(lp, 'অফার'); lp.wait_for_timeout(1500); shot(lp, 'L06-offers-pending')
+            step('লিডারের "অফার" ট্যাবে নিজের প্যাকেজের পাতা (অনুমোদনের অপেক্ষা)', has(lp, 'অনুমোদনের পর প্যাকেজ দিতে পারবেন', 2000))
             result['next'] = 'অ্যাডমিন → লিডার আবেদন থেকে "CI লিডার পরীক্ষা" অনুমোদন দিন'
         else:
             result['phase'] = 'B'
@@ -97,6 +99,9 @@ with sync_playwright() as p:
                 hp.get_by_role('button', name='চুক্তি বাতিল করুন').first.click(); hp.wait_for_timeout(500)
                 hp.get_by_label('কারণ লিখুন').fill('আগের পরীক্ষার চুক্তি বন্ধ করা হচ্ছে'); btn(hp, '^চুক্তি বাতিল করুন$').click(); hp.wait_for_timeout(4000)
 
+            tab(lp, 'অফার'); lp.wait_for_timeout(2500); shot(lp, 'L09-offers-tab')
+            step('লিডারের "অফার" ট্যাবে "নতুন প্যাকেজ দিন"', lp.get_by_role('button', name=re.compile('নতুন প্যাকেজ দিন')).count() > 0)
+            home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
             btn(lp, '^চুক্তি ও রেফারেল হাজী$').click(); lp.wait_for_timeout(3000); shot(lp, 'L11-contracts')
