@@ -4,21 +4,22 @@ import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
-import DistrictPicker from '../components/DistrictPicker';
+import WorkAreaFields, { areaText } from '../components/WorkAreaFields';
 import { applyLeader, myApplication, notReady } from '../lib/groups';
 import { useMe } from '../lib/me';
 import { getTerms, agreeTerms } from '../lib/market';
 import { DocCamera } from './DocsScreen';
 import { st, errText, fmtDay } from './GroupScreen';
 
-// Last step of a LEADER account: agency, Umrah and Hajj licence numbers, district and the licence picture.
+// Last step of a LEADER account: office details (agency, Umrah and Hajj licence numbers, licence picture)
+// and the WORK AREA (district > upazila from lists, union typed) -- not the office address.
 // The admin checks them by hand; until then the leader panel stays locked. (Haji accounts never see this.)
 export default function LeaderApplyScreen({ navigation }) {
   const { me, refreshMe } = useMe();
   const [app, setApp] = useState(undefined);      // undefined = loading, null = none yet
   const [state, setState] = useState('load');
-  const [f, setF] = useState({ agency: '', umrah: '', hajj: '', upazila: '' });
-  const [district, setDistrict] = useState('');
+  const [f, setF] = useState({ agency: '', umrah: '', hajj: '' });
+  const [area, setArea] = useState({ district: '', upazila: '', union: '' });
   const [file, setFile] = useState(null);
   const [cam, setCam] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,7 +53,9 @@ export default function LeaderApplyScreen({ navigation }) {
     const e = {};
     if (f.agency.trim().length < 2) e.agency = 'এজেন্সির নাম লিখুন।';
     if (!f.umrah.trim() && !f.hajj.trim()) e.umrah = 'ওমরাহ বা হজ, অন্তত একটি লাইসেন্স নম্বর লিখুন।';
-    if (!district) e.district = 'জেলা বাছুন।';
+    if (!area.district) e.district = 'যে জেলায় কাজ করেন, সেটি বাছুন।';
+    if (!area.upazila.trim()) e.upazila = 'উপজেলা বাছুন।';
+    if (area.union.trim().length < 2) e.union = 'ইউনিয়নের নাম লিখুন।';
     if (!file) e.file = 'লাইসেন্সের ছবি বা PDF দিন।';
     if (terms && !agree) e.agree = 'লিডারদের শর্তাবলি পড়ে টিক দিন।';
     setErr(e); setMsg(null);
@@ -60,7 +63,7 @@ export default function LeaderApplyScreen({ navigation }) {
     setBusy(true);
     try {
       if (terms) await agreeTerms('leader');           // recorded first: the database refuses an application without it
-      await applyLeader({ agency: f.agency, umrah: f.umrah, hajj: f.hajj, district, upazila: f.upazila, file }); await load(); }
+      await applyLeader({ agency: f.agency, umrah: f.umrah, hajj: f.hajj, district: area.district, upazila: area.upazila, union: area.union, file }); await load(); }
     catch (x) {
       const m = String((x && x.message) || '');
       if (notReady(x)) setMsg({ kind: 'info', text: 'লিডার নিবন্ধন শীঘ্রই চালু হবে।' });
@@ -105,7 +108,7 @@ export default function LeaderApplyScreen({ navigation }) {
             <Text style={st.lbl}>এজেন্সি</Text><Text style={st.p}>{app.agency_name}</Text>
             {app.umrah_license ? <><Text style={st.lbl}>ওমরাহ লাইসেন্স</Text><Text style={st.p}>{app.umrah_license}</Text></> : null}
             {app.hajj_license ? <><Text style={st.lbl}>হজ লাইসেন্স</Text><Text style={st.p}>{app.hajj_license}</Text></> : null}
-            {app.district ? <><Text style={st.lbl}>এলাকা</Text><Text style={st.p}>{[app.upazila, app.district].filter(Boolean).join(', ')}</Text></> : null}
+            {app.district ? <><Text style={st.lbl}>কাজের এলাকা</Text><Text style={st.p}>{areaText(app)}</Text></> : null}
           </View>
           <Button title="আবার দেখুন" icon="🔄" kind="secondary" onPress={load} />
         </>
@@ -114,11 +117,10 @@ export default function LeaderApplyScreen({ navigation }) {
         <>
           {app && app.status === 'rejected' ? <Notice kind="warn" title="আগের আবেদন অনুমোদন হয়নি" text={app.admin_note || 'সঠিক তথ্য দিয়ে আবার জমা দিন।'} /> : null}
           <Text style={[st.p, { marginBottom: S.md }]}>হাজীরা লিডারের তালিকায় আপনার এজেন্সি ও লাইসেন্স দেখে ভরসা করবেন, তাই সঠিক তথ্য দিন। আপনার ফোন নম্বর তালিকায় দেখানো হবে না।</Text>
+          <Text style={[st.h, { marginBottom: S.sm }]} accessibilityRole="header">🏢 অফিসের তথ্য</Text>
           <Field label="এজেন্সির নাম" value={f.agency} onChangeText={set('agency')} maxLength={120} error={err.agency} />
           <Field label="ওমরাহ লাইসেন্স নম্বর" hint="ধর্ম মন্ত্রণালয়ের ওমরাহ লাইসেন্স" value={f.umrah} onChangeText={set('umrah')} maxLength={40} error={err.umrah} autoCapitalize="characters" />
           <Field label="হজ লাইসেন্স নম্বর" hint="হজ লাইসেন্স থাকলে" value={f.hajj} onChangeText={set('hajj')} maxLength={40} autoCapitalize="characters" />
-          <DistrictPicker label="অফিসের জেলা" value={district} onChange={setDistrict} error={err.district} />
-          <Field label="উপজেলা / থানা" hint="যেমন: বিয়ানীবাজার" value={f.upazila} onChangeText={set('upazila')} maxLength={60} />
           <View style={[st.card, err.file ? { borderWidth: 2, borderColor: C.bad } : null]}>
             <Text style={st.h}>লাইসেন্সের ছবি বা PDF</Text>
             <Text style={st.small}>শুধু অ্যাডমিন দেখতে পারবেন।</Text>
@@ -135,6 +137,7 @@ export default function LeaderApplyScreen({ navigation }) {
               </>
             )}
           </View>
+          <WorkAreaFields value={area} onChange={setArea} errors={err} />
           {terms ? (
             <View style={[st.card, err.agree && { borderColor: C.bad, borderWidth: 2 }]}>
               <Pressable onPress={() => setAgree(!agree)} style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel="আমি লিডারদের শর্তাবলি পড়েছি ও মেনে নিচ্ছি">

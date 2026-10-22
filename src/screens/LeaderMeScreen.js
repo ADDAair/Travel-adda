@@ -2,18 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
-import DistrictPicker from '../components/DistrictPicker';
+import WorkAreaFields from '../components/WorkAreaFields';
 import { starText } from '../components/market';
 import { supabase } from '../lib/supabase';
 import { notReady } from '../lib/groups';
 import { leaderPublic } from '../lib/market';
 import { st, errText } from './GroupScreen';
 
-// Leader: how hajis see me in the directory; I can change area and a short introduction (licences only via admin).
+// Leader: how hajis see me in the directory; I can change my work area and a short introduction (licences only via admin).
 export default function LeaderMeScreen({ navigation }) {
   const [p, setP] = useState(undefined);
-  const [district, setDistrict] = useState('');
-  const [upazila, setUpazila] = useState('');
+  const [area, setArea] = useState({ district: '', upazila: '', union: '' });
   const [bio, setBio] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -22,7 +21,7 @@ export default function LeaderMeScreen({ navigation }) {
       const { data: s } = await supabase.auth.getSession();
       const me = await leaderPublic(s.session.user.id);
       setP(me || null);
-      if (me) { setDistrict(me.district || ''); setUpazila(me.upazila || ''); setBio(me.bio || ''); }
+      if (me) { setArea({ district: me.district || '', upazila: me.upazila || '', union: me.union_name || '' }); setBio(me.bio || ''); }
     } catch (e) { setP(null); setMsg({ kind: notReady(e) ? 'info' : 'bad', text: notReady(e) ? 'শীঘ্রই চালু হবে।' : errText(e) }); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -31,7 +30,14 @@ export default function LeaderMeScreen({ navigation }) {
     setBusy(true); setMsg(null);
     try {
       const { data: s } = await supabase.auth.getSession();
-      const r = await supabase.from('leader_profiles').update({ district: district || null, upazila: upazila.trim() || null, bio: bio.trim() || null }).eq('user_id', s.session.user.id).select('user_id');
+      const row = { district: area.district || null, upazila: area.upazila.trim() || null, bio: bio.trim() || null, union_name: area.union.trim() || null };
+      let r = await supabase.from('leader_profiles').update(row).eq('user_id', s.session.user.id).select('user_id');
+      if (r.error && (r.error.code === 'PGRST204' || r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {
+        // step 014 not run yet: keep the union inside the upazila text so nothing typed is lost
+        const un = row.union_name; delete row.union_name;
+        if (un) row.upazila = [row.upazila, un].filter(Boolean).join(', ').slice(0, 60);
+        r = await supabase.from('leader_profiles').update(row).eq('user_id', s.session.user.id).select('user_id');
+      }
       if (r.error) throw r.error;
       if (!r.data || !r.data.length) throw new Error('not saved');
       setMsg({ kind: 'ok', text: 'সংরক্ষণ হয়েছে।' }); await load();
@@ -47,8 +53,7 @@ export default function LeaderMeScreen({ navigation }) {
       {p ? (
         <>
           <Notice kind="info" title="হাজীরা তালিকায় যা দেখেন" text={`${p.full_name} · ${p.leader_code} · ${p.agency_name}\n${starText(p.rating_avg, p.rating_count)}${p.complaints_verified ? ` · যাচাই করা অভিযোগ: ${p.complaints_verified}` : ''}\nআপনার ফোন নম্বর তালিকায় দেখানো হয় না।`} />
-          <DistrictPicker label="অফিসের জেলা" value={district} onChange={setDistrict} />
-          <Field label="উপজেলা / থানা" value={upazila} onChangeText={setUpazila} maxLength={60} />
+          <WorkAreaFields value={area} onChange={setArea} />
           <Field label="নিজের সম্পর্কে দু-চার কথা" hint="যেমন: ১৫ বছর ধরে ওমরাহ করাচ্ছি, মহিলা গাইড আছে" value={bio} onChangeText={setBio} multiline maxLength={600} />
           <Button title="সংরক্ষণ করুন" icon="💾" onPress={save} loading={busy} />
           <Text style={[st.small, { marginTop: S.md }]}>এজেন্সির নাম বা লাইসেন্স নম্বর বদলাতে হেল্পলাইনে যোগাযোগ করুন; অ্যাডমিন যাচাই করে বদলে দেবেন।</Text>

@@ -73,9 +73,12 @@ with sync_playwright() as p:
                 step('খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'এজেন্সির নাম লিখুন', 2000)); shot(lp, 'L03-apply-empty')
                 lp.get_by_label('এজেন্সির নাম').fill('CI পরীক্ষা এজেন্সি (আসল নয়)')
                 lp.get_by_label('ওমরাহ লাইসেন্স নম্বর').fill('CI-UMRAH-01')
-                lp.get_by_role('button', name=re.compile('^অফিসের জেলা')).click(); lp.wait_for_timeout(600)
+                lp.get_by_role('button', name=re.compile('^১. জেলা')).click(); lp.wait_for_timeout(600)
                 lp.get_by_label('খুঁজুন').fill('সিলেট'); lp.get_by_role('button', name='সিলেট', exact=True).click(); lp.wait_for_timeout(400)
-                lp.get_by_label('উপজেলা / থানা').fill('সদর')
+                lp.get_by_role('button', name=re.compile('^২. উপজেলা')).click(); lp.wait_for_timeout(600)
+                step('জেলা বাছার পর সেই জেলার উপজেলার তালিকা আসে', lp.get_by_role('button', name='বিয়ানীবাজার', exact=True).count() > 0)
+                lp.get_by_role('button', name='বিয়ানীবাজার', exact=True).click(); lp.wait_for_timeout(400)
+                lp.get_by_label('৩. ইউনিয়ন').fill('CI ইউনিয়ন (আসল নয়)')
                 with lp.expect_file_chooser() as fc: btn(lp, 'ফোন থেকে ফাইল বাছুন$').click()
                 fc.value.set_files('assets/ihram/ihram-man.png'); lp.wait_for_timeout(800)
                 if lp.get_by_role('checkbox', name=re.compile('লিডারদের শর্তাবলি')).count():
@@ -104,6 +107,23 @@ with sync_playwright() as p:
             home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
+            # 0) work area on "আমার লিডার প্রোফাইল": district list > that district's upazilas > union typed (nothing saved)
+            try:
+                btn(lp, 'আমার লিডার প্রোফাইল$').click(); lp.wait_for_timeout(3000)
+                step('লিডার প্রোফাইলে "কাজের এলাকা" (অফিসের ঠিকানা নয়)', has(lp, 'কাজের এলাকা', 3000) and lp.get_by_text('অফিসের জেলা').count() == 0)
+                lp.get_by_role('button', name=re.compile('^১. জেলা')).click(); lp.wait_for_timeout(600)
+                lp.get_by_label('খুঁজুন').fill('নোয়াখালী'); lp.get_by_role('button', name='নোয়াখালী', exact=True).click(); lp.wait_for_timeout(400)
+                lp.get_by_role('button', name=re.compile('^২. উপজেলা')).click(); lp.wait_for_timeout(600); shot(lp, 'L10b-upazila-list')
+                ok_list = lp.get_by_role('button', name='কোম্পানীগঞ্জ', exact=True).count() > 0 and lp.get_by_role('button', name='বিয়ানীবাজার', exact=True).count() == 0
+                step('নোয়াখালী বাছলে শুধু নোয়াখালীর উপজেলা আসে', ok_list)
+                lp.get_by_label('খুঁজুন').fill('পরীক্ষা থানা'); lp.wait_for_timeout(300)
+                step('তালিকায় না থাকলে নিজে লিখে রাখা যায়', btn(lp, '"পরীক্ষা থানা" লিখে রাখুন$').count() > 0)
+                lp.get_by_label('খুঁজুন').fill(''); lp.get_by_role('button', name='কোম্পানীগঞ্জ', exact=True).click(); lp.wait_for_timeout(400)
+                lp.get_by_label('৩. ইউনিয়ন').fill('চরহাজারী'); shot(lp, 'L10c-work-area')
+                step('ইউনিয়নের ঘরে হাতে লেখা যায়', lp.get_by_label('৩. ইউনিয়ন').input_value() == 'চরহাজারী')
+            except Exception as e:
+                step('লিডার প্রোফাইলের কাজের এলাকা', False, str(e)[:150])
+            home(lp); lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500)
             btn(lp, '^চুক্তি ও রেফারেল হাজী$').click(); lp.wait_for_timeout(3000); shot(lp, 'L11-contracts')
             btn(lp, '^নতুন চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(800)
             btn(lp, '^চুক্তির অনুরোধ পাঠান$').click(); lp.wait_for_timeout(600)

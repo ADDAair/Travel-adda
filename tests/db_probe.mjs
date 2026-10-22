@@ -1,4 +1,4 @@
-// Read-only check of which database steps (002–011) are live, using the CI haji test account. Changes nothing.
+// Read-only check of which database steps (002–014) are live, using the CI haji test account. Changes nothing.
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 const cfg = fs.readFileSync('src/config.js', 'utf8');
@@ -22,6 +22,8 @@ out['008 haji_payments'] = msg(await sb.from('haji_payments').select('id').limit
 out['009 notifications'] = msg(await sb.rpc('my_unread_count'));
 out['011 push'] = msg(await sb.rpc('my_push_count'));
 out['012 terms'] = msg(await sb.rpc('my_terms'));
+out['014 work area (union)'] = msg(await sb.from('leader_profiles').select('union_name').limit(1));
+out['014 directory union'] = msg(await sb.rpc('list_leaders', { p_district: null, p_search: null }).select('union_name').limit(1));
 try { const f = await sb.functions.invoke('phone-otp', { body: { action: 'ping' } }); out['otp function'] = f.error ? `${f.error.name} ${f.error.context?.status || ''}` : JSON.stringify(f.data); } catch (e) { out['otp function'] = String(e); }
 // The CI leader account: what it chose at sign-up vs. what the database says (step 010 fixes old leader sign-ups).
 if (process.env.L_PHONE) {

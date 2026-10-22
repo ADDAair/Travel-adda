@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { areaText } from '../components/WorkAreaFields';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Linking } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -43,7 +44,7 @@ export default function LeadersScreen({ navigation, route }) {
       {onlyMine ? <Notice kind="info" title="রেফারেল কোডের কারণে শুধু আপনার লিডারকে দেখানো হচ্ছে" text='অন্য লিডার দেখতে "লিডার ও চুক্তি" পাতা থেকে রেফারেল বাতিলের অনুরোধ করুন।' /> : (
         <>
           <DistrictPicker label="জেলা" value={district} onChange={setDistrict} allowAll />
-          <Field label="নাম, এজেন্সি, উপজেলা বা আইডি দিয়ে খুঁজুন" hint="যেমন: আল-হারামাইন" value={q} onChangeText={setQ} />
+          <Field label="নাম, এজেন্সি, উপজেলা, ইউনিয়ন বা আইডি দিয়ে খুঁজুন" hint="যেমন: আল-হারামাইন" value={q} onChangeText={setQ} />
         </>
       )}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
@@ -57,7 +58,7 @@ export default function LeadersScreen({ navigation, route }) {
           <View style={{ flex: 1 }}>
             <Text style={st.val}>{l.full_name}</Text>
             <Text style={st.small}>{l.agency_name} · {l.leader_code}</Text>
-            <Text style={st.small}>📍 {[l.upazila, l.district].filter(Boolean).join(', ') || '—'}</Text>
+            <Text style={st.small}>📍 {areaText(l) || '—'}</Text>
             <Text style={st.small}>{starText(l.rating_avg, l.rating_count)}{l.complaints_verified ? ` · ⚠️ ${toBn(l.complaints_verified)}টি যাচাই করা অভিযোগ` : ''}</Text>
           </View>
           <Text style={{ fontSize: 24, color: C.primary }}>›</Text>
@@ -106,7 +107,7 @@ function LeaderProfile({ id, onBack, navigation }) {
             {l.complaints_verified ? <Text style={[st.p, { color: C.bad }]}>⚠️ {toBn(l.complaints_verified)}টি যাচাই করা অভিযোগ</Text> : <Text style={st.small}>কোনো যাচাই করা অভিযোগ নেই</Text>}
           </View>
           <View style={st.card}>
-            <View style={st.cRow}><Text style={st.lbl}>এলাকা</Text><Text style={st.p}>{[l.upazila, l.district].filter(Boolean).join(', ') || '—'}</Text></View>
+            <View style={st.cRow}><Text style={st.lbl}>কাজের এলাকা</Text><Text style={st.p}>{areaText(l) || '—'}</Text></View>
             {l.umrah_license ? <View style={st.cRow}><Text style={st.lbl}>ওমরাহ লাইসেন্স</Text><Text style={st.p}>{l.umrah_license}</Text></View> : null}
             {l.hajj_license ? <View style={st.cRow}><Text style={st.lbl}>হজ লাইসেন্স</Text><Text style={st.p}>{l.hajj_license}</Text></View> : null}
             <View style={st.cRow}><Text style={st.lbl}>অ্যাপে আছেন</Text><Text style={st.p}>{fmtDay(l.member_since)} থেকে</Text></View>

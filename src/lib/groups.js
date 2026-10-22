@@ -25,7 +25,10 @@ export async function myProfile() {
 
 // ---------- Leader application ----------
 export async function myApplication() {
-  let r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  let r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  if (r.error && (r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {   // step 014 not run yet
+    r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  }
   if (r.error && (r.error.code === '42703' || /column/i.test(r.error.message || ''))) {
     r = await supabase.from('leader_applications').select('id,agency_name,license_no,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   }
@@ -33,7 +36,7 @@ export async function myApplication() {
   return rows && rows[0] ? rows[0] : null;
 }
 
-export async function applyLeader({ agency, license, umrah, hajj, district, upazila, file }) {
+export async function applyLeader({ agency, license, umrah, hajj, district, upazila, union, file }) {
   const me = await uid();
   let path = null;
   if (file) {
@@ -47,7 +50,15 @@ export async function applyLeader({ agency, license, umrah, hajj, district, upaz
   }
   const row = { agency_name: agency.trim(), license_no: (license || umrah || hajj || '').trim(), doc_path: path };
   if (umrah !== undefined) Object.assign(row, { umrah_license: (umrah || '').trim() || null, hajj_license: (hajj || '').trim() || null, district: district || null, upazila: (upazila || '').trim() || null });
-  const ins = await supabase.from('leader_applications').insert(row).select('id').single();
+  const un = (union || '').trim();
+  if (un) row.union_name = un;
+  let ins = await supabase.from('leader_applications').insert(row).select('id').single();
+  if (ins.error && un && (ins.error.code === 'PGRST204' || ins.error.code === '42703' || /union_name/i.test(ins.error.message || ''))) {
+    // step 014 not run yet: keep the union inside the upazila text so nothing typed is lost
+    delete row.union_name;
+    row.upazila = [row.upazila, un].filter(Boolean).join(', ').slice(0, 60) || null;
+    ins = await supabase.from('leader_applications').insert(row).select('id').single();
+  }
   if (ins.error) {
     if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
     throw ins.error;

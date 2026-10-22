@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { areaText } from '../components/WorkAreaFields';
 import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
@@ -283,7 +284,7 @@ function AppCard({ r, onDone, onFail }) {
           {r.hajj_license ? <View style={st.cRow}><Text style={st.lbl}>হজ লাইসেন্স</Text><Text style={st.p} selectable>{r.hajj_license}</Text></View> : null}
         </>
       ) : <View style={st.cRow}><Text style={st.lbl}>লাইসেন্স নম্বর</Text><Text style={st.p} selectable>{r.license_no}</Text></View>}
-      {r.district ? <View style={st.cRow}><Text style={st.lbl}>এলাকা</Text><Text style={st.p}>{[r.upazila, r.district].filter(Boolean).join(', ')}</Text></View> : null}
+      {r.district ? <View style={st.cRow}><Text style={st.lbl}>কাজের এলাকা</Text><Text style={st.p}>{areaText(r)}</Text></View> : null}
       <Photo path={r.avatar_path} />
       <Button title={`ফোন করুন (${toBn(r.phone)})`} icon="📞" kind="secondary" onPress={() => Linking.openURL(`tel:${telBd(r.phone)}`).catch(() => {})} style={{ marginTop: S.sm }} />
       {r.doc_path ? <Button title="জমা দেওয়া কাগজ দেখুন" icon="📄" kind="secondary" onPress={openDoc} style={{ marginTop: S.sm }} /> : <Text style={st.small}>কোনো কাগজ দেননি।</Text>}
