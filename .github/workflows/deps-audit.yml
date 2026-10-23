@@ -22,5 +22,5 @@ jobs:
           mkdir -p /tmp/out && cp package-lock.json audit.json audit.txt /tmp/out/ 2>/dev/null || true
           git config user.name ci && git config user.email ci@users.noreply.github.com
           git checkout --orphan ci-deps
-          git rm -rfq . && cp /tmp/out/* . 2>/dev/null || true
+          git rm -rfq . && rm -rf node_modules && cp /tmp/out/* . 2>/dev/null || true
           git add -A && git commit -qm "deps ${GITHUB_SHA}" && git push -f origin ci-deps
