@@ -11,7 +11,7 @@ export const T = {
     loginTitle: 'আপনার অ্যাকাউন্টে ঢুকুন', registerTitle: 'নতুন অ্যাকাউন্ট খুলুন',
     nameLabel: 'আপনার নাম', nameHint: 'যেমন: আব্দুল করিম',
     phoneLabel: 'মোবাইল নম্বর', phoneHint: 'যেমন: 01712345678',
-    identLabel: 'মোবাইল নম্বর বা ইমেইল', identHint: 'যেমন: 01712345678 বা name@gmail.com',
+    identLabel: 'মোবাইল নম্বর বা ইমেইল', identHint: '01712345678 বা ইমেইল',
     emailLabel: 'ইমেইল (ঐচ্ছিক)', emailHint: 'যেমন: name@gmail.com',
     errIdent: 'সঠিক মোবাইল নম্বর (01 দিয়ে শুরু, ১১ সংখ্যা) বা ইমেইল লিখুন।',
     errEmail: 'ইমেইল ঠিকমতো লিখুন, যেমন: name@gmail.com',

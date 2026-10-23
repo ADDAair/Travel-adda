@@ -65,7 +65,7 @@ export default function ForgotPassword({ initialPhone = '', onClose }) {
       {step === 'phone' ? (
         <>
           <Text style={[st.p, { marginBottom: S.md }]}>অ্যাকাউন্টের মোবাইল নম্বর লিখুন, ওই নম্বরে এসএমএসে কোড যাবে। অথবা অ্যাকাউন্টে যাচাই করা ইমেইল লিখুন, তাহলে ইমেইলে কোড যাবে।</Text>
-          <Field label="মোবাইল নম্বর বা ইমেইল" hint="যেমন: 01712345678 বা name@gmail.com" value={phone} onChangeText={setPhone} maxLength={254} autoCapitalize="none" autoCorrect={false} autoComplete="username" />
+          <Field label="মোবাইল নম্বর বা ইমেইল" hint="01712345678 বা ইমেইল" value={phone} onChangeText={setPhone} maxLength={254} autoCapitalize="none" autoCorrect={false} autoComplete="username" />
           <Button title="কোড পাঠান" icon="📩" onPress={send} loading={busy} disabled={wait > 0} />
           {wait > 0 ? <Text style={st.small}>{toBn(wait)} সেকেন্ড পরে আবার চাইতে পারবেন।</Text> : null}
         </>
