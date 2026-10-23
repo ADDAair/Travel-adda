@@ -7,7 +7,7 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
 import { normalizePhone, isValidBdPhone, toBn } from '../lib/phone';
-import { loginEmailFor, newLoginEmail, looksLikeEmail, normalizeEmail, isValidEmail, PENDING_EMAIL } from '../lib/login';
+import { loginEmailFor, newLoginEmail, looksLikeEmail, normalizeEmail, isValidEmail, emailTypoFix, PENDING_EMAIL } from '../lib/login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
@@ -65,6 +65,8 @@ export default function AuthScreen() {
     if (!reg && looksLikeEmail(phone)) { if (!isValidEmail(normalizeEmail(phone))) e.phone = A.errEmail; }
     else if (!isValidBdPhone(normalizePhone(phone))) e.phone = reg ? A.errPhone : A.errIdent;
     if (reg && email.trim() && !isValidEmail(normalizeEmail(email))) e.email = A.errEmail;
+    else if (reg && email.trim() && emailTypoFix(email)) e.email = `বানানে ভুল আছে মনে হচ্ছে। ঠিক ঠিকানা কি ${emailTypoFix(email)}? ঠিক করে লিখুন।`;
+    if (!reg && looksLikeEmail(phone) && emailTypoFix(phone)) e.phone = `বানানে ভুল আছে মনে হচ্ছে। ঠিক ঠিকানা কি ${emailTypoFix(phone)}?`;
     if (pw.length < 8) e.pw = A.errPw;
     else if (reg && strength.level === 0) e.pw = A.errPwEasy;
     if (reg && refCode.trim() && !/^TL-?\d{1,8}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';

@@ -43,3 +43,18 @@ export async function emailReady() {
   const r = await supabase.rpc('login_id', { p_ident: '01300000000' });
   return !(r.error && missingFn(r.error));
 }
+
+// Common slips in e-mail addresses (gnail.com, gmial.com, gmail.con ...). Returns the corrected address or null.
+const FIX = {
+  'gnail.com': 'gmail.com', 'gmial.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gmaill.com': 'gmail.com', 'gamil.com': 'gmail.com',
+  'gmail.co': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.om': 'gmail.com', 'gmai.com': 'gmail.com', 'gmil.com': 'gmail.com',
+  'yaho.com': 'yahoo.com', 'yahoo.con': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'yhoo.com': 'yahoo.com',
+  'hotmal.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'hotmial.com': 'hotmail.com',
+  'outlok.com': 'outlook.com', 'outlook.con': 'outlook.com',
+};
+export function emailTypoFix(e) {
+  const v = normalizeEmail(e); const at = v.lastIndexOf('@');
+  if (at < 1) return null;
+  const fixed = FIX[v.slice(at + 1)];
+  return fixed ? `${v.slice(0, at)}@${fixed}` : null;
+}

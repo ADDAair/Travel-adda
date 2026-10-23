@@ -98,7 +98,9 @@ async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSe
       ? await d.sendEmail(phone, `আপনার Travel Adda কোড: ${code}`,
           `আপনার Travel Adda কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Travel Adda code: ${code} (valid 5 minutes). Do not share it.`)
       : await d.sendSms(phone, `Travel Adda code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
-    if (!sent) return fail(502, mail ? 'email_failed' : 'sms_failed');
+    // A failure on OUR side (company down, wrong key) must not use up a signed-in person's limits: that code row is removed.
+    // (Not for "forgot password": there the limits must behave the same whether or not the number/e-mail has an account.)
+    if (!sent) { if (purpose === 'verify') await d.deleteOtp(myId); return fail(502, mail ? 'email_failed' : 'sms_failed'); }
   }
   return ok({ sent: true, ttl: CODE_TTL / 1000 });
 }
@@ -215,7 +217,7 @@ export async function sendSmsVia(provider: string, env: (k: string) => string | 
 export async function sendEmailVia(provider: string, env: (k: string) => string | undefined, to: string, subject: string, text: string, fetcher: typeof fetch = fetch): Promise<boolean> {
   const key = env('EMAIL_API_KEY') ?? '';
   const from = env('EMAIL_FROM') ?? '';
-  if (!key || !from) return false;
+  if (!key || !from) { console.error('email not set up: EMAIL_API_KEY or EMAIL_FROM is missing in Edge Function secrets'); return false; }
   try {
     if (provider === 'brevo') {
       const r = await fetcher('https://api.brevo.com/v3/smtp/email', {

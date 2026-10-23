@@ -272,3 +272,12 @@ Deno.test('Brevo: request shape, key never in logs, success only on 2xx', async 
   assert(!(await sendEmailVia('brevo', env({}), 'to@x.com', 'S', 'T', mk(201))));       // not set up: false, no call
   assertEquals(calls.length, 2);
 });
+
+Deno.test('a failed send (our side) does not use up the limits', async () => {
+  const w = world();
+  w.d.sendEmail = () => Promise.resolve(false);
+  for (let i = 0; i < 5; i++) { w.tick(61_000); assertEquals((await handle(w.d, { action: 'send_verify', channel: 'email', email: 'a@example.com' }, 'jwt-u1')).body.error, 'email_failed'); }
+  assertEquals(w.otps.length, 0);
+  w.d.sendEmail = (to, subject, text) => { w.mails.push({ to, subject, text }); return Promise.resolve(true); };
+  assertEquals((await handle(w.d, { action: 'send_verify', channel: 'email', email: 'a@example.com' }, 'jwt-u1')).status, 200);
+});

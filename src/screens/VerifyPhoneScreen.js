@@ -6,7 +6,7 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { supabase } from '../lib/supabase';
 import { otp, otpText } from '../lib/otp';
-import { PENDING_EMAIL, normalizeEmail, isValidEmail } from '../lib/login';
+import { PENDING_EMAIL, normalizeEmail, isValidEmail, emailTypoFix } from '../lib/login';
 import { useMe } from '../lib/me';
 import { st } from './GroupScreen';
 
@@ -46,6 +46,7 @@ export default function VerifyPhoneScreen({ navigation, route }) {
   const send = async () => {
     if (busy || wait > 0) return;
     if (tab === 'email' && !isValidEmail(e)) { setMsg({ kind: 'bad', text: 'ইমেইল ঠিকমতো লিখুন, যেমন: name@gmail.com' }); return; }
+    if (tab === 'email' && emailTypoFix(e)) { setMsg({ kind: 'warn', text: `বানানে ভুল আছে মনে হচ্ছে। আপনি কি ${emailTypoFix(e)} বোঝাতে চেয়েছেন?`, fix: emailTypoFix(e) }); return; }
     setBusy(true); setMsg(null);
     const r = await otp('send_verify', tab === 'email' ? { channel: 'email', email: e } : {});
     setBusy(false);
@@ -94,7 +95,11 @@ export default function VerifyPhoneScreen({ navigation, route }) {
           )}
           <Segmented value={tab} onChange={switchTab} disabled={busy} options={[{ id: 'phone', label: '📱 মোবাইল নম্বর' }, { id: 'email', label: '📧 ইমেইল' }]} />
           <View style={{ height: S.md }} />
-          {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+          {msg ? (
+            <Notice kind={msg.kind} title={msg.text}>
+              {msg.fix ? <Button title={`হ্যাঁ, ${msg.fix} করুন`} icon="✏️" kind="secondary" onPress={() => { setEmail(msg.fix); setMsg(null); }} style={{ marginTop: S.sm }} /> : null}
+            </Notice>
+          ) : null}
 
           {tab === 'phone' && phoneDone ? <Notice kind="ok" title={`✔️ ${toBn(me.phone)} নম্বরটি যাচাই করা`} text="লিডার এই নম্বরে আমন্ত্রণ পাঠালে আপনিই পাবেন।" /> : null}
           {tab === 'phone' && !phoneDone ? (
