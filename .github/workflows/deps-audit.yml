@@ -1,0 +1,26 @@
+name: deps-audit
+# Checks the app's libraries for known security holes (npm audit) and records the exact versions (package-lock.json).
+# Results go to the ci-deps branch. Run by hand.
+on: [workflow_dispatch]
+permissions: { contents: write }
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: install and audit
+        run: |
+          npm install --legacy-peer-deps --package-lock=true
+          npm audit --omit=dev --json > audit.json || true
+          npm audit --omit=dev > audit.txt || true
+          node -e "const a=require('./audit.json');const m=a.metadata&&a.metadata.vulnerabilities||{};console.log('::notice title=npm audit (app libraries)::'+JSON.stringify(m));for(const [n,v] of Object.entries(a.vulnerabilities||{})){if(['high','critical'].includes(v.severity))console.log('::warning title='+v.severity+' '+n+'::'+[].concat(v.via).map(x=>typeof x==='string'?x:x.title).join(' | ').slice(0,300))}"
+      - name: publish to ci-deps branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp package-lock.json audit.json audit.txt /tmp/out/ 2>/dev/null || true
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci-deps
+          git rm -rfq . && cp /tmp/out/* . 2>/dev/null || true
+          git add -A && git commit -qm "deps ${GITHUB_SHA}" && git push -f origin ci-deps

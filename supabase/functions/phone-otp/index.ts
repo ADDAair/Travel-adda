@@ -26,8 +26,13 @@ export type Deps = {
   recentOtps: (phone: string, sinceMs: number) => Promise<Otp[]>;      // newest first, any purpose
   countSmsSince: (sinceMs: number) => Promise<number>;                 // SMS really sent, whole app
   countIpSince: (ip: string, sinceMs: number) => Promise<number>;      // codes asked from one internet address
-  insertOtp: (o: Omit<Otp, 'id'>) => Promise<void>;
+  countPhoneSince: (phone: string, sinceMs: number) => Promise<number>; // codes for one number, any purpose
+  insertOtp: (o: Omit<Otp, 'id'>) => Promise<string>;                 // returns the new row id
   updateOtp: (id: string, patch: Partial<Otp>) => Promise<void>;
+  deleteOtp: (id: string) => Promise<void>;
+  // Atomic "compare and set": changes the row only if it still has `expect` attempts and is unused. true = this request won.
+  // Stops many parallel guesses from all reading attempts=0 (which would bypass the 5-tries limit).
+  claimTry: (id: string, expect: number, patch: Partial<Otp>) => Promise<boolean>;
   setVerified: (userId: string) => Promise<void>;
   setPassword: (userId: string, password: string) => Promise<void>;
   sendSms: (phone: string, text: string) => Promise<boolean>;
@@ -39,6 +44,7 @@ const MIN_GAP = 60 * 1000;          // one SMS per number per minute
 const PER_HOUR = 3;                 // and at most 3 per hour
 const MAX_TRIES = 5;                // wrong guesses allowed per code
 const PER_IP_HOUR = 10;             // codes per internet address per hour
+const PER_DAY = 8;                  // codes per number per day (guessing stays hopeless: at most 40 tries a day out of 1,000,000)
 const PHONE_RE = /^01[3-9][0-9]{8}$/;
 
 export const cleanPhone = (p: unknown) => {
@@ -58,11 +64,17 @@ async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSe
   const recent = await d.recentOtps(phone, now - 60 * 60 * 1000);
   if (recent.length && now - recent[0].created_at < MIN_GAP) return fail(429, 'wait', { retry_in: Math.ceil((MIN_GAP - (now - recent[0].created_at)) / 1000) });
   if (recent.length >= PER_HOUR) return fail(429, 'too_many');
+  if ((await d.countPhoneSince(phone, now - 24 * 60 * 60 * 1000)) >= PER_DAY) return fail(429, 'too_many');
   if (realSend && (await d.countSmsSince(now - 24 * 60 * 60 * 1000)) >= d.dailyCap) return fail(503, 'daily_cap');
   const code = d.randomCode();
   // Old codes for this purpose stop working as soon as a new one is sent.
   for (const o of recent) if (o.purpose === purpose && !o.used) await d.updateOtp(o.id, { used: true });
-  await d.insertOtp({ phone, purpose, code_hash: await d.hash(`${purpose}:${phone}:${code}`), attempts: 0, used: false, sms_sent: realSend, ip, expires_at: now + CODE_TTL, created_at: now });
+  const myId = await d.insertOtp({ phone, purpose, code_hash: await d.hash(`${purpose}:${phone}:${code}`), attempts: 0, used: false, sms_sent: realSend, ip, expires_at: now + CODE_TTL, created_at: now });
+  // Many requests at the same moment: only the first one sends; the others are cancelled (no SMS flood, limits hold).
+  const race = await d.recentOtps(phone, now - MIN_GAP);
+  const mine = race.find((o) => o.id === myId);
+  const first = race.filter((o) => o.created_at > now - MIN_GAP).sort((a, b) => a.created_at - b.created_at || (a.id < b.id ? -1 : 1))[0];
+  if (mine && first && first.id !== myId) { await d.deleteOtp(myId); return fail(429, 'wait', { retry_in: Math.ceil(MIN_GAP / 1000) }); }
   if (realSend) {
     const sent = await d.sendSms(phone, `Travel Adda code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
     if (!sent) return fail(502, 'sms_failed');
@@ -76,13 +88,13 @@ async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: 
   const now = d.now();
   const o = (await d.recentOtps(phone, now - CODE_TTL - 60000)).find((x) => x.purpose === purpose && !x.used);
   if (!o || o.expires_at < now) return fail(400, 'expired');
-  if (o.attempts >= MAX_TRIES) { await d.updateOtp(o.id, { used: true }); return fail(400, 'too_many_tries'); }
-  if ((await d.hash(`${purpose}:${phone}:${c}`)) !== o.code_hash) {
-    const tries = o.attempts + 1;
-    await d.updateOtp(o.id, { attempts: tries, used: tries >= MAX_TRIES });
-    return fail(400, 'wrong_code', { tries_left: Math.max(0, MAX_TRIES - tries) });
-  }
-  await d.updateOtp(o.id, { used: true });
+  const seen = o.attempts;            // the value this request read (the row may change meanwhile)
+  if (seen >= MAX_TRIES) { await d.updateOtp(o.id, { used: true }); return fail(400, 'too_many_tries'); }
+  const tries = seen + 1;
+  const right = (await d.hash(`${purpose}:${phone}:${c}`)) === o.code_hash;
+  // Every guess is counted atomically BEFORE the answer is given; a guess that lost the race is refused unchecked.
+  if (!(await d.claimTry(o.id, seen, { attempts: tries, used: right || tries >= MAX_TRIES }))) return fail(429, 'wait', { retry_in: 2 });
+  if (!right) return fail(400, 'wrong_code', { tries_left: Math.max(0, MAX_TRIES - tries) });
   return o;
 }
 
@@ -108,7 +120,13 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
       // Same answer whether or not the number has an account, so nobody can find out who uses the app.
       // A code row is still stored for unknown numbers so the rate limits behave the same, but no SMS is sent.
       const r = await issue(d, phone, 'reset', !!p && p.status === 'active', ip);
-      return r.status === 200 ? ok({ sent: true, ttl: CODE_TTL / 1000 }) : r;
+      // An SMS failure or the daily cap only ever happen for numbers WITH an account, so they would tell a stranger
+      // "this number uses Travel Adda". They get the same answer as everyone else (the app says "if an account exists").
+      if (r.status === 200 || r.body.error === 'sms_failed' || r.body.error === 'daily_cap') {
+        if (r.status !== 200) console.error('send_reset not delivered', r.body.error);
+        return ok({ sent: true, ttl: CODE_TTL / 1000 });
+      }
+      return r;
     }
     if (!strongEnough(body.password)) return fail(400, 'weak_password');
     const r = await check(d, phone, 'reset', body.code);
@@ -184,8 +202,11 @@ if (import.meta.main) {
     recentOtps: async (phone, since) => (must(await admin.from('phone_otps').select('*').eq('phone', phone).gte('created_at', new Date(since).toISOString()).order('created_at', { ascending: false }).limit(20)) as Record<string, unknown>[]).map(toOtp),
     countSmsSince: async (since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('sms_sent', true).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
     countIpSince: async (ip, since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('ip', ip).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
-    insertOtp: async (o) => { must(await admin.from('phone_otps').insert({ ...o, expires_at: new Date(o.expires_at).toISOString(), created_at: new Date(o.created_at).toISOString() })); },
+    countPhoneSince: async (phone, since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('phone', phone).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
+    insertOtp: async (o) => (must(await admin.from('phone_otps').insert({ ...o, expires_at: new Date(o.expires_at).toISOString(), created_at: new Date(o.created_at).toISOString() }).select('id').single()) as { id: string }).id,
     updateOtp: async (id, patch) => { must(await admin.from('phone_otps').update(patch).eq('id', id)); },
+    deleteOtp: async (id) => { must(await admin.from('phone_otps').delete().eq('id', id)); },
+    claimTry: async (id, expect, patch) => (must(await admin.from('phone_otps').update(patch).eq('id', id).eq('attempts', expect).eq('used', false).select('id')) as unknown[]).length === 1,
     setVerified: async (uid) => { must(await admin.from('profiles').update({ phone_verified: true }).eq('id', uid)); },
     setPassword: async (uid, pw) => { const r = await admin.auth.admin.updateUserById(uid, { password: pw }); if (r.error) throw r.error; },
     sendSms: (phone, text) => sendSmsVia(env('SMS_PROVIDER') ?? '', env, phone, text),

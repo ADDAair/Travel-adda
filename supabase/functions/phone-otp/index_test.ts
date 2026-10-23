@@ -5,6 +5,7 @@ import { handle, sendSmsVia, cleanPhone, type Deps, type Otp } from './index.ts'
 function world() {
   let t = 1_000_000_000_000;
   let codeSeq = 0;
+  let idSeq = 0;
   const otps: Otp[] = [];
   const sms: { phone: string; text: string }[] = [];
   const verified = new Set<string>();
@@ -24,8 +25,11 @@ function world() {
     recentOtps: (ph, since) => Promise.resolve(otps.filter((o) => o.phone === ph && o.created_at >= since).sort((a, b) => b.created_at - a.created_at)),
     countSmsSince: (since) => Promise.resolve(otps.filter((o) => o.sms_sent && o.created_at >= since).length),
     countIpSince: (ip, since) => Promise.resolve(otps.filter((o) => o.ip === ip && o.created_at >= since).length),
-    insertOtp: (o) => { otps.push({ ...o, id: 'o' + otps.length }); return Promise.resolve(); },
+    countPhoneSince: (ph, since) => Promise.resolve(otps.filter((o) => o.phone === ph && o.created_at >= since).length),
+    insertOtp: (o) => { const id = 'o' + String(++idSeq).padStart(4, '0'); otps.push({ ...o, id }); return Promise.resolve(id); },
+    claimTry: (id, expect, patch) => { const o = otps.find((x) => x.id === id)!; if (o.attempts !== expect || o.used) return Promise.resolve(false); Object.assign(o, patch); return Promise.resolve(true); },
     updateOtp: (id, patch) => { Object.assign(otps.find((o) => o.id === id)!, patch); return Promise.resolve(); },
+    deleteOtp: (id) => { const i = otps.findIndex((o) => o.id === id); if (i >= 0) otps.splice(i, 1); return Promise.resolve(); },
     setVerified: (uid) => { verified.add(uid); const p = profiles.find((x) => x.id === uid); if (p) p.phone_verified = true; return Promise.resolve(); },
     setPassword: (uid, pw) => { passwords[uid] = pw; return Promise.resolve(); },
     sendSms: (phone, text) => { sms.push({ phone, text }); return Promise.resolve(true); },
@@ -114,7 +118,13 @@ Deno.test('daily SMS cap and per-address limit protect the SMS balance', async (
   // unknown numbers do not use up the cap
   for (let i = 0; i < 3; i++) assertEquals((await handle(w.d, { action: 'send_reset', phone: `0181000000${i}` }, null, '1.1.1.3')).status, 200);
   w.tick(61_000);
-  assertEquals((await handle(w.d, { action: 'send_reset', phone: '01710000001' }, null, '1.1.1.4')).body.error, 'daily_cap');
+  // a known number over the cap gets the SAME answer as an unknown one (no "this number has an account" leak), and no SMS
+  const before = w.sms.length;
+  assertEquals((await handle(w.d, { action: 'send_reset', phone: '01710000001' }, null, '1.1.1.4')).body, (await handle(w.d, { action: 'send_reset', phone: '01810000009' }, null, '1.1.1.5')).body);
+  assertEquals(w.sms.length, before);
+  // signed-in verification still says clearly that the daily cap is reached
+  w.tick(61_000);
+  assertEquals((await handle(w.d, { action: 'send_verify' }, 'jwt-u1', '1.1.1.6')).body.error, 'daily_cap');
   const v = world();
   for (let i = 0; i < 10; i++) await handle(v.d, { action: 'send_reset', phone: `0191000000${i}`.slice(0, 11) }, null, '9.9.9.9');
   assertEquals((await handle(v.d, { action: 'send_reset', phone: '01710000001' }, null, '9.9.9.9')).body.error, 'too_many');
@@ -142,4 +152,40 @@ Deno.test('SMS companies: request shape and success detection', async () => {
   assert(!(await sendSmsVia('custom_get', env({ SMS_URL_TEMPLATE: 'https://x.test/none' }), '01710000001', 'x', mk({}))));
   assert(!(await sendSmsVia('nobody', env({}), '01710000001', 'x', mk({}))));
   assert(!(await sendSmsVia('bulksmsbd', env({}), '01710000001', 'x', (() => Promise.reject(new Error('offline'))) as unknown as typeof fetch)));
+});
+
+Deno.test('security: parallel guesses cannot bypass the 5-tries limit', async () => {
+  const w = world();
+  await handle(w.d, { action: 'send_reset', phone: '01710000002' }, null);
+  const code = codeOf(w.sms[0].text);
+  // 200 guesses fired at the same moment (all read attempts = 0 before any write)
+  const guesses = Array.from({ length: 200 }, (_, i) => String(i).padStart(6, '0')).filter((g) => g !== code);
+  const rs = await Promise.all(guesses.map((g) => handle(w.d, { action: 'check_reset', phone: '01710000002', code: g, password: 'Karim2026!' }, null)));
+  assert(rs.filter((r) => r.body.error === 'wrong_code').length <= 5, 'at most 5 guesses may be checked');
+  assertEquals(w.otps.length, 1); assert(w.otps[0].attempts <= 5);
+  assertEquals(w.passwords.u2, undefined);
+  // the requests that lost the race were refused without being checked; once 5 guesses are used up the code is dead
+  for (let i = 0; i < 5; i++) await handle(w.d, { action: 'check_reset', phone: '01710000002', code: '999999', password: 'Karim2026!' }, null);
+  assertNotEquals((await handle(w.d, { action: 'check_reset', phone: '01710000002', code, password: 'Karim2026!' }, null)).status, 200);
+  assertEquals(w.passwords.u2, undefined);
+});
+
+Deno.test('security: sending in parallel sends one SMS only; at most 8 codes a day per number', async () => {
+  const w = world();
+  const rs = await Promise.all(Array.from({ length: 20 }, () => handle(w.d, { action: 'send_reset', phone: '01710000002' }, null)));
+  assertEquals(w.sms.length, 1);
+  assert(rs.every((r) => r.status === 200 || r.status === 429));
+  const v = world();
+  let sent = 0;
+  for (let i = 0; i < 12; i++) { v.tick(21 * 60_000); const r = await handle(v.d, { action: 'send_verify' }, 'jwt-u1'); if (r.status === 200) sent++; }
+  assertEquals(sent, 8);
+});
+
+Deno.test('security: reset answers never reveal whether a number has an account, even when SMS fails', async () => {
+  const w = world();
+  w.d.sendSms = () => Promise.resolve(false);
+  const known = await handle(w.d, { action: 'send_reset', phone: '01710000002' }, null);
+  const unknown = await handle(w.d, { action: 'send_reset', phone: '01810000001' }, null);
+  assertEquals(known.status, unknown.status); assertEquals(known.body, unknown.body);
+  assertEquals((await handle(w.d, { action: 'send_verify' }, 'jwt-u1')).body.error, 'sms_failed');   // own number: told plainly
 });

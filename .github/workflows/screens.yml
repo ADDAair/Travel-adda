@@ -17,10 +17,11 @@ jobs:
           npx expo install react-dom react-native-web @expo/metro-runtime -- --legacy-peer-deps
           npx expo export --platform web --output-dir web-dist
       - name: take screenshots
+        env: { CI_TEST_SECRET: '${{ secrets.CI_TEST_SECRET }}' }
         run: |
           # Dedicated test account with no special rights (RLS limits it to its own row).
-          export TEST_PHONE=01300000001
-          export TEST_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-screens" | sha256sum | cut -c1-24)"
+          . tests/ci_pw.sh
+          node tests/ci_rotate.mjs || true
           pip install playwright==1.48.0
           python -m playwright install --with-deps chromium
           (cd web-dist && python -m http.server 8080 >/dev/null 2>&1 &)

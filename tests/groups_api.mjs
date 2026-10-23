@@ -156,6 +156,60 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('notifications step (009) not run yet:', probe.error.message);
 }
 
+// --- Without logging in (anyone on the internet with the public key): every table and every private list must be closed
+{
+  const tables = ['profiles', 'leader_applications', 'leader_profiles', 'groups', 'group_members', 'contracts', 'contract_acceptances',
+    'group_announcements', 'user_documents', 'offers', 'offer_interests', 'haji_contracts', 'haji_payments', 'payouts', 'leader_rates',
+    'complaints', 'complaint_files', 'leader_ratings', 'leader_referrals', 'user_blocks', 'user_reports', 'admin_staff', 'admin_audit',
+    'phone_otps', 'app_settings', 'user_notifications', 'broadcasts', 'broadcast_reads', 'push_tokens', 'push_log', 'push_outbox',
+    'terms_agreements'];
+  const open = [];
+  for (const t of tables) {
+    const x = await A.from(t).select('*').limit(1);
+    if (!x.error && Array.isArray(x.data) && x.data.length) open.push(t);
+    const w = await A.from(t).insert({});
+    if (!w.error) open.push(t + ' (লেখা)');
+  }
+  check('লগইন ছাড়া কোনো টেবিল পড়া বা লেখা যায় না', open.length === 0, open.join(', '));
+  const rpcs = [['admin_find_users', { p_query: '017' }], ['admin_list_applications', {}], ['admin_export', { p_kind: 'users' }],
+    ['list_leaders', { p_district: null, p_search: null }], ['my_contracts', {}], ['admin_stats', {}], ['admin_ledger', {}]];
+  const leak = [];
+  for (const [f, a] of rpcs) { const x = await A.rpc(f, a); if (!refused(x) && !(Array.isArray(x.data) && x.data.length === 0)) leak.push(f); }
+  check('লগইন ছাড়া কোনো তালিকা বা অ্যাডমিন কাজ চলে না', leak.length === 0, leak.join(', '));
+  const files = [];
+  for (const b of ['documents', 'avatars', 'leader-docs', 'complaint-evidence', 'receipts']) {
+    const x = await A.storage.from(b).list(hid, { limit: 5 });
+    if (!x.error && x.data && x.data.length) files.push(b);
+    const u = await A.storage.from(b).upload(`${hid}/anon-test.jpg`, new Uint8Array([255, 216, 255]), { contentType: 'image/jpeg' });
+    if (!u.error) { files.push(b + ' (আপলোড)'); await A.storage.from(b).remove([`${hid}/anon-test.jpg`]); }
+  }
+  check('লগইন ছাড়া কারো ফাইল দেখা বা রাখা যায় না', files.length === 0, files.join(', '));
+}
+
+// --- Signed in, but someone else's files (H's folder seen by L and the other way round)
+{
+  const files = [];
+  for (const b of ['documents', 'leader-docs', 'complaint-evidence', 'receipts']) {
+    const x = await L.storage.from(b).list(hid, { limit: 5 });
+    if (!x.error && x.data && x.data.length) files.push(b);
+    const u = await L.storage.from(b).upload(`${hid}/l-test.jpg`, new Uint8Array([255, 216, 255]), { contentType: 'image/jpeg' });
+    if (!u.error) { files.push(b + ' (আপলোড)'); await L.storage.from(b).remove([`${hid}/l-test.jpg`]); }
+  }
+  check('লিডার হাজীর ফোল্ডারে ফাইল দেখতে বা রাখতে পারেন না', files.length === 0, files.join(', '));
+  const y = await H.storage.from('nonexistent-bucket').upload(`${hid}/x.jpg`, new Uint8Array([1]), { contentType: 'image/jpeg' });
+  check('অজানা ফাইল-বাক্সে কিছু রাখা যায় না', !!y.error, y.error?.message);
+}
+
+// --- 015: helper questions about other people are internal only (shown as "not run yet" until 015 is run)
+{
+  const x = await H.rpc('blocked_between', { a: lid, b: hid });
+  const y = await H.rpc('has_accepted_contract', { p_a: lid, p_b: hid });
+  const z = await H.rpc('active_referral_leader', { p_haji: hid });
+  const closed = !!x.error && !!y.error && !!z.error;
+  if (closed) check('অন্যদের সম্পর্কে প্রশ্নের ভেতরের ফাংশন বাইরে থেকে চলে না (০১৫)', true);
+  else console.log('step 015 not run yet: helper functions still callable', x.error?.message, y.error?.message, z.error?.message);
+}
+
 fs.writeFileSync('shots-groups/api.json', JSON.stringify(out, null, 1));
 console.log(`\n${out.length - bad}/${out.length} passed`);
 process.exit(bad ? 1 : 0);

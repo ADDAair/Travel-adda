@@ -3,6 +3,7 @@ on:
   push:
     paths: ['supabase/functions/**', '.github/workflows/otp-test.yml']
   workflow_dispatch:
+permissions: { contents: read }
 jobs:
   deno:
     runs-on: ubuntu-latest

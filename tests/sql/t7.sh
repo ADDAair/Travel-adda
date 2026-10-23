@@ -144,7 +144,7 @@ t "1" C "select count(*) from public.list_leaders(null,null)"
 t "bad_code" C "select public.set_referral('$EC')"
 t "ok" A "select public.admin_set_user_status('$E','active','appeal accepted')"
 # --- terms, stats, export
-t "0" anon "select count(*) from public.app_texts"
+t "2" anon "select count(*) from public.app_texts"   # only the two public terms texts (012)
 t ok A "select public.admin_set_text('terms','শর্তাবলি ১')"
 t "শর্তাবলি ১" anon "select body from public.app_texts where key='terms'"
 t fail anon "update public.app_texts set body='hack'"

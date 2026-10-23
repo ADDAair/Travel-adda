@@ -29,7 +29,7 @@ export default function ForgotPassword({ initialPhone = '', onClose }) {
     setBusy(true); setMsg(null);
     const r = await otp('send_reset', { phone: p });
     setBusy(false);
-    if (r.ok) { setStep('code'); setWait(60); setMsg({ kind: 'info', text: `এই নম্বরে Travel Adda অ্যাকাউন্ট থাকলে ${toBn(p)} নম্বরে ৬ সংখ্যার কোড গেছে। কোড ৫ মিনিট কাজ করবে।` }); }
+    if (r.ok) { setStep('code'); setWait(60); setMsg({ kind: 'info', text: `এই নম্বরে Travel Adda অ্যাকাউন্ট থাকলে ${toBn(p)} নম্বরে ৬ সংখ্যার কোড পাঠানো হয়েছে, ৫ মিনিট কাজ করবে। ২ মিনিটের মধ্যে এসএমএস না এলে আবার কোড চান, অথবা হেল্পলাইনে যোগাযোগ করুন।` }); }
     else { setMsg({ kind: r.error === 'not_ready' ? 'info' : 'bad', text: otpText(r) }); if (r.retry_in) setWait(r.retry_in); }
   };
   const reset = async () => {

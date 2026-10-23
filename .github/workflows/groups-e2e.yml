@@ -17,12 +17,11 @@ jobs:
           npx expo install react-dom react-native-web @expo/metro-runtime -- --legacy-peer-deps
           npx expo export --platform web --output-dir web-dist
       - name: two-phone flow (haji + leader) and security checks
+        env: { CI_TEST_SECRET: '${{ secrets.CI_TEST_SECRET }}' }
         run: |
           # Dedicated test accounts only. H has no rights; L becomes a leader only after the owner approves it by hand.
-          export H_PHONE=01300000001
-          export H_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-screens" | sha256sum | cut -c1-24)"
-          export L_PHONE=01300000003
-          export L_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-leader2" | sha256sum | cut -c1-24)"
+          . tests/ci_pw.sh
+          node tests/ci_rotate.mjs || true
           pip install playwright==1.48.0
           python -m playwright install --with-deps chromium
           (cd web-dist && python -m http.server 8080 >/dev/null 2>&1 &)
@@ -32,9 +31,9 @@ jobs:
           if grep -q '"phase": "B"' shots-groups/result.json; then node tests/groups_api.mjs; fi
       - name: hide CI test packages (always)
         if: always()
+        env: { CI_TEST_SECRET: '${{ secrets.CI_TEST_SECRET }}' }
         run: |
-          export L_PHONE=01300000003
-          export L_PW="ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-leader2" | sha256sum | cut -c1-24)"
+          . tests/ci_pw.sh
           node tests/cleanup_ci_offers.mjs || true
       - name: publish results to ci-groups branch
         if: always()
