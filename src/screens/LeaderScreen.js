@@ -210,8 +210,8 @@ function MemberRow({ m, onRemove, busy }) {
           <Text style={st.val}>{m.full_name}</Text>
           <Text style={st.small}>আইডি: {m.haji_code} · {toBn(m.phone)}</Text>
           <Text style={st.small}>{STATUS[m.status] || m.status}</Text>
-          {m.phone_verified === true ? <Text style={st.small}>✔️ মোবাইল নম্বর এসএমএস কোডে যাচাই করা</Text> : null}
-          {m.phone_verified === false ? <Text style={st.small}>⚠️ নম্বর এখনো যাচাই হয়নি, ফোন করে নিশ্চিত হোন</Text> : null}
+          {m.phone_verified === true ? <Text style={st.small}>✔️ অ্যাকাউন্ট যাচাই করা (মোবাইল বা ইমেইলের কোডে)</Text> : null}
+          {m.phone_verified === false ? <Text style={st.small}>⚠️ অ্যাকাউন্ট এখনো যাচাই হয়নি, ফোন করে নিশ্চিত হোন</Text> : null}
         </View>
       </View>
       {m.status === 'active' ? <Button title={`ফোন করুন (${toBn(m.phone)})`} icon="📞" kind="secondary" onPress={() => call(m.phone)} style={{ marginTop: S.sm }} /> : null}

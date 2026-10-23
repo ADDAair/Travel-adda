@@ -16,7 +16,10 @@ export const notReady = (e) => {
 const check = (r) => { if (r.error) throw r.error; return r.data; };
 
 export async function myProfile() {
+  const v = await supabase.from('profiles').select('full_name,haji_code,phone,role,status,phone_verified,verified').single();
+  if (!v.error) return v.data;                                                   // step 016: verified = phone OR e-mail
   const r = await supabase.from('profiles').select('full_name,haji_code,phone,role,status,phone_verified').single();
+  if (!r.error) return { ...r.data, verified: r.data.phone_verified };
   if (r.error && (r.error.code === '42703' || /phone_verified/.test(r.error.message || ''))) {   // step 006 not run yet
     return check(await supabase.from('profiles').select('full_name,haji_code,phone,role,status').single());
   }

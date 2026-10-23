@@ -147,7 +147,7 @@ function Main() {
       <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: 'লিডার প্যানেল' }} />
       <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
       <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: 'আমার প্যাকেজ' }} />
-      <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: 'নম্বর যাচাই' }} />
+      <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: 'অ্যাকাউন্ট যাচাই' }} />
       <Tab.Screen name="MyLeader" component={MyLeaderScreen} options={{ title: 'লিডার ও চুক্তি' }} />
       <Tab.Screen name="Leaders" component={LeadersScreen} options={{ title: 'যাচাই করা লিডার' }} />
       <Tab.Screen name="LeaderContracts" component={LeaderContractsScreen} options={{ title: 'চুক্তি ও হাজী' }} />

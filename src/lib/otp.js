@@ -39,6 +39,9 @@ export function otpText(r) {
     case 'too_many_tries': return 'অনেকবার ভুল কোড দেওয়া হয়েছে। নতুন কোড চান।';
     case 'expired': return 'কোডের মেয়াদ শেষ বা কোডটি আর কাজ করছে না। নতুন কোড চান।';
     case 'weak_password': return 'পাসওয়ার্ড অন্তত ৮ অক্ষরের দিন, সহজে আন্দাজ করা যায় এমন নয়।';
+    case 'bad_email': return 'ইমেইল ঠিকমতো লিখুন, যেমন: name@gmail.com';
+    case 'email_failed': return 'ইমেইল পাঠানো যায়নি। ঠিকানাটি ঠিক আছে কি না দেখে একটু পরে আবার চেষ্টা করুন।';
+    case 'email_taken': return 'এই ইমেইল অন্য একটি Travel Adda অ্যাকাউন্টে যুক্ত আছে। অন্য ইমেইল দিন, অথবা হেল্পলাইনে যোগাযোগ করুন।';
     case 'bad_phone': return 'সঠিক ১১ সংখ্যার মোবাইল নম্বর লিখুন (০১ দিয়ে শুরু)।';
     case 'not_signed_in': return 'আবার লগইন করে চেষ্টা করুন।';
     case 'network': return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';

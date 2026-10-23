@@ -3,6 +3,7 @@
 // Nothing here creates lasting records except what is cleaned up again.
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { loginId } from './login_id.mjs';
 
 const cfg = fs.readFileSync('src/config.js', 'utf8');
 const URL = cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1];
@@ -15,8 +16,8 @@ const refused = (r) => !!r.error || (Array.isArray(r.data) && r.data.length === 
 const err = (r) => r.error?.message;
 
 const H = mk(); const L = mk(); const A = mk();
-const hs = await H.auth.signInWithPassword({ email: email(process.env.H_PHONE), password: process.env.H_PW });
-const ls = await L.auth.signInWithPassword({ email: email(process.env.L_PHONE), password: process.env.L_PW });
+const hs = await H.auth.signInWithPassword({ email: await loginId(H, process.env.H_PHONE), password: process.env.H_PW });
+const ls = await L.auth.signInWithPassword({ email: await loginId(L, process.env.L_PHONE), password: process.env.L_PW });
 if (hs.error || ls.error) { console.log('login failed', hs.error?.message, ls.error?.message); process.exit(1); }
 const hid = hs.data.user.id; const lid = ls.data.user.id;
 const hcode = (await H.from('profiles').select('haji_code').single()).data.haji_code;
@@ -162,7 +163,7 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
     'group_announcements', 'user_documents', 'offers', 'offer_interests', 'haji_contracts', 'haji_payments', 'payouts', 'leader_rates',
     'complaints', 'complaint_files', 'leader_ratings', 'leader_referrals', 'user_blocks', 'user_reports', 'admin_staff', 'admin_audit',
     'phone_otps', 'app_settings', 'user_notifications', 'broadcasts', 'broadcast_reads', 'push_tokens', 'push_log', 'push_outbox',
-    'terms_agreements'];
+    'terms_agreements', 'app_private'];
   const open = [];
   for (const t of tables) {
     const x = await A.from(t).select('*').limit(1);
@@ -198,6 +199,22 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   check('লিডার হাজীর ফোল্ডারে ফাইল দেখতে বা রাখতে পারেন না', files.length === 0, files.join(', '));
   const y = await H.storage.from('nonexistent-bucket').upload(`${hid}/x.jpg`, new Uint8Array([1]), { contentType: 'image/jpeg' });
   check('অজানা ফাইল-বাক্সে কিছু রাখা যায় না', !!y.error, y.error?.message);
+}
+
+// --- 016: login by phone or e-mail never reveals who uses the app, nor a phone number
+{
+  const k = await A.rpc('login_id', { p_ident: process.env.H_PHONE });
+  if (!k.error) {
+    const fake = await A.rpc('login_id', { p_ident: '01399999999' });
+    const fakeMail = await A.rpc('login_id', { p_ident: 'nobody-ci@example.com' });
+    const re = /^u[0-9a-f]{20}@users\.traveladda\.app$/;
+    check('লগইন ঠিকানায় ফোন নম্বর নেই, আর অ্যাকাউন্ট আছে কি না বোঝা যায় না (০১৬)',
+      re.test(k.data) && re.test(fake.data) && re.test(fakeMail.data) && !String(k.data).includes(process.env.H_PHONE), `${k.data} / ${fake.data}`);
+    let x = await H.from('profiles').update({ email: 'hack@example.com', email_verified: true }).eq('id', hid).select('id');
+    check('কেউ নিজে ইমেইল "যাচাই করা" বানাতে পারে না (০১৬)', !!x.error || refused(x), err(x));
+    x = await H.from('profiles').update({ login_key: 'u00000000000000000000' }).eq('id', hid).select('id');
+    check('কেউ নিজের লগইন চাবি বদলাতে পারে না (০১৬)', !!x.error || refused(x), err(x));
+  } else console.log('step 016 not run yet:', k.error.message);
 }
 
 // --- 015: helper questions about other people are internal only (shown as "not run yet" until 015 is run)

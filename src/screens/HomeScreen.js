@@ -13,6 +13,7 @@ import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
 import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
+import { PENDING_EMAIL } from '../lib/login';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -45,6 +46,12 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); processPendingTerms(); }, [me]);
   const [p, setP] = useState(null);
   const [state, setState] = useState('load');
+  // An e-mail typed at sign-up waits here until it is verified with the code (then it can be used to log in).
+  const [pendingEmail, setPendingEmail] = useState(null);
+  useEffect(() => {
+    const check = () => AsyncStorage.getItem(PENDING_EMAIL).then((e) => setPendingEmail(e && !(me && me.email === e && me.email_verified) ? e : null)).catch(() => {});
+    check(); return navigation?.addListener?.('focus', check);
+  }, [me, navigation]);
 
   // The guides work offline (e.g. inside the Haram without data), so Home must never be blocked by a failed fetch.
   // Name and ID come from the profile the app already loaded (no second request); the phone's copy is shown meanwhile.
@@ -115,6 +122,11 @@ export default function HomeScreen({ navigation }) {
         </Card>
       ) : null}
 
+      {!handsOnPending && pendingEmail ? (
+        <Notice kind="info" title="📧 ইমেইল যাচাই বাকি" text={`${pendingEmail} যাচাই করলে এই ইমেইল দিয়েও লগইন করতে পারবেন।`}>
+          <Button title="ইমেইল যাচাই করুন" icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
+        </Notice>
+      ) : null}
       {!handsOnPending ? <PushCard mode="home" /> : null}
       {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
       {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripCard navigation={navigation} />}

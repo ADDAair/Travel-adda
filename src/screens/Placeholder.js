@@ -48,7 +48,8 @@ export function Account({ navigation }) {
 
   const load = useCallback(async () => {
     try {
-      let r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path,phone_verified').single();
+      let r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path,phone_verified,email,email_verified').single();
+      if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path,phone_verified').single();   // step 016 not applied yet
       if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path').single();   // step 006 not applied yet
       if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone').single();   // photo step not applied yet
       if (r.data) {
@@ -62,9 +63,9 @@ export function Account({ navigation }) {
 
   const hasPhoto = !!(p && p.avatar_path);
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
-  const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর ও পাসওয়ার্ড লাগবে।', [
+  const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর (বা যাচাই করা ইমেইল) ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: async () => { await pushLogout(); AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: async () => { await pushLogout(); AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1', 'ta.pendingEmail.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;
@@ -104,9 +105,15 @@ export function Account({ navigation }) {
         <Text style={st.val}>{p ? toBn(p.haji_code) : '…'}</Text>
         <Text style={st.label}>মোবাইল নম্বর</Text>
         <Text style={st.val}>{p ? toBn(p.phone) : '…'}</Text>
-        {p && p.phone_verified === true ? <Text style={st.label}>✔️ নম্বরটি এসএমএস কোডে যাচাই করা</Text> : null}
-        {p && p.phone_verified === false ? (
-          <Button title="মোবাইল নম্বর যাচাই করুন" icon="📱" kind="secondary" onPress={() => navigation.navigate('VerifyPhone')} a11yHint="এসএমএসে আসা কোড দিয়ে নম্বর যাচাই" style={{ marginTop: S.sm }} />
+        {p && p.email ? <><Text style={st.label}>ইমেইল</Text><Text style={st.val}>{p.email}</Text></> : null}
+        {p && (p.phone_verified === true || p.email_verified === true) ? (
+          <Text style={st.label}>✔️ অ্যাকাউন্ট যাচাই করা ({[p.phone_verified ? 'মোবাইল' : null, p.email_verified ? 'ইমেইল' : null].filter(Boolean).join(' ও ')})</Text>
+        ) : null}
+        {p && p.phone_verified === false && p.email_verified !== true ? (
+          <Button title="অ্যাকাউন্ট যাচাই করুন" icon="✅" kind="secondary" onPress={() => navigation.navigate('VerifyPhone')} a11yHint="মোবাইল বা ইমেইলে আসা কোড দিয়ে যাচাই" style={{ marginTop: S.sm }} />
+        ) : null}
+        {p && (p.phone_verified === true || p.email_verified === true) ? (
+          <Button title={p.email_verified ? 'ইমেইল বদলান' : 'ইমেইল যোগ করুন (ইমেইলেও লগইন)'} icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
         ) : null}
       </Card>
       <TextSize />

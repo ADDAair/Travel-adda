@@ -1,4 +1,4 @@
-// Travel Adda – phone number verification and "forgot password" with an SMS code (Supabase Edge Function).
+// Travel Adda – account verification and "forgot password" with a code by SMS or e-mail (Supabase Edge Function).
 // One file on purpose: it can be pasted into Supabase Dashboard > Edge Functions as-is.
 //
 // Secrets to set in Supabase (Dashboard > Edge Functions > Secrets). Never put them in the app or in GitHub:
@@ -7,24 +7,32 @@
 //   SMS_SENDER_ID  sender id given by the SMS company (if they require one)
 //   SMS_URL_TEMPLATE  only for custom_get, e.g. https://example.com/send?key=KEY&to={to}&msg={msg}
 //   OTP_DAILY_CAP  optional, most SMS per day for the whole app (default 300) – protects the SMS balance
+//   EMAIL_PROVIDER brevo
+//   EMAIL_API_KEY  the API key from Brevo (SMTP & API > API keys)
+//   EMAIL_FROM     the sender address verified in Brevo (e.g. traveladda2.0@gmail.com)
+//   EMAIL_DAILY_CAP optional, most e-mails per day for the whole app (default 250; Brevo free = 300/day)
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase automatically.
 //
 // Actions (POST JSON):
-//   { action: 'send_verify' }                         signed-in user: send a code to their own number
-//   { action: 'check_verify', code }                  signed-in user: confirm the code -> number verified
-//   { action: 'send_reset', phone }                   anyone: send a reset code (same answer whether or not the number exists)
-//   { action: 'check_reset', phone, code, password }  anyone: confirm the code and set a new password
+//   { action: 'send_verify' }                                  signed-in user: SMS code to their own number
+//   { action: 'check_verify', code }                           signed-in user: confirm it -> number verified
+//   { action: 'send_verify', channel: 'email', email }         signed-in user: e-mail code to that address
+//   { action: 'check_verify', channel: 'email', email, code }  signed-in user: confirm it -> e-mail verified (usable for login)
+//   { action: 'send_reset', phone } | { action: 'send_reset', email }      anyone: reset code (same answer whether or not an account exists)
+//   { action: 'check_reset', phone | email, code, password }               anyone: confirm the code and set a new password
 
-export type Otp = { id: string; phone: string; purpose: 'verify' | 'reset'; code_hash: string; attempts: number; used: boolean; sms_sent: boolean; ip: string | null; expires_at: number; created_at: number };
+export type Otp = { id: string; phone: string | null; email?: string | null; user_id?: string | null; purpose: 'verify' | 'reset'; code_hash: string; attempts: number; used: boolean; sms_sent: boolean; ip: string | null; expires_at: number; created_at: number };
 export type Deps = {
   now: () => number;
   randomCode: () => string;
   hash: (s: string) => Promise<string>;
   userFromJwt: (jwt: string) => Promise<string | null>;                 // user id or null
-  profileById: (id: string) => Promise<{ id: string; phone: string; phone_verified: boolean; status: string } | null>;
+  profileById: (id: string) => Promise<{ id: string; phone: string; phone_verified: boolean; status: string; email?: string | null; email_verified?: boolean } | null>;
   profileByPhone: (phone: string) => Promise<{ id: string; phone: string; status: string } | null>;
-  recentOtps: (phone: string, sinceMs: number) => Promise<Otp[]>;      // newest first, any purpose
+  profileByEmail: (email: string) => Promise<{ id: string; status: string } | null>;   // only a VERIFIED e-mail
+  recentOtps: (target: string, sinceMs: number) => Promise<Otp[]>;     // phone or e-mail; newest first, any purpose
   countSmsSince: (sinceMs: number) => Promise<number>;                 // SMS really sent, whole app
+  countEmailSince: (sinceMs: number) => Promise<number>;               // e-mails really sent, whole app
   countIpSince: (ip: string, sinceMs: number) => Promise<number>;      // codes asked from one internet address
   countPhoneSince: (phone: string, sinceMs: number) => Promise<number>; // codes for one number, any purpose
   insertOtp: (o: Omit<Otp, 'id'>) => Promise<string>;                 // returns the new row id
@@ -34,9 +42,12 @@ export type Deps = {
   // Stops many parallel guesses from all reading attempts=0 (which would bypass the 5-tries limit).
   claimTry: (id: string, expect: number, patch: Partial<Otp>) => Promise<boolean>;
   setVerified: (userId: string) => Promise<void>;
+  setEmail: (userId: string, email: string) => Promise<'ok' | 'taken'>;  // stores the e-mail as verified
   setPassword: (userId: string, password: string) => Promise<void>;
   sendSms: (phone: string, text: string) => Promise<boolean>;
+  sendEmail: (to: string, subject: string, text: string) => Promise<boolean>;
   dailyCap: number;
+  emailDailyCap: number;
 };
 
 const CODE_TTL = 5 * 60 * 1000;
@@ -46,6 +57,9 @@ const MAX_TRIES = 5;                // wrong guesses allowed per code
 const PER_IP_HOUR = 10;             // codes per internet address per hour
 const PER_DAY = 8;                  // codes per number per day (guessing stays hopeless: at most 40 tries a day out of 1,000,000)
 const PHONE_RE = /^01[3-9][0-9]{8}$/;
+const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+export const cleanEmail = (e: unknown) => String(e ?? '').trim().toLowerCase().slice(0, 254);
+const isEmail = (t: string) => t.includes('@');
 
 export const cleanPhone = (p: unknown) => {
   let s = String(p ?? '').replace(/[০-৯]/g, (d) => String('০১২৩৪৫৬৭৮৯'.indexOf(d))).replace(/[^\d+]/g, '');
@@ -58,35 +72,42 @@ type Res = { status: number; body: Record<string, unknown> };
 const ok = (body: Record<string, unknown>): Res => ({ status: 200, body: { ok: true, ...body } });
 const fail = (status: number, error: string, extra: Record<string, unknown> = {}): Res => ({ status, body: { ok: false, error, ...extra } });
 
-async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSend: boolean, ip: string | null): Promise<Res> {
+// target = a phone number (SMS) or an e-mail address (e-mail). userId binds an e-mail verification code to the account that asked.
+async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSend: boolean, ip: string | null, userId: string | null = null): Promise<Res> {
   const now = d.now();
+  const mail = isEmail(phone);
   if (ip && (await d.countIpSince(ip, now - 60 * 60 * 1000)) >= PER_IP_HOUR) return fail(429, 'too_many');
   const recent = await d.recentOtps(phone, now - 60 * 60 * 1000);
   if (recent.length && now - recent[0].created_at < MIN_GAP) return fail(429, 'wait', { retry_in: Math.ceil((MIN_GAP - (now - recent[0].created_at)) / 1000) });
   if (recent.length >= PER_HOUR) return fail(429, 'too_many');
   if ((await d.countPhoneSince(phone, now - 24 * 60 * 60 * 1000)) >= PER_DAY) return fail(429, 'too_many');
-  if (realSend && (await d.countSmsSince(now - 24 * 60 * 60 * 1000)) >= d.dailyCap) return fail(503, 'daily_cap');
+  if (realSend && (mail ? (await d.countEmailSince(now - 24 * 60 * 60 * 1000)) >= d.emailDailyCap
+                        : (await d.countSmsSince(now - 24 * 60 * 60 * 1000)) >= d.dailyCap)) return fail(503, 'daily_cap');
   const code = d.randomCode();
   // Old codes for this purpose stop working as soon as a new one is sent.
-  for (const o of recent) if (o.purpose === purpose && !o.used) await d.updateOtp(o.id, { used: true });
-  const myId = await d.insertOtp({ phone, purpose, code_hash: await d.hash(`${purpose}:${phone}:${code}`), attempts: 0, used: false, sms_sent: realSend, ip, expires_at: now + CODE_TTL, created_at: now });
+  // (an e-mail verification code of ANOTHER account is left alone, so nobody can cancel someone else's code)
+  for (const o of recent) if (o.purpose === purpose && !o.used && (!userId || o.user_id === userId)) await d.updateOtp(o.id, { used: true });
+  const myId = await d.insertOtp({ phone: mail ? null : phone, email: mail ? phone : null, user_id: userId, purpose, code_hash: await d.hash(`${purpose}:${phone}:${code}`), attempts: 0, used: false, sms_sent: realSend, ip, expires_at: now + CODE_TTL, created_at: now });
   // Many requests at the same moment: only the first one sends; the others are cancelled (no SMS flood, limits hold).
   const race = await d.recentOtps(phone, now - MIN_GAP);
   const mine = race.find((o) => o.id === myId);
   const first = race.filter((o) => o.created_at > now - MIN_GAP).sort((a, b) => a.created_at - b.created_at || (a.id < b.id ? -1 : 1))[0];
   if (mine && first && first.id !== myId) { await d.deleteOtp(myId); return fail(429, 'wait', { retry_in: Math.ceil(MIN_GAP / 1000) }); }
   if (realSend) {
-    const sent = await d.sendSms(phone, `Travel Adda code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
-    if (!sent) return fail(502, 'sms_failed');
+    const sent = mail
+      ? await d.sendEmail(phone, `আপনার Travel Adda কোড: ${code}`,
+          `আপনার Travel Adda কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Travel Adda code: ${code} (valid 5 minutes). Do not share it.`)
+      : await d.sendSms(phone, `Travel Adda code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
+    if (!sent) return fail(502, mail ? 'email_failed' : 'sms_failed');
   }
   return ok({ sent: true, ttl: CODE_TTL / 1000 });
 }
 
-async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: unknown): Promise<Res | Otp> {
+async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: unknown, userId: string | null = null): Promise<Res | Otp> {
   const c = String(code ?? '').replace(/[০-৯]/g, (x) => String('০১২৩৪৫৬৭৮৯'.indexOf(x))).replace(/\D/g, '');
   if (c.length !== 6) return fail(400, 'bad_code');
   const now = d.now();
-  const o = (await d.recentOtps(phone, now - CODE_TTL - 60000)).find((x) => x.purpose === purpose && !x.used);
+  const o = (await d.recentOtps(phone, now - CODE_TTL - 60000)).find((x) => x.purpose === purpose && !x.used && (!userId || x.user_id === userId));
   if (!o || o.expires_at < now) return fail(400, 'expired');
   const seen = o.attempts;            // the value this request read (the row may change meanwhile)
   if (seen >= MAX_TRIES) { await d.updateOtp(o.id, { used: true }); return fail(400, 'too_many_tries'); }
@@ -105,6 +126,17 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
     if (!uid) return fail(401, 'not_signed_in');
     const p = await d.profileById(uid);
     if (!p || p.status !== 'active') return fail(403, 'not_allowed');
+    if (body.channel === 'email') {
+      const e = cleanEmail(body.email);
+      if (!EMAIL_RE.test(e)) return fail(400, 'bad_email');
+      if (p.email === e && p.email_verified) return ok({ already: true, email: e, channel: 'email' });
+      if (action === 'send_verify') { const r = await issue(d, e, 'verify', true, ip, uid); r.body.channel = 'email'; return r; }
+      const r = await check(d, e, 'verify', body.code, uid);
+      if ('status' in r) return r;
+      // Only the person who received the code learns that the address belongs to another account.
+      if ((await d.setEmail(uid, e)) === 'taken') return fail(409, 'email_taken');
+      return ok({ verified: true, email: e, channel: 'email' });
+    }
     if (p.phone_verified) return ok({ already: true });
     if (action === 'send_verify') return issue(d, p.phone, 'verify', true, ip);
     const r = await check(d, p.phone, 'verify', body.code);
@@ -113,28 +145,30 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
     return ok({ verified: true });
   }
   if (action === 'send_reset' || action === 'check_reset') {
-    const phone = cleanPhone(body.phone);
-    if (!PHONE_RE.test(phone)) return fail(400, 'bad_phone');
+    const mail = typeof body.email === 'string' && body.email.trim() !== '';
+    const phone = mail ? cleanEmail(body.email) : cleanPhone(body.phone);
+    if (mail ? !EMAIL_RE.test(phone) : !PHONE_RE.test(phone)) return fail(400, mail ? 'bad_email' : 'bad_phone');
+    const findProfile = () => (mail ? d.profileByEmail(phone) : d.profileByPhone(phone));
     if (action === 'send_reset') {
-      const p = await d.profileByPhone(phone);
+      const p = await findProfile();
       // Same answer whether or not the number has an account, so nobody can find out who uses the app.
       // A code row is still stored for unknown numbers so the rate limits behave the same, but no SMS is sent.
       const r = await issue(d, phone, 'reset', !!p && p.status === 'active', ip);
       // An SMS failure or the daily cap only ever happen for numbers WITH an account, so they would tell a stranger
       // "this number uses Travel Adda". They get the same answer as everyone else (the app says "if an account exists").
-      if (r.status === 200 || r.body.error === 'sms_failed' || r.body.error === 'daily_cap') {
+      if (r.status === 200 || r.body.error === 'sms_failed' || r.body.error === 'email_failed' || r.body.error === 'daily_cap') {
         if (r.status !== 200) console.error('send_reset not delivered', r.body.error);
-        return ok({ sent: true, ttl: CODE_TTL / 1000 });
+        return ok({ sent: true, ttl: CODE_TTL / 1000, ...(mail ? { channel: 'email' } : {}) });
       }
       return r;
     }
     if (!strongEnough(body.password)) return fail(400, 'weak_password');
     const r = await check(d, phone, 'reset', body.code);
     if ('status' in r) return r;
-    const p = await d.profileByPhone(phone);
+    const p = await findProfile();
     if (!p || p.status !== 'active') return fail(400, 'expired');
     await d.setPassword(p.id, String(body.password));
-    await d.setVerified(p.id);       // they proved they hold this number
+    if (!mail) await d.setVerified(p.id);       // they proved they hold this number (an e-mail used here is verified already)
     return ok({ reset: true });
   }
   return fail(400, 'bad_action');
@@ -177,6 +211,24 @@ export async function sendSmsVia(provider: string, env: (k: string) => string | 
   return false;
 }
 
+// E-mail company (only Brevo for now). Returns true only when the company accepted the e-mail.
+export async function sendEmailVia(provider: string, env: (k: string) => string | undefined, to: string, subject: string, text: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+  const key = env('EMAIL_API_KEY') ?? '';
+  const from = env('EMAIL_FROM') ?? '';
+  if (!key || !from) return false;
+  try {
+    if (provider === 'brevo') {
+      const r = await fetcher('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST', headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ sender: { name: 'Travel Adda', email: from }, to: [{ email: to }], subject, textContent: text }),
+      });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); console.error('brevo refused', r.status, String((j as Record<string, unknown>).code ?? ''), String((j as Record<string, unknown>).message ?? '').split(key).join('***').slice(0, 200)); }
+      return r.ok;
+    }
+  } catch (_e) { return false; }
+  return false;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Real wiring (runs only on Supabase).
 if (import.meta.main) {
@@ -197,20 +249,34 @@ if (import.meta.main) {
       return Array.from(new Uint8Array(sig), (b) => b.toString(16).padStart(2, '0')).join('');
     },
     userFromJwt: async (jwt) => { const { data } = await admin.auth.getUser(jwt); return data?.user?.id ?? null; },
-    profileById: async (id) => must(await admin.from('profiles').select('id,phone,phone_verified,status').eq('id', id).maybeSingle()),
+    profileById: async (id) => {
+      const r = await admin.from('profiles').select('id,phone,phone_verified,status,email,email_verified').eq('id', id).maybeSingle();
+      if (r.error && /email/.test(r.error.message)) return must(await admin.from('profiles').select('id,phone,phone_verified,status').eq('id', id).maybeSingle());   // step 016 not run yet
+      return must(r);
+    },
     profileByPhone: async (phone) => must(await admin.from('profiles').select('id,phone,status').eq('phone', phone).maybeSingle()),
-    recentOtps: async (phone, since) => (must(await admin.from('phone_otps').select('*').eq('phone', phone).gte('created_at', new Date(since).toISOString()).order('created_at', { ascending: false }).limit(20)) as Record<string, unknown>[]).map(toOtp),
-    countSmsSince: async (since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('sms_sent', true).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
+    profileByEmail: async (email) => must(await admin.from('profiles').select('id,status').eq('email', email).eq('email_verified', true).maybeSingle()),
+    recentOtps: async (phone, since) => (must(await admin.from('phone_otps').select('*').eq(phone.includes('@') ? 'email' : 'phone', phone).gte('created_at', new Date(since).toISOString()).order('created_at', { ascending: false }).limit(20)) as Record<string, unknown>[]).map(toOtp),
+    countEmailSince: async (since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('sms_sent', true).not('email', 'is', null).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
+    countSmsSince: async (since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('sms_sent', true).not('phone', 'is', null).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
     countIpSince: async (ip, since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('ip', ip).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
-    countPhoneSince: async (phone, since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq('phone', phone).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
+    countPhoneSince: async (phone, since) => { const r = await admin.from('phone_otps').select('id', { count: 'exact', head: true }).eq(phone.includes('@') ? 'email' : 'phone', phone).gte('created_at', new Date(since).toISOString()); if (r.error) throw r.error; return r.count ?? 0; },
     insertOtp: async (o) => (must(await admin.from('phone_otps').insert({ ...o, expires_at: new Date(o.expires_at).toISOString(), created_at: new Date(o.created_at).toISOString() }).select('id').single()) as { id: string }).id,
     updateOtp: async (id, patch) => { must(await admin.from('phone_otps').update(patch).eq('id', id)); },
     deleteOtp: async (id) => { must(await admin.from('phone_otps').delete().eq('id', id)); },
     claimTry: async (id, expect, patch) => (must(await admin.from('phone_otps').update(patch).eq('id', id).eq('attempts', expect).eq('used', false).select('id')) as unknown[]).length === 1,
+    setEmail: async (uid, email) => {
+      const r = await admin.from('profiles').update({ email, email_verified: true }).eq('id', uid);
+      if (r.error && r.error.code === '23505') return 'taken';
+      if (r.error) throw r.error;
+      return 'ok';
+    },
     setVerified: async (uid) => { must(await admin.from('profiles').update({ phone_verified: true }).eq('id', uid)); },
     setPassword: async (uid, pw) => { const r = await admin.auth.admin.updateUserById(uid, { password: pw }); if (r.error) throw r.error; },
     sendSms: (phone, text) => sendSmsVia(env('SMS_PROVIDER') ?? '', env, phone, text),
+    sendEmail: (to, subject, text) => sendEmailVia(env('EMAIL_PROVIDER') ?? 'brevo', env, to, subject, text),
     dailyCap: Number(env('OTP_DAILY_CAP') ?? 300) || 300,
+    emailDailyCap: Number(env('EMAIL_DAILY_CAP') ?? 250) || 250,
   };
   const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json' };
 

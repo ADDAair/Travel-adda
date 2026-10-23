@@ -9,6 +9,7 @@ export const useMe = () => useContext(MeCtx);
 
 // Column sets from newest to oldest database step, so the app keeps working before every SQL file is run.
 const COLS = [
+  'full_name,haji_code,phone,role,status,account_type,phone_verified,email,email_verified,verified',
   'full_name,haji_code,phone,role,status,account_type,phone_verified',
   'full_name,haji_code,phone,role,status,phone_verified',
   'full_name,haji_code,phone,role,status',

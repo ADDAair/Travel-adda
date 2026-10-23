@@ -1,0 +1,45 @@
+// Log in with a mobile number OR a verified e-mail (database step 016).
+// The real login address of an account is private (u<random>@users.traveladda.app); the database function login_id()
+// gives it for a phone or a verified e-mail, and a made-up one for anything without an account, so the answer never
+// tells who uses the app. Before step 016 exists, phone login works the old way and e-mail login says "coming soon".
+import { supabase } from './supabase';
+import { normalizePhone, isValidBdPhone, phoneToLoginId } from './phone';
+
+export const PENDING_EMAIL = 'ta.pendingEmail.v1';          // e-mail typed at sign-up, waiting to be verified
+export const looksLikeEmail = (s) => String(s || '').includes('@');
+export const normalizeEmail = (s) => String(s || '').trim().toLowerCase();
+export const isValidEmail = (e) => e.length >= 6 && e.length <= 254 && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(e);
+
+const missingFn = (e) => !!e && (e.code === 'PGRST202' || e.code === '42883' || /could not find the function|does not exist/i.test(String(e.message || '')));
+const err = (code) => { const e = new Error(code); e.code = code; return e; };
+
+// Login address for what the person typed. Throws: 'bad-ident', 'email-soon', or the network/server error.
+export async function loginEmailFor(typed) {
+  const mail = looksLikeEmail(typed);
+  const ident = mail ? normalizeEmail(typed) : normalizePhone(typed);
+  if (mail ? !isValidEmail(ident) : !isValidBdPhone(ident)) throw err('bad-ident');
+  const r = await supabase.rpc('login_id', { p_ident: ident });
+  if (!r.error && typeof r.data === 'string' && r.data.includes('@')) return r.data;
+  if (r.error && missingFn(r.error)) {            // step 016 not run yet: the old way
+    if (mail) throw err('email-soon');
+    return phoneToLoginId(ident);
+  }
+  if (r.error) throw r.error;
+  throw err('bad-ident');
+}
+
+// Login address for a NEW account. With step 016: a private random one; before it: the old phone-based one.
+export async function newLoginEmail(phone) {
+  const r = await supabase.rpc('login_id', { p_ident: phone });
+  if (r.error && missingFn(r.error)) return phoneToLoginId(phone);
+  if (r.error) throw r.error;
+  const b = new Uint8Array(10);
+  crypto.getRandomValues(b);
+  return `u${Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')}@users.traveladda.app`;
+}
+
+// Is e-mail login/verification available on the server yet (step 016)?
+export async function emailReady() {
+  const r = await supabase.rpc('login_id', { p_ident: '01300000000' });
+  return !(r.error && missingFn(r.error));
+}

@@ -6,7 +6,9 @@ import { T } from '../strings';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
-import { normalizePhone, isValidBdPhone, phoneToLoginId, toBn } from '../lib/phone';
+import { normalizePhone, isValidBdPhone, toBn } from '../lib/phone';
+import { loginEmailFor, newLoginEmail, looksLikeEmail, normalizeEmail, isValidEmail, PENDING_EMAIL } from '../lib/login';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeyboardHeight } from '../lib/keyboard';
 import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
@@ -19,7 +21,8 @@ export default function AuthScreen() {
   const ins = useSafeAreaInsets();
   const [reg, setReg] = useState(false);
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('');          // login: phone OR e-mail; sign-up: phone
+  const [email, setEmail] = useState('');          // sign-up only, optional
   const [pw, setPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -59,7 +62,9 @@ export default function AuthScreen() {
   function validate() {
     const e = {};
     if (reg && name.trim().length < 2) e.name = A.errName;
-    if (!isValidBdPhone(normalizePhone(phone))) e.phone = A.errPhone;
+    if (!reg && looksLikeEmail(phone)) { if (!isValidEmail(normalizeEmail(phone))) e.phone = A.errEmail; }
+    else if (!isValidBdPhone(normalizePhone(phone))) e.phone = reg ? A.errPhone : A.errIdent;
+    if (reg && email.trim() && !isValidEmail(normalizeEmail(email))) e.email = A.errEmail;
     if (pw.length < 8) e.pw = A.errPw;
     else if (reg && strength.level === 0) e.pw = A.errPwEasy;
     if (reg && refCode.trim() && !/^TL-?\d{1,8}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';
@@ -75,18 +80,26 @@ export default function AuthScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
-      const email = phoneToLoginId(normalizePhone(phone));
+      let loginId;
+      try { loginId = reg ? await newLoginEmail(normalizePhone(phone)) : await loginEmailFor(phone); }
+      catch (x) {
+        if (x && x.code === 'email-soon') { setFormErr(A.errEmailSoon); return; }
+        if (x && x.code === 'bad-ident') { setErrs({ phone: A.errIdent }); return; }
+        throw x;
+      }
       const res = reg
         ? await (async () => {
           if (accType === 'haji' && refCode.trim()) await rememberReferral(refCode.trim().toUpperCase().replace(/\s/g, '').replace(/^TL(\d)/, 'TL-$1'));
           if (terms) await rememberTermsAgreement(accType === 'leader' ? 'leader' : 'haji');   // recorded on the server after the first login
-          return supabase.auth.signUp({ email, password: pw, options: { data: { full_name: name.trim(), account_type: accType === 'leader' ? 'leader' : 'haji' } } });
+          if (email.trim()) await AsyncStorage.setItem(PENDING_EMAIL, normalizeEmail(email)).catch(() => {});   // verified after the first login
+          return supabase.auth.signUp({ email: loginId, password: pw, options: { data: { full_name: name.trim(), phone: normalizePhone(phone), account_type: accType === 'leader' ? 'leader' : 'haji' } } });
         })()
-        : await supabase.auth.signInWithPassword({ email, password: pw });
+        : await supabase.auth.signInWithPassword({ email: loginId, password: pw });
       if (res.error) {
         const m = (res.error.message || '').toLowerCase();
         const code = Number(res.error.status) || 0;
-        if (code === 429 || code >= 500 || m.includes('rate limit') || m.includes('too many')) { setFormErr(A.errBusy); setWaitUntil(Date.now() + 60000); }   // server busy: pause, don't hammer it
+        if (reg && m.includes('database error saving new user')) setFormErr(A.errExists);   // this mobile number already has an account
+        else if (code === 429 || code >= 500 || m.includes('rate limit') || m.includes('too many')) { setFormErr(A.errBusy); setWaitUntil(Date.now() + 60000); }   // server busy: pause, don't hammer it
         else if (m.includes('already')) setFormErr(A.errExists);
         else if (m.includes('invalid') || m.includes('credentials')) setFormErr(A.errInvalid);
         else if (m.includes('network') || m.includes('fetch')) setFormErr(A.errNet);
@@ -146,8 +159,17 @@ export default function AuthScreen() {
           <Field label={A.nameLabel} hint={A.nameHint} value={name} onChangeText={setName} error={errs.name}
             maxLength={80} autoComplete="name" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => phoneRef.current?.focus()} />
         ) : null}
-        <Field inputRef={phoneRef} label={A.phoneLabel} hint={A.phoneHint} value={phone} onChangeText={setPhone} error={errs.phone}
-          keyboardType="phone-pad" maxLength={16} autoComplete="tel" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => pwRef.current?.focus()} />
+        {reg ? (
+          <Field inputRef={phoneRef} label={A.phoneLabel} hint={A.phoneHint} value={phone} onChangeText={setPhone} error={errs.phone}
+            keyboardType="phone-pad" maxLength={16} autoComplete="tel" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => pwRef.current?.focus()} />
+        ) : (
+          <Field inputRef={phoneRef} label={A.identLabel} hint={A.identHint} value={phone} onChangeText={setPhone} error={errs.phone}
+            maxLength={254} autoCapitalize="none" autoCorrect={false} autoComplete="username" returnKeyType="next" onFocus={keepVisible} onSubmitEditing={() => pwRef.current?.focus()} />
+        )}
+        {reg ? (
+          <Field label={A.emailLabel} hint={A.emailHint} value={email} onChangeText={setEmail} error={errs.email}
+            keyboardType="email-address" maxLength={254} autoCapitalize="none" autoCorrect={false} autoComplete="email" onFocus={keepVisible} />
+        ) : null}
         <Field inputRef={pwRef} label={A.pwLabel} hint={A.pwHint} value={pw} onChangeText={setPw} error={errs.pw}
           secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onFocus={keepVisible} onSubmitEditing={submit}
           right={
