@@ -106,6 +106,16 @@ with sync_playwright() as p:
 
             tab(lp, 'অফার'); lp.wait_for_timeout(2500); shot(lp, 'L09-offers-tab')
             step('লিডারের "অফার" ট্যাবে "নতুন প্যাকেজ দিন"', lp.get_by_role('button', name=re.compile('নতুন প্যাকেজ দিন')).count() > 0)
+            # form only (nothing is sent): umrah has no qurbani choice, hajj has; labels are whole
+            try:
+                btn(lp, 'নতুন প্যাকেজ দিন').click(); lp.wait_for_timeout(1500); shot(lp, 'L09b-offer-form')
+                cb = lambda n: lp.get_by_role('checkbox', name=n).count()
+                step('ওমরাহ প্যাকেজে কুরবানি বাছাই নেই', cb('কুরবানি') == 0 and cb('আলেম / গাইড') == 1)
+                lp.get_by_role('tab', name='হজ', exact=True).first.click(); lp.wait_for_timeout(500)
+                step('হজ প্যাকেজে কুরবানি বাছাই আছে', cb('কুরবানি') == 1)
+                btn(lp, 'প্যাকেজ না দিয়ে ফিরে যান').click(); lp.wait_for_timeout(1000)
+            except Exception as e:
+                step('প্যাকেজ ফর্মের বাছাই', False, str(e)[:150])
             home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')

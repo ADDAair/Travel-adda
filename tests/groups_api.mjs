@@ -230,6 +230,20 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 017 not run yet:', k.error.message);
 }
 
+// --- 019: a leader can never approve their own package
+{
+  const fake = '00000000-0000-0000-0000-000000000001';
+  const probe = await L.from('offers').select('review').limit(1);
+  if (!probe.error) {
+    let x = await L.from('offers').update({ review: 'approved' }).eq('id', fake).select('id');
+    check('লিডার নিজের প্যাকেজ নিজে অনুমোদন দিতে পারেন না (০১৯)', !!x.error, err(x));
+    x = await L.rpc('admin_review_offer', { p_offer: fake, p_decision: 'approve', p_note: null });
+    check('লিডার অ্যাডমিনের অনুমোদন বোতাম চালাতে পারেন না (০১৯)', !!x.error, err(x));
+    x = await H.rpc('admin_offers_review');
+    check('হাজী অপেক্ষায় থাকা প্যাকেজের তালিকা দেখতে পারেন না (০১৯)', !!x.error, err(x));
+  } else console.log('step 019 not run yet:', probe.error.message);
+}
+
 // --- 018: khadems and help chat stay inside the group
 {
   const p = await H.rpc('my_khadem_groups');

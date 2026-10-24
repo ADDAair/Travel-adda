@@ -45,6 +45,8 @@ export function Account({ navigation }) {
   const [saved, setSaved] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
   const [delErr, setDelErr] = useState('');
+  const [showDel, setShowDel] = useState(false);        // delete stays hidden so it is never pressed by mistake near "Logout"
+  useEffect(() => navigation?.addListener?.('blur', () => setShowDel(false)), [navigation]);
 
   const load = useCallback(async () => {
     try {
@@ -127,7 +129,11 @@ export function Account({ navigation }) {
       <Button title="শর্তাবলি" icon="📜" kind="secondary" onPress={() => navigation.navigate('Terms')} style={{ marginBottom: S.md }} />
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
-      <View style={st.delBox}>
+      <Pressable onPress={() => setShowDel((v) => !v)} style={st.moreBtn} accessibilityRole="button" accessibilityState={{ expanded: showDel }}
+        accessibilityLabel={showDel ? 'অ্যাকাউন্ট মুছে ফেলার অপশন লুকান' : 'আরও অপশন দেখুন: অ্যাকাউন্ট মুছে ফেলা'}>
+        <Text style={st.moreT}>{showDel ? '▾ আরও অপশন লুকান' : '▸ আরও অপশন'}</Text>
+      </Pressable>
+      {showDel ? <View style={st.delBox}>
         <Text style={st.delH}>অ্যাকাউন্ট মুছে ফেলা</Text>
         <Text style={st.delT}>অ্যাকাউন্ট ও সার্ভারের সব তথ্য চিরতরে মুছে ফেলতে চাইলে নিচের বাটন চাপুন। দুইবার নিশ্চিত করতে বলা হবে।</Text>
         {delErr ? <Notice kind="bad" title={delErr} /> : null}
@@ -136,7 +142,7 @@ export function Account({ navigation }) {
         ) : (
           <Button title="অ্যাকাউন্ট মুছে ফেলুন" icon="🗑️" kind="danger" onPress={askDelete} a11yHint="নিশ্চিত করতে দুইবার জিজ্ঞেস করবে" />
         )}
-      </View>
+      </View> : null}
       <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)}>
         <SafeAreaProvider>
           <PhotoCapture onDone={photoDone} onCancel={() => setCamOpen(false)} />
@@ -191,6 +197,8 @@ const st = StyleSheet.create({
   photoWrap: { alignItems: 'center', marginBottom: S.md },
   photo: { width: 140, height: 140, borderRadius: 70, backgroundColor: C.primarySoft, borderWidth: 3, borderColor: C.gold },
   photoEmpty: { alignItems: 'center', justifyContent: 'center' },
+  moreBtn: { minHeight: TOUCH, justifyContent: 'center', alignSelf: 'center', paddingHorizontal: S.md, marginTop: S.xl },
+  moreT: { fontSize: F.body, color: C.muted, textDecorationLine: 'underline' },
   delBox: { marginTop: S.xl, paddingTop: S.md, borderTopWidth: 1, borderColor: C.line },
   delH: { fontSize: F.body, fontWeight: '700', color: C.bad },
   delT: { fontSize: F.small, color: C.muted, lineHeight: 24, marginVertical: S.xs },

@@ -6,6 +6,7 @@ CC=$($Q "select haji_code from public.profiles where id='$C'"); FC=$($Q "select 
 NEW="insert into public.offers (kind,title,price_bdt,depart_on,return_on,valid_until) values"
 t ok B "$NEW ('umrah','Ends soon',100000,current_date+30,current_date+40,current_date+5)"
 t ok B "$NEW ('umrah','Expired offer',90000,current_date+30,current_date+40,current_date+1)"
+$Q "update public.offers set review='approved' where review='pending'" >/dev/null   # step 019: admin approval
 $Q "update public.offers set valid_until=current_date-1 where title='Expired offer'" >/dev/null
 t fail B "$NEW ('umrah','Ends after departure',100000,current_date+30,current_date+40,current_date+31)"
 t "1" C "select count(*) from public.list_offers('umrah') where title='Ends soon'"

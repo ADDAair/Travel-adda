@@ -14,7 +14,8 @@ import { Image } from 'react-native';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import MoneyTab from './AdminMoney';
 import NotifyTab from './AdminNotify';
-import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffers, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
+import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
+import { OfferCard } from '../components/OfferCard';
 
 const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
 
@@ -179,29 +180,53 @@ function CallCard({ r, onDone, onFail }) {
   );
 }
 
+// Packages: waiting ones first. Approve, or send back with a reason (the leader fixes it). Any package can be hidden.
 function OffersTab() {
-  const { state, data, load, gate } = useLoad(adminOffers);
+  const { state, data, load, gate } = useLoad(adminOffersReview);
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [back, setBack] = useState(null);                 // { id, note } while writing a reason
+  const act = async (fn, ok) => {
+    if (busy) return;
+    setBusy(true); setMsg(null);
+    try { const r = await fn(); setMsg(r === 'not_pending' ? { kind: 'info', text: 'এটি আগেই সিদ্ধান্ত হয়ে গেছে। তালিকা নতুন করে আনা হলো।' } : { kind: 'ok', text: ok }); setBack(null); await load(); }
+    catch (e) { setMsg({ kind: 'bad', text: e?.code === 'reason' ? 'ফেরত পাঠানোর কারণ লিখুন, যেন লিডার বুঝে ঠিক করতে পারেন।' : errText(e) }); }
+    finally { setBusy(false); }
+  };
+  const approve = (o) => confirm('প্যাকেজটি অনুমোদন দেবেন?', 'অনুমোদনের পর হাজীরা দেখবেন, আর লিডার দাম বা তথ্য বদলাতে পারবেন না।', 'হ্যাঁ, অনুমোদন দিন',
+    () => act(() => reviewOffer(o.id, 'approve'), 'অনুমোদন দেওয়া হয়েছে। লিডার নোটিফিকেশন পাবেন।'));
   const hide = (o) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
-    o.hidden_by_admin ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', async () => {
-      setBusy(true); setMsg(null);
-      try { await hideOffer(o.id, !o.hidden_by_admin); setMsg({ kind: 'ok', text: o.hidden_by_admin ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।' }); await load(); }
-      catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
-      finally { setBusy(false); }
-    });
+    o.hidden_by_admin ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', () => act(() => hideOffer(o.id, !o.hidden_by_admin), o.hidden_by_admin ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।'));
+  const rows = data || [];
+  const waiting = rows.filter((o) => reviewOf(o) === 'pending').length;
   return (
     <>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {gate}
-      {state === 'ok' && data.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ নেই" /> : null}
-      {state === 'ok' ? data.map((o) => (
-        <View key={o.id} style={st.card}>
-          <Text style={st.val}>{KIND[o.kind]?.icon} {o.title} ({refOf(o.id)})</Text>
-          <Text style={st.small}>{fmtTaka(o.price_bdt)} · {fmtDay(o.depart_on)} থেকে {fmtDay(o.return_on)}</Text>
-          <Text style={st.small}>{o.hidden_by_admin ? '⛔ আপনি লুকিয়েছেন' : o.active ? '✅ দেখা যাচ্ছে' : '🙈 লিডার লুকিয়েছেন'}</Text>
-          <Button title={o.hidden_by_admin ? 'আবার দেখান' : 'সবার কাছ থেকে লুকান'} kind={o.hidden_by_admin ? 'secondary' : 'danger'} onPress={() => hide(o)} disabled={busy} style={{ marginTop: S.xs }} />
-        </View>
+      {state === 'ok' ? <Notice kind={waiting ? 'warn' : 'ok'} title={waiting ? `⏳ ${toBn(waiting)}টি প্যাকেজ অনুমোদনের অপেক্ষায়` : 'অপেক্ষায় থাকা কোনো প্যাকেজ নেই'} /> : null}
+      {state === 'ok' && rows.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ নেই" /> : null}
+      {state === 'ok' ? rows.map((o) => (
+        <OfferCard key={o.id} o={o}>
+          <View style={st.cRow}>
+            {o.leader_name ? <Text style={st.p}>🧭 লিডার: {o.leader_name}{o.leader_code ? ` (${o.leader_code})` : ''}</Text> : null}
+            <Text style={st.val}>{o.hidden_by_admin ? '⛔ আপনি লুকিয়েছেন' : reviewLabel(o) || (o.active ? '✅ অনুমোদিত, দেখা যাচ্ছে' : '🙈 লিডার লুকিয়েছেন')}</Text>
+            {reviewOf(o) === 'pending' ? (
+              back && back.id === o.id ? (
+                <>
+                  <Field label="ফেরত পাঠানোর কারণ (লিডার দেখবেন)" hint="যেমন: মক্কার হোটেলের নাম দিন" value={back.note} onChangeText={(v) => setBack({ id: o.id, note: v })} multiline maxLength={300} editable={!busy} />
+                  <Button title="ফেরত পাঠান" icon="↩️" kind="danger" onPress={() => act(() => reviewOffer(o.id, 'reject', back.note), 'ফেরত পাঠানো হয়েছে। লিডার কারণসহ নোটিফিকেশন পাবেন।')} loading={busy} />
+                  <Button title="বাতিল" kind="secondary" onPress={() => setBack(null)} disabled={busy} style={{ marginTop: S.xs }} />
+                </>
+              ) : (
+                <>
+                  <Button title="অনুমোদন দিন" icon="✅" onPress={() => approve(o)} disabled={busy} style={{ marginTop: S.sm }} />
+                  <Button title="ঠিক করতে ফেরত পাঠান" icon="↩️" kind="secondary" onPress={() => { setMsg(null); setBack({ id: o.id, note: '' }); }} disabled={busy} style={{ marginTop: S.xs }} />
+                </>
+              )
+            ) : null}
+            <Button title={o.hidden_by_admin ? 'আবার দেখান' : 'সবার কাছ থেকে লুকান'} kind={o.hidden_by_admin ? 'secondary' : 'danger'} onPress={() => hide(o)} disabled={busy} style={{ marginTop: S.xs }} />
+          </View>
+        </OfferCard>
       )) : null}
     </>
   );
@@ -309,7 +334,7 @@ function Photo({ path }) {
 const STAT_LABELS = [
   ['hajis', 'হাজী অ্যাকাউন্ট'], ['leaders', 'অনুমোদিত লিডার'], ['leaders_pending', 'লিডার আবেদন বাকি'], ['suspended', 'বন্ধ অ্যাকাউন্ট'],
   ['contracts_active', 'চালু চুক্তি'], ['contracts_sent', 'উত্তরের অপেক্ষায় চুক্তি'], ['contracts_completed', 'সম্পন্ন চুক্তি'], ['contracts_cancelled', 'বাতিল চুক্তি'],
-  ['complaints_pending', 'অভিযোগ যাচাই বাকি'], ['reports_new', 'নতুন রিপোর্ট'], ['calls_new', 'ফোনের অনুরোধ বাকি'], ['offers_visible', 'দেখানো প্যাকেজ'], ['new_users_7d', 'গত ৭ দিনে নতুন অ্যাকাউন্ট'],
+  ['complaints_pending', 'অভিযোগ যাচাই বাকি'], ['reports_new', 'নতুন রিপোর্ট'], ['calls_new', 'ফোনের অনুরোধ বাকি'], ['offers_visible', 'দেখানো প্যাকেজ'], ['offers_pending', 'অনুমোদনের অপেক্ষায় প্যাকেজ'], ['new_users_7d', 'গত ৭ দিনে নতুন অ্যাকাউন্ট'],
   ['payments_pending', 'টাকার জমা যাচাই বাকি'], ['money_in', 'মোট পাওয়া টাকা'], ['money_out_leaders', 'লিডারদের দেওয়া'], ['money_refunded', 'হাজীদের ফেরত'],
 ];
 const MONEY_STATS = ['money_in', 'money_out_leaders', 'money_refunded'];
@@ -569,7 +594,7 @@ function TermsTab() {
 
 const ACTION = { approve_leader: 'লিডার অনুমোদন', reject_leader: 'লিডার আবেদন বাতিল', complaint_verified: 'অভিযোগ প্রকাশ', complaint_rejected: 'অভিযোগ বাতিল',
   report_handled: 'রিপোর্ট দেখা', suspend_user: 'অ্যাকাউন্ট বন্ধ', reactivate_user: 'অ্যাকাউন্ট চালু', staff_set: 'স্টাফের অধিকার', staff_removed: 'স্টাফ সরানো',
-  referral_cancel_ok: 'রেফারেল বাতিল অনুমোদন', referral_cancel_no: 'রেফারেল বাতিল নাকচ', call_done: 'ফোনের অনুরোধ শেষ', offer_hidden: 'প্যাকেজ লুকানো', offer_shown: 'প্যাকেজ দেখানো',
+  referral_cancel_ok: 'রেফারেল বাতিল অনুমোদন', referral_cancel_no: 'রেফারেল বাতিল নাকচ', call_done: 'ফোনের অনুরোধ শেষ', offer_approved: 'প্যাকেজ অনুমোদন', offer_rejected: 'প্যাকেজ ফেরত', offer_hidden: 'প্যাকেজ লুকানো', offer_shown: 'প্যাকেজ দেখানো',
   text_terms: 'শর্তাবলি বদল', export_users: 'ব্যবহারকারী ডাউনলোড', export_contracts: 'চুক্তি ডাউনলোড', export_complaints: 'অভিযোগ ডাউনলোড' };
 function AuditTab() {
   const { state, data, gate } = useLoad(listAudit);

@@ -4,25 +4,28 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
 import { notReady } from '../lib/groups';
-import { INCLUDES, myOffers, createOffer, setOfferActive, myInterestCounts } from '../lib/offers';
+import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffer, setOfferActive, myInterestCounts, canEditOffer, reviewLabel, reviewOf, offerErrorText, offerReviewReady } from '../lib/offers';
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
 import { OfferCard } from '../components/OfferCard';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
-  : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ হাজীরা দেখতে পাচ্ছেন');
+const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? reviewLabel(o) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
+  : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ অনুমোদিত, হাজীরা দেখতে পাচ্ছেন');
+const dateIn = (iso) => (iso ? toBn(String(iso).split('-').reverse().join('-')) : '');
 
-// Verified leaders publish packages for the Offers page. A published package cannot be changed, only hidden.
+// Verified leaders send packages for the Offers page. The admin checks each one first (step 019); until it is approved
+// the leader can change it. After approval it cannot be changed (no bait-and-switch), only hidden.
 export default function LeaderOffersScreen({ navigation, inTab }) {
   const [rows, setRows] = useState(null);
   const [counts, setCounts] = useState({});
   const [state, setState] = useState('load');
-  const [form, setForm] = useState(false);
+  const [form, setForm] = useState(null);              // null | 'new' | the package being changed
+  const [reviewOn, setReviewOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const load = useCallback(async () => {
-    try { const [r, c] = await Promise.all([myOffers(), myInterestCounts()]); setRows(r); setCounts(c); setState('ok'); }
+    try { const [r, c, on] = await Promise.all([myOffers(), myInterestCounts(), offerReviewReady()]); setRows(r); setCounts(c); setReviewOn(on); setState('ok'); }
     catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -34,7 +37,18 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
     finally { setBusy(false); }
   });
 
-  if (form) return <OfferForm onDone={(saved) => { setForm(false); if (saved) { setMsg({ kind: 'ok', text: 'প্যাকেজ প্রকাশ হয়েছে। হাজীরা এখন "অফার" পাতায় দেখতে পাবেন।' }); load(); } }} />;
+  if (form) {
+    const editing = form !== 'new' ? form : null;
+    return <OfferForm initial={editing} reviewOn={reviewOn} onDone={(saved) => {
+      setForm(null);
+      if (saved) {
+        setMsg({ kind: 'ok', text: editing ? 'বদল সংরক্ষণ হয়েছে। অ্যাডমিন আবার দেখে অনুমোদন দেবেন।'
+          : reviewOn ? 'প্যাকেজ জমা হয়েছে। অ্যাডমিন দেখে অনুমোদন দিলে হাজীরা "অফার" পাতায় দেখবেন। তার আগ পর্যন্ত চাইলে বদলাতে পারবেন।'
+            : 'প্যাকেজ প্রকাশ হয়েছে। হাজীরা এখন "অফার" পাতায় দেখতে পাবেন।' });
+        load();
+      }
+    }} />;
+  }
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
@@ -48,7 +62,7 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
       {state === 'ok' ? (
         <>
           <Notice kind="info" title="হাজীরা কীভাবে যোগাযোগ করবেন" text="প্যাকেজে আপনার ফোন নম্বর দেখানো হয় না। আগ্রহী হাজীরা Travel Adda হেল্পলাইনে যোগাযোগ করবেন, টিম আপনার সাথে মিটিংয়ের ব্যবস্থা করবে। এখানে শুধু কতজন আগ্রহী তা দেখবেন।" />
-          <Button title="নতুন প্যাকেজ দিন" icon="➕" onPress={() => setForm(true)} style={{ marginBottom: S.md }} />
+          <Button title="নতুন প্যাকেজ দিন" icon="➕" onPress={() => { setMsg(null); setForm('new'); }} style={{ marginBottom: S.md }} />
           {rows && rows.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ দেননি" /> : null}
           {(rows || []).map((o) => {
             const c = counts[o.id];
@@ -56,6 +70,7 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
               <OfferCard key={o.id} o={o}>
                 <View style={st.cRow}>
                   <Text style={st.val}>{statusOf(o)}</Text>
+                  {canEditOffer(o) ? <Button title="প্যাকেজটি বদলান" icon="✏️" onPress={() => { setMsg(null); setForm(o); }} disabled={busy} style={{ marginTop: S.sm }} /> : null}
                   <Text style={st.p}>🙋 আগ্রহী: {toBn(c ? c.total : 0)} জন{c && c.open ? ` (টিমের ফোনের অপেক্ষায় ${toBn(c.open)} জন)` : ''}</Text>
                   {!o.hidden_by_admin ? <Button title={o.active ? 'প্যাকেজটি লুকান' : 'আবার দেখান'} icon={o.active ? '🙈' : '👁️'} kind="secondary" onPress={() => toggle(o)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
                 </View>
@@ -71,17 +86,26 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
 function Chip({ on, label, icon, onPress }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={label}
-      style={{ minHeight: TOUCH, flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.sm, marginRight: S.xs, marginBottom: S.xs,
+      style={{ minHeight: TOUCH, width: '100%', flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.md, paddingVertical: S.xs, marginBottom: S.xs,
         borderRadius: R.md, borderWidth: 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
-      <Text style={st.p}>{on ? '☑️' : '⬜'} {icon} {label}</Text>
+      <Text style={[st.p, { marginRight: S.sm }]}>{on ? '☑️' : '⬜'}</Text>
+      <Text style={[st.p, { marginRight: S.sm }]}>{icon}</Text>
+      <Text style={[st.p, { flex: 1, fontWeight: on ? '700' : '400' }]}>{label}</Text>
     </Pressable>
   );
 }
 
-function OfferForm({ onDone }) {
-  const [kind, setKind] = useState('umrah');
-  const [f, setF] = useState({ title: '', price: '', from: '', to: '', mh: '', md: '', dh: '', dd: '', room: '', notes: '' });
-  const [inc, setInc] = useState(new Set(['flight', 'visa']));
+function OfferForm({ onDone, initial, reviewOn }) {
+  const o = initial;
+  const [kind, setKindRaw] = useState(o ? o.kind : 'umrah');
+  const [f, setF] = useState(o ? {
+    title: o.title || '', price: o.price_bdt != null ? String(Math.round(Number(o.price_bdt))) : '', from: dateIn(o.depart_on), to: dateIn(o.return_on),
+    until: dateIn(o.valid_until), mh: o.makkah_hotel || '', md: o.madinah_hotel || '', dh: o.makkah_distance_m != null ? String(o.makkah_distance_m) : '',
+    dd: o.madinah_distance_m != null ? String(o.madinah_distance_m) : '', room: o.room_share != null ? String(o.room_share) : '', notes: o.notes || '',
+  } : { title: '', price: '', from: '', to: '', mh: '', md: '', dh: '', dd: '', room: '', notes: '' });
+  const [inc, setInc] = useState(new Set(o ? o.includes || [] : ['flight', 'visa']));
+  // umrah has no qurbani: switching to umrah removes it from the choices and from what was ticked
+  const setKind = (k) => { setKindRaw(k); setInc((x) => new Set(cleanIncludes(k, [...x]))); };
   const [err, setErr] = useState({});
   const [fail, setFail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -112,27 +136,32 @@ function OfferForm({ onDone }) {
     if (room !== null && !(Number.isInteger(room) && room >= 1 && room <= 10)) e.room = '১ থেকে ১০ এর মধ্যে লিখুন।';
     setErr(e); setFail('');
     if (Object.keys(e).length) { setFail('লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।'); return; }
-    confirm('প্যাকেজটি প্রকাশ করবেন?', 'প্রকাশের পর দাম বা তথ্য বদলানো যাবে না, শুধু লুকানো যাবে। আরেকবার মিলিয়ে নিন।', 'হ্যাঁ, প্রকাশ করুন', async () => {
+    const ask = o ? ['বদলগুলো সংরক্ষণ করবেন?', 'অ্যাডমিন আবার দেখে অনুমোদন দেবেন। অনুমোদনের পর আর বদলানো যাবে না।', 'হ্যাঁ, সংরক্ষণ করুন']
+      : reviewOn ? ['প্যাকেজটি জমা দেবেন?', 'অ্যাডমিন দেখে অনুমোদন দিলে হাজীরা দেখবেন। অনুমোদনের আগ পর্যন্ত বদলাতে পারবেন, পরে আর পারবেন না।', 'হ্যাঁ, জমা দিন']
+        : ['প্যাকেজটি প্রকাশ করবেন?', 'প্রকাশের পর দাম বা তথ্য বদলানো যাবে না, শুধু লুকানো যাবে। আরেকবার মিলিয়ে নিন।', 'হ্যাঁ, প্রকাশ করুন'];
+    confirm(ask[0], ask[1], ask[2], async () => {
       setBusy(true);
+      const row = {
+        kind, title: f.title.trim(), price_bdt: price, depart_on: from, return_on: to,
+        makkah_hotel: f.mh.trim() || null, makkah_distance_m: mDist, madinah_hotel: f.md.trim() || null, madinah_distance_m: dDist,
+        room_share: room, includes: cleanIncludes(kind, INCLUDES.map((x) => x.id).filter((id) => inc.has(id))), notes: f.notes.trim() || null,
+      };
       try {
-        await createOffer({
-          ...(until ? { valid_until: until } : {}),
-          kind, title: f.title.trim(), price_bdt: price, depart_on: from, return_on: to,
-          makkah_hotel: f.mh.trim() || null, makkah_distance_m: mDist, madinah_hotel: f.md.trim() || null, madinah_distance_m: dDist,
-          room_share: room, includes: INCLUDES.map((x) => x.id).filter((id) => inc.has(id)), notes: f.notes.trim() || null,
-        });
+        if (o) await updateOffer(o.id, { ...row, valid_until: until || null });
+        else await createOffer({ ...(until ? { valid_until: until } : {}), ...row });
         onDone(true);
       } catch (x) {
-        setFail(x?.code === '42501' ? 'প্রকাশ করা যায়নি। একসাথে ২০টির বেশি প্যাকেজ দেখানো যায় না; পুরোনো কোনোটি লুকান।' : errText(x));
-        setBusy(false);
+        setFail(x?.code === '42501' ? 'জমা দেওয়া যায়নি। একসাথে ২০টির বেশি প্যাকেজ রাখা যায় না; পুরোনো কোনোটি লুকান।' : offerErrorText(x) || errText(x));
+        setBusy(false);       // what was typed stays in the form
       }
     });
   };
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => onDone(false)} style={st.back} accessibilityRole="button" accessibilityLabel="প্যাকেজ না দিয়ে ফিরে যান"><Text style={st.backT}>‹ ফিরে যান</Text></Pressable>
-      <Text style={st.title} accessibilityRole="header">➕ নতুন প্যাকেজ</Text>
+      <Pressable onPress={() => onDone(false)} style={st.back} accessibilityRole="button" accessibilityLabel={o ? 'না বদলে ফিরে যান' : 'প্যাকেজ না দিয়ে ফিরে যান'}><Text style={st.backT}>‹ ফিরে যান</Text></Pressable>
+      <Text style={st.title} accessibilityRole="header">{o ? '✏️ প্যাকেজ বদলান' : '➕ নতুন প্যাকেজ'}</Text>
+      {o && reviewOf(o) === 'rejected' && o.review_note ? <Notice kind="warn" title="অ্যাডমিন যা ঠিক করতে বলেছেন" text={o.review_note} /> : null}
       {fail ? <Notice kind="bad" title={fail} /> : null}
       <Text style={st.lbl}>প্যাকেজের ধরন</Text>
       <Segmented options={[{ id: 'umrah', icon: '🔄', label: 'ওমরাহ' }, { id: 'hajj', icon: '🕋', label: 'হজ' }]} value={kind} onChange={setKind} />
@@ -148,11 +177,12 @@ function OfferForm({ onDone }) {
       <Field label="মদিনার হোটেল থেকে মসজিদে নববীর দূরত্ব (মিটার)" hint="যেমন: 300" value={f.dd} onChangeText={set('dd')} keyboardType="numeric" maxLength={6} error={err.dd} />
       <Field label="এক রুমে কতজন (ইচ্ছা করলে)" hint="যেমন: 4" value={f.room} onChangeText={set('room')} keyboardType="numeric" maxLength={2} error={err.room} />
       <Text style={[st.lbl, { marginBottom: S.xs }]}>প্যাকেজে যা আছে (চাপ দিয়ে বাছুন)</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: S.md }}>
-        {INCLUDES.map((x) => <Chip key={x.id} on={inc.has(x.id)} icon={x.icon} label={x.label} onPress={() => setInc((s) => { const n = new Set(s); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n; })} />)}
+      <View style={{ marginBottom: S.md }}>
+        {includesFor(kind).map((x) => <Chip key={x.id} on={inc.has(x.id)} icon={x.icon} label={x.label} onPress={() => setInc((s) => { const n = new Set(s); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n; })} />)}
       </View>
       <Field label="আরও তথ্য (ইচ্ছা করলে)" hint="যেমন: বয়স্কদের জন্য হুইলচেয়ার, মহিলা গাইড আছে" value={f.notes} onChangeText={set('notes')} multiline maxLength={1500} />
-      <Button title="প্যাকেজ প্রকাশ করুন" icon="📢" onPress={save} loading={busy} />
+      <Button title={o ? 'বদল সংরক্ষণ করুন' : reviewOn ? 'অনুমোদনের জন্য জমা দিন' : 'প্যাকেজ প্রকাশ করুন'} icon={o ? '💾' : '📢'} onPress={save} loading={busy} />
+      <Text style={[st.small, { marginTop: S.sm, marginBottom: S.xl }]}>{reviewOn ? 'অ্যাডমিন অনুমোদন দেওয়ার আগ পর্যন্ত হাজীরা প্যাকেজটি দেখবেন না।' : ''}</Text>
     </ScrollView>
   );
 }

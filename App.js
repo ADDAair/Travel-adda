@@ -50,6 +50,7 @@ import GroupStaffScreen from './src/screens/GroupStaffScreen';
 import KhademHomeScreen from './src/screens/KhademHomeScreen';
 import TermsScreen from './src/screens/TermsScreen';
 import { MeCtx, loadMe } from './src/lib/me';
+import { useKeyboardHeight, keyboardPad } from './src/lib/keyboard';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders } from './src/lib/reminders';
 
@@ -78,9 +79,22 @@ function DuaFab({ pending }) {
   );
 }
 
+// While the keyboard is open the app gets smaller by the keyboard's height, so the field being typed in and the
+// buttons below it can be scrolled into view (Android 15+ otherwise draws the keyboard on top of the app).
+function KeyboardRoom({ children }) {
+  const kb = keyboardPad(useKeyboardHeight());
+  const [h, setH] = useState({ full: 0, now: 0 });
+  const onLayout = (e) => { const v = e.nativeEvent.layout.height; setH((x) => ({ full: Math.max(x.full, v), now: v })); };   // portrait-only app: the tallest size is the full screen
+  const pad = kb && !(h.full && h.now < h.full - kb / 2) ? kb : 0;   // 0 when the phone itself already made room
+  return <KbCtx.Provider value={kb > 0}><View style={{ flex: 1, paddingBottom: pad }} onLayout={onLayout}>{children}</View></KbCtx.Provider>;
+}
+const KbCtx = React.createContext(false);
+
 function TabBar({ state, navigation }) {
   const ins = useSafeAreaInsets();
   const { handsOnPending, completeHandsOn } = useTutorial();
+  const kbOpen = React.useContext(KbCtx);
+  if (kbOpen) return null;                   // no tab bar while typing: more room for the form
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
       {state.routes.map((r, i) => {
@@ -267,7 +281,7 @@ export default function App() {
   } else if (photoGate === 'missing') {
     body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
-    body = <NavigationContainer ref={navRef} onReady={() => setNavReady((x) => x + 1)}><Main /></NavigationContainer>;
+    body = <KeyboardRoom><NavigationContainer ref={navRef} onReady={() => setNavReady((x) => x + 1)}><Main /></NavigationContainer></KeyboardRoom>;
   }
   return (
     <SafeAreaProvider>

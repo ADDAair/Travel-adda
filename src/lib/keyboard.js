@@ -12,3 +12,5 @@ export function useKeyboardHeight() {
   }, []);
   return h;
 }
+// How much to shrink the screen while the keyboard is open (Android 15+ draws the app behind the keyboard).
+export const keyboardPad = (h) => (Number.isFinite(h) && h > 0 ? Math.round(h) : 0);

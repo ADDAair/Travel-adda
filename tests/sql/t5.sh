@@ -20,6 +20,10 @@ t fail B "$NEW ('umrah','bad inc',1000,current_date+30,current_date+40,null,null
 t fail B "$NEW ('umrah','zero',0,current_date+30,current_date+40,null,null,'{}')"
 t fail B "insert into public.offers (leader_id,kind,title,price_bdt,depart_on,return_on) values ('$D','umrah','spoof',1000,current_date+30,current_date+40)"
 t fail B "insert into public.offers (kind,title,price_bdt,depart_on,return_on,hidden_by_admin) values ('umrah','x',1000,current_date+30,current_date+40,false)"
+# step 019: a new package waits for the admin; hajis do not see it until it is approved
+t "0" C "select count(*) from public.list_offers('umrah')"
+approve_all() { psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -c "update public.offers set review='approved', reviewed_at=now() where review='pending'" >/dev/null; }
+approve_all
 # listing
 t "2" C "select count(*) from public.list_offers('umrah')"
 t "D cheap" C "select title from public.list_offers('umrah') limit 1"
@@ -73,6 +77,7 @@ t fail B "$NEW ('umrah','after suspend',1000,current_date+30,current_date+40,nul
 psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qc "update public.profiles set status='active' where id='$B'"
 # rate limit of open requests
 for i in $(seq 1 11); do psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qc "insert into public.offers (leader_id,kind,title,price_bdt,depart_on,return_on) values ('$B','umrah','bulk$i',1000,current_date+30,current_date+40)"; done
+approve_all
 for i in $(seq 1 10); do t ok C "insert into public.offer_interests (offer_id) select id from public.offers where title='bulk$i'"; done
 t fail C "insert into public.offer_interests (offer_id) select id from public.offers where title='bulk11'"
 # 20 active offers limit
