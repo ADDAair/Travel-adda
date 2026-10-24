@@ -60,8 +60,13 @@ export async function myOffers() {
   const me = (await supabase.auth.getSession()).data?.session?.user?.id;
   return check(await supabase.from('offers').select('*').eq('leader_id', me).order('created_at', { ascending: false })) || [];
 }
+const ROUTE_COLS = ['from_airport', 'arrive_at', 'first_city', 'makkah_nights', 'madinah_nights', 'return_from', 'return_to', 'airline'];
+const noRouteYet = (e) => !!e && ROUTE_COLS.some((c) => String(e.message || '').includes(`'${c}'`) || String(e.message || '').includes(`.${c}`) || String(e.message || '').includes(`"${c}"`));
+const withoutRoute = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => !ROUTE_COLS.includes(k)));
 export async function createOffer(o) {
-  const r = await supabase.from('offers').insert(o).select('id').single();
+  let r = await supabase.from('offers').insert(o).select('id').single();
+  // database step 020 (journey) not run yet: save without the journey rather than failing
+  if (r.error && noRouteYet(r.error)) { o = withoutRoute(o); r = await supabase.from('offers').insert(o).select('id').single(); }
   // database step 008 (end date) not run yet: publish without the end date rather than failing
   if (r.error && o.valid_until && /valid_until/.test(r.error.message || '')) { const { valid_until: _x, ...rest } = o; return check(await supabase.from('offers').insert(rest).select('id').single()); }
   return check(r);
@@ -75,17 +80,21 @@ export function reviewLabel(o) {
   if (r === 'rejected') return `↩️ অ্যাডমিন ফেরত দিয়েছেন। কারণ: ${o.review_note || 'উল্লেখ নেই'}। ঠিক করে আবার জমা দিন।`;
   return null;
 }
-const EDITABLE = ['kind', 'title', 'price_bdt', 'depart_on', 'return_on', 'makkah_hotel', 'makkah_distance_m', 'madinah_hotel',
+const EDITABLE = [...ROUTE_COLS, 'kind', 'title', 'price_bdt', 'depart_on', 'return_on', 'makkah_hotel', 'makkah_distance_m', 'madinah_hotel',
   'madinah_distance_m', 'room_share', 'includes', 'notes', 'valid_until'];
 export async function updateOffer(id, o) {
   const fields = Object.fromEntries(Object.entries(o).filter(([k]) => EDITABLE.includes(k)));
-  const r = check(await supabase.from('offers').update(fields).eq('id', id).select('id'));
+  let x = await supabase.from('offers').update(fields).eq('id', id).select('id');
+  if (x.error && noRouteYet(x.error)) x = await supabase.from('offers').update(withoutRoute(fields)).eq('id', id).select('id');
+  const r = check(x);
   if (!r || !r.length) { const e = new Error('not changed'); e.code = 'not-changed'; throw e; }
 }
 export function offerErrorText(e) {
   const m = String((e && e.message) || '');
   if (/approved package cannot be changed/.test(m)) return 'অনুমোদনের পর প্যাকেজ বদলানো যায় না। দরকার হলে এটি লুকিয়ে নতুন প্যাকেজ দিন।';
   if (/umrah_no_qurbani/.test(m)) return 'ওমরাহ প্যাকেজে কুরবানি থাকে না। কুরবানি বাদ দিন।';
+  if (/journey required/.test(m)) return 'যাত্রাপথ (বিমানবন্দর, মক্কা ও মদিনায় কত রাত) পূরণ করুন।';
+  if (/offers_route_nights/.test(m)) return 'মক্কা ও মদিনার রাত মিলিয়ে সফরের দিনের চেয়ে বেশি হয়ে গেছে।';
   if (/departure date has passed/.test(m)) return 'যাওয়ার তারিখ পার হয়ে গেছে। নতুন তারিখ দিন।';
   if (e && e.code === 'not-changed') return 'বদলানো যায়নি। প্যাকেজটি হয়তো এর মধ্যে অনুমোদন হয়ে গেছে। পাতাটি আবার খুলে দেখুন।';
   return null;

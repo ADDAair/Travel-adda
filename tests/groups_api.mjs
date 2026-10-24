@@ -244,6 +244,15 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 019 not run yet:', probe.error.message);
 }
 
+// --- 020: the package list says who the leader is, never a phone
+{
+  const x = await H.rpc('list_offers', { p_kind: 'umrah' });
+  if (!x.error && x.data && x.data.length && 'leader_code' in x.data[0]) {
+    check('প্যাকেজের তালিকায় লিডারের আইডি ও রেটিং আছে (০২০)', x.data.every((o) => o.leader_code && 'rating_avg' in o), '');
+    check('প্যাকেজের তালিকায় কোনো ফোন নম্বর নেই (০২০)', x.data.every((o) => !Object.keys(o).some((k) => /phone/i.test(k))), Object.keys(x.data[0]).join(','));
+  } else console.log('step 020 not run yet or no packages:', x.error ? x.error.message : 'no rows');
+}
+
 // --- 018: khadems and help chat stay inside the group
 {
   const p = await H.rpc('my_khadem_groups');

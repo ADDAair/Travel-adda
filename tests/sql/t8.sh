@@ -3,12 +3,12 @@ Q="psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -c"
 F=00000000-0000-0000-0000-00000000000f
 CC=$($Q "select haji_code from public.profiles where id='$C'"); FC=$($Q "select haji_code from public.profiles where id='$F'")
 # offers end date
-NEW="insert into public.offers (kind,title,price_bdt,depart_on,return_on,valid_until) values"
-t ok B "$NEW ('umrah','Ends soon',100000,current_date+30,current_date+40,current_date+5)"
-t ok B "$NEW ('umrah','Expired offer',90000,current_date+30,current_date+40,current_date+1)"
+NEW="insert into public.offers (kind,title,price_bdt,depart_on,return_on,valid_until,from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values"
+t ok B "$NEW ('umrah','Ends soon',100000,current_date+30,current_date+40,current_date+5,'DAC','JED','makkah',3,2,'JED','DAC')"
+t ok B "$NEW ('umrah','Expired offer',90000,current_date+30,current_date+40,current_date+1,'DAC','JED','makkah',3,2,'JED','DAC')"
 $Q "update public.offers set review='approved' where review='pending'" >/dev/null   # step 019: admin approval
 $Q "update public.offers set valid_until=current_date-1 where title='Expired offer'" >/dev/null
-t fail B "$NEW ('umrah','Ends after departure',100000,current_date+30,current_date+40,current_date+31)"
+t fail B "$NEW ('umrah','Ends after departure',100000,current_date+30,current_date+40,current_date+31,'DAC','JED','makkah',3,2,'JED','DAC')"
 t "1" C "select count(*) from public.list_offers('umrah') where title='Ends soon'"
 t "0" C "select count(*) from public.list_offers('umrah') where title='Expired offer'"
 EO=$($Q "select id from public.offers where title='Expired offer'")

@@ -8,6 +8,7 @@ import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffe
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
 import { OfferCard } from '../components/OfferCard';
+import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute } from '../lib/offerRoute';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? reviewLabel(o) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
@@ -90,8 +91,19 @@ function Chip({ on, label, icon, onPress }) {
         borderRadius: R.md, borderWidth: 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
       <Text style={[st.p, { marginRight: S.sm }]}>{on ? '☑️' : '⬜'}</Text>
       <Text style={[st.p, { marginRight: S.sm }]}>{icon}</Text>
-      <Text style={[st.p, { flex: 1, fontWeight: on ? '700' : '400' }]}>{label}</Text>
+      <Text style={[st.p, { flex: 1 }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+// One choice from a short list, shown as big buttons. The error is said in words under it.
+function Choice({ label, options, value, onChange, error }) {
+  return (
+    <View style={{ marginBottom: S.md }}>
+      <Text style={st.lbl}>{label}</Text>
+      <Segmented options={options.map((x) => ({ id: x.id, icon: x.icon, label: x.label, a11y: x.full || x.label }))} value={value} onChange={onChange} />
+      {error ? <Text style={[st.small, { color: C.bad, fontWeight: '700', marginTop: 4 }]}>⚠️ {error}</Text> : null}
+    </View>
   );
 }
 
@@ -104,6 +116,9 @@ function OfferForm({ onDone, initial, reviewOn }) {
     dd: o.madinah_distance_m != null ? String(o.madinah_distance_m) : '', room: o.room_share != null ? String(o.room_share) : '', notes: o.notes || '',
   } : { title: '', price: '', from: '', to: '', mh: '', md: '', dh: '', dd: '', room: '', notes: '' });
   const [inc, setInc] = useState(new Set(o ? o.includes || [] : ['flight', 'visa']));
+  const [rt, setRt] = useState(o && hasRoute(o) ? { from: o.from_airport, arrive: o.arrive_at, first: o.first_city, mk: toBn(o.makkah_nights), md: toBn(o.madinah_nights),
+    back: o.return_from, to: o.return_to, airline: o.airline || '' } : { from: 'DAC', arrive: 'JED', first: 'makkah', mk: '', md: '', back: '', to: 'DAC', airline: '' });
+  const setR = (k) => (v) => setRt((x) => ({ ...x, [k]: v }));
   // umrah has no qurbani: switching to umrah removes it from the choices and from what was ticked
   const setKind = (k) => { setKindRaw(k); setInc((x) => new Set(cleanIncludes(k, [...x]))); };
   const [err, setErr] = useState({});
@@ -134,6 +149,9 @@ function OfferForm({ onDone, initial, reviewOn }) {
     if (mDist !== null && !(Number.isInteger(mDist) && mDist >= 0 && mDist <= 50000)) e.dh = 'দূরত্ব মিটারে লিখুন (যেমন: 500)।';
     if (dDist !== null && !(Number.isInteger(dDist) && dDist >= 0 && dDist <= 50000)) e.dd = 'দূরত্ব মিটারে লিখুন (যেমন: 300)।';
     if (room !== null && !(Number.isInteger(room) && room >= 1 && room <= 10)) e.room = '১ থেকে ১০ এর মধ্যে লিখুন।';
+    const days = from && to && to >= from ? Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1 : 0;
+    const re = checkRoute(rt, days);
+    Object.keys(re).forEach((k) => { e[`r_${k}`] = re[k]; });
     setErr(e); setFail('');
     if (Object.keys(e).length) { setFail('লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।'); return; }
     const ask = o ? ['বদলগুলো সংরক্ষণ করবেন?', 'অ্যাডমিন আবার দেখে অনুমোদন দেবেন। অনুমোদনের পর আর বদলানো যাবে না।', 'হ্যাঁ, সংরক্ষণ করুন']
@@ -145,6 +163,7 @@ function OfferForm({ onDone, initial, reviewOn }) {
         kind, title: f.title.trim(), price_bdt: price, depart_on: from, return_on: to,
         makkah_hotel: f.mh.trim() || null, makkah_distance_m: mDist, madinah_hotel: f.md.trim() || null, madinah_distance_m: dDist,
         room_share: room, includes: cleanIncludes(kind, INCLUDES.map((x) => x.id).filter((id) => inc.has(id))), notes: f.notes.trim() || null,
+        ...routeRow(rt),
       };
       try {
         if (o) await updateOffer(o.id, { ...row, valid_until: until || null });
@@ -171,6 +190,17 @@ function OfferForm({ onDone, initial, reviewOn }) {
       <Field label="যাওয়ার তারিখ" hint="দিন-মাস-বছর, যেমন: ২০-০১-২০২৭" value={f.from} onChangeText={set('from')} maxLength={10} error={err.from} />
       <Field label="ফেরার তারিখ" hint="দিন-মাস-বছর, যেমন: ০৩-০২-২০২৭" value={f.to} onChangeText={set('to')} maxLength={10} error={err.to} />
       <Field label="অফার কোন তারিখ পর্যন্ত দেখাবে (ইচ্ছা করলে)" hint="যেমন: ১০-০১-২০২৭। খালি রাখলে যাত্রার আগ পর্যন্ত" value={f.until || ''} onChangeText={set('until')} maxLength={10} error={err.until} />
+      <Text style={[st.h, { marginTop: S.md }]}>✈️ যাত্রাপথ</Text>
+      <Text style={[st.small, { marginBottom: S.sm }]}>হাজীরা প্যাকেজে ধাপে ধাপে দেখবেন: কোথা থেকে যাত্রা, কোথায় কত রাত, কোথা দিয়ে ফেরা।</Text>
+      <Choice label="দেশের কোন বিমানবন্দর থেকে যাত্রা" options={AIRPORTS_BD} value={rt.from} onChange={setR('from')} error={err.r_from} />
+      <Choice label="সৌদিতে কোথায় নামবেন" options={AIRPORTS_SA} value={rt.arrive} onChange={setR('arrive')} error={err.r_arrive} />
+      <Choice label="আগে কোন শহরে থাকবেন" options={CITIES} value={rt.first} onChange={setR('first')} error={err.r_first} />
+      <Field label="মক্কায় কত রাত" hint="যেমন: ৭" value={rt.mk} onChangeText={setR('mk')} keyboardType="numeric" maxLength={2} error={err.r_mk} />
+      <Field label="মদিনায় কত রাত (না থাকলে ০)" hint="যেমন: ৫" value={rt.md} onChangeText={setR('md')} keyboardType="numeric" maxLength={2} error={err.r_md} />
+      <Choice label="সৌদির কোন বিমানবন্দর থেকে ফিরবেন" options={AIRPORTS_SA} value={rt.back} onChange={setR('back')} error={err.r_back} />
+      <Choice label="দেশের কোন বিমানবন্দরে ফিরবেন" options={AIRPORTS_BD} value={rt.to} onChange={setR('to')} error={err.r_to} />
+      <Field label="বিমান কোম্পানি (ইচ্ছা করলে)" hint="যেমন: বিমান বাংলাদেশ, সৌদিয়া" value={rt.airline} onChangeText={setR('airline')} maxLength={60} />
+      <Text style={[st.h, { marginTop: S.md }]}>🏨 হোটেল</Text>
       <Field label="মক্কার হোটেলের নাম (ইচ্ছা করলে)" value={f.mh} onChangeText={set('mh')} maxLength={100} />
       <Field label="মক্কার হোটেল থেকে হারামের দূরত্ব (মিটার)" hint="যেমন: 500" value={f.dh} onChangeText={set('dh')} keyboardType="numeric" maxLength={6} error={err.dh} />
       <Field label="মদিনার হোটেলের নাম (ইচ্ছা করলে)" value={f.md} onChangeText={set('md')} maxLength={100} />

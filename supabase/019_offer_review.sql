@@ -56,7 +56,8 @@ language sql stable security definer set search_path = '' as $$
                     and p.role = 'leader' and p.status = 'active');
 $$;
 
-create or replace function public.list_offers(p_kind text)
+drop function if exists public.list_offers(text);   -- 020 widens it; re-running this file must not clash
+create function public.list_offers(p_kind text)
 returns table (id uuid, kind text, title text, price_bdt numeric, depart_on date, return_on date, makkah_hotel text,
                makkah_distance_m int, madinah_hotel text, madinah_distance_m int, room_share int, includes text[],
                notes text, agency_name text, created_at timestamptz, valid_until date)

@@ -13,7 +13,7 @@ import { getHelpline } from '../lib/offers';
 import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall } from '../lib/market';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
 
-function Avatar({ path, size = 64, name }) {
+export function Avatar({ path, size = 64, name }) {
   const [url, setUrl] = useState(null);
   useEffect(() => { let on = true; if (path) signedAvatarUrl(path).then((u) => on && setUrl(u)); return () => { on = false; }; }, [path]);
   return url ? <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.line }} accessibilityLabel={`${name}-এর ছবি`} />
@@ -108,6 +108,7 @@ function LeaderProfile({ id, onBack, navigation }) {
             {l.profession ? <Text style={st.p}>পেশা: {l.profession}</Text> : null}
             <Text style={st.p}>{starText(l.rating_avg, l.rating_count)}</Text>
             {l.complaints_verified ? <Text style={[st.p, { color: C.bad }]}>⚠️ {toBn(l.complaints_verified)}টি যাচাই করা অভিযোগ</Text> : <Text style={st.small}>কোনো যাচাই করা অভিযোগ নেই</Text>}
+            <Button title="এই লিডারের প্যাকেজ দেখুন" icon="🎁" kind="secondary" onPress={() => navigation.navigate('Offers', { leader: l.leader_code })} style={{ marginTop: S.sm, alignSelf: 'stretch' }} />
           </View>
           <View style={st.card}>
             <View style={st.cRow}><Text style={st.lbl}>কাজের এলাকা</Text><Text style={st.p}>{areaText(l) || '—'}</Text></View>

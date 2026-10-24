@@ -113,9 +113,26 @@ with sync_playwright() as p:
                 step('ওমরাহ প্যাকেজে কুরবানি বাছাই নেই', cb('কুরবানি') == 0 and cb('আলেম / গাইড') == 1)
                 lp.get_by_role('tab', name='হজ', exact=True).first.click(); lp.wait_for_timeout(500)
                 step('হজ প্যাকেজে কুরবানি বাছাই আছে', cb('কুরবানি') == 1)
+                if lp.get_by_text('✈️ যাত্রাপথ').count():
+                    lp.get_by_text('✈️ যাত্রাপথ').first.scroll_into_view_if_needed(); lp.wait_for_timeout(500); shot(lp, 'L09c-offer-route')
+                    step('প্যাকেজ ফর্মে যাত্রাপথ (বিমানবন্দর, মক্কা ও মদিনায় কত রাত)', lp.get_by_role('tab', name=re.compile('শাহজালাল')).count() >= 2 and lp.get_by_label('মক্কায় কত রাত').count() == 1)
                 btn(lp, 'প্যাকেজ না দিয়ে ফিরে যান').click(); lp.wait_for_timeout(1000)
             except Exception as e:
                 step('প্যাকেজ ফর্মের বাছাই', False, str(e)[:150])
+            # haji's Offers page: search by leader ID, filters, short cards, package page with the leader's details
+            try:
+                tab(hp, 'অফার'); hp.wait_for_timeout(3000); shot(hp, 'H01o-offers')
+                step('অফার পাতায় লিডারের আইডি দিয়ে খোঁজার ঘর', hp.get_by_label('লিডারের আইডি বা নাম দিয়ে খুঁজুন').count() == 1)
+                btn(hp, 'বাছাই করুন').click(); hp.wait_for_timeout(500)
+                step('মাস, বিমানবন্দর ও দাম দিয়ে বাছাই', has(hp, 'কোন বিমানবন্দর থেকে', 2000) and has(hp, 'সর্বোচ্চ দাম', 1000)); shot(hp, 'H01p-filters')
+                more = hp.get_by_role('button', name=re.compile('বিস্তারিত দেখতে চাপুন'))
+                if more.count():
+                    more.first.click(); hp.wait_for_timeout(1500); shot(hp, 'H01q-offer-page')
+                    step('প্যাকেজের পাতায় যাত্রাপথ ও লিডারের পরিচয়', has(hp, 'যাত্রাপথ', 2000) and has(hp, 'যে লিডার প্যাকেজটি দিচ্ছেন', 2000))
+                    btn(hp, 'সব প্যাকেজের তালিকায় ফিরে যান').first.click(); hp.wait_for_timeout(800)
+                tab(hp, 'হোম'); hp.wait_for_timeout(800)
+            except Exception as e:
+                step('হাজীর অফার পাতা', False, str(e)[:150])
             home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')

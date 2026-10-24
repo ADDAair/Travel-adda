@@ -1,5 +1,5 @@
 . /var/tmp/pgt/as.sh
-NEW="insert into public.offers (kind,title,price_bdt,depart_on,return_on,makkah_hotel,makkah_distance_m,includes) values"
+NEW="insert into public.offers (kind,title,price_bdt,depart_on,return_on,makkah_hotel,makkah_distance_m,includes,from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values"
 # settings
 t ok A "select public.admin_set_setting('helpline_phone','+8801700000000')"
 t fail A "select public.admin_set_setting('helpline_phone','call me 123')"
@@ -9,17 +9,17 @@ t fail C "insert into public.app_settings values ('helpline_phone','0199')"
 t "+8801700000000" C "select value from public.app_settings where key='helpline_phone'"
 t fail anon "select value from public.app_settings"
 # offers insert
-t ok B "$NEW ('umrah','Umrah 14 days',150000,current_date+30,current_date+44,'Hotel X',300,'{flight,visa,food}')"
-t ok B "$NEW ('hajj','Hajj',650000,current_date+200,current_date+240,'H',800,'{flight}')"
-t ok D "$NEW ('umrah','D cheap',120000,current_date+30,current_date+40,null,null,'{}')"
-t fail C "$NEW ('umrah','haji offer',1000,current_date+30,current_date+40,null,null,'{}')"
-t fail A "$NEW ('umrah','admin offer',1000,current_date+30,current_date+40,null,null,'{}')"
-t fail B "$NEW ('umrah','past',1000,current_date-3,current_date+4,null,null,'{}')"
-t fail B "$NEW ('umrah','reverse',1000,current_date+30,current_date+20,null,null,'{}')"
-t fail B "$NEW ('umrah','bad inc',1000,current_date+30,current_date+40,null,null,'{casino}')"
-t fail B "$NEW ('umrah','zero',0,current_date+30,current_date+40,null,null,'{}')"
-t fail B "insert into public.offers (leader_id,kind,title,price_bdt,depart_on,return_on) values ('$D','umrah','spoof',1000,current_date+30,current_date+40)"
-t fail B "insert into public.offers (kind,title,price_bdt,depart_on,return_on,hidden_by_admin) values ('umrah','x',1000,current_date+30,current_date+40,false)"
+t ok B "$NEW ('umrah','Umrah 14 days',150000,current_date+30,current_date+44,'Hotel X',300,'{flight,visa,food}','DAC','JED','makkah',3,2,'JED','DAC')"
+t ok B "$NEW ('hajj','Hajj',650000,current_date+200,current_date+240,'H',800,'{flight}','DAC','JED','makkah',3,2,'JED','DAC')"
+t ok D "$NEW ('umrah','D cheap',120000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail C "$NEW ('umrah','haji offer',1000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail A "$NEW ('umrah','admin offer',1000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "$NEW ('umrah','past',1000,current_date-3,current_date+4,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "$NEW ('umrah','reverse',1000,current_date+30,current_date+20,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "$NEW ('umrah','bad inc',1000,current_date+30,current_date+40,null,null,'{casino}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "$NEW ('umrah','zero',0,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "insert into public.offers (leader_id,kind,title,price_bdt,depart_on,return_on,from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values ('$D','umrah','spoof',1000,current_date+30,current_date+40,'DAC','JED','makkah',3,2,'JED','DAC')"
+t fail B "insert into public.offers (kind,title,price_bdt,depart_on,return_on,hidden_by_admin,from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values ('umrah','x',1000,current_date+30,current_date+40,false,'DAC','JED','makkah',3,2,'JED','DAC')"
 # step 019: a new package waits for the admin; hajis do not see it until it is approved
 t "0" C "select count(*) from public.list_offers('umrah')"
 approve_all() { psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -c "update public.offers set review='approved', reviewed_at=now() where review='pending'" >/dev/null; }
@@ -73,7 +73,7 @@ t "1" C "select count(*) from public.list_offers('umrah')"
 # demoted / suspended leader disappears
 psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qc "update public.profiles set status='suspended' where id='$B'"
 t "0" C "select count(*) from public.list_offers('umrah')"
-t fail B "$NEW ('umrah','after suspend',1000,current_date+30,current_date+40,null,null,'{}')"
+t fail B "$NEW ('umrah','after suspend',1000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
 psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qc "update public.profiles set status='active' where id='$B'"
 # rate limit of open requests
 for i in $(seq 1 11); do psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qc "insert into public.offers (leader_id,kind,title,price_bdt,depart_on,return_on) values ('$B','umrah','bulk$i',1000,current_date+30,current_date+40)"; done
@@ -82,6 +82,6 @@ for i in $(seq 1 10); do t ok C "insert into public.offer_interests (offer_id) s
 t fail C "insert into public.offer_interests (offer_id) select id from public.offers where title='bulk11'"
 # 20 active offers limit
 t "13" B "select public.my_active_offer_count()"
-for i in $(seq 1 7); do t ok B "$NEW ('umrah','fill$i',1000,current_date+30,current_date+40,null,null,'{}')"; done
-t fail B "$NEW ('umrah','over limit',1000,current_date+30,current_date+40,null,null,'{}')"
+for i in $(seq 1 7); do t ok B "$NEW ('umrah','fill$i',1000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"; done
+t fail B "$NEW ('umrah','over limit',1000,current_date+30,current_date+40,null,null,'{}','DAC','JED','makkah',3,2,'JED','DAC')"
 echo "pass=$pass fail=$fail"

@@ -4,11 +4,12 @@ Q="psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -c"
 su() { exp="$1"; out=$(psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -c "$2" 2>&1); if [ "$(echo "$out" | tail -1)" = "$exp" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL [$exp/su] $2 -> $out"; fi; }
 # 019: a leader's package waits for admin approval; it can be changed only until it is approved; no qurbani in umrah.
 # B = approved leader, D = other leader, C = haji, A = admin
-for f in 019_offer_review 019_offer_review; do $P -f /home/claude/travel-adda/supabase/$f.sql 2>&1 | grep -v "NOTICE\|skipping"; done
+$P -c "create schema if not exists net; create table if not exists net._http_response (id bigint primary key, status_code int, content text); create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000) returns bigint language sql as 'select 1::bigint'" 2>&1 | grep -v NOTICE
+for f in 010_leader_backfill 011_push 012_terms 013_scale 014_work_area 015_security 016_email_login 017_leader_kinds 018_khadem_help 019_offer_review 020_offer_route 019_offer_review 020_offer_route; do $P -f /home/claude/travel-adda/supabase/$f.sql 2>&1 | grep -v "NOTICE\|skipping\|not available\|not scheduled\|accounts moved"; done
 D1=$($Q "select (current_date + 30)::text"); D2=$($Q "select (current_date + 44)::text"); OLD=$($Q "select (current_date - 1)::text")
 as_user() { eval uid=\$$1; psql -h /var/tmp/pgt -p 5544 -U postgres -d t -qtA -v ON_ERROR_STOP=1 -c "begin; set local role authenticated; set local request.jwt.claim.sub='$uid'; $2; commit;"; }
 S=$(date +%s%N | tail -c 7)   # unique per run
-ins() { echo "insert into public.offers (kind, title, price_bdt, depart_on, return_on, includes) values ('$1', '$2', 150000, '$D1', '$D2', '$3') returning id"; }
+ins() { echo "insert into public.offers (kind, title, price_bdt, depart_on, return_on, includes, from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values ('$1', '$2', 150000, '$D1', '$D2', '$3', 'DAC','JED','makkah',3,2,'JED','DAC') returning id"; }
 
 # --- a new package waits for approval; hajis do not see it
 O1=$(as_user B "$(ins umrah "রমজান প্যাকেজ $S" '{flight,visa}')" | head -1)
@@ -16,7 +17,7 @@ t "pending" B "select review from public.offers where id='$O1'"
 t "0" C "select count(*) from public.list_offers('umrah') where id='$O1'"
 t "0" C "select count(*) from public.offers where id='$O1'"
 t "f" C "select public.offer_is_visible('$O1')"
-t fail B "insert into public.offers (kind, title, price_bdt, depart_on, return_on, review) values ('umrah','x y',1000,'$D1','$D2','approved')"
+t fail B "insert into public.offers (kind, title, price_bdt, depart_on, return_on, review, from_airport,arrive_at,first_city,makkah_nights,madinah_nights,return_from,return_to) values ('umrah','x y',1000,'$D1','$D2','approved', 'DAC','JED','makkah',3,2,'JED','DAC')"
 t "t" A "select (public.admin_stats()->>'offers_pending')::int >= 1"
 
 # --- while waiting, the leader can change it; nobody else can

@@ -92,3 +92,21 @@ test('the app knows whether the admin check is live (column exists)', async () =
   globalThis.__sb = { from: () => ({ data: null, error: { code: '42703', message: 'column offers.review does not exist' } }) };
   assert.equal(await offerReviewReady(), false);
 });
+
+test('step 020 not run yet: a package is still saved, without the journey', async () => {
+  const { createOffer } = await import('../../src/lib/offers.js');
+  let n = 0;
+  globalThis.__sb = { from: (_t, ops) => {
+    n += 1;
+    const row = ops.find((o) => o[0] === 'insert')[1];
+    if ('from_airport' in row) return { data: null, error: { code: 'PGRST204', message: "Could not find the 'from_airport' column of 'offers' in the schema cache" } };
+    return { data: { id: 'x' }, error: null };
+  } };
+  await createOffer({ kind: 'umrah', title: 'ক খ', from_airport: 'DAC', arrive_at: 'JED', makkah_nights: 7, airline: null });
+  assert.equal(n, 2);
+});
+
+test('journey refusals become plain Bengali', () => {
+  assert.ok(offerErrorText({ message: 'journey required' }).includes('যাত্রাপথ'));
+  assert.ok(offerErrorText({ message: 'violates check constraint "offers_route_nights"' }).includes('রাত'));
+});
