@@ -91,3 +91,12 @@ test('typed price: Bengali digits, commas and "লাখ" words become a number;
   assert.ok(Number.isNaN(parsePrice('অনেক')));
   assert.ok(Number.isNaN(parsePrice('0')));
 });
+
+test('month choice only for umrah (hajj is once a year); the closed dropdown names the choice', async () => {
+  const { monthFilterFor, monthButtonText } = await import('../../src/lib/offerRoute.js');
+  assert.equal(monthFilterFor('umrah'), true);
+  assert.equal(monthFilterFor('hajj'), false);
+  const m = monthOptions([{ depart_on: '2027-01-20' }], '2026-10-24');
+  assert.equal(monthButtonText(null, m), '📅 সব মাস');
+  assert.equal(monthButtonText('2027-01', m), '📅 জানুয়ারি ২০২৭ (১টি)');
+});

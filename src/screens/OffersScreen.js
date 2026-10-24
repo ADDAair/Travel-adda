@@ -9,7 +9,7 @@ import { useMe, isLeaderAccount } from '../lib/me';
 import LeaderOffersScreen from './LeaderOffersScreen';
 
 import { OfferCard, OfferSummary } from '../components/OfferCard';
-import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice } from '../lib/offerRoute';
+import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 
 export { OfferCard };
@@ -53,6 +53,39 @@ function Pills({ label, options, value, onChange }) {
           );
         })}
       </View>
+    </View>
+  );
+}
+
+// Umrah month: one button that says what is chosen ("সব মাস" at first); tapping it opens the list of months.
+function MonthDropdown({ options, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const pick = (id) => { onChange(id); setOpen(false); };
+  const Item = ({ id, label }) => {
+    const on = value === id;
+    return (
+      <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${label}${on ? ', বাছাই করা' : ''}`}
+        style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, borderTopWidth: 1, borderColor: C.line, backgroundColor: on ? C.primarySoft : C.card }}>
+        <Text style={st.p}>{on ? '✓ ' : '   '}{label}</Text>
+      </Pressable>
+    );
+  };
+  return (
+    <View style={{ marginBottom: S.md }}>
+      <Text style={[st.small, { fontWeight: '700' }]}>কোন মাসে যাবেন</Text>
+      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+        accessibilityLabel={`মাস: ${monthButtonText(value, options).replace('📅 ', '')}। ${open ? 'তালিকা বন্ধ করতে' : 'অন্য মাস বাছতে'} চাপুন`}
+        style={{ minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center', marginTop: S.xs, paddingHorizontal: S.md, borderRadius: R.md, borderWidth: 2, borderColor: C.primary, backgroundColor: C.card }}>
+        <Text style={[st.p, { flex: 1 }]}>{monthButtonText(value, options)}</Text>
+        <Text style={[st.p, { color: C.primary }]}>{open ? '▲' : '▼'}</Text>
+      </Pressable>
+      {open ? (
+        <View style={{ borderWidth: 2, borderTopWidth: 0, borderColor: C.primary, borderBottomLeftRadius: R.md, borderBottomRightRadius: R.md, overflow: 'hidden' }}>
+          <Item id={null} label="সব মাস একসাথে" />
+          {options.map((o) => <Item key={o.id} id={o.id} label={o.label} />)}
+          <Text style={[st.small, { padding: S.sm }]}>বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -169,7 +202,7 @@ function HajiOffers({ navigation, route }) {
         onPress={() => setShowFilters((v) => !v)} style={{ marginBottom: S.sm }} />
       {showFilters ? (
         <View style={st.card}>
-          <Pills label="কোন মাসে যাবেন (বন্ধনীতে কয়টি প্যাকেজ আছে)" options={months} value={month} onChange={setMonth} />
+          {monthFilterFor(kind) ? <MonthDropdown options={months} value={month} onChange={setMonth} /> : null}
           <Pills label="কোন বিমানবন্দর থেকে" options={AIRPORTS_BD.map((a) => ({ id: a.id, label: a.label }))} value={airport} onChange={setAirport} />
           <Field label="সর্বোচ্চ দাম, জনপ্রতি (টাকা)" hint="নিজে লিখুন, যেমন: ১৮০০০০ বা ২.৫ লাখ" value={priceText} onChangeText={setPriceText} keyboardType="default" maxLength={14}
             error={Number.isNaN(typed) ? 'দাম সংখ্যায় লিখুন, যেমন: ১৮০০০০' : undefined} />

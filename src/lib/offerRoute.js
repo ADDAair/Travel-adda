@@ -104,3 +104,7 @@ export function parsePrice(v) {
   const n = Math.round(Number(m[1]) * (m[2] ? 100000 : 1));
   return n > 0 && n < 1e8 ? n : NaN;
 }
+
+// Hajj happens once a year, so the month choice is only for umrah.
+export const monthFilterFor = (kind) => kind === 'umrah';
+export const monthButtonText = (month, options) => `📅 ${month ? ((options || []).find((x) => x.id === month) || { label: month }).label : 'সব মাস'}`;
