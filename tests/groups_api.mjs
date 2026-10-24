@@ -217,6 +217,19 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 016 not run yet:', k.error.message);
 }
 
+// --- 017: leader kind is set only by the admin's approval; nobody may claim "Travel Adda"
+{
+  const k = await L.from('leader_profiles').select('leader_kind').eq('user_id', lid).single();
+  if (!k.error) {
+    let x = await L.from('leader_profiles').update({ leader_kind: 'travel_adda' }).eq('user_id', lid).select('user_id');
+    check('লিডার নিজেকে "Travel Adda-র নিজস্ব লিডার" বানাতে পারেন না (০১৭)', !!x.error || refused(x), err(x));
+    x = await L.from('leader_profiles').update({ agency_name: 'Travel Adda' }).eq('user_id', lid).select('user_id');
+    check('লিডার এজেন্সির নাম "Travel Adda" করতে পারেন না (০১৭)', !!x.error || refused(x), err(x));
+    x = await H.from('leader_applications').insert({ leader_kind: 'travel_adda', doc_path: `${hid}/nid.jpg` });
+    check('হাজী অ্যাকাউন্ট Travel Adda লিডার আবেদন করতে পারে না (০১৭)', !!x.error, err(x));
+  } else console.log('step 017 not run yet:', k.error.message);
+}
+
 // --- 015: helper questions about other people are internal only (shown as "not run yet" until 015 is run)
 {
   const x = await H.rpc('blocked_between', { a: lid, b: hid });

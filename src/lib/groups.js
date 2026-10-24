@@ -2,6 +2,7 @@
 // this file only calls it. Every function throws on failure so screens never show a false success.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { applicationRow } from './leaderKinds';
 import { uid, randomId, shrink } from './docs';
 import { normalizePhone } from './phone';
 
@@ -28,7 +29,8 @@ export async function myProfile() {
 
 // ---------- Leader application ----------
 export async function myApplication() {
-  let r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  let r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,leader_kind,profession,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
+  if (r.error && (r.error.code === '42703' || /leader_kind|profession/i.test(r.error.message || ''))) r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   if (r.error && (r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {   // step 014 not run yet
     r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   }
@@ -39,7 +41,8 @@ export async function myApplication() {
   return rows && rows[0] ? rows[0] : null;
 }
 
-export async function applyLeader({ agency, license, umrah, hajj, district, upazila, union, file }) {
+// kind 'agency' | 'travel_adda' (step 017); the row itself is built by applicationRow() in leaderKinds.js.
+export async function applyLeader({ kind = 'agency', agency, umrah, hajj, area = {}, profession, file }) {
   const me = await uid();
   let path = null;
   if (file) {
@@ -51,22 +54,28 @@ export async function applyLeader({ agency, license, umrah, hajj, district, upaz
     const up = await supabase.storage.from('leader-docs').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg' });
     if (up.error) throw up.error;
   }
-  const row = { agency_name: agency.trim(), license_no: (license || umrah || hajj || '').trim(), doc_path: path };
-  if (umrah !== undefined) Object.assign(row, { umrah_license: (umrah || '').trim() || null, hajj_license: (hajj || '').trim() || null, district: district || null, upazila: (upazila || '').trim() || null });
-  const un = (union || '').trim();
-  if (un) row.union_name = un;
+  const row = applicationRow({ kind, agency, umrah, hajj, area, profession, docPath: path });
   let ins = await supabase.from('leader_applications').insert(row).select('id').single();
-  if (ins.error && un && (ins.error.code === 'PGRST204' || ins.error.code === '42703' || /union_name/i.test(ins.error.message || ''))) {
-    // step 014 not run yet: keep the union inside the upazila text so nothing typed is lost
-    delete row.union_name;
-    row.upazila = [row.upazila, un].filter(Boolean).join(', ').slice(0, 60) || null;
-    ins = await supabase.from('leader_applications').insert(row).select('id').single();
+  const missing = ins.error && (ins.error.code === 'PGRST204' || ins.error.code === '42703') && /leader_kind|profession/i.test(ins.error.message || '');
+  if (missing && kind === 'travel_adda') {          // step 017 not run yet: a Travel Adda leader cannot be recorded correctly
+    if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
+    const e = new Error('kinds not ready'); e.code = 'kinds-soon'; throw e;
+  }
+  if (missing) {                                     // step 017 not run yet: an agency application still works without the new fields
+    const { leader_kind: _k, profession: _p, ...old } = row;
+    ins = await supabase.from('leader_applications').insert(old).select('id').single();
   }
   if (ins.error) {
     if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
     throw ins.error;
   }
   return ins.data;
+}
+
+// Is step 017 (leader kinds + profession) live? Lets the form say "coming soon" instead of failing.
+export async function leaderKindsReady() {
+  const r = await supabase.from('leader_applications').select('leader_kind').limit(1);
+  return !(r.error && (r.error.code === '42703' || /leader_kind/i.test(r.error.message || '')));
 }
 
 // A Bangladeshi number written as 01XXXXXXXXX also works from Saudi Arabia when dialled as +8801XXXXXXXXX.

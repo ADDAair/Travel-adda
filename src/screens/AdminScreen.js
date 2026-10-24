@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { areaText } from '../components/WorkAreaFields';
+import { LEADER_KINDS } from '../lib/leaderKinds';
 import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
@@ -277,8 +278,10 @@ function AppCard({ r, onDone, onFail }) {
     <View style={[st.card, st.invite]}>
       <Text style={st.gName}>{r.full_name}</Text>
       <Text style={st.small}>আইডি: {r.haji_code} · ফোন: {toBn(r.phone)} · {fmtDay(r.created_at)}</Text>
-      <View style={st.cRow}><Text style={st.lbl}>এজেন্সি</Text><Text style={st.p}>{r.agency_name}</Text></View>
-      {r.umrah_license || r.hajj_license ? (
+      <View style={st.cRow}><Text style={st.lbl}>লিডারের ধরন</Text><Text style={st.p}>{r.leader_kind === 'travel_adda' ? `${LEADER_KINDS.travel_adda.icon} Travel Adda-র নিজস্ব লিডার (অফিস/লাইসেন্স নেই, NID দিয়েছেন)` : '🏢 নিজের এজেন্সি'}</Text></View>
+      {r.profession ? <View style={st.cRow}><Text style={st.lbl}>পেশা</Text><Text style={st.p}>{r.profession}</Text></View> : null}
+      {r.leader_kind === 'travel_adda' ? null : <View style={st.cRow}><Text style={st.lbl}>এজেন্সি</Text><Text style={st.p}>{r.agency_name}</Text></View>}
+      {r.leader_kind === 'travel_adda' ? null : r.umrah_license || r.hajj_license ? (
         <>
           {r.umrah_license ? <View style={st.cRow}><Text style={st.lbl}>ওমরাহ লাইসেন্স</Text><Text style={st.p} selectable>{r.umrah_license}</Text></View> : null}
           {r.hajj_license ? <View style={st.cRow}><Text style={st.lbl}>হজ লাইসেন্স</Text><Text style={st.p} selectable>{r.hajj_license}</Text></View> : null}
@@ -287,7 +290,7 @@ function AppCard({ r, onDone, onFail }) {
       {r.district ? <View style={st.cRow}><Text style={st.lbl}>কাজের এলাকা</Text><Text style={st.p}>{areaText(r)}</Text></View> : null}
       <Photo path={r.avatar_path} />
       <Button title={`ফোন করুন (${toBn(r.phone)})`} icon="📞" kind="secondary" onPress={() => Linking.openURL(`tel:${telBd(r.phone)}`).catch(() => {})} style={{ marginTop: S.sm }} />
-      {r.doc_path ? <Button title="জমা দেওয়া কাগজ দেখুন" icon="📄" kind="secondary" onPress={openDoc} style={{ marginTop: S.sm }} /> : <Text style={st.small}>কোনো কাগজ দেননি।</Text>}
+      {r.doc_path ? <Button title={r.leader_kind === 'travel_adda' ? 'জাতীয় পরিচয়পত্রের ছবি দেখুন' : 'জমা দেওয়া কাগজ দেখুন'} icon={r.leader_kind === 'travel_adda' ? '🪪' : '📄'} kind="secondary" onPress={openDoc} style={{ marginTop: S.sm }} /> : <Text style={st.small}>কোনো কাগজ দেননি।</Text>}
       <View style={{ marginTop: S.md }}>
         <Field label="নোট (ইচ্ছা করলে)" hint="যেমন: লাইসেন্স নম্বর মেলেনি" value={note} onChangeText={setNote} maxLength={500} />
       </View>

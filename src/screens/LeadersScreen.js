@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { areaText } from '../components/WorkAreaFields';
+import { LEADER_KINDS } from '../lib/leaderKinds';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Linking } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -57,7 +58,8 @@ export default function LeadersScreen({ navigation, route }) {
           <Avatar path={l.avatar_path} name={l.full_name} />
           <View style={{ flex: 1 }}>
             <Text style={st.val}>{l.full_name}</Text>
-            <Text style={st.small}>{l.agency_name} · {l.leader_code}</Text>
+            {l.leader_kind === 'travel_adda' ? <Text style={[st.small, { color: C.primary, fontWeight: '700' }]}>{LEADER_KINDS.travel_adda.badge}</Text> : null}
+            <Text style={st.small}>{l.leader_kind === 'travel_adda' ? '' : `${l.agency_name} · `}{l.leader_code}{l.profession ? ` · ${l.profession}` : ''}</Text>
             <Text style={st.small}>📍 {areaText(l) || '—'}</Text>
             <Text style={st.small}>{starText(l.rating_avg, l.rating_count)}{l.complaints_verified ? ` · ⚠️ ${toBn(l.complaints_verified)}টি যাচাই করা অভিযোগ` : ''}</Text>
           </View>
@@ -102,7 +104,8 @@ function LeaderProfile({ id, onBack, navigation }) {
             <Avatar path={l.avatar_path} size={112} name={l.full_name} />
             <Text style={[st.gName, { textAlign: 'center', marginTop: S.sm }]}>{l.full_name}</Text>
             <Text style={st.small}>লিডার আইডি: {l.leader_code}</Text>
-            <Text style={st.val}>✔️ {l.agency_name}</Text>
+            <Text style={st.val}>{l.leader_kind === 'travel_adda' ? LEADER_KINDS.travel_adda.badge : `✔️ ${l.agency_name}`}</Text>
+            {l.profession ? <Text style={st.p}>পেশা: {l.profession}</Text> : null}
             <Text style={st.p}>{starText(l.rating_avg, l.rating_count)}</Text>
             {l.complaints_verified ? <Text style={[st.p, { color: C.bad }]}>⚠️ {toBn(l.complaints_verified)}টি যাচাই করা অভিযোগ</Text> : <Text style={st.small}>কোনো যাচাই করা অভিযোগ নেই</Text>}
           </View>

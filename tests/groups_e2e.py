@@ -69,6 +69,8 @@ with sync_playwright() as p:
             if has(lp, 'শীঘ্রই চালু হবে', 1500):
                 result['phase'] = 'db-missing'; step('ডেটাবেস ধাপ (০০৭) চালানো হয়েছে', False, 'অ্যাপে "শীঘ্রই চালু হবে"')
             if not has(lp, 'আপনার আবেদন যাচাই হচ্ছে', 1500):
+                step('লিডারের ধরন বাছার দুটি পথ', has(lp, 'আমার নিজের এজেন্সি আছে', 3000) and has(lp, 'Travel Adda-র সাথে সরাসরি', 1000)); shot(lp, 'L02b-apply-kinds')
+                lp.get_by_role('button', name=re.compile('^আমার নিজের এজেন্সি আছে')).click(); lp.wait_for_timeout(600)
                 btn(lp, 'নিবন্ধন জমা দিন$').click(); lp.wait_for_timeout(600)
                 step('খালি ফর্মে ভুল ধরা পড়ে', has(lp, 'এজেন্সির নাম লিখুন', 2000)); shot(lp, 'L03-apply-empty')
                 lp.get_by_label('এজেন্সির নাম').fill('CI পরীক্ষা এজেন্সি (আসল নয়)')
@@ -121,6 +123,10 @@ with sync_playwright() as p:
                 lp.get_by_label('খুঁজুন').fill(''); lp.get_by_role('button', name='কোম্পানীগঞ্জ', exact=True).click(); lp.wait_for_timeout(400)
                 lp.get_by_label('৩. ইউনিয়ন').fill('চরহাজারী'); shot(lp, 'L10c-work-area')
                 step('ইউনিয়নের ঘরে হাতে লেখা যায়', lp.get_by_label('৩. ইউনিয়ন').input_value() == 'চরহাজারী')
+                if lp.get_by_role('button', name=re.compile('^আপনার পেশা')).count():          # step 017 live
+                    lp.get_by_role('button', name=re.compile('^আপনার পেশা')).click(); lp.wait_for_timeout(600); shot(lp, 'L10d-profession-list')
+                    step('পেশার তালিকায় ইমাম, মুয়াজ্জিন, মাদ্রাসার শিক্ষক আছে', all(lp.get_by_role('button', name=n, exact=True).count() > 0 for n in ['ইমাম', 'মুয়াজ্জিন', 'মাদ্রাসার শিক্ষক']))
+                    btn(lp, '^বন্ধ করুন$').click(); lp.wait_for_timeout(400)
             except Exception as e:
                 step('লিডার প্রোফাইলের কাজের এলাকা', False, str(e)[:150])
             home(lp); lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500)

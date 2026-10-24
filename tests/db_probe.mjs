@@ -25,6 +25,7 @@ out['011 push'] = msg(await sb.rpc('my_push_count'));
 out['012 terms'] = msg(await sb.rpc('my_terms'));
 out['014 work area (union)'] = msg(await sb.from('leader_profiles').select('union_name').limit(1));
 out['014 directory union'] = msg(await sb.rpc('list_leaders', { p_district: null, p_search: null }).select('union_name').limit(1));
+out['017 leader kinds'] = msg(await sb.from('leader_applications').select('leader_kind,profession').limit(1));
 out['016 email login'] = msg(await sb.rpc('login_id', { p_ident: '01300000000' }));
 { const x = await sb.rpc('blocked_between', { a: '00000000-0000-0000-0000-000000000000', b: '00000000-0000-0000-0000-000000000001' }); out['015 security'] = x.error ? 'ok (helpers closed)' : 'NOT RUN (helpers still open)'; }
 try { const f = await sb.functions.invoke('phone-otp', { body: { action: 'ping' } }); out['otp function'] = f.error ? `${f.error.name} ${f.error.context?.status || ''}` : JSON.stringify(f.data); } catch (e) { out['otp function'] = String(e); }
