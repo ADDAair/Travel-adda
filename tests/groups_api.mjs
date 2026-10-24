@@ -163,7 +163,7 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
     'group_announcements', 'user_documents', 'offers', 'offer_interests', 'haji_contracts', 'haji_payments', 'payouts', 'leader_rates',
     'complaints', 'complaint_files', 'leader_ratings', 'leader_referrals', 'user_blocks', 'user_reports', 'admin_staff', 'admin_audit',
     'phone_otps', 'app_settings', 'user_notifications', 'broadcasts', 'broadcast_reads', 'push_tokens', 'push_log', 'push_outbox',
-    'terms_agreements', 'app_private', 'group_staff', 'help_threads', 'help_messages', 'group_faq'];
+    'terms_agreements', 'app_private', 'group_staff', 'help_threads', 'help_messages', 'group_faq', 'leader_invites', 'khadem_invites'];
   const open = [];
   for (const t of tables) {
     const x = await A.from(t).select('*').limit(1);
@@ -242,6 +242,25 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
     x = await H.rpc('admin_offers_review');
     check('হাজী অপেক্ষায় থাকা প্যাকেজের তালিকা দেখতে পারেন না (০১৯)', !!x.error, err(x));
   } else console.log('step 019 not run yet:', probe.error.message);
+}
+
+// --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
+{
+  const p = await H.rpc('my_khadem_invites');
+  if (!p.error) {
+    const fake = '00000000-0000-0000-0000-000000000001';
+    let x = await H.rpc('rating_counts', { p_contract: fake });
+    check('রেটিং গণনার ভেতরের নিয়ম বাইরে থেকে চালানো যায় না (০২১)', !!x.error, err(x));
+    x = await H.rpc('my_sent_invites', { p_group: fake });
+    check('হাজী অন্য দলের পাঠানো আমন্ত্রণ দেখতে পারেন না (০২১)', !!x.error, err(x));
+    x = await H.rpc('leader_cancel_invite', { p_id: fake });
+    check('অন্যের আমন্ত্রণ বাতিল করা যায় না (০২১)', !x.error && x.data === 'not_found', err(x) || x.data);
+    x = await H.rpc('khadem_respond', { p_group: fake, p_accept: true });
+    check('অনুরোধ ছাড়া নিজে নিজে খাদেম হওয়া যায় না (০২১)', !x.error && x.data === 'not_found', err(x) || x.data);
+    const open = [];
+    for (const t of ['leader_invites', 'khadem_invites']) { const r = await H.from(t).select('*').limit(1); if (!r.error && r.data && r.data.length) open.push(t); }
+    check('আমন্ত্রণের টেবিল সরাসরি পড়া যায় না (০২১)', open.length === 0, open.join(', '));
+  } else console.log('step 021 not run yet:', p.error.message);
 }
 
 // --- 020: the package list says who the leader is, never a phone

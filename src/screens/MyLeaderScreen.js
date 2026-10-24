@@ -150,7 +150,8 @@ function RateBox({ c, busy, act }) {
       <Text style={st.h}>⭐ লিডার কেমন ছিলেন?</Text>
       <Stars value={stars} onChange={setStars} />
       <Field label="মন্তব্য (ইচ্ছা করলে, সবাই দেখবেন)" value={comment} onChangeText={setComment} multiline maxLength={500} />
-      <Button title="রেটিং জমা দিন" onPress={() => { if (!stars) return; act(() => rateLeader(c.id, stars, comment), (r) => { setOpen(false); return r === 'ok' ? { kind: 'ok', text: 'রেটিং জমা হয়েছে। ধন্যবাদ।' } : { kind: 'warn', text: 'রেটিং দেওয়া যায়নি।' }; }); }} disabled={!stars} loading={busy} />
+      <Text style={st.small}>ℹ️ Travel Adda আপনার টাকা জমা যাচাই করার পর আপনার রেটিং ও মন্তব্য লিডারের প্রোফাইলে দেখাবে ও গণনা হবে। এতে নকল রেটিং দেওয়া যায় না।</Text>
+      <Button title="রেটিং জমা দিন" onPress={() => { if (!stars) return; act(() => rateLeader(c.id, stars, comment), (r) => { setOpen(false); return r === 'ok' ? { kind: 'ok', text: 'রেটিং জমা হয়েছে। ধন্যবাদ। টাকা জমা যাচাইয়ের পর এটি লিডারের প্রোফাইলে দেখাবে।' } : { kind: 'warn', text: 'রেটিং দেওয়া যায়নি।' }; }); }} disabled={!stars} loading={busy} />
       <Button title="বাতিল" kind="secondary" onPress={() => setOpen(false)} style={{ marginTop: S.sm }} />
     </View>
   );

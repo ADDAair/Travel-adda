@@ -14,7 +14,7 @@ import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
-import { myKhademGroups } from '../lib/help';
+import { myKhademGroups, myKhademInvites } from '../lib/help';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -52,7 +52,8 @@ export default function HomeScreen({ navigation }) {
   // Khadem of some group? Then a card leads to the khadem page (questions waiting are counted).
   const [khadem, setKhadem] = useState(null);
   useEffect(() => {
-    const check = () => myKhademGroups().then((g) => setKhadem(g.length ? { n: g.length, waiting: g.reduce((s, x) => s + (x.waiting || 0), 0) } : null)).catch(() => setKhadem(null));
+    const check = () => Promise.all([myKhademGroups(), myKhademInvites().catch(() => [])])
+      .then(([g, iv]) => setKhadem(g.length || iv.length ? { n: g.length, waiting: g.reduce((s, x) => s + (x.waiting || 0), 0), invites: iv.length } : null)).catch(() => setKhadem(null));
     check(); return navigation?.addListener?.('focus', check);
   }, [navigation]);
   useEffect(() => {
@@ -135,7 +136,8 @@ export default function HomeScreen({ navigation }) {
         </Notice>
       ) : null}
       {!handsOnPending && khadem ? (
-        <Notice kind={khadem.waiting ? 'warn' : 'info'} title={`🤝 আপনি ${toBn(khadem.n)}টি দলের খাদেম`} text={khadem.waiting ? `${toBn(khadem.waiting)}টি প্রশ্নের উত্তর বাকি।` : 'দলের হাজী আর তাঁদের প্রশ্ন দেখুন।'}>
+        <Notice kind={khadem.waiting || khadem.invites ? 'warn' : 'info'} title={khadem.n ? `🤝 আপনি ${toBn(khadem.n)}টি দলের খাদেম` : '📩 খাদেম হওয়ার অনুরোধ এসেছে'}
+          text={khadem.invites ? `${toBn(khadem.invites)}টি দল থেকে খাদেম হওয়ার অনুরোধ এসেছে। খুলে রাজি বা না বলুন।` : khadem.waiting ? `${toBn(khadem.waiting)}টি প্রশ্নের উত্তর বাকি।` : 'দলের হাজী আর তাঁদের প্রশ্ন দেখুন।'}>
           <Button title="খাদেমের পাতা খুলুন" icon="🤝" kind="secondary" onPress={() => navigation.navigate('KhademHome')} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}

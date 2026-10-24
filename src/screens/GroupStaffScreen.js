@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'rea
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { notReady } from '../lib/groups';
+import { mySentInvites, cancelInvite } from '../lib/help';
 import { groupKhadems, addKhadem, removeKhadem, khademResultText, faqList, saveFaq, deleteFaq, helpErrorText } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
@@ -21,20 +22,22 @@ export default function GroupStaffScreen({ navigation, route }) {
   const [edit, setEdit] = useState(null);                 // null | { id?, q, a }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [sent, setSent] = useState([]);
 
   const load = useCallback(async () => {
     if (!gid) return;
     try { const [k, f] = await Promise.all([groupKhadems(gid), faqList(gid)]); setKhadems(k); setFaq(f); setState('ok'); }
     catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, [gid]);
-  useEffect(() => { setMsg(null); setEdit(null); setState('load'); load(); }, [load]);
+  const loadSent = useCallback(async () => { if (!gid) return; try { setSent((await mySentInvites(gid)).filter((x) => x.kind === 'khadem')); } catch (e) { setSent([]); } }, [gid]);
+  useEffect(() => { setMsg(null); setEdit(null); setState('load'); load(); loadSent(); }, [load, loadSent]);
 
   const run = async (fn) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); } finally { setBusy(false); } };
   const add = () => run(async () => {
     if (ident.trim().length < 4) { setMsg({ kind: 'bad', text: 'খাদেমের আইডি (যেমন TA-00042) বা মোবাইল নম্বর লিখুন।' }); return; }
     const r = await addKhadem(gid, ident);
-    setMsg({ kind: r === 'ok' ? 'ok' : r === 'already' ? 'info' : 'warn', text: khademResultText(r) });
-    if (r === 'ok') { setIdent(''); await load(); }
+    setMsg({ kind: r === 'ok' || r === 'sent' ? 'ok' : r === 'already' ? 'info' : 'warn', text: khademResultText(r) });
+    if (r === 'ok' || r === 'sent') { setIdent(''); await load(); await loadSent(); }
   });
   const remove = (k) => confirm(`${k.full_name}-কে খাদেম থেকে সরাবেন?`, 'সাথে সাথে তিনি এই দলের হাজী ও প্রশ্ন আর দেখতে পারবেন না।', 'হ্যাঁ, সরান',
     () => run(async () => { await removeKhadem(gid, k.user_id); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); await load(); }));
@@ -58,12 +61,24 @@ export default function GroupStaffScreen({ navigation, route }) {
 
       {state === 'ok' && tab === 'khadem' ? (
         <>
-          <Text style={[st.p, { marginBottom: S.md }]}>খাদেমরা আপনার অনুপস্থিতিতে মক্কা-মদিনায় হাজীদের সেবা করবেন। তাঁরা দলের হাজীদের দেখবেন, প্রশ্নের উত্তর দেবেন, আর চুক্তি হওয়া হাজীদের ফোন নম্বর পাবেন। খাদেমকে আগে অ্যাপে নিজের অ্যাকাউন্ট খুলতে হবে।</Text>
+          <Text style={[st.p, { marginBottom: S.md }]}>খাদেমরা আপনার অনুপস্থিতিতে মক্কা-মদিনায় হাজীদের সেবা করবেন। তাঁরা দলের হাজীদের দেখবেন, প্রশ্নের উত্তর দেবেন, আর চুক্তি হওয়া হাজীদের ফোন নম্বর পাবেন। খাদেমকে আগে অ্যাপে নিজের অ্যাকাউন্ট খুলতে হবে, আর অনুরোধ পেয়ে রাজি হতে হবে।</Text>
           <View style={st.card}>
             <Text style={st.h}>➕ খাদেম যোগ করুন</Text>
             <Field label="খাদেমের আইডি বা মোবাইল নম্বর" hint="যেমন: TA-00042 বা 01712345678" value={ident} onChangeText={setIdent} maxLength={20} autoCapitalize="characters" autoCorrect={false} editable={!busy} />
-            <Button title="খাদেম যোগ করুন" icon="🤝" onPress={add} loading={busy} />
-            <Text style={st.small}>একটি দলে সর্বোচ্চ ১০ জন খাদেম।</Text>
+            <Button title="খাদেম হওয়ার অনুরোধ পাঠান" icon="🤝" onPress={add} loading={busy} />
+            <Text style={st.small}>তিনি রাজি হলে তবেই খাদেম হবেন। একটি দলে সর্বোচ্চ ১০ জন খাদেম।</Text>
+            {sent.length ? (
+              <>
+                <Text style={[st.lbl, { marginTop: S.md }]}>পাঠানো অনুরোধ (গোপনীয়তার জন্য কিছু অংশ লুকানো)</Text>
+                {sent.map((x) => (
+                  <View key={x.id} style={{ borderTopWidth: 1, borderColor: C.line, paddingVertical: S.xs }}>
+                    <Text style={st.p}>🤝 {x.hint} · {x.joined ? '✅ রাজি হয়েছেন' : '⏳ উত্তরের অপেক্ষায়'}</Text>
+                    {!x.joined ? <Button title="অনুরোধ বাতিল করুন" kind="secondary" disabled={busy} style={{ marginTop: S.xs }}
+                      onPress={() => confirm('অনুরোধটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', () => run(async () => { await cancelInvite(x.id); await loadSent(); setMsg({ kind: 'ok', text: 'অনুরোধ বাতিল হয়েছে।' }); }))} /> : null}
+                  </View>
+                ))}
+              </>
+            ) : null}
           </View>
           <View style={st.card}>
             <Text style={st.h}>🤝 এই দলের খাদেম: {toBn(khadems.length)} জন</Text>

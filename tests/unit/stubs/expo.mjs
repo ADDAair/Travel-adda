@@ -15,4 +15,7 @@ export const getInfoAsync = h('info'); export const readAsStringAsync = h('read'
 export const deleteAsync = h('delete'); export const makeDirectoryAsync = h('mkdir'); export const copyAsync = h('copy');
 export const readDirectoryAsync = async () => []; export const EncodingType = { Base64: 'base64', UTF8: 'utf8' };
 export const manipulateAsync = h('manipulate'); export const SaveFormat = { JPEG: 'jpeg' };
+export const hasHardwareAsync = h('hasHardware'); export const isEnrolledAsync = h('isEnrolled');
+export const getEnrolledLevelAsync = h('level'); export const authenticateAsync = h('authenticate');
+export const SecurityLevel = { NONE: 0, SECRET: 1, BIOMETRIC_WEAK: 2, BIOMETRIC_STRONG: 3 };
 export default {};

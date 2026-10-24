@@ -103,6 +103,9 @@ t "ok" C "select public.rate_leader('$K1', 4, 'ভালো')"
 t "not_allowed" F "select public.rate_leader('$K1', 1, 'fake')"
 t "bad_stars" C "select public.rate_leader('$K1', 9, null)"
 t "ok" F "select public.rate_leader('$KF_B', 1, 'বাতিল করেছে')"
+# step 021: a rating counts only after Travel Adda confirms a payment on that contract
+t "0.0|0" A "select rating_avg||'|'||rating_count from public.list_leaders(null,null) where id='$E'"
+$Q "insert into public.haji_payments (contract_id, haji_id, amount, method, txn_ref, status) values ('$K1','$C',1000,'bank','PAY1','confirmed')" >/dev/null
 t "4.0|1" A "select rating_avg||'|'||rating_count from public.list_leaders(null,null) where id='$E'"
 t fail F "select public.file_complaint('$K1', 'this is someone else contract')"
 t fail C "select public.file_complaint('$K1', 'short')"

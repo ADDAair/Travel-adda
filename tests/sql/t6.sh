@@ -48,6 +48,9 @@ echo "status after gated invite: $($Q "select status from public.group_members w
 $Q "update public.profiles set phone_verified=true where id='$C'" >/dev/null
 t "sent" B "select public.invite_by_phone('$G','01710000003')"
 echo "status after verified invite: $($Q "select status from public.group_members where user_id='$C'")"
+# step 021: an invited person stays hidden from the leader until they join; after joining, "verified" shows
+t "0" B "select count(*) from public.group_members_for_leader('$G') where status='invited'"
+$Q "update public.group_members set status='active', joined_at=now() where group_id='$G' and user_id='$C'" >/dev/null
 t "t" B "select phone_verified from public.group_members_for_leader('$G') limit 1"
 t fail C "insert into public.leader_applications (agency_name, license_no) values ('XY','1')"
 $Q "update public.profiles set phone_verified=true where id='$E'" >/dev/null

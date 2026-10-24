@@ -11,7 +11,7 @@ const STUBS = {
   'react-native': 'react-native.mjs', react: 'react.mjs', '@react-native-async-storage/async-storage': 'async-storage.mjs',
   'react-native-get-random-values': 'empty.mjs', 'aes-js': 'empty.mjs', '@supabase/supabase-js': 'empty.mjs',
   'expo-secure-store': 'expo.mjs', 'expo-notifications': 'expo.mjs', 'expo-location': 'expo.mjs', 'expo-print': 'expo.mjs',
-  'expo-sharing': 'expo.mjs', 'expo-file-system/legacy': 'expo.mjs', 'expo-file-system': 'expo.mjs', 'expo-image-manipulator': 'expo.mjs',
+  'expo-sharing': 'expo.mjs', 'expo-file-system/legacy': 'expo.mjs', 'expo-file-system': 'expo.mjs', 'expo-image-manipulator': 'expo.mjs', 'expo-local-authentication': 'expo.mjs',
 };
 
 export async function resolve(specifier, context, next) {

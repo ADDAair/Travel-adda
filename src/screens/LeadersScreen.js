@@ -132,7 +132,7 @@ function LeaderProfile({ id, onBack, navigation }) {
               <Text style={st.p}>{r.body}</Text>
             </View>
           ))}
-          <Text style={st.small}>রেটিং ও অভিযোগ শুধু সেই হাজীরা দিতে পারেন, যাঁরা এই লিডারের সাথে অ্যাপে চুক্তি করেছেন। অভিযোগ দেখানো হয় অ্যাডমিন যাচাইয়ের পরে।</Text>
+          <Text style={st.small}>রেটিং ও অভিযোগ শুধু সেই হাজীরা দিতে পারেন, যাঁরা এই লিডারের সাথে অ্যাপে চুক্তি করেছেন। রেটিং গণনা হয় Travel Adda টাকা জমা যাচাই করার পরে। অভিযোগ দেখানো হয় অ্যাডমিন যাচাইয়ের পরে।</Text>
           <ReportBlock targetId={l.id} targetName={l.full_name} />
         </>
       ) : null}

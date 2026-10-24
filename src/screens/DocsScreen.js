@@ -8,6 +8,7 @@ import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { DOC_TYPES, typeOf, uploadDoc, listDocs, openDoc, deleteDoc, docIsPdf, setDocExpiry } from '../lib/docs';
 import { scheduleDocReminders } from '../lib/docReminders';
+import { lockWanted, unlock } from '../lib/applock';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
@@ -19,7 +20,29 @@ const errText = (e) => {
   return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
 };
 
-export default function DocsScreen({ navigation }) {
+// Optional lock (set in "আমার তথ্য"): the phone's fingerprint / face / PIN must open this page each time.
+export default function DocsScreen(props) {
+  const { navigation } = props;
+  const [lock, setLock] = useState('check');           // check | locked | open
+  const tryOpen = useCallback(async () => { if (await unlock()) setLock('open'); else setLock('locked'); }, []);
+  const check = useCallback(async () => { if (await lockWanted()) { setLock('locked'); tryOpen(); } else setLock('open'); }, [tryOpen]);
+  useEffect(() => { check(); }, [check]);
+  useEffect(() => navigation?.addListener?.('blur', () => setLock('check')), [navigation]);
+  useEffect(() => navigation?.addListener?.('focus', () => check()), [navigation, check]);
+  if (lock === 'open') return <DocsInner {...props} />;
+  return (
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md }}>
+      {lock === 'check' ? <ActivityIndicator color={C.primary} /> : (
+        <Notice kind="info" title="🔒 কাগজপত্র তালা দেওয়া" text="আপনার পাসপোর্ট-ভিসার ছবি নিরাপদ রাখতে এই পাতা খুলতে ফোনের আঙুলের ছাপ বা পিন লাগে।">
+          <Button title="খুলুন" icon="🔓" onPress={tryOpen} style={{ marginTop: S.sm }} />
+          <Button title="হোমে ফিরে যান" kind="secondary" onPress={() => navigation.navigate('Home')} style={{ marginTop: S.sm }} />
+        </Notice>
+      )}
+    </ScrollView>
+  );
+}
+
+function DocsInner({ navigation }) {
   const [rows, setRows] = useState(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');

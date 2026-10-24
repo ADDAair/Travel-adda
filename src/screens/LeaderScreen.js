@@ -5,6 +5,7 @@ import { Button, Field, Notice } from '../components/ui';
 import { toBn, normalizeDigits, normalizePhone, isValidBdPhone } from '../lib/phone';
 import { signedAvatarUrl } from '../lib/avatar';
 import { parseDate } from '../lib/dates';
+import { inviteResultText, mySentInvites, cancelInvite } from '../lib/help';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, createContract, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 
@@ -129,6 +130,7 @@ function GroupAdmin({ g, onBack, navigation }) {
   const [acc, setAcc] = useState([]);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState([]);
   const [msg, setMsg] = useState(null);
   const [form, setForm] = useState(false);
 
@@ -136,6 +138,7 @@ function GroupAdmin({ g, onBack, navigation }) {
     try {
       setMembers(await groupMembers(g.id));
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); setMembers((x) => x || []); }
+    try { setSent((await mySentInvites(g.id)).filter((x) => x.kind === 'member')); } catch (e) { setSent([]); }   // before step 021: none
   }, [g]);
   useEffect(() => { load(); }, [load]);
 
@@ -146,12 +149,19 @@ function GroupAdmin({ g, onBack, navigation }) {
     if (!isValidBdPhone(p)) { setMsg({ kind: 'bad', text: 'সঠিক ১১ সংখ্যার মোবাইল নম্বর লিখুন (০১ দিয়ে শুরু)।' }); return; }
     setBusy(true); setMsg(null);
     try {
-      await inviteByPhone(g.id, p); setPhone('');
-      setMsg({ kind: 'ok', text: `আমন্ত্রণ পাঠানো হয়েছে। এই নম্বরে (${toBn(p)}) Travel Adda অ্যাকাউন্ট থাকলে তিনি "আমার দল" পাতায় আমন্ত্রণ দেখবেন। অ্যাকাউন্ট না থাকলে তাকে কোডটি পাঠান।` });
+      const r = await inviteByPhone(g.id, p);
+      if (r === 'sent') setPhone('');
+      setMsg({ kind: r === 'sent' ? 'ok' : 'warn', text: r === 'sent' ? `${inviteResultText('sent')} অ্যাকাউন্ট না থাকলে তাঁকে দলের কোডটি পাঠান।` : inviteResultText(r) });
       await load();
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
+  const cancelSent = (x) => confirm('আমন্ত্রণটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', async () => {
+    setBusy(true); setMsg(null);
+    try { await cancelInvite(x.id); await load(); setMsg({ kind: 'ok', text: 'আমন্ত্রণ বাতিল হয়েছে।' }); }
+    catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
+    finally { setBusy(false); }
+  });
   const remove = (m) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
     setBusy(true); setMsg(null);
     try { await removeMember(g.id, m.user_id); await load(); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); }
@@ -191,6 +201,17 @@ function GroupAdmin({ g, onBack, navigation }) {
         <Text style={st.h}>📱 মোবাইল নম্বরে আমন্ত্রণ</Text>
         <Field label="হাজীর মোবাইল নম্বর" hint="যেমন: 01712345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={14} />
         <Button title="আমন্ত্রণ পাঠান" icon="📩" onPress={invite} loading={busy} />
+        {sent.length ? (
+          <>
+            <Text style={[st.lbl, { marginTop: S.md }]}>পাঠানো আমন্ত্রণ (গোপনীয়তার জন্য নম্বরের কিছু অংশ লুকানো)</Text>
+            {sent.map((x) => (
+              <View key={x.id} style={{ borderTopWidth: 1, borderColor: C.line, paddingVertical: S.xs }}>
+                <Text style={st.p}>📩 {x.hint} · {x.joined ? '✅ দলে যোগ দিয়েছেন' : '⏳ উত্তরের অপেক্ষায়'}</Text>
+                {!x.joined ? <Button title="বাতিল করুন" kind="secondary" onPress={() => cancelSent(x)} disabled={busy} style={{ marginTop: S.xs }} /> : null}
+              </View>
+            ))}
+          </>
+        ) : null}
       </View>
 
       <View style={st.card}>

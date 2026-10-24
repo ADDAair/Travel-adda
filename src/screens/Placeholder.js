@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
 import { deleteMyAccount } from '../lib/account';
+import { lockWanted, setLockWanted, canLock, unlock } from '../lib/applock';
 import { clearLocalDocs } from '../lib/docs';
 import { cancelDocs } from '../lib/notify';
 import { resetUnread } from '../lib/notifications';
@@ -14,7 +15,7 @@ import * as SecureStore from 'expo-secure-store';
 import { reloadAppAsync } from 'expo';
 import { Platform, Pressable } from 'react-native';
 import { T } from '../strings';
-import { Button, Card, Notice } from '../components/ui';
+import { Button, Card, Notice, Field } from '../components/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
@@ -44,6 +45,17 @@ export function Account({ navigation }) {
   const [camOpen, setCamOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
+  const [delPw, setDelPw] = useState('');
+  const [lockOn, setLockOn] = useState(false);
+  const [lockMsg, setLockMsg] = useState(null);
+  useEffect(() => { lockWanted().then(setLockOn); }, []);
+  const toggleLock = async () => {
+    setLockMsg(null);
+    if (!lockOn && !(await canLock())) { setLockMsg({ kind: 'warn', text: 'আপনার ফোনে স্ক্রিন লক (আঙুলের ছাপ, পিন বা প্যাটার্ন) চালু নেই। আগে ফোনের সেটিংসে স্ক্রিন লক চালু করুন।' }); return; }
+    if (!(await unlock(lockOn ? 'তালা বন্ধ করতে আঙুলের ছাপ বা পিন দিন' : 'তালা চালু করতে আঙুলের ছাপ বা পিন দিন'))) { setLockMsg({ kind: 'bad', text: 'যাচাই হয়নি, কিছু বদলানো হয়নি।' }); return; }
+    try { await setLockWanted(!lockOn); setLockOn(!lockOn); setLockMsg({ kind: 'ok', text: !lockOn ? 'চালু হয়েছে। এখন থেকে "আমার কাগজপত্র" খুলতে আঙুলের ছাপ বা পিন লাগবে।' : 'তালা বন্ধ করা হয়েছে।' }); }
+    catch (e) { setLockMsg({ kind: 'bad', text: 'বদলানো যায়নি। আবার চেষ্টা করুন।' }); }
+  };
   const [delErr, setDelErr] = useState('');
   const [showDel, setShowDel] = useState(false);        // delete stays hidden so it is never pressed by mistake near "Logout"
   useEffect(() => navigation?.addListener?.('blur', () => setShowDel(false)), [navigation]);
@@ -73,15 +85,18 @@ export function Account({ navigation }) {
     if (delBusy) return;
     setDelBusy(true); setDelErr('');
     try {
-      await deleteMyAccount();   // on success the app returns to the login screen by itself
+      await deleteMyAccount(delPw);   // on success the app returns to the login screen by itself
     } catch (e) {
       const m = String((e && e.message) || '').toLowerCase();
-      setDelErr(m.includes('network') || m.includes('fetch') ? 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
+      setDelErr(e && e.code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
+        : e && e.code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
+        : m.includes('password needed') ? 'নিরাপত্তার জন্য পাসওয়ার্ড আবার লিখে চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
+        : m.includes('network') || m.includes('fetch') ? 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
         : 'এখন অ্যাকাউন্ট মুছে ফেলা যায়নি। একটু পরে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট আগের মতোই আছে।');
       setDelBusy(false);
     }
   };
-  const askDelete = () => Alert.alert('অ্যাকাউন্ট চিরতরে মুছে ফেলবেন?', 'আপনার নাম, হাজী আইডি, ছবি ও সার্ভারের সব তথ্য মুছে যাবে। এটা আর ফেরানো যাবে না।', [
+  const askDelete = () => !delPw.trim() ? setDelErr('আগে আপনার পাসওয়ার্ড লিখুন। নিরাপত্তার জন্য এটা লাগে।') : Alert.alert('অ্যাকাউন্ট চিরতরে মুছে ফেলবেন?', 'আপনার নাম, হাজী আইডি, ছবি ও সার্ভারের সব তথ্য মুছে যাবে। এটা আর ফেরানো যাবে না।', [
     { text: 'না, রাখুন', style: 'cancel' },
     { text: 'হ্যাঁ, মুছতে চাই', style: 'destructive', onPress: () => Alert.alert('শেষবার নিশ্চিত করুন', 'সত্যিই অ্যাকাউন্ট মুছে ফেলবেন?', [
       { text: 'না, রাখুন', style: 'cancel' },
@@ -126,6 +141,8 @@ export function Account({ navigation }) {
         <Button title="লিডার ও চুক্তি" icon="🤝" kind="secondary" onPress={() => navigation.navigate('MyLeader')} a11yHint="লিডার খুঁজুন, রেফারেল কোড, চুক্তি, দলের ঘোষণা" style={{ marginBottom: S.md }} />
       )}
       {isStaff(me) ? <Button title="অ্যাডমিন প্যানেল" icon="🛡️" kind="gold" onPress={() => navigation.navigate('Admin')} style={{ marginBottom: S.md }} /> : null}
+      <Button title={lockOn ? 'কাগজপত্রে তালা: চালু আছে (বন্ধ করুন)' : 'কাগজপত্রে তালা দিন (আঙুলের ছাপ/পিন)'} icon={lockOn ? '🔒' : '🔓'} kind="secondary" onPress={toggleLock} a11yHint="আমার কাগজপত্র পাতা খুলতে ফোনের আঙুলের ছাপ বা পিন লাগবে" style={{ marginBottom: S.md }} />
+      {lockMsg ? <Notice kind={lockMsg.kind} title={lockMsg.text} /> : null}
       <Button title="শর্তাবলি" icon="📜" kind="secondary" onPress={() => navigation.navigate('Terms')} style={{ marginBottom: S.md }} />
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
@@ -140,7 +157,10 @@ export function Account({ navigation }) {
         {delBusy ? (
           <View style={st.delBusy}><ActivityIndicator color={C.bad} /><Text style={st.delT}>অ্যাকাউন্ট মুছে ফেলা হচ্ছে…</Text></View>
         ) : (
-          <Button title="অ্যাকাউন্ট মুছে ফেলুন" icon="🗑️" kind="danger" onPress={askDelete} a11yHint="নিশ্চিত করতে দুইবার জিজ্ঞেস করবে" />
+          <>
+            <Field label="আপনার পাসওয়ার্ড" hint="নিরাপত্তার জন্য পাসওয়ার্ড লাগবে" value={delPw} onChangeText={(v) => { setDelPw(v); setDelErr(''); }} secureTextEntry autoCapitalize="none" autoCorrect={false} />
+            <Button title="অ্যাকাউন্ট মুছে ফেলুন" icon="🗑️" kind="danger" onPress={askDelete} a11yHint="পাসওয়ার্ড মিলিয়ে নিশ্চিত করতে দুইবার জিজ্ঞেস করবে" />
+          </>
         )}
       </View> : null}
       <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)}>

@@ -66,15 +66,27 @@ export function addKhadem(groupId, ident) {
   return rpc('leader_add_khadem', { p_group: groupId, p_ident: v });
 }
 export const removeKhadem = (groupId, userId) => rpc('leader_remove_khadem', { p_group: groupId, p_user: userId });
+// Invitation answers never say whether an account exists (server step 021).
 export function khademResultText(r) {
   return {
+    sent: 'অনুরোধ পাঠানো হয়েছে। এই নম্বর বা আইডিতে অ্যাকাউন্ট থাকলে তিনি নোটিফিকেশন পাবেন; রাজি হলে নিচের খাদেম তালিকায় নাম দেখাবে।',
     ok: 'খাদেম যোগ হয়েছে। তিনি নোটিফিকেশন পাবেন।',
-    already: 'ইনি আগে থেকেই এই দলের খাদেম।',
-    not_found: 'এই আইডি বা নম্বরে কোনো চালু অ্যাকাউন্ট পাওয়া যায়নি। খাদেমকে আগে অ্যাপে অ্যাকাউন্ট খুলতে বলুন।',
     self: 'নিজেকে খাদেম করা যায় না, আপনি তো লিডার।',
-    limit: 'একটি দলে সর্বোচ্চ ১০ জন খাদেম রাখা যায়। নতুন কাউকে যোগ করতে আগে একজনকে সরান।',
+    bad: 'আইডি (যেমন TA-00042) বা ১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন।',
+    limit: 'আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।',
   }[r] || 'কাজটি হয়নি। আবার চেষ্টা করুন।';
 }
+export function inviteResultText(r) {
+  return {
+    sent: 'আমন্ত্রণ পাঠানো হয়েছে। এই নম্বরে হাজীর অ্যাকাউন্ট থাকলে তিনি "আমার দল" পাতায় আমন্ত্রণ দেখবেন; রাজি হলে দলের তালিকায় নাম আসবে।',
+    bad: '১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন (যেমন 01712345678)।',
+    limit: 'আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।',
+  }[r] || 'কাজটি হয়নি। আবার চেষ্টা করুন।';
+}
+export const myKhademInvites = async () => (await rpc('my_khadem_invites')) || [];
+export const khademRespond = async (groupId, accept) => rpc('khadem_respond', { p_group: groupId, p_accept: !!accept });
+export const mySentInvites = async (groupId) => (await rpc('my_sent_invites', { p_group: groupId })) || [];
+export const cancelInvite = async (id) => rpc('leader_cancel_invite', { p_id: id });
 export async function saveFaq(groupId, id, question, answer) {
   const q = String(question || '').trim(); const a = String(answer || '').trim();
   if (q.length < 2 || a.length < 2) throw err('short');

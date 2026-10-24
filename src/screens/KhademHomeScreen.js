@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, Linking } from 'r
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
 import { notReady, telBd } from '../lib/groups';
-import { myKhademGroups, khademMembers, faqList } from '../lib/help';
+import { myKhademGroups, khademMembers, faqList, myKhademInvites, khademRespond } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
 
@@ -14,8 +14,12 @@ export default function KhademHomeScreen({ navigation }) {
   const [open, setOpen] = useState(null);                 // group id shown in detail
   const [members, setMembers] = useState(null);
   const [faq, setFaq] = useState([]);
+  const [invites, setInvites] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
 
   const load = useCallback(async () => {
+    try { setInvites(await myKhademInvites()); } catch (e) { setInvites([]); }   // before step 021: none
     try { const g = await myKhademGroups(); setGroups(g); setState('ok'); if (g.length === 1) setOpen((o) => o || g[0].group_id); }
     catch (e) { setGroups([]); setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
@@ -30,10 +34,28 @@ export default function KhademHomeScreen({ navigation }) {
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">🤝 খাদেমের পাতা</Text>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {invites.map((iv) => (
+        <View key={iv.group_id} style={[st.card, { borderWidth: 2, borderColor: C.gold }]}>
+          <Text style={st.h}>📩 খাদেম হওয়ার অনুরোধ</Text>
+          <Text style={st.p}>"{iv.group_name}" দলের লিডার {iv.leader_name} ({iv.leader_code}) আপনাকে খাদেম হতে বলেছেন।</Text>
+          <Text style={st.small}>রাজি হলে আপনি দলের হাজীদের দেখবেন, তাঁদের প্রশ্নের উত্তর দেবেন, আর চুক্তি হওয়া হাজীদের ফোন নম্বর পাবেন।</Text>
+          <Button title="রাজি, খাদেম হব" icon="✅" loading={busy} style={{ marginTop: S.sm }} onPress={async () => {
+            if (busy) return; setBusy(true); setMsg(null);
+            try { const r = await khademRespond(iv.group_id, true); setMsg(r === 'ok' ? { kind: 'ok', text: 'আপনি এখন এই দলের খাদেম। লিডার জানতে পারবেন।' } : r === 'limit' ? { kind: 'warn', text: 'এই দলে খাদেমের জায়গা আর নেই (সর্বোচ্চ ১০ জন)।' } : { kind: 'info', text: 'অনুরোধটি আর নেই।' }); await load(); }
+            catch (e) { setMsg({ kind: 'bad', text: 'হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।' }); } finally { setBusy(false); }
+          }} />
+          <Button title="না, রাজি নই" kind="secondary" disabled={busy} style={{ marginTop: S.sm }} onPress={async () => {
+            if (busy) return; setBusy(true); setMsg(null);
+            try { await khademRespond(iv.group_id, false); setMsg({ kind: 'ok', text: 'অনুরোধটি ফিরিয়ে দেওয়া হয়েছে।' }); await load(); }
+            catch (e) { setMsg({ kind: 'bad', text: 'হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।' }); } finally { setBusy(false); }
+          }} />
+        </View>
+      ))}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই আসছে" text="খাদেমের সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
-      {state === 'ok' && groups && groups.length === 0 ? <Notice kind="info" title="আপনি এখন কোনো দলের খাদেম নন" text="কোনো লিডার আপনাকে তাঁর দলের খাদেম করলে নোটিফিকেশন পাবেন, তখন এখানে দলটি দেখাবে।" /> : null}
+      {state === 'ok' && groups && groups.length === 0 && !invites.length ? <Notice kind="info" title="আপনি এখন কোনো দলের খাদেম নন" text="কোনো লিডার আপনাকে তাঁর দলের খাদেম করলে নোটিফিকেশন পাবেন, তখন এখানে দলটি দেখাবে।" /> : null}
       {(groups || []).map((g) => (
         <View key={g.group_id} style={st.card}>
           <Pressable onPress={() => setOpen(open === g.group_id ? null : g.group_id)} accessibilityRole="button" accessibilityState={{ expanded: open === g.group_id }} accessibilityLabel={`${g.group_name} দল। লিডার ${g.leader_name}`} style={{ minHeight: 48 }}>

@@ -4,14 +4,21 @@ import { supabase } from './supabase';
 import { clearLocalDocs } from './docs';
 import { cancelEverything } from './notify';
 
-// 1) delete the user's own files (storage policies allow only their own folder)
+// 1) (after the password) delete the user's own files (storage policies allow only their own folder)
 // 2) call delete_my_account() (supabase/003_delete_account.sql), which removes the login, profile and document rows
 // 3) clear this app's data on the phone and sign out locally.
 // Throws on failure; nothing is reported as deleted unless step 2 really succeeded.
-export async function deleteMyAccount() {
+// 0) the password is checked FIRST with a fresh sign-in (the server also demands a password from the last 10 minutes),
+//    so a wrong password never deletes any file.
+const fail = (code) => { const e = new Error(code); e.code = code; return e; };
+export async function deleteMyAccount(password) {
+  if (!String(password || '').trim()) throw fail('password-needed');
   const { data } = await supabase.auth.getSession();
-  const uid = data && data.session && data.session.user ? data.session.user.id : null;
-  if (!uid) { const e = new Error('no session'); e.code = 'no-session'; throw e; }
+  const user = data && data.session && data.session.user ? data.session.user : null;
+  const uid = user ? user.id : null;
+  if (!uid) throw fail('no-session');
+  const re = await supabase.auth.signInWithPassword({ email: user.email, password });
+  if (re.error) throw fail(/invalid/i.test(String(re.error.message || '')) ? 'wrong-password' : 'auth-failed');
 
   for (const bucket of ['avatars', 'documents', 'leader-docs']) {
     try {
