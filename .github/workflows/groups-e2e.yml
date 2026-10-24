@@ -1,5 +1,8 @@
 name: groups-e2e
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 20 * * *'      # every night 02:30 Bangladesh time: full two-phone test + security checks on the real database
 permissions:
   contents: write
 jobs:

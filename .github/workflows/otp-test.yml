@@ -1,8 +1,5 @@
 name: otp-test
-on:
-  push:
-    paths: ['supabase/functions/**', '.github/workflows/otp-test.yml']
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 permissions: { contents: read }
 jobs:
   deno:

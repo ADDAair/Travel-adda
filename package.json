@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android"
+    "android": "expo start --android",
+    "test:unit": "node --import ./tests/unit/register.mjs --test tests/unit/*.test.mjs",
+    "test:db": "bash tests/sql/run_all.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

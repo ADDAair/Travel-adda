@@ -1,0 +1,27 @@
+name: db-tests
+# Integration tests of the database: every SQL step (001–016) is applied to a fresh PostgreSQL 16 that behaves like
+# Supabase, then ~600 checks try what users, leaders, staff and strangers may and may not do (tests/sql/run_all.sh).
+on: [push, workflow_dispatch]
+permissions: { contents: read }
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env: { PGPASSWORD: postgres }
+    steps:
+      - uses: actions/checkout@v4
+      - name: install psql
+        run: sudo apt-get install -y -q postgresql-client >/dev/null
+      - name: all database suites
+        run: |
+          set -o pipefail
+          CONN="-h localhost -p 5432" bash tests/sql/run_all.sh 2>&1 | tee /tmp/db.log
+          r=$?
+          echo "::notice title=database checks::$(grep SUMMARY /tmp/db.log | tail -1)"
+          if [ $r -ne 0 ]; then echo "::error title=database checks failed::$(grep -E '^FAIL|SETUP FAILED' /tmp/db.log | head -15 | tr '\n' ' ' | cut -c1-1800)"; exit 1; fi

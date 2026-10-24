@@ -19,6 +19,14 @@ Owner is non-technical; Claude does the work end to end. Security is top priorit
 
 Priority order: clarity > ease > accessibility > reliability > speed > beauty > uniqueness.
 
+## Testing (permanent rule: TDD — owner request Oct 2026)
+- Test first: for every new feature or bug fix, first write a test that fails (shows the missing behaviour / the bug), then write the code until it passes, then clean up. Never delete or weaken a test to make it pass.
+- Unit tests (app logic, src/lib): tests/unit/*.test.mjs, `npm run test:unit` (node:test; tests/unit/register.mjs fakes React Native/Expo/Supabase).
+- Database integration tests: tests/sql/tNN.sh (one suite per SQL step), all run by `npm run test:db` (tests/sql/run_all.sh). Every new SQL file gets a suite.
+- Server function tests: supabase/functions/*/index_test.ts (Deno).
+- End-to-end on the real database: tests/groups_e2e.py + tests/groups_api.mjs (workflow groups-e2e, also every night).
+- CI runs unit + static + export (check.yml), database suites (db-tests.yml) and function tests (otp-test.yml) on EVERY push; all must be green before telling the owner something works.
+
 ## Workflow
 - Push to main triggers .github/workflows/check.yml. Read failures via check-run annotations (logs API is blocked).
 - APK: dispatch .github/workflows/build-apk.yml (REST: POST actions/workflows/build-apk.yml/dispatches).
