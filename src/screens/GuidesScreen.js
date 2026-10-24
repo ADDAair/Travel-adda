@@ -30,7 +30,7 @@ export default function GuidesScreen({ navigation }) {
             <Text style={st.backT}>‹ সব গাইড</Text>
           </Pressable>
           <Text style={st.title} accessibilityRole="header">{g.icon} {g.title}</Text>
-          {g.blocks.map((b, i) => <Block key={i} b={b} />)}
+          {g.blocks.map((b, i) => <Block key={i} b={b} navigation={navigation} />)}
           <Button title="সব গাইডের তালিকায় ফিরুন" icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.md }} />
         </>
       ) : (
@@ -57,7 +57,12 @@ export default function GuidesScreen({ navigation }) {
   );
 }
 
-export function Block({ b }) {
+export function Block({ b, navigation }) {
+  if (b.type === 'link') return (
+    <Notice kind="info" title={`${b.icon || ''} ${b.title}`} text={b.text}>
+      {navigation ? <Button title={b.title} icon={b.icon} onPress={() => navigation.navigate(b.route)} style={{ marginTop: S.sm }} /> : null}
+    </Notice>
+  );
   if (b.type === 'notice') return <Notice kind={b.kind} title={b.title} text={b.text} />;
   if (b.type === 'source') return <Text style={st.src}>📚 সূত্র: {b.text}</Text>;
   if (b.type === 'steps') return b.steps.map((s, k) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);

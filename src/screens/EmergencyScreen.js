@@ -11,6 +11,8 @@ import { myContracts, cachedContractLeader } from '../lib/market';
 import { getHelpline } from '../lib/offers';
 
 const KEY = 'ta.emergency.v1';
+import { EMERGENCY_FIELDS, LOST_CARD_ROWS } from '../content/emergency';
+
 const PROFILE_CACHE = 'ta.profileCache.v1';
 
 // Numbers checked against published pilgrim guidance (2026). 911 is the unified number in Makkah, Madinah,
@@ -25,16 +27,7 @@ const MORE = [
   { n: '998', t: 'সিভিল ডিফেন্স (আগুন)' },
   { n: '937', t: 'স্বাস্থ্য মন্ত্রণালয়ের পরামর্শ' },
 ];
-const FIELDS = [
-  { k: 'leaderName', label: 'গ্রুপ লিডারের নাম', hint: 'যেমন: মাওলানা আব্দুর রহিম' },
-  { k: 'leaderPhone', label: 'গ্রুপ লিডারের মোবাইল', hint: 'যেমন: +966 5X XXX XXXX', phone: true },
-  { k: 'hotelName', label: 'মক্কার হোটেলের নাম', hint: 'ইংরেজি বা আরবিতে লিখলে ভালো' },
-  { k: 'hotelAddr', label: 'মক্কার হোটেলের ঠিকানা / এলাকা', hint: 'যেমন: Ibrahim Khalil Road, Makkah' },
-  { k: 'madHotel', label: 'মদিনার হোটেলের নাম', hint: 'ইংরেজি বা আরবিতে লিখলে ভালো' },
-  { k: 'madAddr', label: 'মদিনার হোটেলের ঠিকানা / এলাকা', hint: 'যেমন: King Faisal Road, Madinah' },
-  { k: 'maktab', label: 'মুয়াল্লিম / মাকতাব নম্বর', hint: 'হজ কার্ডে লেখা থাকে' },
-  { k: 'agency', label: 'এজেন্সির নাম', hint: 'যে এজেন্সির মাধ্যমে যাচ্ছেন' },
-];
+const FIELDS = EMERGENCY_FIELDS;
 const LOST_TIPS = [
   'ভয় পাবেন না, যেখানে আছেন সেখানেই থাকুন। ঘোরাঘুরি করলে খুঁজে পাওয়া কঠিন হয়।',
   'কাছের গেট নম্বর বা বড় চিহ্ন দেখে লিডারকে ফোন করে জানান।',
@@ -198,13 +191,8 @@ function LostCard({ info, me, onClose }) {
       <Text style={lc.bn}>আমি বাংলাদেশের হাজী, পথ হারিয়েছি। আমাকে হোটেলে পৌঁছাতে বা লিডারকে ফোন করতে সাহায্য করুন।</Text>
       <Row ar="الاسم" en="Name" v={me && me.full_name} />
       <Row ar="رقم الحاج" en="Pilgrim ID" v={me && me.haji_code} />
-      <Row ar="فندق مكة" en="Makkah hotel" v={info.hotelName} />
-      <Row ar="العنوان" en="Address" v={info.hotelAddr} />
-      <Row ar="فندق المدينة" en="Madinah hotel" v={info.madHotel} />
-      <Row ar="العنوان" en="Address" v={info.madAddr} />
       <Row ar="قائد المجموعة" en="Group leader" v={[info.leaderName, info.leaderPhone].filter(Boolean).join(' – ')} />
-      <Row ar="رقم المكتب" en="Maktab No." v={info.maktab} />
-      <Row ar="الوكالة" en="Agency" v={info.agency} />
+      {LOST_CARD_ROWS.map((r) => <Row key={r.k} ar={r.ar} en={r.en} v={info[r.k]} />)}
       {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title="হোটেল ও লিডারের তথ্য লেখা নেই" text='কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।' /> : null}
       <Button title={speaking ? 'থামান' : 'আরবিতে বলে শোনান'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak} style={{ marginTop: S.md }} />
       {ttsErr ? <Notice kind="warn" title={ttsErr} /> : null}

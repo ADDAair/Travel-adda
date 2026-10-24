@@ -144,6 +144,18 @@ with sync_playwright() as p:
                 tab(hp, 'হোম'); hp.wait_for_timeout(800)
             except Exception as e:
                 step('হাজীর অফার পাতা', False, str(e)[:150])
+            # new guides: Haram / Nabawi gates, Nusuk-Rawdah, lost (links to the emergency page), hotels, transport, Zamzam
+            try:
+                home(hp); hp.wait_for_timeout(800)
+                hp.get_by_role('button', name=re.compile('আরও গাইড ও তথ্য')).first.click(); hp.wait_for_timeout(2000)
+                titles = ['মসজিদুল হারামের গেট ও সুবিধা', 'মসজিদে নববীর গেট ও সুবিধা', 'Nusuk অ্যাপ ও রওজা বুকিং', 'পথ হারালে কী করবেন', 'মক্কা ও মদিনার হোটেল এলাকা', 'যাতায়াত: ট্রেন, বাস ও ট্যাক্সি', 'জমজম, টাকা ও সিম কার্ড']
+                step('নতুন ৭টি গাইড তালিকায় আছে', all(hp.get_by_text(t).count() > 0 for t in titles))
+                hp.get_by_text('মসজিদুল হারামের গেট ও সুবিধা').first.click(); hp.wait_for_timeout(1500); shot(hp, 'H01r-guide-haram')
+                step('হারামের গেট গাইড খোলে (গেট নম্বর ও টয়লেটের ধারণা)', has(hp, 'বাদশাহ আবদুল আজিজ গেট', 2000) and has(hp, 'টয়লেট ও অজুখানা', 2000))
+                tab(hp, 'জরুরি'); hp.wait_for_timeout(1500)
+                tab(hp, 'হোম'); hp.wait_for_timeout(800)
+            except Exception as e:
+                step('নতুন গাইড', False, str(e)[:150])
             home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
