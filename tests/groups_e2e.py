@@ -212,8 +212,11 @@ with sync_playwright() as p:
             if ann.count(): step('দলের পাতায় ঘোষণা দেখা যায়', has(hp, 'কাল ভোর ৫টায় বাস'))
             # 6) help chat (step 018): the haji asks privately, the leader answers, the haji sees the answer
             btn(hp, 'লিডার ও খাদেমকে প্রশ্ন করুন$').click(); hp.wait_for_timeout(3500); shot(hp, 'H11-help')
-            if not has(hp, 'শীঘ্রই আসছে', 1500):
-                hp.get_by_label('আপনার প্রশ্ন, সমস্যা বা পরামর্শ').fill(f'CI প্রশ্ন {stamp}: রুমের চাবি'); btn(hp, '^পাঠান$').click(); hp.wait_for_timeout(4000)
+            box = hp.get_by_label('আপনার প্রশ্ন, সমস্যা বা পরামর্শ')
+            try: box.first.wait_for(state='visible', timeout=6000); live = True
+            except Exception: live = False
+            if live:
+                box.first.fill(f'CI প্রশ্ন {stamp}: রুমের চাবি'); btn(hp, '^পাঠান$').click(); hp.wait_for_timeout(4000)
                 step('হাজী লিডারকে প্রশ্ন পাঠাতে পারেন', has(hp, 'পাঠানো হয়েছে', 4000)); shot(hp, 'H12-help-sent')
                 btn(lp, 'হাজীদের প্রশ্ন দেখুন$').click(); lp.wait_for_timeout(4000); shot(lp, 'L16-inbox')
                 step('প্রশ্ন লিডারের কাছে পৌঁছেছে (উত্তর বাকি)', has(lp, f'CI প্রশ্ন {stamp}', 5000) and has(lp, 'উত্তর বাকি', 2000))
