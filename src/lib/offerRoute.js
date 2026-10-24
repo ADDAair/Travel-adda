@@ -83,7 +83,24 @@ export function filterOffers(rows, f = {}) {
   });
 }
 
-export function monthOptions(rows) {
-  const ids = [...new Set((rows || []).map((o) => String(o.depart_on || '').slice(0, 7)).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
-  return ids.map((id) => ({ id, label: `${BN_MONTH[Number(id.slice(5)) - 1]} ${toBn(id.slice(0, 4))}` }));
+// Every month from this month for a year (so hajis can check any month, even an empty one), plus any later month
+// that has a package. Each label says how many packages leave that month.
+export function monthOptions(rows, today) {
+  const t = String(today || new Date().toISOString()).slice(0, 7);
+  let y = Number(t.slice(0, 4)); let mo = Number(t.slice(5, 7));
+  const ids = new Set();
+  for (let i = 0; i < 12; i += 1) { ids.add(`${y}-${String(mo).padStart(2, '0')}`); mo += 1; if (mo > 12) { mo = 1; y += 1; } }
+  const count = {};
+  (rows || []).forEach((o) => { const m = String(o.depart_on || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(m)) { count[m] = (count[m] || 0) + 1; if (m >= t) ids.add(m); } });
+  return [...ids].sort().map((id) => ({ id, label: `${BN_MONTH[Number(id.slice(5)) - 1]} ${toBn(id.slice(0, 4))} (${toBn(count[id] || 0)}টি)` }));
+}
+
+// A price the haji types: "১,৮০,০০০", "180000", "২.৫ লাখ", "2 lakh". null when empty, NaN when not a price.
+export function parsePrice(v) {
+  const t = normalizeDigits(String(v ?? '')).replace(/[,\s]/g, '').toLowerCase();
+  if (!t) return null;
+  const m = t.match(/^(\d+(?:\.\d+)?)(লাখ|লক্ষ|lakh|lac)?(টাকা|tk)?$/);
+  if (!m) return NaN;
+  const n = Math.round(Number(m[1]) * (m[2] ? 100000 : 1));
+  return n > 0 && n < 1e8 ? n : NaN;
 }

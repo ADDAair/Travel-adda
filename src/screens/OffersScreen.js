@@ -4,12 +4,12 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { notReady } from '../lib/groups';
 import { KIND, refOf, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
-import { st, errText, confirm, fmtDay } from './GroupScreen';
+import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import { useMe, isLeaderAccount } from '../lib/me';
 import LeaderOffersScreen from './LeaderOffersScreen';
 
 import { OfferCard, OfferSummary } from '../components/OfferCard';
-import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS } from '../lib/offerRoute';
+import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 
 export { OfferCard };
@@ -68,7 +68,10 @@ function HajiOffers({ navigation, route }) {
   const [q, setQ] = useState(route?.params?.leader || '');
   const [month, setMonth] = useState(null);
   const [airport, setAirport] = useState(null);
-  const [maxPrice, setMaxPrice] = useState(null);
+  const [priceText, setPriceText] = useState('');      // typed by the haji, or filled by a quick button
+  const typed = parsePrice(priceText);
+  const maxPrice = Number.isFinite(typed) ? typed : null;
+  const setMaxPrice = (n) => setPriceText(n ? toBn(n) : '');
   const [showFilters, setShowFilters] = useState(false);
   const [openId, setOpenId] = useState(null);             // package shown on its own page
   const scroller = React.useRef(null);
@@ -166,9 +169,12 @@ function HajiOffers({ navigation, route }) {
         onPress={() => setShowFilters((v) => !v)} style={{ marginBottom: S.sm }} />
       {showFilters ? (
         <View style={st.card}>
-          {months.length ? <Pills label="কোন মাসে যাবেন" options={months} value={month} onChange={setMonth} /> : null}
+          <Pills label="কোন মাসে যাবেন (বন্ধনীতে কয়টি প্যাকেজ আছে)" options={months} value={month} onChange={setMonth} />
           <Pills label="কোন বিমানবন্দর থেকে" options={AIRPORTS_BD.map((a) => ({ id: a.id, label: a.label }))} value={airport} onChange={setAirport} />
-          <Pills label="সর্বোচ্চ দাম (জনপ্রতি)" options={PRICE_LIMITS.map((p) => ({ id: p, label: `${toBn(p / 100000)} লাখ টাকার মধ্যে` }))} value={maxPrice} onChange={setMaxPrice} />
+          <Field label="সর্বোচ্চ দাম, জনপ্রতি (টাকা)" hint="নিজে লিখুন, যেমন: ১৮০০০০ বা ২.৫ লাখ" value={priceText} onChangeText={setPriceText} keyboardType="default" maxLength={14}
+            error={Number.isNaN(typed) ? 'দাম সংখ্যায় লিখুন, যেমন: ১৮০০০০' : undefined} />
+          {maxPrice ? <Text style={[st.small, { marginTop: -S.xs, marginBottom: S.xs }]}>{fmtTaka(maxPrice)} বা তার কম দামের প্যাকেজ দেখানো হচ্ছে</Text> : null}
+          <Pills label="অথবা এক চাপে বাছুন" options={PRICE_LIMITS.map((p) => ({ id: p, label: `${toBn(p / 100000)} লাখ টাকার মধ্যে` }))} value={maxPrice} onChange={setMaxPrice} />
         </View>
       ) : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}

@@ -125,6 +125,10 @@ with sync_playwright() as p:
                 step('অফার পাতায় লিডারের আইডি দিয়ে খোঁজার ঘর', hp.get_by_label('লিডারের আইডি বা নাম দিয়ে খুঁজুন').count() == 1)
                 btn(hp, 'বাছাই করুন').click(); hp.wait_for_timeout(500)
                 step('মাস, বিমানবন্দর ও দাম দিয়ে বাছাই', has(hp, 'কোন বিমানবন্দর থেকে', 2000) and has(hp, 'সর্বোচ্চ দাম', 1000)); shot(hp, 'H01p-filters')
+                step('সামনের ১২ মাসের সবগুলো বাছাই করা যায়', hp.get_by_role('button', name=re.compile('^কোন মাসে যাবেন')).count() >= 12)
+                hp.get_by_label('সর্বোচ্চ দাম, জনপ্রতি (টাকা)').fill('২.৫ লাখ'); hp.wait_for_timeout(500)
+                step('দাম নিজে লেখা যায় (২.৫ লাখ)', has(hp, 'বা তার কম দামের প্যাকেজ', 2000)); shot(hp, 'H01p2-price')
+                hp.get_by_label('সর্বোচ্চ দাম, জনপ্রতি (টাকা)').fill('')
                 more = hp.get_by_role('button', name=re.compile('বিস্তারিত দেখতে চাপুন'))
                 if more.count():
                     live020 = 'আইডি TL-' in (more.first.get_attribute('aria-label') or '')

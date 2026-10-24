@@ -1,7 +1,7 @@
 // Package journey, leader search and filters (src/lib/offerRoute.js) — written before the code (TDD).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AIRPORTS_BD, AIRPORTS_SA, hasRoute, routeSteps, routeShort, checkRoute, routeRow, filterOffers, monthOptions, PRICE_LIMITS, leaderKey }
+import { AIRPORTS_BD, AIRPORTS_SA, hasRoute, routeSteps, routeShort, checkRoute, routeRow, filterOffers, monthOptions, PRICE_LIMITS, leaderKey, parsePrice }
   from '../../src/lib/offerRoute.js';
 
 const o = { id: '1', depart_on: '2027-01-20', return_on: '2027-02-03', from_airport: 'DAC', arrive_at: 'JED', first_city: 'makkah',
@@ -70,8 +70,24 @@ test('filters: month, departure airport, highest price; they combine', () => {
   assert.deepEqual(PRICE_LIMITS, [150000, 200000, 300000]);
 });
 
-test('month choices come from the packages, in order, with Bengali names', () => {
-  const m = monthOptions([{ depart_on: '2027-03-01' }, { depart_on: '2027-01-20' }, { depart_on: '2027-01-25' }]);
-  assert.deepEqual(m.map((x) => x.id), ['2027-01', '2027-03']);
-  assert.equal(m[0].label, 'জানুয়ারি ২০২৭');
+test('month choices: every month of the next year (even with no package yet) plus later package months, with counts', () => {
+  const rows = [{ depart_on: '2027-03-01' }, { depart_on: '2027-01-20' }, { depart_on: '2027-01-25' }, { depart_on: '2028-02-10' }];
+  const m = monthOptions(rows, '2026-10-24');
+  assert.equal(m[0].id, '2026-10');
+  assert.equal(m[11].id, '2027-09');
+  assert.equal(m.at(-1).id, '2028-02', 'a package month beyond the year is still offered');
+  assert.equal(m.length, 13);
+  const jan = m.find((x) => x.id === '2027-01');
+  assert.equal(jan.label, 'জানুয়ারি ২০২৭ (২টি)');
+  assert.equal(m.find((x) => x.id === '2026-11').label, 'নভেম্বর ২০২৬ (০টি)');
+});
+
+test('typed price: Bengali digits, commas and "লাখ" words become a number; nonsense is refused', () => {
+  assert.equal(parsePrice('১,৮০,০০০'), 180000);
+  assert.equal(parsePrice('180000'), 180000);
+  assert.equal(parsePrice('২.৫ লাখ'), 250000);
+  assert.equal(parsePrice('2 lakh'), 200000);
+  assert.equal(parsePrice(''), null);
+  assert.ok(Number.isNaN(parsePrice('অনেক')));
+  assert.ok(Number.isNaN(parsePrice('0')));
 });
