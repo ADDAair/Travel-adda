@@ -148,8 +148,8 @@ with sync_playwright() as p:
             try:
                 home(hp); hp.wait_for_timeout(800)
                 hp.get_by_role('button', name=re.compile('আরও গাইড ও তথ্য')).first.click(); hp.wait_for_timeout(2000)
-                titles = ['মসজিদুল হারামের গেট ও সুবিধা', 'মসজিদে নববীর গেট ও সুবিধা', 'Nusuk অ্যাপ ও রওজা বুকিং', 'পথ হারালে কী করবেন', 'মক্কা ও মদিনার হোটেল এলাকা', 'যাতায়াত: ট্রেন, বাস ও ট্যাক্সি', 'জমজম, টাকা ও সিম কার্ড']
-                step('নতুন ৭টি গাইড তালিকায় আছে', all(hp.get_by_text(t).count() > 0 for t in titles))
+                titles = ['মসজিদুল হারামের গেট ও সুবিধা', 'মসজিদে নববীর গেট ও সুবিধা', 'Nusuk অ্যাপ ও রওজা বুকিং', 'পথ হারালে কী করবেন', 'মক্কা ও মদিনার হোটেল এলাকা', 'যাতায়াত: ট্রেন, বাস ও ট্যাক্সি', 'জমজম, টাকা ও সিম কার্ড', 'ওমরাহ ভিসার ফিঙ্গারপ্রিন্ট (Saudi Visa Bio)']
+                step('নতুন ৮টি গাইড তালিকায় আছে', all(hp.get_by_text(t).count() > 0 for t in titles))
                 hp.get_by_text('মসজিদুল হারামের গেট ও সুবিধা').first.click(); hp.wait_for_timeout(1500); shot(hp, 'H01r-guide-haram')
                 step('হারামের গেট গাইড খোলে (গেট নম্বর ও টয়লেটের ধারণা)', has(hp, 'বাদশাহ আবদুল আজিজ গেট', 2000) and has(hp, 'টয়লেট ও অজুখানা', 2000))
                 tab(hp, 'জরুরি'); hp.wait_for_timeout(1500)

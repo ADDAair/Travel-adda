@@ -61,3 +61,14 @@ test('hotel card also keeps the nearest Haram gate and the group meeting place, 
   assert.ok(rows.includes('nearGate') && rows.includes('meetPlace'));
   LOST_CARD_ROWS.forEach((r) => assert.ok(/[؀-ۿ]/.test(r.ar), `${r.k} has Arabic`));
 });
+
+test('Saudi Visa Bio fingerprint guide: official app, application number first, all 10 fingers, clear steps and fixes', () => {
+  const g = GUIDES.find((x) => x.id === 'visabio');
+  assert.ok(g, 'guide exists');
+  const t = text(g);
+  ['Saudi Visa Bio', 'পররাষ্ট্র মন্ত্রণালয়', 'আবেদন নম্বর', '১০টি আঙুল', 'ওমরাহ'].forEach((w) => assert.ok(t.includes(w), w));
+  const steps = g.blocks.filter((b) => b.type === 'steps').flatMap((b) => b.steps);
+  assert.ok(steps.length >= 8, 'step by step');
+  assert.ok(g.blocks.some((b) => b.type === 'source'));
+  assert.ok(t.includes('নকল'), 'warns about fake apps / sellers');
+});
