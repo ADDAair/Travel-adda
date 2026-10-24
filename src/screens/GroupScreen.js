@@ -113,6 +113,7 @@ export default function GroupScreen({ navigation }) {
                 <Text style={st.small}>অ্যাপের অ্যাডমিন যাচাই করে লিডার হিসেবে অনুমোদন দিয়েছেন।</Text>
               </View>
               <Announcements rows={ann ? ann.rows.filter((a) => a.group_id === g.group_id) : null} offline={ann && ann.offline} />
+              <Button title="লিডার ও খাদেমকে প্রশ্ন করুন" icon="💬" kind="gold" onPress={() => navigation.navigate('HelpChat', { groupId: g.group_id })} a11yHint="সমস্যা বা পরামর্শ লিখুন; শুধু লিডার ও খাদেম দেখবেন" style={{ marginBottom: S.sm }} />
               {g.leader_phone ? <Button title={`লিডারকে ফোন করুন (${toBn(g.leader_phone)})`} icon="📞" onPress={() => call(g.leader_phone)} />
                 : <Text style={st.small}>🔒 লিডারের সাথে চুক্তি চালু হলে এখানে তাঁর ফোন নম্বর দেখাবে। তার আগে যোগাযোগ Travel Adda হেল্পলাইনের মাধ্যমে।</Text>}
               <Pressable onPress={() => confirm('এই দল ছেড়ে দেবেন?', 'আবার যোগ দিতে লিডারের কোড লাগবে।', 'হ্যাঁ, ছেড়ে দিন', () => run(() => leaveGroup(g.group_id), () => 'দল ছেড়ে দেওয়া হয়েছে।'))}

@@ -14,6 +14,7 @@ import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
+import { myKhademGroups } from '../lib/help';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -48,6 +49,12 @@ export default function HomeScreen({ navigation }) {
   const [state, setState] = useState('load');
   // An e-mail typed at sign-up waits here until it is verified with the code (then it can be used to log in).
   const [pendingEmail, setPendingEmail] = useState(null);
+  // Khadem of some group? Then a card leads to the khadem page (questions waiting are counted).
+  const [khadem, setKhadem] = useState(null);
+  useEffect(() => {
+    const check = () => myKhademGroups().then((g) => setKhadem(g.length ? { n: g.length, waiting: g.reduce((s, x) => s + (x.waiting || 0), 0) } : null)).catch(() => setKhadem(null));
+    check(); return navigation?.addListener?.('focus', check);
+  }, [navigation]);
   useEffect(() => {
     const check = () => AsyncStorage.getItem(PENDING_EMAIL).then((e) => setPendingEmail(e && !(me && me.email === e && me.email_verified) ? e : null)).catch(() => {});
     check(); return navigation?.addListener?.('focus', check);
@@ -125,6 +132,11 @@ export default function HomeScreen({ navigation }) {
       {!handsOnPending && pendingEmail ? (
         <Notice kind="info" title="📧 ইমেইল যাচাই বাকি" text={`${pendingEmail} যাচাই করলে এই ইমেইল দিয়েও লগইন করতে পারবেন।`}>
           <Button title="ইমেইল যাচাই করুন" icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
+        </Notice>
+      ) : null}
+      {!handsOnPending && khadem ? (
+        <Notice kind={khadem.waiting ? 'warn' : 'info'} title={`🤝 আপনি ${toBn(khadem.n)}টি দলের খাদেম`} text={khadem.waiting ? `${toBn(khadem.waiting)}টি প্রশ্নের উত্তর বাকি।` : 'দলের হাজী আর তাঁদের প্রশ্ন দেখুন।'}>
+          <Button title="খাদেমের পাতা খুলুন" icon="🤝" kind="secondary" onPress={() => navigation.navigate('KhademHome')} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
       {!handsOnPending ? <PushCard mode="home" /> : null}

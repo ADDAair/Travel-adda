@@ -210,6 +210,19 @@ with sync_playwright() as p:
             step('কোড দিয়ে দলে যোগ', has(hp, 'দলে যোগ দেওয়া হয়েছে।'))
             step('চুক্তি ছাড়া লিডারের নম্বর দেখা যায় না', hp.get_by_role('button', name=re.compile('^লিডারকে ফোন করুন')).count() == 0)
             if ann.count(): step('দলের পাতায় ঘোষণা দেখা যায়', has(hp, 'কাল ভোর ৫টায় বাস'))
+            # 6) help chat (step 018): the haji asks privately, the leader answers, the haji sees the answer
+            btn(hp, 'লিডার ও খাদেমকে প্রশ্ন করুন$').click(); hp.wait_for_timeout(3500); shot(hp, 'H11-help')
+            if not has(hp, 'শীঘ্রই আসছে', 1500):
+                hp.get_by_label('আপনার প্রশ্ন, সমস্যা বা পরামর্শ').fill(f'CI প্রশ্ন {stamp}: রুমের চাবি'); btn(hp, '^পাঠান$').click(); hp.wait_for_timeout(4000)
+                step('হাজী লিডারকে প্রশ্ন পাঠাতে পারেন', has(hp, 'পাঠানো হয়েছে', 4000)); shot(hp, 'H12-help-sent')
+                btn(lp, 'হাজীদের প্রশ্ন দেখুন$').click(); lp.wait_for_timeout(4000); shot(lp, 'L16-inbox')
+                step('প্রশ্ন লিডারের কাছে পৌঁছেছে (উত্তর বাকি)', has(lp, f'CI প্রশ্ন {stamp}', 5000) and has(lp, 'উত্তর বাকি', 2000))
+                lp.get_by_role('button', name=re.compile(f'CI প্রশ্ন {stamp}')).first.click(); lp.wait_for_timeout(3000)
+                lp.get_by_label('আপনার উত্তর').fill('CI উত্তর: রিসেপশনে বলা হয়েছে'); btn(lp, '^উত্তর পাঠান$').click(); lp.wait_for_timeout(4000); shot(lp, 'L17-replied')
+                step('লিডার উত্তর দিতে পারেন', has(lp, 'উত্তর পাঠানো হয়েছে', 4000))
+                step('হাজী উত্তর দেখতে পান', has(hp, 'CI উত্তর: রিসেপশনে', 25000)); shot(hp, 'H13-help-answer')
+            else: step('সাহায্য-চ্যাট "শীঘ্রই আসছে" দেখায় (০১৮ চালানো বাকি)', True)
+            btn(hp, 'আমার দল পাতায় ফিরে যান').click(); hp.wait_for_timeout(2500)
             hp.get_by_role('button', name='দল ছেড়ে দিন').first.click(); hp.wait_for_timeout(3500)
             step('দল ছেড়ে দেওয়া যায়', has(hp, 'দল ছেড়ে দেওয়া হয়েছে।'))
             result['stamp'] = stamp

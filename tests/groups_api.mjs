@@ -163,7 +163,7 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
     'group_announcements', 'user_documents', 'offers', 'offer_interests', 'haji_contracts', 'haji_payments', 'payouts', 'leader_rates',
     'complaints', 'complaint_files', 'leader_ratings', 'leader_referrals', 'user_blocks', 'user_reports', 'admin_staff', 'admin_audit',
     'phone_otps', 'app_settings', 'user_notifications', 'broadcasts', 'broadcast_reads', 'push_tokens', 'push_log', 'push_outbox',
-    'terms_agreements', 'app_private'];
+    'terms_agreements', 'app_private', 'group_staff', 'help_threads', 'help_messages', 'group_faq'];
   const open = [];
   for (const t of tables) {
     const x = await A.from(t).select('*').limit(1);
@@ -228,6 +228,23 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
     x = await H.from('leader_applications').insert({ leader_kind: 'travel_adda', doc_path: `${hid}/nid.jpg` });
     check('হাজী অ্যাকাউন্ট Travel Adda লিডার আবেদন করতে পারে না (০১৭)', !!x.error, err(x));
   } else console.log('step 017 not run yet:', k.error.message);
+}
+
+// --- 018: khadems and help chat stay inside the group
+{
+  const p = await H.rpc('my_khadem_groups');
+  if (!p.error) {
+    const fake = '00000000-0000-0000-0000-000000000001';
+    let x = await L.rpc('leader_add_khadem', { p_group: fake, p_ident: process.env.H_PHONE });
+    check('অন্যের দলে খাদেম যোগ করা যায় না (০১৮)', !!x.error, err(x));
+    x = await H.rpc('help_inbox', { p_group: fake });
+    check('হাজী অন্য দলের প্রশ্নের তালিকা দেখতে পারেন না (০১৮)', !!x.error, err(x));
+    x = await H.rpc('help_send', { p_group: fake, p_body: 'দলের বাইরে থেকে' });
+    check('দলের বাইরে থেকে প্রশ্ন পাঠানো যায় না (০১৮)', !!x.error, err(x));
+    const open = [];
+    for (const t of ['group_staff', 'help_threads', 'help_messages', 'group_faq']) { const r = await H.from(t).select('*').limit(1); if (!r.error && r.data && r.data.length) open.push(t); }
+    check('খাদেম/চ্যাটের টেবিল সরাসরি পড়া যায় না (০১৮)', open.length === 0, open.join(', '));
+  } else console.log('step 018 not run yet:', p.error.message);
 }
 
 // --- 015: helper questions about other people are internal only (shown as "not run yet" until 015 is run)

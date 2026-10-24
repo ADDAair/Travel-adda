@@ -44,6 +44,10 @@ import MyLeaderScreen from './src/screens/MyLeaderScreen';
 import LeadersScreen from './src/screens/LeadersScreen';
 import LeaderContractsScreen from './src/screens/LeaderContractsScreen';
 import LeaderMeScreen from './src/screens/LeaderMeScreen';
+import HelpChatScreen from './src/screens/HelpChatScreen';
+import HelpInboxScreen from './src/screens/HelpInboxScreen';
+import GroupStaffScreen from './src/screens/GroupStaffScreen';
+import KhademHomeScreen from './src/screens/KhademHomeScreen';
 import TermsScreen from './src/screens/TermsScreen';
 import { MeCtx, loadMe } from './src/lib/me';
 import { photoGateState } from './src/lib/avatar';
@@ -154,6 +158,10 @@ function Main() {
       <Tab.Screen name="LeaderMe" component={LeaderMeScreen} options={{ title: 'আমার লিডার প্রোফাইল' }} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'নোটিফিকেশন' }} />
       <Tab.Screen name="Terms" component={TermsScreen} options={{ title: 'শর্তাবলি' }} />
+      <Tab.Screen name="HelpChat" component={HelpChatScreen} options={{ title: 'লিডারকে প্রশ্ন' }} />
+      <Tab.Screen name="HelpInbox" component={HelpInboxScreen} options={{ title: 'হাজীদের প্রশ্ন' }} />
+      <Tab.Screen name="GroupStaff" component={GroupStaffScreen} options={{ title: 'খাদেম ও তৈরি উত্তর' }} />
+      <Tab.Screen name="KhademHome" component={KhademHomeScreen} options={{ title: 'খাদেমের পাতা' }} />
     </Tab.Navigator>
   );
 }

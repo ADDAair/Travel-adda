@@ -44,7 +44,7 @@ export default function LeaderScreen({ navigation }) {
     finally { setBusy(false); }
   };
 
-  if (sel) return <GroupAdmin g={sel} onBack={() => { setSel(null); load(); }} />;
+  if (sel) return <GroupAdmin g={sel} navigation={navigation} onBack={() => { setSel(null); load(); }} />;
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
@@ -123,7 +123,7 @@ function AnnounceBox({ g }) {
   );
 }
 
-function GroupAdmin({ g, onBack }) {
+function GroupAdmin({ g, onBack, navigation }) {
   const [members, setMembers] = useState(null);
   const [contracts, setContracts] = useState([]);
   const [acc, setAcc] = useState([]);
@@ -175,6 +175,14 @@ function GroupAdmin({ g, onBack }) {
         <Text style={{ fontSize: 34, fontWeight: '800', color: C.primary, letterSpacing: 4, marginVertical: S.xs }} selectable accessibilityLabel={`কোড ${g.join_code.split('').join(' ')}`}>{g.join_code}</Text>
         <Text style={st.small}>হাজীরা অ্যাপের "আমার দল" পাতায় এই কোড লিখে যোগ দেবেন।</Text>
         <Button title="কোডটি পাঠান (হোয়াটসঅ্যাপ/এসএমএস)" icon="📤" kind="secondary" onPress={share} />
+      </View>
+
+      <View style={st.card}>
+        <Text style={st.h}>💬 হাজীদের প্রশ্ন ও 🤝 খাদেম</Text>
+        <Text style={st.small}>প্রতিটি হাজী আপনাকে ও খাদেমদের আলাদাভাবে প্রশ্ন বা পরামর্শ লিখতে পারেন; অন্য হাজীরা দেখেন না।</Text>
+        <Button title="হাজীদের প্রশ্ন দেখুন" icon="💬" onPress={() => navigation.navigate('HelpInbox', { groupId: g.id })} style={{ marginTop: S.sm }} />
+        <Button title="খাদেম যোগ / সরান" icon="🤝" kind="secondary" onPress={() => navigation.navigate('GroupStaff', { groupId: g.id, groupName: g.name, tab: 'khadem' })} style={{ marginTop: S.sm }} />
+        <Button title="তৈরি উত্তর লিখুন" icon="📋" kind="secondary" onPress={() => navigation.navigate('GroupStaff', { groupId: g.id, groupName: g.name, tab: 'faq' })} style={{ marginTop: S.sm }} />
       </View>
 
       <AnnounceBox g={g} />
