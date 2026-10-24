@@ -65,7 +65,7 @@ export function LeaderBox({ o, onProfile, onMore }) {
 
 // Short card for the list: the facts a haji compares first. Tapping opens the full page.
 export function OfferSummary({ o, onOpen, note }) {
-  const label = `${o.title}। ${fmtTaka(o.price_bdt)}। ${fmtDay(o.depart_on)} থেকে, ${toBn(daysOf(o))} দিন। ${routeShort(o)}। লিডার ${o.leader_name || o.agency_name || ''}। বিস্তারিত দেখতে চাপুন`;
+  const label = `${o.title}। ${fmtTaka(o.price_bdt)}। ${fmtDay(o.depart_on)} থেকে, ${toBn(daysOf(o))} দিন। ${routeShort(o)}। লিডার ${o.leader_name || o.agency_name || ''}${o.leader_code ? `, আইডি ${o.leader_code}` : ''}। বিস্তারিত দেখতে চাপুন`;
   return (
     <Pressable onPress={onOpen} style={({ pressed }) => [st.card, { opacity: pressed ? 0.85 : 1 }]} accessibilityRole="button" accessibilityLabel={label}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>

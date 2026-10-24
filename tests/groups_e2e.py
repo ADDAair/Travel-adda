@@ -127,8 +127,10 @@ with sync_playwright() as p:
                 step('মাস, বিমানবন্দর ও দাম দিয়ে বাছাই', has(hp, 'কোন বিমানবন্দর থেকে', 2000) and has(hp, 'সর্বোচ্চ দাম', 1000)); shot(hp, 'H01p-filters')
                 more = hp.get_by_role('button', name=re.compile('বিস্তারিত দেখতে চাপুন'))
                 if more.count():
+                    live020 = 'আইডি TL-' in (more.first.get_attribute('aria-label') or '')
                     more.first.click(); hp.wait_for_timeout(1500); shot(hp, 'H01q-offer-page')
-                    step('প্যাকেজের পাতায় যাত্রাপথ ও লিডারের পরিচয়', has(hp, 'যাত্রাপথ', 2000) and has(hp, 'যে লিডার প্যাকেজটি দিচ্ছেন', 2000))
+                    if live020: step('প্যাকেজের পাতায় যাত্রাপথ ও লিডারের পরিচয়', has(hp, 'যাত্রাপথ', 2000) and has(hp, 'যে লিডার প্যাকেজটি দিচ্ছেন', 2000))
+                    else: step('প্যাকেজের পাতা খোলে (০২০ চালানো বাকি, লিডারের পরিচয় পরে দেখাবে)', has(hp, 'প্যাকেজ নম্বর', 2000))
                     btn(hp, 'সব প্যাকেজের তালিকায় ফিরে যান').first.click(); hp.wait_for_timeout(800)
                 tab(hp, 'হোম'); hp.wait_for_timeout(800)
             except Exception as e:
