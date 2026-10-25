@@ -53,6 +53,7 @@ import { MeCtx, loadMe } from './src/lib/me';
 import { useKeyboardHeight, keyboardPad } from './src/lib/keyboard';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders, snoozeAlarm } from './src/lib/reminders';
+import VideoBar from './src/components/VideoBar';
 
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -141,6 +142,7 @@ function Main() {
   return (
     <Tab.Navigator
       tabBar={(p) => <TabBar {...p} />}
+      screenLayout={({ children, route }) => <View style={{ flex: 1 }}><VideoBar route={route.name} />{children}</View>}
       screenOptions={({ navigation, route }) => ({
         headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' },
         headerRight: route.name === 'Notifications' ? undefined : () => <Bell onPress={() => navigation.navigate('Notifications')} />,

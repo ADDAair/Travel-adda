@@ -144,6 +144,15 @@ with sync_playwright() as p:
                 tab(hp, 'হোম'); hp.wait_for_timeout(800)
             except Exception as e:
                 step('হাজীর অফার পাতা', False, str(e)[:150])
+            # every page has "▶️ ভিডিও দেখুন"; until videos exist it says "শীঘ্রই আসছে"
+            try:
+                home(hp); hp.wait_for_timeout(800)
+                vb = hp.get_by_role('button', name=re.compile('ভিডিও দেখুন'))
+                step('প্রতিটি পাতায় "ভিডিও দেখুন" বোতাম (শীঘ্রই আসছে)', vb.count() > 0 and 'শীঘ্রই আসছে' in (vb.first.get_attribute('aria-label') or ''))
+                vb.first.click(); hp.wait_for_timeout(500); shot(hp, 'H00v-video')
+                step('ভিডিও না থাকলে চালানোর ভান করে না, "শীঘ্রই আসছে" বলে', has(hp, 'কার্টুন ভিডিও তৈরি হচ্ছে', 2000))
+            except Exception as e:
+                step('ভিডিও বোতাম', False, str(e)[:150])
             # new guides: Haram / Nabawi gates, Nusuk-Rawdah, lost (links to the emergency page), hotels, transport, Zamzam
             try:
                 home(hp); hp.wait_for_timeout(800)
