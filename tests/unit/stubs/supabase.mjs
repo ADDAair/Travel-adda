@@ -22,6 +22,11 @@ export const supabase = {
     getSession: async () => ({ data: { session: cfg().session || null } }),
     signInWithPassword: async (a) => { calls.push(['signIn', a]); return cfg().signIn ? cfg().signIn(a) : { data: {}, error: null }; },
     signOut: async () => ({}),
+    // 2FA (authenticator app). Tests set globalThis.__sb.mfa = { aal(), list(), enroll(a), unenroll(a), challenge(a), verify(a) }.
+    mfa: new Proxy({}, { get(_t, k) {
+      const map = { getAuthenticatorAssuranceLevel: 'aal', listFactors: 'list' };
+      return async (a) => { calls.push(['mfa', k, a]); const f = (cfg().mfa || {})[map[k] || k]; return f ? f(a) : { data: null, error: null }; };
+    } }),
   },
   storage: { from: () => ({ upload: async () => ({ error: null }), remove: async () => ({}), createSignedUrl: async () => ({ data: { signedUrl: 'x' } }), list: async () => ({ data: [] }) }) },
 };

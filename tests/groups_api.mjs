@@ -261,6 +261,18 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 022 not run yet:', p.error.message);
 }
 
+// --- 023: admin & staff need 2FA; a password-only session reports aal1 and gets no admin menu
+{
+  const p = await H.rpc('my_mfa_state');
+  if (!p.error) {
+    check('পাসওয়ার্ড-লগইনের সেশন 2FA ছাড়া (aal1) বলে চেনা যায় (০২৩)', p.data && p.data.aal === 'aal1' && p.data.staff === false, JSON.stringify(p.data));
+    const m = await L.rpc('my_perms');
+    check('2FA ছাড়া কারও অ্যাডমিন মেনু খোলে না (০২৩)', !m.error && Array.isArray(m.data) && m.data.length === 0, err(m) || JSON.stringify(m.data));
+    const a = await H.rpc('is_admin');
+    check('2FA ছাড়া কেউ অ্যাডমিন নন (০২৩)', !a.error && a.data === false, err(a) || String(a.data));
+  } else console.log('step 023 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');

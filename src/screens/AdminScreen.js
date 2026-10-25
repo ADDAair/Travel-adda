@@ -15,6 +15,7 @@ import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import MoneyTab from './AdminMoney';
 import { ContractsTab, GroupsTab, RatingsTab, UserPage, AppSettingsBox } from './AdminTools';
 import NotifyTab from './AdminNotify';
+import AdminMfa from './AdminMfa';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
 
@@ -47,11 +48,13 @@ const SECTIONS = [
 // Admin and staff (the database refuses everyone else).
 export default function AdminScreen({ navigation }) {
   const [perms, setPerms] = useState(null);
-  const [state, setState] = useState('load');
+  const [state, setState] = useState('mfa'); // 2FA first, then the menu
   const [tab, setTab] = useState(null);
+  const mfaDone = useCallback(() => setState('load'), []);
   useEffect(() => {
+    if (state !== 'load') return;
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
-  }, []);
+  }, [state]);
   const [counts, setCounts] = useState({});
   useEffect(() => { if (state === 'ok' && !tab) adminCounts().then(setCounts).catch(() => {}); }, [state, tab]);
   const mine = SECTIONS.filter((x) => perms && [].concat(x.perm).some((p) => perms.includes(p)));
@@ -63,6 +66,7 @@ export default function AdminScreen({ navigation }) {
         <Text style={st.backT}>{cur ? '‹ অ্যাডমিন মেনু' : '‹ আমার তথ্য'}</Text>
       </Pressable>
       <Text style={st.title} accessibilityRole="header">🛡️ {cur ? cur.label : 'অ্যাডমিন'}</Text>
+      {state === 'mfa' ? <AdminMfa onDone={mfaDone} /> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" /> : null}
       {state === 'denied' ? <Notice kind="warn" title="এই পাতা শুধু অ্যাডমিন ও স্টাফদের জন্য" /> : null}
