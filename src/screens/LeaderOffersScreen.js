@@ -7,7 +7,7 @@ import { notReady } from '../lib/groups';
 import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffer, setOfferActive, myInterestCounts, canEditOffer, reviewLabel, reviewOf, offerErrorText, offerReviewReady } from '../lib/offers';
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
-import { OfferCard } from '../components/OfferCard';
+import { OfferCard, OfferSummary } from '../components/OfferCard';
 import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute } from '../lib/offerRoute';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -23,6 +23,12 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
   const [state, setState] = useState('load');
   const [form, setForm] = useState(null);              // null | 'new' | the package being changed
   const [reviewOn, setReviewOn] = useState(false);
+  const [openId, setOpenId] = useState(null);           // package shown on its own page
+  useEffect(() => {
+    if (!openId) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setOpenId(null); return true; });
+    return () => sub.remove();
+  }, [openId]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const load = useCallback(async () => {
@@ -51,6 +57,30 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
     }} />;
   }
 
+  const actions = (o) => {
+    const c = counts[o.id];
+    return (
+      <View style={st.cRow}>
+        <Text style={st.val}>{statusOf(o)}</Text>
+        {canEditOffer(o) ? <Button title="প্যাকেজটি বদলান" icon="✏️" onPress={() => { setMsg(null); setForm(o); }} disabled={busy} style={{ marginTop: S.sm }} /> : null}
+        <Text style={st.p}>🙋 আগ্রহী: {toBn(c ? c.total : 0)} জন{c && c.open ? ` (টিমের ফোনের অপেক্ষায় ${toBn(c.open)} জন)` : ''}</Text>
+        {!o.hidden_by_admin ? <Button title={o.active ? 'প্যাকেজটি লুকান' : 'আবার দেখান'} icon={o.active ? '🙈' : '👁️'} kind="secondary" onPress={() => toggle(o)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
+      </View>
+    );
+  };
+  const opened = openId && (rows || []).find((x) => x.id === openId);
+  if (opened) {
+    return (
+      <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
+        <Pressable onPress={() => setOpenId(null)} style={st.back} accessibilityRole="button" accessibilityLabel="আমার সব প্যাকেজের তালিকায় ফিরে যান"><Text style={st.backT}>‹ আমার সব প্যাকেজ</Text></Pressable>
+        {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+        <Text style={[st.small, { marginBottom: S.sm }]}>হাজীরা প্যাকেজটি ঠিক এভাবেই দেখবেন।</Text>
+        <OfferCard o={opened}>{actions(opened)}</OfferCard>
+        <Button title="আমার সব প্যাকেজের তালিকায় ফিরে যান" icon="‹" kind="secondary" onPress={() => setOpenId(null)} style={{ marginBottom: S.xl }} />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       {!inTab ? <Pressable onPress={() => navigation.navigate('Leader')} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ লিডার প্যানেল</Text></Pressable> : null}
@@ -65,19 +95,10 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
           <Notice kind="info" title="হাজীরা কীভাবে যোগাযোগ করবেন" text="প্যাকেজে আপনার ফোন নম্বর দেখানো হয় না। আগ্রহী হাজীরা Travel Adda হেল্পলাইনে যোগাযোগ করবেন, টিম আপনার সাথে মিটিংয়ের ব্যবস্থা করবে। এখানে শুধু কতজন আগ্রহী তা দেখবেন।" />
           <Button title="নতুন প্যাকেজ দিন" icon="➕" onPress={() => { setMsg(null); setForm('new'); }} style={{ marginBottom: S.md }} />
           {rows && rows.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ দেননি" /> : null}
-          {(rows || []).map((o) => {
-            const c = counts[o.id];
-            return (
-              <OfferCard key={o.id} o={o}>
-                <View style={st.cRow}>
-                  <Text style={st.val}>{statusOf(o)}</Text>
-                  {canEditOffer(o) ? <Button title="প্যাকেজটি বদলান" icon="✏️" onPress={() => { setMsg(null); setForm(o); }} disabled={busy} style={{ marginTop: S.sm }} /> : null}
-                  <Text style={st.p}>🙋 আগ্রহী: {toBn(c ? c.total : 0)} জন{c && c.open ? ` (টিমের ফোনের অপেক্ষায় ${toBn(c.open)} জন)` : ''}</Text>
-                  {!o.hidden_by_admin ? <Button title={o.active ? 'প্যাকেজটি লুকান' : 'আবার দেখান'} icon={o.active ? '🙈' : '👁️'} kind="secondary" onPress={() => toggle(o)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
-                </View>
-              </OfferCard>
-            );
-          })}
+          {(rows || []).map((o) => (
+            <OfferSummary key={o.id} o={o} note={statusOf(o)} noteColor={o.review === 'pending' || o.review === 'rejected' ? C.warn : !o.active || o.hidden_by_admin ? C.muted : C.ok}
+              onOpen={() => { setMsg(null); setOpenId(o.id); }} />
+          ))}
         </>
       ) : null}
     </ScrollView>

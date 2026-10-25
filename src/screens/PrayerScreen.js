@@ -4,7 +4,7 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
-import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders } from '../lib/reminders';
+import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders, getAlarms, setAlarm } from '../lib/reminders';
 import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading } from '../lib/location';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
 import { SALAH } from '../content/salah';
@@ -218,6 +218,35 @@ function Reminders({ loc }) {
         ? <Button title="রিমাইন্ডার বন্ধ করুন" icon="🔕" kind="secondary" onPress={turnOff} loading={busy} />
         : <Button title="রিমাইন্ডার চালু করুন" icon="🔔" onPress={turnOn} loading={busy} a11yHint="ফোন নোটিফিকেশনের অনুমতি চাইতে পারে" />)
         : <Text style={st.remT}>{REM_ERR.unsupported}</Text>}
+      {on && remindersSupported ? <Alarms loc={loc} /> : null}
+    </View>
+  );
+}
+
+// Per prayer: a loud alarm (long tone + vibration, "10 minutes later" button) instead of a short notification sound.
+function Alarms({ loc }) {
+  const [a, setA] = useState(null);
+  const [busy, setBusy] = useState(null);
+  useEffect(() => { getAlarms().then(setA); }, []);
+  if (!a) return null;
+  const toggle = async (key) => {
+    if (busy) return;
+    setBusy(key);
+    try { await setAlarm(key, !a[key]); setA(await getAlarms()); await refreshReminders(loc); } finally { setBusy(null); }
+  };
+  return (
+    <View style={{ marginTop: S.md }}>
+      <Text style={st.remH}>⏰ অ্যালার্ম (জোরে, লম্বা শব্দ)</Text>
+      <Text style={st.remT}>যে ওয়াক্তে ঘুম ভাঙাতে বা নিশ্চিত মনে করাতে চান, সেটির অ্যালার্ম চালু করুন। ফোন প্রায় ২০ সেকেন্ড বাজবে ও কাঁপবে; "১০ মিনিট পরে আবার" চাপা যাবে। ফোন নীরব (silent) থাকলে শুধু কাঁপতে পারে।</Text>
+      {ORDER.filter((o) => !o.notPrayer).map((o) => (
+        <Pressable key={o.key} onPress={() => toggle(o.key)} disabled={!!busy} accessibilityRole="switch" accessibilityState={{ checked: !!a[o.key], busy: busy === o.key }}
+          accessibilityLabel={`${o.name}-এর অ্যালার্ম ${a[o.key] ? 'চালু' : 'বন্ধ'}`}
+          style={{ minHeight: TOUCH, flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.md, marginTop: S.xs, borderRadius: R.md, borderWidth: 2,
+            borderColor: a[o.key] ? C.primary : C.line, backgroundColor: a[o.key] ? C.primarySoft : C.card }}>
+          <Text style={[st.remT, { flex: 1 }]}>{o.icon} {o.name}</Text>
+          <Text style={st.remT}>{busy === o.key ? '…' : a[o.key] ? '⏰ চালু' : '🔕 বন্ধ'}</Text>
+        </Pressable>
+      ))}
     </View>
   );
 }

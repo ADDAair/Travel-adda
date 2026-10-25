@@ -52,7 +52,7 @@ import TermsScreen from './src/screens/TermsScreen';
 import { MeCtx, loadMe } from './src/lib/me';
 import { useKeyboardHeight, keyboardPad } from './src/lib/keyboard';
 import { photoGateState } from './src/lib/avatar';
-import { refreshReminders } from './src/lib/reminders';
+import { refreshReminders, snoozeAlarm } from './src/lib/reminders';
 
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -230,7 +230,7 @@ export default function App() {
     syncPush();
     let subA = null; let subB = null;
     try {
-      subA = Notifications.addNotificationResponseReceivedListener((r) => { if (isPushTap(r)) setPendingOpen(true); });
+      subA = Notifications.addNotificationResponseReceivedListener((r) => { snoozeAlarm(r); if (isPushTap(r)) setPendingOpen(true); });
       subB = Notifications.addNotificationReceivedListener((n) => { if (n?.request?.content?.data?.route === 'Notifications') refreshUnread(); });
       Notifications.getLastNotificationResponseAsync().then((r) => { if (isPushTap(r)) setPendingOpen(true); }).catch(() => {});
     } catch (e) { /* push not available in this build */ }

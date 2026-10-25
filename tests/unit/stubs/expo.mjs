@@ -18,4 +18,7 @@ export const manipulateAsync = h('manipulate'); export const SaveFormat = { JPEG
 export const hasHardwareAsync = h('hasHardware'); export const isEnrolledAsync = h('isEnrolled');
 export const getEnrolledLevelAsync = h('level'); export const authenticateAsync = h('authenticate');
 export const SecurityLevel = { NONE: 0, SECRET: 1, BIOMETRIC_WEAK: 2, BIOMETRIC_STRONG: 3 };
+export const setNotificationCategoryAsync = h('category');
+export const AndroidAudioUsage = { ALARM: 4, NOTIFICATION: 5 }; export const AndroidAudioContentType = { SONIFICATION: 4 };
+export const AndroidNotificationVisibility = { PUBLIC: 1 }; export const AndroidNotificationPriority = { MAX: 'max', HIGH: 'high' };
 export default {};

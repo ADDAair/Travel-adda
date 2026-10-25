@@ -11,22 +11,14 @@ import { myContracts, cachedContractLeader } from '../lib/market';
 import { getHelpline } from '../lib/offers';
 
 const KEY = 'ta.emergency.v1';
-import { EMERGENCY_FIELDS, LOST_CARD_ROWS } from '../content/emergency';
+import { EMERGENCY_FIELDS, LOST_CARD_ROWS, EMERGENCY_MAIN, EMERGENCY_MORE } from '../content/emergency';
 
 const PROFILE_CACHE = 'ta.profileCache.v1';
 
 // Numbers checked against published pilgrim guidance (2026). 911 is the unified number in Makkah, Madinah,
 // Riyadh and the Eastern Province; elsewhere 997 (ambulance) and 999 (police) work.
-const MAIN = [
-  { n: '911', t: 'জরুরি: পুলিশ, অ্যাম্বুলেন্স, আগুন', w: 'মক্কা, মদিনা, রিয়াদ ও পূর্বাঞ্চলে' },
-  { n: '997', t: 'অ্যাম্বুলেন্স (রেড ক্রিসেন্ট)', w: 'সৌদি আরবের যেকোনো জায়গায়' },
-  { n: '1966', t: 'হাজীদের সাহায্য কেন্দ্র', w: 'হজ ও ওমরাহ মন্ত্রণালয়, সৌদির ভেতর থেকে' },
-];
-const MORE = [
-  { n: '999', t: 'পুলিশ (৯১১ না থাকা এলাকায়)' },
-  { n: '998', t: 'সিভিল ডিফেন্স (আগুন)' },
-  { n: '937', t: 'স্বাস্থ্য মন্ত্রণালয়ের পরামর্শ' },
-];
+const MAIN = EMERGENCY_MAIN;
+const MORE = EMERGENCY_MORE;
 const FIELDS = EMERGENCY_FIELDS;
 const LOST_TIPS = [
   'ভয় পাবেন না, যেখানে আছেন সেখানেই থাকুন। ঘোরাঘুরি করলে খুঁজে পাওয়া কঠিন হয়।',

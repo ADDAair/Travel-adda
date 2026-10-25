@@ -46,6 +46,14 @@
         {
           "faceIDPermission": "আপনার কাগজপত্রের পাতা খুলতে ফেস আইডি ব্যবহার করা হবে।"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/prayer_alarm.wav"
+          ]
+        }
       ]
     ],
     "owner": "traveladda",

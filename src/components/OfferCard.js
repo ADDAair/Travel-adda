@@ -64,7 +64,7 @@ export function LeaderBox({ o, onProfile, onMore }) {
 }
 
 // Short card for the list: the facts a haji compares first. Tapping opens the full page.
-export function OfferSummary({ o, onOpen, note }) {
+export function OfferSummary({ o, onOpen, note, noteColor }) {
   const label = `${o.title}। ${fmtTaka(o.price_bdt)}। ${fmtDay(o.depart_on)} থেকে, ${toBn(daysOf(o))} দিন। ${routeShort(o)}। লিডার ${o.leader_name || o.agency_name || ''}${o.leader_code ? `, আইডি ${o.leader_code}` : ''}। বিস্তারিত দেখতে চাপুন`;
   return (
     <Pressable onPress={onOpen} style={({ pressed }) => [st.card, { opacity: pressed ? 0.85 : 1 }]} accessibilityRole="button" accessibilityLabel={label}>
@@ -82,7 +82,7 @@ export function OfferSummary({ o, onOpen, note }) {
       <Text style={st.p}>✈️ {routeShort(o)}</Text>
       {o.makkah_distance_m != null ? <Text style={st.p}>🏨 {dist(o.makkah_distance_m, 'মক্কায় হারাম')}</Text> : null}
       {o.leader_name ? <Text style={[st.p, { marginTop: S.xs }]}>🧭 {o.leader_name} · {o.leader_code} · {o.rating_avg > 0 ? `⭐ ${toBn(Number(o.rating_avg).toFixed(1))}` : 'নতুন'}{o.leader_kind === 'travel_adda' ? ' · ✅ Travel Adda' : ''}</Text> : null}
-      {note ? <Text style={[st.small, { fontWeight: '700', color: C.ok }]}>{note}</Text> : null}
+      {note ? <Text style={[st.small, { fontWeight: '700', color: noteColor || C.ok }]}>{note}</Text> : null}
       <Text style={[st.p, { color: C.primary, fontWeight: '700', marginTop: S.xs }]}>বিস্তারিত দেখুন ›</Text>
     </Pressable>
   );

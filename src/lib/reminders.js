@@ -9,6 +9,49 @@ import { cancelPrayer } from './notify';
 
 const KEY = 'ta.reminders.v1';
 const CHANNEL = 'prayer';
+// Alarm: a separate loud channel (Android channels cannot change sound later) with our own tone (no copyrighted adhan).
+const ALARM_CHANNEL = 'prayer-alarm';
+const ALARM_KEY = 'ta.prayerAlarm.v1';
+export const ALARM_SOUND = 'prayer_alarm.wav';
+const PRAYER_KEYS = ORDER.filter((o) => !o.notPrayer).map((o) => o.key);
+
+export async function getAlarms() {
+  try { const v = JSON.parse((await AsyncStorage.getItem(ALARM_KEY)) || '{}'); return Object.fromEntries(Object.entries(v).filter(([k, on]) => PRAYER_KEYS.includes(k) && on)); }
+  catch (e) { return {}; }
+}
+export async function setAlarm(key, on) {
+  if (!PRAYER_KEYS.includes(key)) throw new Error('not a prayer');
+  const a = await getAlarms();
+  if (on) a[key] = true; else delete a[key];
+  await AsyncStorage.setItem(ALARM_KEY, JSON.stringify(a));
+}
+async function makeAlarmChannel() {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(ALARM_CHANNEL, {
+    name: 'নামাজের অ্যালার্ম', importance: Notifications.AndroidImportance.MAX, sound: ALARM_SOUND,
+    vibrationPattern: [0, 800, 400, 800, 400, 800, 400, 800], enableVibrate: true,
+    audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM, contentType: Notifications.AndroidAudioContentType.SONIFICATION },
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+  await Notifications.setNotificationCategoryAsync(ALARM_CHANNEL, [
+    { identifier: 'snooze10', buttonTitle: '১০ মিনিট পরে আবার', options: { opensAppToForeground: true } },
+    { identifier: 'stop', buttonTitle: 'বন্ধ করুন', options: { opensAppToForeground: false } },
+  ]);
+}
+const alarmContent = (c) => ({ ...c, title: c.title.replace(/^🕌/, '⏰'), sound: ALARM_SOUND, categoryIdentifier: ALARM_CHANNEL,
+  priority: Notifications.AndroidNotificationPriority.MAX });
+// "১০ মিনিট পরে আবার" pressed on an alarm: ring once more in 10 minutes.
+export async function snoozeAlarm(resp) {
+  if (!resp || resp.actionIdentifier !== 'snooze10') return;
+  const c = (resp.notification && resp.notification.request && resp.notification.request.content) || {};
+  try {
+    await makeAlarmChannel();
+    await Notifications.scheduleNotificationAsync({
+      content: alarmContent({ title: String(c.title || '🕌 নামাজের সময়'), body: c.body || '' }),
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Date.now() + 10 * 60000), channelId: ALARM_CHANNEL },
+    });
+  } catch (e) { /* nothing else to do */ }
+}
 const DAYS = 7;
 export const remindersSupported = Platform.OS === 'android' || Platform.OS === 'ios';
 
@@ -32,6 +75,8 @@ async function schedule(loc) {
       name: 'নামাজের সময়', importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 300, 200, 300],
     });
   }
+  const alarms = await getAlarms();
+  if (Object.keys(alarms).length) await makeAlarmChannel();
   const now = Date.now();
   const tz = tzFor(loc.lat, loc.lng, -new Date(now).getTimezoneOffset());
   let n = 0;
@@ -42,11 +87,13 @@ async function schedule(loc) {
       if (o.notPrayer || t[o.key] <= now + 30000) continue;
       const f = fmtTime(t[o.key], tz, o.key);
       const jumuah = o.key === 'dhuhr' && isFriday(day);
+      const content = jumuah
+        ? { title: '🕌 জুমার ওয়াক্ত শুরু হয়েছে', body: `${f.part} ${f.time} · ${loc.label} · জামাতে যাওয়ার প্রস্তুতি নিন`, sound: 'default' }
+        : { title: `🕌 ${o.gen} সময় হয়েছে`, body: `${f.part} ${f.time} · ${loc.label}`, sound: 'default' };
+      const alarm = !!alarms[o.key];
       await Notifications.scheduleNotificationAsync({
-        content: jumuah
-          ? { title: '🕌 জুমার ওয়াক্ত শুরু হয়েছে', body: `${f.part} ${f.time} · ${loc.label} · জামাতে যাওয়ার প্রস্তুতি নিন`, sound: 'default' }
-          : { title: `🕌 ${o.gen} সময় হয়েছে`, body: `${f.part} ${f.time} · ${loc.label}`, sound: 'default' },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(t[o.key]), channelId: CHANNEL },
+        content: alarm ? alarmContent(content) : content,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(t[o.key]), channelId: alarm ? ALARM_CHANNEL : CHANNEL },
       });
       n++;
     }

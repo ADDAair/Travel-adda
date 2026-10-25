@@ -23,3 +23,18 @@ export const LOST_CARD_ROWS = [
   { k: 'maktab', ar: 'رقم المكتب', en: 'Maktab No.' },
   { k: 'agency', ar: 'الوكالة', en: 'Agency' },
 ];
+
+// Saudi numbers, checked against published pilgrim guidance (2026; Nusuk care centre: US OSAC Hajj/Umrah notice).
+// 911 is the unified number in Makkah, Madinah, Riyadh and the Eastern Province; elsewhere 997 and 999 work.
+export const EMERGENCY_MAIN = [
+  { n: '911', t: 'জরুরি: পুলিশ, অ্যাম্বুলেন্স, আগুন', w: 'মক্কা, মদিনা, রিয়াদ ও পূর্বাঞ্চলে' },
+  { n: '997', t: 'অ্যাম্বুলেন্স (রেড ক্রিসেন্ট)', w: 'সৌদি আরবের যেকোনো জায়গায়' },
+  { n: '1966', t: 'হাজীদের সাহায্য কেন্দ্র', w: 'হজ ও ওমরাহ মন্ত্রণালয়, সৌদির ভেতর থেকে' },
+];
+export const EMERGENCY_MORE = [
+  { n: '999', t: 'পুলিশ (৯১১ না থাকা এলাকায়)' },
+  { n: '998', t: 'সিভিল ডিফেন্স (আগুন)' },
+  { n: '937', t: 'স্বাস্থ্য মন্ত্রণালয়ের পরামর্শ' },
+  { n: '+966920002814', t: 'নুসুক হাজী সেবা কেন্দ্র (প্রতারণা বা সমস্যার অভিযোগ; দেশের বাইরে থেকেও)' },
+];
+export const EMERGENCY_NUMBERS = [...EMERGENCY_MAIN, ...EMERGENCY_MORE];
