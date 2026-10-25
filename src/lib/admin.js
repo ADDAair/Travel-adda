@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
+import { toBn } from './phone';
 
 const check = (r) => { if (r.error) throw r.error; return r.data; };
 const rpc = async (fn, args) => check(await supabase.rpc(fn, args));
@@ -59,3 +60,19 @@ export async function exportCsv(kind) {
   if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'স্প্রেডশিট সংরক্ষণ বা পাঠান' });
   return rows.length;
 }
+
+// ---------- 022: contracts & disputes, user page, pending counts, rating comments, unlisting, videos, groups ----------
+const short = () => { const e = new Error('short'); e.code = 'short'; return e; };
+const need5 = (t) => { const v = String(t || '').trim(); if (v.length < 5) throw short(); return v; };
+const q = (v) => (String(v || '').trim() || null);
+export const findContracts = async (query) => (await rpc('admin_find_contracts', { p_query: String(query || '').trim() })) || [];
+export const contractDetail = (id) => rpc('admin_contract_detail', { p_id: id });
+export const addContractNote = async (id, note) => rpc('admin_add_contract_note', { p_id: id, p_note: need5(note) });
+export const userDetail = (id) => rpc('admin_user_detail', { p_user: id });
+export const adminCounts = async () => (await rpc('admin_counts')) || {};
+export const listRatings = async (query) => (await rpc('admin_list_ratings', { p_query: q(query) })) || [];
+export const hideRating = async (contractId, hide, reason) => rpc('admin_hide_rating', { p_contract: contractId, p_hide: !!hide, p_reason: need5(reason) });
+export const setLeaderListed = async (userId, listed, reason) => rpc('admin_set_leader_listed', { p_user: userId, p_listed: !!listed, p_reason: need5(reason) });
+export const setVideo = (route, url) => rpc('admin_set_video', { p_route: route, p_url: q(url) });
+export const adminGroups = async (query) => (await rpc('admin_groups', { p_query: q(query) })) || [];
+export const countBadge = (label, n) => (n > 0 ? `${label} (${toBn(n)})` : label);

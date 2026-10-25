@@ -244,6 +244,23 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 019 not run yet:', probe.error.message);
 }
 
+// --- 022: admin tools stay admin-only; video links are read-only for everyone else
+{
+  const p = await H.from('app_videos').select('route').limit(1);
+  if (!p.error) {
+    const fake = '00000000-0000-0000-0000-000000000001';
+    const calls = [['admin_find_contracts', { p_query: '' }], ['admin_contract_detail', { p_id: fake }], ['admin_user_detail', { p_user: fake }],
+      ['admin_counts', {}], ['admin_list_ratings', { p_query: null }], ['admin_groups', { p_query: null }],
+      ['admin_hide_rating', { p_contract: fake, p_hide: true, p_reason: 'পরীক্ষা পরীক্ষা' }], ['admin_set_leader_listed', { p_user: fake, p_listed: false, p_reason: 'পরীক্ষা পরীক্ষা' }],
+      ['admin_set_video', { p_route: 'Home', p_url: 'https://evil.example/x.mp4' }], ['admin_add_contract_note', { p_id: fake, p_note: 'হ্যাক করার চেষ্টা' }]];
+    const open = [];
+    for (const [fn, args] of calls) { for (const who of [H, L]) { const r = await who.rpc(fn, args); if (!r.error) open.push(fn); } }
+    check('অ্যাডমিনের নতুন কাজগুলো হাজী বা লিডার চালাতে পারেন না (০২২)', open.length === 0, open.join(', '));
+    const w = await H.from('app_videos').insert({ route: 'Home', url: 'https://evil.example/x.mp4' });
+    check('ভিডিও লিংক অ্যাডমিন ছাড়া কেউ বসাতে পারেন না (০২২)', !!w.error, err(w));
+  } else console.log('step 022 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');

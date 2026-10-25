@@ -25,6 +25,7 @@ out['011 push'] = msg(await sb.rpc('my_push_count'));
 out['012 terms'] = msg(await sb.rpc('my_terms'));
 out['014 work area (union)'] = msg(await sb.from('leader_profiles').select('union_name').limit(1));
 out['014 directory union'] = msg(await sb.rpc('list_leaders', { p_district: null, p_search: null }).select('union_name').limit(1));
+out['022 admin tools'] = msg(await sb.from('app_videos').select('route').limit(1));
 out['021 audit fixes'] = msg(await sb.rpc('my_khadem_invites'));
 out['020 package journey'] = msg(await sb.from('offers').select('from_airport').limit(1));
 out['019 package review'] = msg(await sb.from('offers').select('review').limit(1));

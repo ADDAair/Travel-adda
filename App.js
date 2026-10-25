@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo, AppState } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo, AppState, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
@@ -8,8 +8,9 @@ import { refreshUnread } from './src/lib/notifications';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './src/lib/supabase';
+import { Button } from './src/components/ui';
 import { prefs } from './src/lib/prefs';
-import { C, F, TOUCH } from './src/theme';
+import { C, F, S, TOUCH } from './src/theme';
 import { T } from './src/strings';
 import { TutorialCtx, useTutorial } from './src/tutorial';
 import AuthScreen from './src/screens/AuthScreen';
@@ -54,6 +55,8 @@ import { useKeyboardHeight, keyboardPad } from './src/lib/keyboard';
 import { photoGateState } from './src/lib/avatar';
 import { refreshReminders, snoozeAlarm } from './src/lib/reminders';
 import VideoBar from './src/components/VideoBar';
+import { loadVideoLinks } from './src/lib/videoLinks';
+import { updateGate, APP_VERSION } from './src/lib/appVersion';
 
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -82,6 +85,22 @@ function DuaFab({ pending }) {
 
 // While the keyboard is open the app gets smaller by the keyboard's height, so the field being typed in and the
 // buttons below it can be scrolled into view (Android 15+ otherwise draws the keyboard on top of the app).
+// Shown when the admin set a minimum version newer than this app (security fixes etc.).
+function UpdateNeeded({ storeUrl, onSkip }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, padding: S.lg, paddingTop: 64, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 56, textAlign: 'center' }} importantForAccessibility="no">⬆️</Text>
+      <Text style={{ fontSize: F.title, fontWeight: '700', color: C.primary, textAlign: 'center', marginVertical: S.md }} accessibilityRole="header">নতুন সংস্করণ নিন</Text>
+      <Text style={{ fontSize: F.body, color: C.text, textAlign: 'center', lineHeight: F.body * 1.5, marginBottom: S.lg }}>
+        আপনার নিরাপত্তার জন্য Travel Adda-র নতুন সংস্করণ দরকার। আপনার তথ্য নিরাপদ আছে; নতুন সংস্করণ নিলে আগের মতোই সব পাবেন। (এই ফোনে আছে: {APP_VERSION})
+      </Text>
+      {storeUrl ? <Button title="নতুন সংস্করণ নিন" icon="⬇️" onPress={() => Linking.openURL(storeUrl).catch(() => {})} />
+        : <Text style={{ fontSize: F.body, color: C.muted, textAlign: 'center' }}>নতুন সংস্করণের জন্য Travel Adda হেল্পলাইনে যোগাযোগ করুন।</Text>}
+      {onSkip ? <Button title="অ্যাডমিন হিসেবে চালিয়ে যান" kind="secondary" onPress={onSkip} style={{ marginTop: S.md }} /> : null}
+    </View>
+  );
+}
+
 function KeyboardRoom({ children }) {
   const kb = keyboardPad(useKeyboardHeight());
   const [h, setH] = useState({ full: 0, now: 0 });
@@ -210,6 +229,15 @@ export default function App() {
     return () => { alive = false; };
   }, [session]);
 
+  // After login: video links set by the admin, and the forced-update check (supabase/022).
+  const [gate, setGate] = useState(null);
+  const [skipUpdate, setSkipUpdate] = useState(false);
+  useEffect(() => {
+    if (!session) { setGate(null); return; }
+    loadVideoLinks();
+    supabase.from('app_settings').select('key,value').then((r) => { if (!r.error) setGate(r.data || []); }).catch(() => {});
+  }, [session]);
+
   // Prayer reminders cover the next 7 days; re-make them whenever the app is opened.
   useEffect(() => {
     refreshReminders();
@@ -278,6 +306,9 @@ export default function App() {
     body = <Onboarding onDone={finishOnboarding} />;
   } else if (!session) {
     body = <AuthScreen />;
+  } else if (gate && !skipUpdate && updateGate(gate, me && me.role).block) {
+    const u = updateGate(gate, me && me.role);
+    body = <UpdateNeeded storeUrl={u.storeUrl} onSkip={u.canSkip ? () => setSkipUpdate(true) : null} />;
   } else if (me && me.status === 'suspended') {
     body = <Suspended />;
   } else if (photoGate === 'missing') {

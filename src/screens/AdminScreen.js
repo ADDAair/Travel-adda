@@ -2,17 +2,18 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { areaText } from '../components/WorkAreaFields';
 import { LEADER_KINDS } from '../lib/leaderKinds';
 import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
-import { C, S } from '../theme';
+import { C, S, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { supabase } from '../lib/supabase';
 import { adminApplications, reviewApplication, leaderDocUrl, notReady, telBd } from '../lib/groups';
-import { myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, listAudit, setText, termsCounts, stats, exportCsv } from '../lib/admin';
+import { adminCounts, countBadge, myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, listAudit, setText, termsCounts, stats, exportCsv } from '../lib/admin';
 import { getTerms } from '../lib/market';
 import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import MoneyTab from './AdminMoney';
+import { ContractsTab, GroupsTab, RatingsTab, UserPage, AppSettingsBox } from './AdminTools';
 import NotifyTab from './AdminNotify';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
@@ -20,6 +21,10 @@ import { OfferCard } from '../components/OfferCard';
 const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
 
 // Sections, each shown only to people with the matching permission ('admin' = the owner only).
+// key in admin_counts() for the sections that have waiting work
+const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers' };
+const COUNT_TEXT = { apps: 'লিডার আবেদন যাচাই বাকি', calls: 'হাজী ফোনের অপেক্ষায়', complaints: 'অভিযোগ যাচাই বাকি', reports: 'রিপোর্ট / রেফারেল বাতিলের অনুরোধ',
+  money: 'টাকা জমা যাচাই বাকি', offers: 'প্যাকেজ অনুমোদনের অপেক্ষায়' };
 const SECTIONS = [
   { id: 'stats', icon: '📊', label: 'পরিসংখ্যান', perm: 'reports' },
   { id: 'apps', icon: '🧭', label: 'লিডার আবেদন', perm: 'applications' },
@@ -30,10 +35,13 @@ const SECTIONS = [
   { id: 'notify', icon: '📣', label: 'নোটিফিকেশন পাঠান', perm: 'notify' },
   { id: 'money', icon: '💳', label: 'টাকা ও কমিশন', perm: 'payments' },
   { id: 'offers', icon: '🎁', label: 'প্যাকেজ', perm: 'offers' },
+  { id: 'contracts', icon: '📄', label: 'চুক্তি ও বিরোধ', perm: ['payments', 'complaints', 'users'] },
+  { id: 'groups', icon: '🧑‍🤝‍🧑', label: 'দল ও খাদেম', perm: 'users' },
+  { id: 'ratings', icon: '⭐', label: 'রেটিং মন্তব্য', perm: 'complaints' },
   { id: 'staff', icon: '🪪', label: 'স্টাফ', perm: 'admin' },
   { id: 'terms', icon: '📜', label: 'শর্তাবলি', perm: 'admin' },
   { id: 'audit', icon: '🧾', label: 'কাজের রেকর্ড', perm: 'admin' },
-  { id: 'help', icon: '☎️', label: 'হেল্পলাইন', perm: 'admin' },
+  { id: 'help', icon: '☎️', label: 'হেল্পলাইন ও অ্যাপ সেটিং', perm: 'admin' },
 ];
 
 // Admin and staff (the database refuses everyone else).
@@ -44,7 +52,10 @@ export default function AdminScreen({ navigation }) {
   useEffect(() => {
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
   }, []);
-  const mine = SECTIONS.filter((x) => perms && perms.includes(x.perm));
+  const [counts, setCounts] = useState({});
+  useEffect(() => { if (state === 'ok' && !tab) adminCounts().then(setCounts).catch(() => {}); }, [state, tab]);
+  const mine = SECTIONS.filter((x) => perms && [].concat(x.perm).some((p) => perms.includes(p)));
+  const todo = mine.filter((x) => counts[COUNT_KEY[x.id]] > 0);
   const cur = mine.find((x) => x.id === tab);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
@@ -56,13 +67,24 @@ export default function AdminScreen({ navigation }) {
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" /> : null}
       {state === 'denied' ? <Notice kind="warn" title="এই পাতা শুধু অ্যাডমিন ও স্টাফদের জন্য" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে পাতাটি আবার খুলুন।" /> : null}
+      {state === 'ok' && !cur && todo.length ? (
+        <Notice kind="warn" title="📋 আজ যা করতে হবে">
+          {todo.map((x) => (
+            <Pressable key={x.id} onPress={() => setTab(x.id)} style={{ minHeight: TOUCH, justifyContent: 'center' }} accessibilityRole="button"
+              accessibilityLabel={`${COUNT_TEXT[x.id]}: ${toBn(counts[COUNT_KEY[x.id]])}টি। খুলতে চাপুন`}>
+              <Text style={[st.p, { fontWeight: '700', color: C.primary }]}>{x.icon} {COUNT_TEXT[x.id]}: {toBn(counts[COUNT_KEY[x.id]])}টি ›</Text>
+            </Pressable>
+          ))}
+        </Notice>
+      ) : null}
+      {state === 'ok' && !cur && !todo.length && Object.keys(counts).length ? <Notice kind="ok" title="✅ এখন কোনো কাজ বাকি নেই" /> : null}
       {state === 'ok' && !cur ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
           {mine.map((x) => (
             <Pressable key={x.id} onPress={() => setTab(x.id)} style={({ pressed }) => [st.card, { width: '47%', minHeight: 96, alignItems: 'center', justifyContent: 'center', marginBottom: 0 }, pressed && { opacity: 0.85 }]}
-              accessibilityRole="button" accessibilityLabel={`${x.label} খুলুন`}>
+              accessibilityRole="button" accessibilityLabel={`${countBadge(x.label, counts[COUNT_KEY[x.id]])} খুলুন`}>
               <Text style={{ fontSize: 32 }} importantForAccessibility="no">{x.icon}</Text>
-              <Text style={[st.val, { textAlign: 'center' }]}>{x.label}</Text>
+              <Text style={[st.val, { textAlign: 'center' }]}>{countBadge(x.label, counts[COUNT_KEY[x.id]])}</Text>
             </Pressable>
           ))}
         </View>
@@ -77,6 +99,9 @@ export default function AdminScreen({ navigation }) {
                     : cur.id === 'money' ? <MoneyTab owner={perms.includes('admin')} />
                     : cur.id === 'notify' ? <NotifyTab />
                     : cur.id === 'offers' ? <OffersTab />
+                    : cur.id === 'contracts' ? <ContractsTab />
+                    : cur.id === 'groups' ? <GroupsTab />
+                    : cur.id === 'ratings' ? <RatingsTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
                           : cur.id === 'audit' ? <AuditTab /> : <HelpTab />
@@ -279,6 +304,7 @@ function HelpTab() {
         <Text style={st.small}>চালু থাকলে লিডারের আমন্ত্রণ শুধু যাচাই করা নম্বরে যায়, আর লিডার আবেদনেও যাচাই করা নম্বর লাগে।</Text>
         <Button title={otpLive ? 'বাধ্যতামূলক বন্ধ করুন' : 'বাধ্যতামূলক চালু করুন'} kind={otpLive ? 'danger' : 'secondary'} onPress={toggleOtp} disabled={busy} style={{ marginTop: S.sm }} />
       </View>
+      <AppSettingsBox />
     </>
   );
 }
@@ -465,6 +491,7 @@ function UsersTab() {
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState({});
+  const [detail, setDetail] = useState(null);
   const search = async () => {
     if (q.trim().length < 3) { setMsg({ kind: 'bad', text: 'অন্তত ৩ অক্ষর লিখুন (নাম, আইডি বা মোবাইল নম্বর)।' }); return; }
     setBusy(true); setMsg(null);
@@ -482,6 +509,7 @@ function UsersTab() {
         finally { setBusy(false); }
       });
   };
+  if (detail) return <UserPage id={detail} onBack={() => setDetail(null)} />;
   return (
     <>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
@@ -492,6 +520,7 @@ function UsersTab() {
         <View key={u.id} style={[st.card, { marginTop: S.md }]}>
           <Text style={st.val}>{u.full_name} ({u.haji_code})</Text>
           <Text style={st.small}>{toBn(u.phone)} · {u.account_type === 'leader' ? 'লিডার অ্যাকাউন্ট' : 'হাজী অ্যাকাউন্ট'} · ভূমিকা: {u.role} · {u.status === 'active' ? '✅ চালু' : '⛔ বন্ধ'}</Text>
+          <Button title="পুরো বিবরণ দেখুন" icon="📋" kind="secondary" onPress={() => setDetail(u.id)} style={{ marginVertical: S.xs }} />
           {u.role !== 'admin' ? (
             <>
               <Field label="কারণ" hint="যেমন: একাধিক যাচাই করা অভিযোগ" value={reason[u.id] || ''} onChangeText={(v) => setReason((x) => ({ ...x, [u.id]: v }))} maxLength={300} />

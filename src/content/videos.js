@@ -40,3 +40,10 @@ export function videoFor(route, topics = VIDEO_TOPICS) {
   const ready = !!(t && safe(t.url));
   return { title: t ? t.title : 'এই পাতা', url: ready ? t.url : null, ready, label: ready ? '▶️ ভিডিও দেখুন' : '▶️ ভিডিও দেখুন (শীঘ্রই আসছে)' };
 }
+
+// Links set by the admin (table app_videos) over the built-in list. Only known pages and https links are used.
+export function mergeVideos(topics, rows) {
+  const out = { ...topics };
+  (rows || []).forEach((r) => { if (out[r.route] && safe(r.url)) out[r.route] = { ...out[r.route], url: r.url }; });
+  return out;
+}

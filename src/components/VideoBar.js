@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { videoFor } from '../content/videos';
+import { useVideoTopics } from '../lib/videoLinks';
 
 // A slim bar at the top of every page: "▶️ ভিডিও দেখুন". Until the video exists it says "শীঘ্রই আসছে" and,
 // when pressed, tells which video is coming — it never pretends to play.
 export default function VideoBar({ route }) {
-  const v = videoFor(route);
+  const topics = useVideoTopics();
+  const v = videoFor(route, topics);
   const [info, setInfo] = useState(false);
   useEffect(() => { setInfo(false); }, [route]);
   const press = () => {
