@@ -16,6 +16,7 @@ import MoneyTab from './AdminMoney';
 import { ContractsTab, GroupsTab, RatingsTab, UserPage, AppSettingsBox } from './AdminTools';
 import NotifyTab from './AdminNotify';
 import AdminMfa from './AdminMfa';
+import ContentTab from './AdminContent';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
 
@@ -42,6 +43,7 @@ const SECTIONS = [
   { id: 'staff', icon: '🪪', label: 'স্টাফ', perm: 'admin' },
   { id: 'terms', icon: '📜', label: 'শর্তাবলি', perm: 'admin' },
   { id: 'audit', icon: '🧾', label: 'কাজের রেকর্ড', perm: 'admin' },
+  { id: 'content', icon: '📝', label: 'গাইড ও দোয়ার লেখা', perm: 'admin' },
   { id: 'help', icon: '☎️', label: 'হেল্পলাইন ও অ্যাপ সেটিং', perm: 'admin' },
 ];
 
@@ -108,7 +110,8 @@ export default function AdminScreen({ navigation }) {
                     : cur.id === 'ratings' ? <RatingsTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
-                          : cur.id === 'audit' ? <AuditTab /> : <HelpTab />
+                          : cur.id === 'audit' ? <AuditTab />
+                          : cur.id === 'content' ? <ContentTab /> : <HelpTab />
       ) : null}
     </ScrollView>
   );

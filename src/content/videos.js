@@ -29,6 +29,7 @@ export const VIDEO_TOPICS = {
   Notifications: { title: 'নোটিফিকেশন দেখা', url: null },
   Terms: { title: 'শর্তাবলি', url: null },
   HelpChat: { title: 'লিডার ও খাদেমকে প্রশ্ন করা', url: null },
+  ChatConsent: { title: 'বিরোধের সময় প্রশ্ন-উত্তর দেখার অনুমতি', url: null },
   HelpInbox: { title: 'হাজীদের প্রশ্নের উত্তর দেওয়া', url: null },
   GroupStaff: { title: 'খাদেম যোগ করা ও তৈরি উত্তর লেখা', url: null },
   KhademHome: { title: 'খাদেমের কাজ', url: null },

@@ -56,6 +56,10 @@ import { photoGateState } from './src/lib/avatar';
 import { refreshReminders, snoozeAlarm } from './src/lib/reminders';
 import VideoBar from './src/components/VideoBar';
 import { loadVideoLinks } from './src/lib/videoLinks';
+import { loadContentOverrides } from './src/lib/contentEdit';
+import { GUIDES } from './src/content/guides';
+import { DUAS } from './src/content/duas';
+import ChatConsentScreen from './src/screens/ChatConsentScreen';
 import { updateGate, APP_VERSION } from './src/lib/appVersion';
 
 const Tab = createBottomTabNavigator();
@@ -197,6 +201,7 @@ function Main() {
       <Tab.Screen name="HelpInbox" component={HelpInboxScreen} options={{ title: 'হাজীদের প্রশ্ন' }} />
       <Tab.Screen name="GroupStaff" component={GroupStaffScreen} options={{ title: 'খাদেম ও তৈরি উত্তর' }} />
       <Tab.Screen name="KhademHome" component={KhademHomeScreen} options={{ title: 'খাদেমের পাতা' }} />
+      <Tab.Screen name="ChatConsent" component={ChatConsentScreen} options={{ title: 'প্রশ্ন-উত্তর দেখার অনুমতি' }} />
     </Tab.Navigator>
   );
 }
@@ -235,6 +240,7 @@ export default function App() {
   useEffect(() => {
     if (!session) { setGate(null); return; }
     loadVideoLinks();
+    loadContentOverrides({ guide: GUIDES, dua: DUAS });
     supabase.from('app_settings').select('key,value').then((r) => { if (!r.error) setGate(r.data || []); }).catch(() => {});
   }, [session]);
 

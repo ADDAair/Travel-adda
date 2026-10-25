@@ -11,7 +11,8 @@ import { findContracts, contractDetail, addContractNote, userDetail, listRatings
 import { setSetting } from '../lib/offers';
 import { VIDEO_TOPICS, mergeVideos } from '../content/videos';
 import { APP_VERSION } from '../lib/appVersion';
-import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
+import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
+import { requestChatConsent, adminChatConsents, viewHelpChat, requestResultText, consentStatusText } from '../lib/chatConsent';
 
 const CSTATUS = { sent: '📩 পাঠানো, উত্তরের অপেক্ষায়', accepted: '✅ চালু', declined: '✖️ হাজী রাজি হননি', withdrawn: '↩️ লিডার ফিরিয়ে নিয়েছেন', cancelled: '⛔ বাতিল', completed: '🏁 শেষ' };
 const PSTATUS = { submitted: '⏳ যাচাই বাকি', confirmed: '✅ নিশ্চিত', rejected: '✖️ বাতিল' };
@@ -114,9 +115,66 @@ function ContractPage({ id, onBack }) {
             <Field label="নতুন নোট" hint="যেমন: দুই পক্ষের সাথে কথা হয়েছে, লিডার হোটেল বদলাবেন" value={note} onChangeText={setNote} multiline maxLength={1000} editable={!busy} />
             <Button title="নোট রাখুন" icon="📝" onPress={save} loading={busy} />
           </View>
+          <ChatConsentBox contractId={id} />
         </>
       )}
     </>
+  );
+}
+
+// Help chat of this haji with this leader: only after the haji agrees in the app; every reading is logged.
+const ROLE = { haji: '🕋 হাজী', leader: '🧭 লিডার', khadem: '🤝 খাদেম' };
+function ChatConsentBox({ contractId }) {
+  const [rows, setRows] = useState(null);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [chat, setChat] = useState(null);
+  const load = useCallback(async () => {
+    try { setRows(await adminChatConsents(contractId)); } catch (e) { setRows([]); if (notReady(e)) setMsg({ kind: 'info', text: 'এই অংশের ডেটাবেস ধাপ (০২৪) এখনো চালানো হয়নি।' }); }
+  }, [contractId]);
+  useEffect(() => { load(); }, [load]);
+  const ask = async () => {
+    if (busy) return;
+    setBusy(true); setMsg(null);
+    try { const r = await requestChatConsent(contractId, reason); setMsg({ kind: r === 'sent' ? 'ok' : 'info', text: requestResultText(r) }); if (r === 'sent') setReason(''); await load(); }
+    catch (e) { setMsg({ kind: 'bad', text: e.code === 'reason' ? 'কেন দেখতে চান, অন্তত ৫ অক্ষরে লিখুন (হাজী এটা দেখবেন)।' : errMsg(e) }); }
+    finally { setBusy(false); }
+  };
+  const view = async (k) => {
+    if (busy) return;
+    setBusy(true); setMsg(null);
+    try { setChat(await viewHelpChat(k.id)); } catch (e) { setMsg({ kind: 'bad', text: 'অনুমতি নেই বা মেয়াদ শেষ। আবার অনুমতি চাইতে হবে।' }); await load(); }
+    finally { setBusy(false); }
+  };
+  const active = (rows || []).find((k) => k.active);
+  const waiting = (rows || []).some((k) => k.status === 'asked');
+  return (
+    <View style={st.card}>
+      <Text style={st.h}>💬 হাজী ও লিডারের প্রশ্ন-উত্তর</Text>
+      <Text style={st.p}>হাজীর অনুমতি ছাড়া দেখা যায় না। অনুমতি ৭ দিন থাকে, হাজী যেকোনো সময় ফিরিয়ে নিতে পারেন। প্রতিবার দেখা কাজের রেকর্ডে লেখা থাকে।</Text>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {rows === null ? <ActivityIndicator color={C.primary} /> : null}
+      {(rows || []).slice(0, 3).map((k) => <Text key={k.id} style={st.small}>{fmtDay(k.created_at)} · {consentStatusText(k)} · কারণ: {k.reason}</Text>)}
+      {active ? (
+        <Button title={chat ? 'আবার লোড করুন' : 'প্রশ্ন-উত্তর দেখুন'} icon="💬" onPress={() => view(active)} loading={busy} style={{ marginTop: S.sm }} />
+      ) : rows && !waiting ? (
+        <>
+          <Field label="কেন দেখতে চান (হাজী এটা দেখবেন)" hint="যেমন: হোটেল নিয়ে অভিযোগ যাচাই" value={reason} onChangeText={setReason} maxLength={300} editable={!busy} />
+          <Button title="হাজীর কাছে অনুমতি চান" icon="🔐" onPress={ask} loading={busy} />
+        </>
+      ) : null}
+      {chat && active ? (
+        <View style={{ marginTop: S.md }}>
+          {chat.length === 0 ? <Text style={st.p}>এই লিডারের দলে হাজীর কোনো প্রশ্ন-উত্তর নেই।</Text> : null}
+          {chat.map((m, i) => (
+            <Text key={i} style={[st.p, { marginBottom: S.sm }]} selectable>
+              <Text style={{ fontWeight: '700' }}>{ROLE[m.sender_role] || m.sender_role} {m.sender_name}</Text> · {fmtWhen(m.created_at)}{'\n'}{m.body}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 

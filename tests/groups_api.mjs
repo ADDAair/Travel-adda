@@ -273,6 +273,26 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 023 not run yet:', p.error.message);
 }
 
+// --- 024: chat reading only with the haji's consent; guide/dua text only by the admin
+{
+  const p = await H.rpc('my_chat_consents');
+  if (!p.error) {
+    const fake = '00000000-0000-0000-0000-000000000001';
+    const open = [];
+    for (const [fn, args] of [['admin_request_chat_consent', { p_contract: fake, p_reason: 'হ্যাক করার চেষ্টা' }], ['admin_chat_consents', { p_contract: fake }],
+      ['admin_view_help_chat', { p_consent: fake }], ['admin_set_content', { p_kind: 'guide', p_item: 'health', p_path: 'title', p_body: 'হ্যাক' }]]) {
+      for (const who of [H, L]) { const r = await who.rpc(fn, args); if (!r.error) open.push(fn); }
+    }
+    check('হাজী বা লিডার অন্যের প্রশ্ন-উত্তর পড়তে বা গাইড বদলাতে পারেন না (০২৪)', open.length === 0, open.join(', '));
+    let x = await H.from('chat_consents').select('id').limit(1);
+    check('অনুমতির তালিকা সরাসরি পড়া যায় না (০২৪)', !!x.error, err(x));
+    x = await H.from('content_overrides').insert({ kind: 'guide', item_id: 'health', path: 'title', body: 'হ্যাক' });
+    check('গাইডের লেখা সরাসরি বদলানো যায় না (০২৪)', !!x.error, err(x));
+    x = await H.rpc('chat_consent_respond', { p_id: fake, p_accept: true });
+    check('অন্যের অনুমতির অনুরোধে উত্তর দেওয়া যায় না (০২৪)', !x.error && x.data === 'not_found', err(x) || x.data);
+  } else console.log('step 024 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');

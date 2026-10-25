@@ -10,6 +10,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { myContracts, respondContract, cancelContract, rateLeader, fileComplaint, myComplaints, myReferral, setReferral, requestReferralCancel } from '../lib/market';
 import { shareContractPdf } from '../lib/contractPdf';
 import PaymentBox from '../components/PaymentBox';
+import { myChatConsents } from '../lib/chatConsent';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
 
 const COMPLAINT_STATUS = { pending: '⏳ অ্যাডমিন যাচাই করছেন', verified: '✅ যাচাই হয়েছে (সবাই দেখতে পাবেন)', rejected: '✖️ প্রমাণ পাওয়া যায়নি' };
@@ -22,8 +23,10 @@ export default function MyLeaderScreen({ navigation }) {
   const [state, setState] = useState('load');
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [asks, setAsks] = useState([]);
 
   const load = useCallback(async () => {
+    myChatConsents().then(setAsks).catch(() => {});
     try {
       const [c, r, k] = await Promise.all([myContracts(), myReferral(), myComplaints()]);
       setRows(c); setRef(r); setComplaints(k); setState('ok');
@@ -48,6 +51,13 @@ export default function MyLeaderScreen({ navigation }) {
       <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">🤝 লিডার ও চুক্তি</Text>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {asks.some((k) => k.status === 'asked') ? (
+        <Notice kind="warn" title="🔐 Travel Adda আপনার অনুমতি চাইছে" text="বিরোধ মেটাতে লিডারের সাথে আপনার প্রশ্ন-উত্তর দেখার অনুমতি চাওয়া হয়েছে। আপনি রাজি না হলে কেউ দেখবে না।">
+          <Button title="অনুরোধটি দেখুন" icon="🔐" onPress={() => navigation.navigate('ChatConsent')} style={{ marginTop: S.sm }} />
+        </Notice>
+      ) : asks.length ? (
+        <Button title="প্রশ্ন-উত্তর দেখার অনুমতি (চালু আছে)" icon="🔐" kind="secondary" onPress={() => navigation.navigate('ChatConsent')} style={{ marginBottom: S.md }} />
+      ) : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="লিডার তালিকা, রেফারেল কোড ও চুক্তির সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
