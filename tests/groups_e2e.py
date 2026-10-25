@@ -230,7 +230,11 @@ with sync_playwright() as p:
             hp.get_by_label(re.compile('^নাম, এজেন্সি')).fill('CI লিডার'); hp.wait_for_timeout(2500); shot(hp, 'H05-directory')
             step('তালিকায় লিডার আছেন, ফোন নম্বর নেই', has(hp, 'CI লিডার পরীক্ষা') and not has(hp, L[0], 1000))
             btn(hp, '^CI লিডার পরীক্ষা').click(); hp.wait_for_timeout(3500); shot(hp, 'H06-profile')
-            step('প্রোফাইলে রেটিং দেখাচ্ছে', has(hp, 'জনের রেটিং'))
+            # step 021: a rating counts only after Travel Adda confirms a payment (the CI haji's payment is never confirmed)
+            if has(hp, 'টাকা জমা যাচাই করার পরে', 2000):
+                step('প্রোফাইলে রেটিংয়ের নিয়ম (টাকা যাচাইয়ের পর গণনা) দেখাচ্ছে', True)
+            else:
+                step('প্রোফাইলে রেটিং দেখাচ্ছে', has(hp, 'জনের রেটিং'))
             if hp.get_by_role('button', name='আমাকে ফোন করুন').count():
                 btn(hp, '^আমাকে ফোন করুন$').click(); hp.wait_for_timeout(4000)
             step('"আমাকে ফোন করুন" অনুরোধ আছে', has(hp, 'অনুরোধ পাঠানো') or has(hp, 'আগেই পাঠানো আছে', 1500)); shot(hp, 'H07-call-request')
