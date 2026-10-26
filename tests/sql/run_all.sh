@@ -18,11 +18,11 @@ NET="create schema if not exists net; create table if not exists net._http_respo
 prep_all() {   # newest database: every step applied, the pending test leader already agreed to the leader terms
   bash "$W/reset.sh" >/dev/null 2>&1
   $P -c "$NET" >/dev/null 2>&1
-  for f in 010_leader_backfill 011_push 012_terms 013_scale 014_work_area 015_security 016_email_login 017_leader_kinds 018_khadem_help 019_offer_review 020_offer_route 021_audit_fixes 022_admin_tools 023_admin_mfa 024_admin_part3; do $P -f "$REPO/supabase/$f.sql" >/dev/null 2>&1 || echo "SETUP FAILED: $f"; done
+  for f in 010_leader_backfill 011_push 012_terms 013_scale 014_work_area 015_security 016_email_login 017_leader_kinds 018_khadem_help 019_offer_review 020_offer_route 021_audit_fixes 022_admin_tools 023_admin_mfa 024_admin_part3 025_readonly_fix; do $P -f "$REPO/supabase/$f.sql" >/dev/null 2>&1 || echo "SETUP FAILED: $f"; done
   $P -c "insert into public.terms_agreements (user_id,key,version) select '00000000-0000-0000-0000-00000000000e', key, updated_at from public.app_texts where key='terms_leader' on conflict do nothing" >/dev/null 2>&1
 }
 total_fail=0; summary=""
-for s in t5 t6 t7 t8 t9 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24; do
+for s in t5 t6 t7 t8 t9 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25; do
   case $s in t5|t6|t7|t8|t9) prep_all ;; *) bash "$W/reset.sh" >/dev/null 2>&1 ;; esac
   out=$(bash "$W/$s.sh" 2>&1)
   line=$(echo "$out" | grep -oE "pass=[0-9]+ fail=[0-9]+" | tail -1)
