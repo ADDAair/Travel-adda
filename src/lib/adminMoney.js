@@ -2,6 +2,7 @@
 import { supabase } from './supabase';
 import { notReady } from './groups';
 import { parsePrice } from './offerRoute';
+import { normalizeDigits } from './phone';
 
 const check = (r) => { if (r.error) throw r.error; return r.data; };
 const rpc = async (fn, args) => check(await supabase.rpc(fn, args));
@@ -53,4 +54,16 @@ export async function leaderBalance(leaderId) {
   const d = await rpc('admin_leader_balance', { p_leader: leaderId });
   const r = (Array.isArray(d) ? d[0] : d) || {};
   return { due_total: Number(r.due_total || 0), group_costs: Number(r.group_costs || 0), net: Number(r.net || 0) };
+}
+
+// Contracts a single-haji cost can go on: this leader's running or finished contracts, newest travel first.
+// q = search by haji name, haji ID or contract number (Bengali digits allowed).
+export function contractChoices(ledgerRows, leaderId, q = '') {
+  const key = (v) => normalizeDigits(String(v || '')).toLowerCase();
+  const k = key(q).trim();
+  return (ledgerRows || [])
+    .filter((c) => c.leader_id === leaderId && (c.status === 'accepted' || c.status === 'completed'))
+    .filter((c) => !k || [c.haji_name, c.haji_code, c.contract_no].some((v) => key(v).includes(k)))
+    .sort((a, b) => String(b.travel_from || '').localeCompare(String(a.travel_from || '')))
+    .map((c) => ({ id: c.contract_id, label: `🕋 ${c.haji_name} (${c.haji_code}) · ${c.contract_no}` }));
 }

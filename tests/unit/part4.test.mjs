@@ -129,3 +129,20 @@ test('after the lock the code is asked again even though the session passed 2FA 
   assert.deepEqual(await mfaStep(), { step: 'ok' });
   assert.deepEqual(await mfaStep({ again: true }), { step: 'verify', factorId: 'f1' });
 });
+
+// Owner's screenshot (Oct 2026): no way to pick a single haji, names cut off.
+test('single-haji choices: every running or finished contract of this leader, newest travel first, searchable', async () => {
+  const { contractChoices } = await import('../../src/lib/adminMoney.js');
+  const rows = [
+    { contract_id: 'a', leader_id: 'L', status: 'accepted', contract_no: 'TC-000001', haji_name: 'আব্দুল করিম', haji_code: 'TA-00011', travel_from: '2026-11-02' },
+    { contract_id: 'b', leader_id: 'L', status: 'completed', contract_no: 'TC-000002', haji_name: 'রহিমা খাতুন', haji_code: 'TA-00012', travel_from: '2026-12-01' },
+    { contract_id: 'c', leader_id: 'L', status: 'cancelled', contract_no: 'TC-000003', haji_name: 'বাতিল হাজী', haji_code: 'TA-00013', travel_from: '2026-11-05' },
+    { contract_id: 'd', leader_id: 'X', status: 'accepted', contract_no: 'TC-000004', haji_name: 'অন্য লিডারের হাজী', haji_code: 'TA-00014', travel_from: '2026-11-03' },
+  ];
+  const all = contractChoices(rows, 'L');
+  assert.deepEqual(all.map((c) => c.id), ['b', 'a']);
+  assert.ok(all[0].label.includes('রহিমা খাতুন') && all[0].label.includes('TA-00012'));
+  assert.deepEqual(contractChoices(rows, 'L', 'করিম').map((c) => c.id), ['a']);
+  assert.deepEqual(contractChoices(rows, 'L', 'ta-00012').map((c) => c.id), ['b']);
+  assert.deepEqual(contractChoices(rows, 'L', '০০০০০১').map((c) => c.id), ['a'], 'Bengali digits work');
+});

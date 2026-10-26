@@ -6,7 +6,7 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { notReady, telBd } from '../lib/groups';
-import { moneyAlerts, alertText, SERVICE_KINDS, serviceKindLabel, addServiceCost, serviceResultText, deleteServiceCost, serviceCosts, leaderBalance } from '../lib/adminMoney';
+import { moneyAlerts, alertText, SERVICE_KINDS, serviceKindLabel, addServiceCost, serviceResultText, deleteServiceCost, serviceCosts, leaderBalance, contractChoices } from '../lib/adminMoney';
 import { ledger, leaderRates } from '../lib/payments';
 import { auditSearch, auditActors, listAudit, adminGroups, segmentSize, notifySegment, monthOk } from '../lib/admin';
 import { supabase } from '../lib/supabase';
@@ -15,23 +15,23 @@ import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
 const SOON = 'এই অংশের ডেটাবেস ধাপ (০২৬) এখনো চালানো হয়নি।';
 const errMsg = (e) => (notReady(e) ? SOON : errText(e));
 
-// Selection is shown by border + background + a tick, never by font weight (Android drops the label otherwise).
+// One full-width row per choice: long Bengali names wrap instead of being cut (side-by-side chips cut them on
+// some Android phones). Selection = border + background + a tick; the text style itself never changes.
 function Pills({ options, value, onChange, label }) {
   return (
     <View style={{ marginBottom: S.md }}>
       {label ? <Text style={st.lbl}>{label}</Text> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.xs }}>
-        {options.map((o) => {
-          const on = o.id === value;
-          return (
-            <Pressable key={o.id} onPress={() => onChange(o.id)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={o.label}
-              style={{ minHeight: TOUCH, paddingHorizontal: S.md, justifyContent: 'center', borderRadius: R.md, borderWidth: 2,
-                borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
-              <Text style={[st.p, { color: on ? C.primary : C.text }]}>{on ? '✓ ' : ''}{o.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {options.map((o) => {
+        const on = o.id === value;
+        return (
+          <Pressable key={o.id} onPress={() => onChange(o.id)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={o.label}
+            style={{ minHeight: TOUCH, width: '100%', flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.md, paddingVertical: S.xs,
+              marginTop: S.xs, borderRadius: R.md, borderWidth: 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
+            <Text style={[st.p, { width: 28, color: C.primary }]} importantForAccessibility="no">{on ? '✓' : ''}</Text>
+            <Text style={[st.p, { flex: 1, color: C.text }]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -101,13 +101,15 @@ function LeaderCosts({ leader, onBack }) {
   const [rows, setRows] = useState(null);
   const [contracts, setContracts] = useState([]);
   const [form, setForm] = useState({ contract: '', kind: 'visa', amount: '', note: '' });
+  const [forWho, setForWho] = useState('group');        // 'group' | 'haji'
+  const [find, setFind] = useState('');
   const [del, setDel] = useState(null);             // { id, reason }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const load = useCallback(async () => {
     try {
       const [b, r, l] = await Promise.all([leaderBalance(id), serviceCosts(id), ledger()]);
-      setBal(b); setRows(r); setContracts(l.filter((c) => c.leader_id === id && c.status === 'accepted'));
+      setBal(b); setRows(r); setContracts(l);
     } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -115,8 +117,9 @@ function LeaderCosts({ leader, onBack }) {
   const add = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
+    if (forWho === 'haji' && !form.contract) { setMsg({ kind: 'warn', text: 'কোন হাজীর খরচ, তালিকা থেকে বাছুন।' }); setBusy(false); return; }
     try {
-      const r = await addServiceCost(id, form.contract, form.kind, form.amount, form.note);
+      const r = await addServiceCost(id, forWho === 'haji' ? form.contract : '', form.kind, form.amount, form.note);
       setMsg({ kind: r === 'ok' ? 'ok' : 'warn', text: serviceResultText(r) });
       if (r === 'ok') { setForm((f) => ({ ...f, amount: '', note: '' })); await load(); }
     } catch (e) {
@@ -131,7 +134,8 @@ function LeaderCosts({ leader, onBack }) {
     catch (e) { setMsg({ kind: 'bad', text: e.code === 'reason' ? 'কেন মুছছেন, অন্তত ৫ অক্ষরে লিখুন।' : errMsg(e) }); }
     finally { setBusy(false); }
   };
-  const target = [{ id: '', label: '👥 পুরো দলের জন্য' }, ...contracts.map((c) => ({ id: c.contract_id, label: `${c.contract_no} · ${c.haji_name}` }))];
+  const allHajis = contractChoices(contracts, id);
+  const hajis = contractChoices(contracts, id, find).slice(0, 20);
   return (
     <>
       <Button title="নিজস্ব লিডারের তালিকায় ফিরে যান" icon="‹" kind="secondary" onPress={onBack} style={{ marginBottom: S.md }} />
@@ -147,7 +151,17 @@ function LeaderCosts({ leader, onBack }) {
       ) : <ActivityIndicator color={C.primary} />}
       <View style={st.card}>
         <Text style={st.h}>➕ নতুন খরচ লিখুন</Text>
-        <Pills label="কার জন্য" options={target} value={form.contract} onChange={set('contract')} />
+        <Text style={st.lbl}>কার জন্য</Text>
+        <Segmented value={forWho} onChange={(v) => { setForWho(v); set('contract')(''); }} options={[{ id: 'group', label: '👥 পুরো দল' }, { id: 'haji', label: '🕋 একজন হাজী' }]} />
+        {forWho === 'haji' ? (
+          allHajis.length ? (
+            <>
+              {allHajis.length > 5 ? <Field label="হাজীর নাম, আইডি বা চুক্তি নম্বর দিয়ে খুঁজুন" hint="যেমন: TA-00012" value={find} onChangeText={setFind} autoCorrect={false} /> : null}
+              {hajis.length ? <Pills label={`কোন হাজী (${toBn(allHajis.length)} জন)`} options={hajis} value={form.contract} onChange={set('contract')} />
+                : <Text style={[st.p, { marginBottom: S.md }]}>এই নামে কোনো হাজী পাওয়া যায়নি।</Text>}
+            </>
+          ) : <Notice kind="info" title="এই লিডারের কোনো চালু চুক্তি নেই" text="একজন হাজীর খরচ লিখতে হাজীর সাথে লিডারের চুক্তি চালু থাকতে হয়। তা না হলে খরচটি পুরো দলের নামে লিখুন।" />
+        ) : null}
         <Pills label="কিসের খরচ" options={SERVICE_KINDS.map((k) => ({ id: k.id, label: `${k.icon} ${k.label}` }))} value={form.kind} onChange={set('kind')} />
         <Field label="টাকা" hint="যেমন: ২৫০০০" value={form.amount} onChangeText={set('amount')} keyboardType="number-pad" editable={!busy} />
         <Field label="বিবরণ" hint="যেমন: ৪০ জনের গ্রুপ টিকিট, বিমান BG-035" value={form.note} onChangeText={set('note')} maxLength={300} editable={!busy} />
