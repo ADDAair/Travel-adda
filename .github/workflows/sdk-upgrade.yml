@@ -1,0 +1,32 @@
+name: sdk-upgrade
+# Moves the app up ONE Expo SDK on a separate branch (sdk-NN). Nothing on main changes until that branch has passed
+# every check, the APK was built from it and the owner checked it on the phone.
+on:
+  workflow_dispatch:
+    inputs:
+      sdk: { description: 'target Expo SDK (e.g. 55)', required: true }
+permissions: { contents: write }
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: upgrade
+        run: |
+          set -e
+          SDK='${{ github.event.inputs.sdk }}'
+          echo "$SDK" | grep -Eq '^[0-9]{2}$' || { echo "::error::bad sdk"; exit 1; }
+          npm install --legacy-peer-deps
+          npx expo install "expo@^${SDK}.0.0" -- --legacy-peer-deps
+          npx expo install --fix -- --legacy-peer-deps
+          npx expo install --check || true
+          node -e "const p=require('./package.json');console.log(JSON.stringify(p.dependencies,null,1))" | tee deps.txt
+          (npx expo-doctor 2>&1 || true) | tee doctor.txt
+          { echo "## SDK $SDK"; echo '```'; cat deps.txt; echo '```'; echo '```'; tail -n 60 doctor.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "travel-adda-bot"; git config user.email "bot@users.noreply.github.com"
+          git checkout -B "sdk-$SDK"
+          git add package.json package-lock.json
+          git commit -m "Expo SDK $SDK: package versions from expo install --fix" || echo "nothing changed"
+          git push -f origin "sdk-$SDK"
