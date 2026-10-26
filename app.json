@@ -36,7 +36,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "নামাজের সময় ও কিবলার দিক বের করতে আপনার অবস্থান লাগবে। অবস্থান শুধু ফোনেই থাকে।",
+          "locationWhenInUsePermission": "নামাজের সময় ও কিবলার দিক বের করতে আপনার অবস্থান লাগবে। আপনি জরুরি পাতায় চালু করলে, জরুরি ফোনের সময় অবস্থান Travel Adda-কে পাঠানো হয়।",
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
         }
