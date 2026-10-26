@@ -9,7 +9,7 @@ import { mfaStep, startEnroll, verifyCode, mfaErrorText, secretGroups } from '..
 
 const PLAY = 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2';
 
-export default function AdminMfa({ onDone }) {
+export default function AdminMfa({ onDone, again = false }) {
   const [step, setStep] = useState('load'); // load | enroll | verify | err
   const [factor, setFactor] = useState(null);
   const [setup, setSetup] = useState(null); // { factorId, secret, uri } while setting up
@@ -21,11 +21,11 @@ export default function AdminMfa({ onDone }) {
   const load = useCallback(async () => {
     setStep('load'); setMsg('');
     try {
-      const r = await mfaStep();
+      const r = await mfaStep({ again });
       if (r.step === 'ok') { onDone(); return; }
       setFactor(r.factorId || null); setStep(r.step);
     } catch (e) { setMsg(mfaErrorText(e)); setStep('err'); }
-  }, [onDone]);
+  }, [onDone, again]);
   useEffect(() => { load(); }, [load]);
 
   const begin = async () => {

@@ -9,6 +9,8 @@ import { toBn, normalizeDigits } from '../lib/phone';
 import { telBd } from '../lib/groups';
 import { myContracts, cachedContractLeader } from '../lib/market';
 import { getHelpline } from '../lib/offers';
+import * as Location from 'expo-location';
+import { logSos, sosLocationWanted, setSosLocationWanted } from '../lib/sos';
 
 const KEY = 'ta.emergency.v1';
 import { EMERGENCY_FIELDS, LOST_CARD_ROWS, EMERGENCY_MAIN, EMERGENCY_MORE } from '../content/emergency';
@@ -29,6 +31,8 @@ const LOST_TIPS = [
 ];
 
 const call = (n) => Linking.openURL(`tel:${String(n).replace(/[^\d+]/g, '')}`).catch(() => {});
+// Emergency numbers: open the dialer FIRST, then quietly tell Travel Adda (never delays the call).
+const callSos = (x) => { call(x.n); logSos(x); };
 const cleanPhone = (v) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
 const phoneOk = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
@@ -78,7 +82,7 @@ export default function EmergencyScreen({ navigation }) {
         <Text style={st.sosH} accessibilityRole="header">🆘 বিপদে পড়লে ফোন করুন</Text>
         <Text style={st.sosSub}>বাটনে চাপলে ফোনের ডায়ালে নম্বর বসে যাবে, তারপর কল বাটন চাপুন। এই নম্বরগুলো শুধু সৌদি আরবের ভেতরে কাজ করে।</Text>
         {MAIN.map((x) => (
-          <Pressable key={x.n} onPress={() => call(x.n)} style={({ pressed }) => [st.callBtn, pressed && { opacity: 0.85 }]}
+          <Pressable key={x.n} onPress={() => callSos(x)} style={({ pressed }) => [st.callBtn, pressed && { opacity: 0.85 }]}
             accessibilityRole="button" accessibilityLabel={`${x.n} নম্বরে ফোন করুন। ${x.t}। ${x.w}`}>
             <Text style={st.callN}>📞 {x.n}</Text>
             <View style={{ flex: 1 }}>
@@ -92,12 +96,13 @@ export default function EmergencyScreen({ navigation }) {
           <Text style={st.moreT}>{showMore ? 'অন্য নম্বর লুকান ▲' : 'আরও নম্বর ▼'}</Text>
         </Pressable>
         {showMore ? MORE.map((x) => (
-          <Pressable key={x.n} onPress={() => call(x.n)} style={st.smallCall} accessibilityRole="button" accessibilityLabel={`${x.n} নম্বরে ফোন করুন। ${x.t}`}>
+          <Pressable key={x.n} onPress={() => callSos(x)} style={st.smallCall} accessibilityRole="button" accessibilityLabel={`${x.n} নম্বরে ফোন করুন। ${x.t}`}>
             <Text style={st.smallCallT}>📞 {x.n} · {x.t}</Text>
           </Pressable>
         )) : null}
         {showMore ? <Text style={st.sosSub}>বাংলাদেশে থাকলে: জাতীয় জরুরি সেবা ৯৯৯।</Text> : null}
       </View>
+      <SosLocationToggle />
 
       {lead.phone ? (
         <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone)} style={{ marginBottom: S.sm }} />
@@ -226,3 +231,31 @@ const lc = StyleSheet.create({
   rowL: { fontSize: F.small, color: C.muted },
   rowV: { fontSize: 24, fontWeight: '700', color: '#000', lineHeight: 34 },
 });
+
+// The haji decides whether an emergency call also sends their location to Travel Adda (off until turned on).
+function SosLocationToggle() {
+  const [on, setOn] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { sosLocationWanted().then(setOn); }, []);
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true); setMsg('');
+    try {
+      if (!on) {
+        const p = await Location.requestForegroundPermissionsAsync();
+        if (!p || p.status !== 'granted') { setMsg('ফোন অবস্থান দেওয়ার অনুমতি দেয়নি। ফোনের সেটিংসে Travel Adda-কে অবস্থানের অনুমতি দিয়ে আবার চেষ্টা করুন।'); return; }
+      }
+      await setSosLocationWanted(!on); setOn(!on);
+    } catch (e) { setMsg('কাজটি হয়নি। আবার চেষ্টা করুন।'); }
+    finally { setBusy(false); }
+  };
+  return (
+    <View style={{ marginBottom: S.md }}>
+      <Notice kind={on ? 'ok' : 'info'} title={on ? '📍 জরুরি ফোনের সময় অবস্থান পাঠানো চালু' : '📍 জরুরি ফোনের সময় অবস্থান পাঠানো বন্ধ'}
+        text="জরুরি নম্বরে ফোন করলে Travel Adda জানতে পারে, যেন দ্রুত সাহায্য করতে পারে। চালু করলে আপনার অবস্থানও পাঠানো হবে। ফোন করতে কোনো দেরি হবে না।" />
+      {msg ? <Text style={{ color: C.bad, fontSize: F.body, marginBottom: S.sm }} accessibilityLiveRegion="polite">⚠️ {msg}</Text> : null}
+      <Button title={on ? 'অবস্থান পাঠানো বন্ধ করুন' : 'অবস্থান পাঠানো চালু করুন'} icon="📍" kind="secondary" onPress={toggle} loading={busy} />
+    </View>
+  );
+}

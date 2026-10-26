@@ -76,3 +76,16 @@ export const setLeaderListed = async (userId, listed, reason) => rpc('admin_set_
 export const setVideo = (route, url) => rpc('admin_set_video', { p_route: route, p_url: q(url) });
 export const adminGroups = async (query) => (await rpc('admin_groups', { p_query: q(query) })) || [];
 export const countBadge = (label, n) => (n > 0 ? `${label} (${toBn(n)})` : label);
+
+// ---------- step 026: work record search, notifications to a part ----------
+export const auditSearch = async (actorId, action, days) => (await rpc('admin_audit_search', { p_actor: actorId || null, p_action: q(action), p_days: days || 30 })) || [];
+export const auditActors = async () => (await rpc('admin_audit_actors')) || [];
+export const monthOk = (v) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(v || ''));
+export const segmentSize = async (kind, value) => Number(await rpc('admin_segment_size', { p_kind: kind, p_value: value })) || 0;
+export async function notifySegment(kind, value, title, body) {
+  const t = String(title || '').trim();
+  if (t.length < 2) throw Object.assign(new Error('title'), { code: 'title' });
+  const r = String(await rpc('admin_notify_segment', { p_kind: kind, p_value: value, p_title: t, p_body: q(body) }));
+  if (r.startsWith('ok:')) return Number(r.slice(3)) || 0;
+  throw Object.assign(new Error(r), { code: r });
+}

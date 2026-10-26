@@ -7,7 +7,7 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { supabase } from '../lib/supabase';
 import { adminApplications, reviewApplication, leaderDocUrl, notReady, telBd } from '../lib/groups';
-import { adminCounts, countBadge, myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, listAudit, setText, termsCounts, stats, exportCsv } from '../lib/admin';
+import { adminCounts, countBadge, myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, setText, termsCounts, stats, exportCsv } from '../lib/admin';
 import { getTerms } from '../lib/market';
 import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
@@ -17,6 +17,10 @@ import { ContractsTab, GroupsTab, RatingsTab, UserPage, AppSettingsBox } from '.
 import NotifyTab from './AdminNotify';
 import AdminMfa from './AdminMfa';
 import ContentTab from './AdminContent';
+import { MoneyAlertsTab, ServiceCostsTab, SegmentNotifyBox, SosTab, AuditSearchTab } from './AdminPart4';
+import { AppState } from 'react-native';
+import { idleExpired } from '../lib/idle';
+import { filterOffers } from '../lib/offerRoute';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
 
@@ -24,9 +28,10 @@ const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অ
 
 // Sections, each shown only to people with the matching permission ('admin' = the owner only).
 // key in admin_counts() for the sections that have waiting work
-const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers' };
+const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers', alerts: 'money_alerts', sos: 'sos' };
 const COUNT_TEXT = { apps: 'লিডার আবেদন যাচাই বাকি', calls: 'হাজী ফোনের অপেক্ষায়', complaints: 'অভিযোগ যাচাই বাকি', reports: 'রিপোর্ট / রেফারেল বাতিলের অনুরোধ',
-  money: 'টাকা জমা যাচাই বাকি', offers: 'প্যাকেজ অনুমোদনের অপেক্ষায়' };
+  money: 'টাকা জমা যাচাই বাকি', offers: 'প্যাকেজ অনুমোদনের অপেক্ষায়',
+  alerts: 'টাকার বকেয়া', sos: 'গত ২৪ ঘণ্টায় জরুরি ফোন' };
 const SECTIONS = [
   { id: 'stats', icon: '📊', label: 'পরিসংখ্যান', perm: 'reports' },
   { id: 'apps', icon: '🧭', label: 'লিডার আবেদন', perm: 'applications' },
@@ -36,6 +41,9 @@ const SECTIONS = [
   { id: 'users', icon: '👥', label: 'ব্যবহারকারী', perm: 'users' },
   { id: 'notify', icon: '📣', label: 'নোটিফিকেশন পাঠান', perm: 'notify' },
   { id: 'money', icon: '💳', label: 'টাকা ও কমিশন', perm: 'payments' },
+  { id: 'alerts', icon: '⏰', label: 'টাকার বকেয়া', perm: 'payments' },
+  { id: 'services', icon: '🧾', label: 'নিজস্ব লিডারের সেবা-খরচ', perm: 'payments' },
+  { id: 'sos', icon: '🆘', label: 'জরুরি রেকর্ড', perm: 'users' },
   { id: 'offers', icon: '🎁', label: 'প্যাকেজ', perm: 'offers' },
   { id: 'contracts', icon: '📄', label: 'চুক্তি ও বিরোধ', perm: ['payments', 'complaints', 'users'] },
   { id: 'groups', icon: '🧑‍🤝‍🧑', label: 'দল ও খাদেম', perm: 'users' },
@@ -52,7 +60,15 @@ export default function AdminScreen({ navigation }) {
   const [perms, setPerms] = useState(null);
   const [state, setState] = useState('mfa'); // 2FA first, then the menu
   const [tab, setTab] = useState(null);
-  const mfaDone = useCallback(() => setState('load'), []);
+  // 15 minutes without use: ask for the 2FA code again (the open page stays where it was)
+  const last = React.useRef(Date.now());
+  const mfaDone = useCallback(() => { last.current = Date.now(); setState((s) => (s === 'locked' ? 'ok' : 'load')); }, []);
+  useEffect(() => {
+    const checkIdle = () => { if (idleExpired(last.current)) setState((s) => (s === 'ok' ? 'locked' : s)); };
+    const t = setInterval(checkIdle, 30000);
+    const sub = AppState.addEventListener('change', (a) => { if (a === 'active') checkIdle(); });
+    return () => { clearInterval(t); sub.remove(); };
+  }, []);
   useEffect(() => {
     if (state !== 'load') return;
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
@@ -63,12 +79,13 @@ export default function AdminScreen({ navigation }) {
   const todo = mine.filter((x) => counts[COUNT_KEY[x.id]] > 0);
   const cur = mine.find((x) => x.id === tab);
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled" onTouchStart={() => { last.current = Date.now(); }}>
       <Pressable onPress={() => (cur ? setTab(null) : navigation.navigate('Account'))} style={st.back} accessibilityRole="button" accessibilityLabel={cur ? 'অ্যাডমিন মেনুতে ফিরে যান' : 'আমার তথ্য পাতায় ফিরে যান'}>
         <Text style={st.backT}>{cur ? '‹ অ্যাডমিন মেনু' : '‹ আমার তথ্য'}</Text>
       </Pressable>
       <Text style={st.title} accessibilityRole="header">🛡️ {cur ? cur.label : 'অ্যাডমিন'}</Text>
       {state === 'mfa' ? <AdminMfa onDone={mfaDone} /> : null}
+      {state === 'locked' ? <><Notice kind="info" title="🔒 ১৫ মিনিট ব্যবহার হয়নি, তাই অ্যাডমিন প্যানেল তালা দেওয়া হয়েছে" /><AdminMfa again onDone={mfaDone} /></> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" /> : null}
       {state === 'denied' ? <Notice kind="warn" title="এই পাতা শুধু অ্যাডমিন ও স্টাফদের জন্য" /> : null}
@@ -95,7 +112,7 @@ export default function AdminScreen({ navigation }) {
           ))}
         </View>
       ) : null}
-      {cur ? (
+      {cur && state === 'ok' ? (
         cur.id === 'stats' ? <StatsTab admin={perms.includes('admin')} />
           : cur.id === 'apps' ? <AppsTab />
             : cur.id === 'calls' ? <CallsTab />
@@ -103,14 +120,17 @@ export default function AdminScreen({ navigation }) {
                 : cur.id === 'reports' ? <ReportsTab canUsers={perms.includes('users')} />
                   : cur.id === 'users' ? <UsersTab />
                     : cur.id === 'money' ? <MoneyTab owner={perms.includes('admin')} />
-                    : cur.id === 'notify' ? <NotifyTab />
+                    : cur.id === 'notify' ? <><SegmentNotifyBox /><NotifyTab /></>
+                    : cur.id === 'alerts' ? <MoneyAlertsTab />
+                    : cur.id === 'services' ? <ServiceCostsTab />
+                    : cur.id === 'sos' ? <SosTab />
                     : cur.id === 'offers' ? <OffersTab />
                     : cur.id === 'contracts' ? <ContractsTab />
                     : cur.id === 'groups' ? <GroupsTab />
                     : cur.id === 'ratings' ? <RatingsTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
-                          : cur.id === 'audit' ? <AuditTab />
+                          : cur.id === 'audit' ? <AuditSearchTab actionText={(a) => ACTION[a] || a} />
                           : cur.id === 'content' ? <ContentTab /> : <HelpTab />
       ) : null}
     </ScrollView>
@@ -229,14 +249,18 @@ function OffersTab() {
     () => act(() => reviewOffer(o.id, 'approve'), 'অনুমোদন দেওয়া হয়েছে। লিডার নোটিফিকেশন পাবেন।'));
   const hide = (o) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
     o.hidden_by_admin ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', () => act(() => hideOffer(o.id, !o.hidden_by_admin), o.hidden_by_admin ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।'));
-  const rows = data || [];
-  const waiting = rows.filter((o) => reviewOf(o) === 'pending').length;
+  const [find, setFind] = useState('');
+  const all = data || [];
+  const rows = find.trim() ? filterOffers(all, { q: find }) : all;
+  const waiting = all.filter((o) => reviewOf(o) === 'pending').length;
   return (
     <>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {gate}
       {state === 'ok' ? <Notice kind={waiting ? 'warn' : 'ok'} title={waiting ? `⏳ ${toBn(waiting)}টি প্যাকেজ অনুমোদনের অপেক্ষায়` : 'অপেক্ষায় থাকা কোনো প্যাকেজ নেই'} /> : null}
-      {state === 'ok' && rows.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ নেই" /> : null}
+      {state === 'ok' && all.length ? <Field label="লিডারের আইডি বা নাম দিয়ে খুঁজুন" hint="যেমন: TL-00004" value={find} onChangeText={setFind} autoCapitalize="characters" autoCorrect={false} /> : null}
+      {state === 'ok' && all.length === 0 ? <Notice kind="info" title="এখনো কোনো প্যাকেজ নেই" /> : null}
+      {state === 'ok' && all.length > 0 && rows.length === 0 ? <Notice kind="info" title="এই লিডারের কোনো প্যাকেজ পাওয়া যায়নি" /> : null}
       {state === 'ok' ? rows.map((o) => (
         <OfferCard key={o.id} o={o}>
           <View style={st.cRow}>
@@ -631,21 +655,7 @@ function TermsTab() {
 const ACTION = { approve_leader: 'লিডার অনুমোদন', reject_leader: 'লিডার আবেদন বাতিল', complaint_verified: 'অভিযোগ প্রকাশ', complaint_rejected: 'অভিযোগ বাতিল',
   report_handled: 'রিপোর্ট দেখা', suspend_user: 'অ্যাকাউন্ট বন্ধ', reactivate_user: 'অ্যাকাউন্ট চালু', staff_set: 'স্টাফের অধিকার', staff_removed: 'স্টাফ সরানো',
   referral_cancel_ok: 'রেফারেল বাতিল অনুমোদন', referral_cancel_no: 'রেফারেল বাতিল নাকচ', call_done: 'ফোনের অনুরোধ শেষ', offer_approved: 'প্যাকেজ অনুমোদন', offer_rejected: 'প্যাকেজ ফেরত', offer_hidden: 'প্যাকেজ লুকানো', offer_shown: 'প্যাকেজ দেখানো',
-  text_terms: 'শর্তাবলি বদল', export_users: 'ব্যবহারকারী ডাউনলোড', export_contracts: 'চুক্তি ডাউনলোড', export_complaints: 'অভিযোগ ডাউনলোড' };
-function AuditTab() {
-  const { state, data, gate } = useLoad(listAudit);
-  return (
-    <>
-      <Text style={st.small}>অ্যাডমিন ও স্টাফ কে কবে কী করেছেন, তার রেকর্ড। এটা কেউ মুছতে বা বদলাতে পারেন না।</Text>
-      {gate}
-      {state === 'ok' && data.length === 0 ? <Notice kind="info" title="এখনো কোনো রেকর্ড নেই" /> : null}
-      {state === 'ok' ? data.map((a) => (
-        <View key={a.id} style={st.card}>
-          <Text style={st.small}>{fmtDay(a.at)} · {a.actor_name || '—'}</Text>
-          <Text style={st.val}>{ACTION[a.action] || a.action}{a.target_name ? ` · ${a.target_name} (${a.target_code})` : ''}</Text>
-          {a.detail ? <Text style={st.small}>{a.detail}</Text> : null}
-        </View>
-      )) : null}
-    </>
-  );
-}
+  text_terms: 'শর্তাবলি বদল', export_users: 'ব্যবহারকারী ডাউনলোড', export_contracts: 'চুক্তি ডাউনলোড', export_complaints: 'অভিযোগ ডাউনলোড',
+  service_cost_added: 'সেবা-খরচ লেখা', service_cost_deleted: 'সেবা-খরচ মোছা', notify_segment: 'নির্দিষ্ট অংশকে নোটিফিকেশন', chat_viewed: 'প্রশ্ন-উত্তর দেখা',
+  chat_consent_asked: 'প্রশ্ন-উত্তর দেখার অনুমতি চাওয়া', content_edit: 'গাইড/দোয়ার লেখা বদল', user_viewed: 'ব্যবহারকারীর বিবরণ দেখা', contract_note: 'চুক্তিতে নোট',
+  payout_leader: 'লিডারকে টাকা', payout_haji: 'হাজীকে ফেরত', payment_confirmed: 'টাকা জমা নিশ্চিত', payment_rejected: 'টাকা জমা বাতিল' };

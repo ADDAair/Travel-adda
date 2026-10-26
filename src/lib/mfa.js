@@ -9,9 +9,10 @@ const check = (r) => { if (r.error) throw r.error; return r.data; };
 const totps = (d) => ((d && d.all) || []).filter((f) => f.factor_type === 'totp');
 
 // { step: 'ok' } | { step: 'verify', factorId } | { step: 'enroll' }
-export async function mfaStep() {
+// again: true = ask for the code even if this session already passed 2FA (after the admin panel locked itself).
+export async function mfaStep({ again = false } = {}) {
   const a = check(await mfa().getAuthenticatorAssuranceLevel());
-  if (a && a.currentLevel === 'aal2') return { step: 'ok' };
+  if (a && a.currentLevel === 'aal2' && !again) return { step: 'ok' };
   const done = totps(check(await mfa().listFactors())).find((f) => f.status === 'verified');
   return done ? { step: 'verify', factorId: done.id } : { step: 'enroll' };
 }

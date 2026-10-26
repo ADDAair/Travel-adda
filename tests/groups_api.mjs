@@ -293,6 +293,28 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 024 not run yet:', p.error.message);
 }
 
+// --- 026: money alerts, service costs, work-record search, notifications to a part, SOS list: staff only
+{
+  const p = await H.rpc('admin_money_alerts');
+  if (!p.error || !/could not find/i.test(p.error.message || '')) {
+    const fake = '00000000-0000-0000-0000-000000000001';
+    const open = [];
+    for (const [fn, args] of [['admin_money_alerts', {}], ['admin_add_service_cost', { p_leader: fake, p_contract: null, p_kind: 'visa', p_amount: 1, p_note: 'হ্যাক চেষ্টা' }],
+      ['admin_service_costs', { p_leader: fake }], ['admin_leader_balance', { p_leader: fake }], ['admin_delete_service_cost', { p_id: fake, p_reason: 'হ্যাক চেষ্টা' }],
+      ['admin_audit_search', { p_actor: null, p_action: null, p_days: 30 }], ['admin_audit_actors', {}], ['admin_segment_size', { p_kind: 'month', p_value: '2026-11' }],
+      ['admin_notify_segment', { p_kind: 'month', p_value: '2026-11', p_title: 'ভুয়া', p_body: null }], ['admin_sos_list', { p_days: 7 }], ['segment_users', { p_kind: 'month', p_value: '2026-11' }]]) {
+      for (const who of [H, L]) { const r = await who.rpc(fn, args); if (!r.error) open.push(fn); }
+    }
+    check('টাকার বকেয়া, সেবা-খরচ, কাজের রেকর্ড, নোটিফিকেশন ও জরুরি রেকর্ড শুধু স্টাফের (০২৬)', open.length === 0, open.join(', '));
+    let x = await L.from('service_costs').select('id').limit(1);
+    check('লিডার সেবা-খরচের তালিকা দেখতে পারেন না (০২৬)', !!x.error, err(x));
+    x = await H.from('sos_events').select('id').limit(1);
+    check('জরুরি রেকর্ড সরাসরি পড়া যায় না (০২৬)', !!x.error, err(x));
+    x = await H.rpc('log_sos', { p_number: 'abc', p_label: 'পরীক্ষা', p_lat: null, p_lng: null, p_acc: null });   // bad number: refused, nothing saved, nobody told
+    check('ভুল নম্বরে জরুরি রেকর্ড হয় না (০২৬)', !!x.error, err(x));
+  } else console.log('step 026 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');
