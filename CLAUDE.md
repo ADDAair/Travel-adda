@@ -27,6 +27,12 @@ Priority order: clarity > ease > accessibility > reliability > speed > beauty > 
 - End-to-end on the real database: tests/groups_e2e.py + tests/groups_api.mjs (workflow groups-e2e, also every night).
 - CI runs unit + static + export (check.yml), database suites (db-tests.yml) and function tests (otp-test.yml) on EVERY push; all must be green before telling the owner something works.
 
+## Latest technology (permanent rule — owner request Oct 2026)
+- New work uses the latest stable versions/technology. Existing code is moved up step by step (one Expo SDK at a time,
+  TypeScript file by file), never all at once: explain the reason, ask the owner (options + consequences), then do it,
+  keeping every feature working (all tests + CI + APK + owner phone check after each step).
+- Status Oct 2026: app on Expo SDK 54 (RN 0.81, React 19.1); latest is SDK 58 (RN 0.88). App code is JavaScript.
+
 ## Workflow
 - Push to main triggers .github/workflows/check.yml. Read failures via check-run annotations (logs API is blocked).
 - APK: dispatch .github/workflows/build-apk.yml (REST: POST actions/workflows/build-apk.yml/dispatches).
