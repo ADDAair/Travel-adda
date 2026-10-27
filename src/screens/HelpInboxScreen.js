@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import ChatBubbles, { fmtWhen } from '../components/ChatBubbles';

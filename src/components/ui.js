@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
+import { notifyFieldFocus } from '../lib/keyboard';
 import { C, F, S, R, TOUCH, BTN_H, shadow } from '../theme';
 
 // Big, clearly labelled button. kind: primary | secondary | gold | danger
@@ -42,6 +43,7 @@ export function Field({ label, hint, error, right, inputRef, ...input }) {
           accessibilityLabel={label}
           accessibilityHint={hint}
           {...input}
+          onFocus={(e) => { notifyFieldFocus(); if (input.onFocus) input.onFocus(e); }}
         />
         {right}
       </View>

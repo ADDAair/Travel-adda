@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, BackHandler } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, BackHandler } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
