@@ -33,7 +33,7 @@ export const serviceKindLabel = (id: string): string => { const k = SERVICE_KIND
 // contractId empty = a cost for the leader's whole group
 export async function addServiceCost(leaderId: string, contractId: string | null | undefined, kind: string, amount: unknown, note: unknown): Promise<string | null> {
   const a = parsePrice(amount);
-  if (!Number.isFinite(a) || !(a > 0)) throw fail('amount');
+  if (a === null || !Number.isFinite(a) || a <= 0) throw fail('amount');   // empty, not a number, or zero
   if (!SERVICE_KINDS.some((k) => k.id === kind)) throw fail('kind');
   const n = String(note || '').trim();
   if (n.length < 3) throw fail('note');
