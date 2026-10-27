@@ -36,4 +36,11 @@ jobs:
           f=$(ls android/app/build/outputs/apk/release/*.apk | head -1); cp "$f" travel-adda-test.apk
           gh release delete test-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
           gh release create test-latest travel-adda-test.apk --repo "$GITHUB_REPOSITORY" --prerelease \
-            --title "পরীক্ষামূলক APK (সর্বশেষ)" --notes "শুধু পরীক্ষার জন্য। commit ${GITHUB_SHA::7}"
+            --title "পরীক্ষামূলক APK (সর্বশেষ)" --notes "শুধু পরীক্ষার জন্য। commit ${GITHUB_SHA::7}" --target "$GITHUB_SHA"
+          # gh sometimes leaves the release as a draft (then the download link gives 404): publish it and check the link
+          for i in 1 2 3 4 5; do
+            [ "$(gh release view test-latest --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false" ] && break
+            gh release edit test-latest --repo "$GITHUB_REPOSITORY" --draft=false || true; sleep 5
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' -L "https://github.com/$GITHUB_REPOSITORY/releases/download/test-latest/travel-adda-test.apk")
+          [ "$code" = 200 ] || { echo "::error title=DOWNLOAD LINK BROKEN::status $code"; exit 1; }
