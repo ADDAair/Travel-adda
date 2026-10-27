@@ -1,6 +1,6 @@
 # Travel Adda – Haj & Umrah Assistant (project rules)
 
-Stack: React Native + Expo (SDK 57), Supabase (Postgres + RLS). Android first.
+Stack: React Native + Expo (SDK 58), Supabase (Postgres + RLS). Android first.
 Owner is non-technical; Claude does the work end to end. Security is top priority.
 
 ## Permanent product principles (full text: docs/master-principles-bn.md — follow it)
@@ -31,7 +31,7 @@ Priority order: clarity > ease > accessibility > reliability > speed > beauty > 
 - New work uses the latest stable versions/technology. Existing code is moved up step by step (one Expo SDK at a time,
   TypeScript file by file), never all at once: explain the reason, ask the owner (options + consequences), then do it,
   keeping every feature working (all tests + CI + APK + owner phone check after each step).
-- Status Oct 2026: app on Expo SDK 57 (RN 0.86, React 19.2.3, Hermes v1); latest is SDK 58 (RN 0.88). App code is JavaScript.
+- Status Oct 2026: app on Expo SDK 58 (RN 0.88, React 19.3, Hermes v1, R8 in release builds) — the latest. App code is JavaScript.
 
 ## Workflow
 - Push to main triggers .github/workflows/check.yml. Read failures via check-run annotations (logs API is blocked).
