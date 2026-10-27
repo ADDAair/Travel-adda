@@ -1,0 +1,28 @@
+name: deps-add
+# Adds packages with the versions that fit the app's Expo SDK (npx expo install) on a branch and pushes the result.
+on:
+  workflow_dispatch:
+    inputs:
+      packages: { description: 'space separated package names', required: true }
+      dev: { description: 'dev dependency? yes/no', required: true, default: 'no' }
+permissions: { contents: write }
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: add
+        run: |
+          set +e
+          run() { echo "### $*"; "$@" > step.log 2>&1; code=$?; tail -n 60 step.log; if [ $code -ne 0 ]; then tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' | { read -r m; echo "::error title=FAILED: $*::$m"; }; fi; return $code; }
+          P='${{ github.event.inputs.packages }}'
+          echo "$P" | grep -Eq '^[@a-z0-9/._ -]+$' || { echo "::error::bad package names"; exit 1; }
+          run npm install --legacy-peer-deps || exit 1
+          if [ '${{ github.event.inputs.dev }}' = yes ]; then run npx expo install $P -- --save-dev --legacy-peer-deps || exit 1
+          else run npx expo install $P -- --legacy-peer-deps || exit 1; fi
+          git config user.name "travel-adda-bot"; git config user.email "bot@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Add $P (expo install)" || echo "nothing changed"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
