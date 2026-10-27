@@ -110,3 +110,19 @@ test('journey refusals become plain Bengali', () => {
   assert.ok(offerErrorText({ message: 'journey required' }).includes('যাত্রাপথ'));
   assert.ok(offerErrorText({ message: 'violates check constraint "offers_route_nights"' }).includes('রাত'));
 });
+
+// Owner's screenshot (SDK 55, Oct 2026): the field being typed in stays hidden under the keyboard. Android no longer
+// resizes the app for the keyboard, so the page must scroll the field up itself.
+test('keyboard: how far to scroll so the field being typed in sits above the keyboard', async () => {
+  const { scrollToShow, KB_GAP } = await import('../../src/lib/keyboard.js');
+  assert.ok(KB_GAP >= 16);
+  // field bottom 1200, keyboard top 1150 -> scroll up 50 + gap
+  assert.equal(scrollToShow({ fieldTop: 1140, fieldBottom: 1200, keyboardTop: 1150, viewTop: 0 }), 50 + KB_GAP);
+  // already visible -> no scroll
+  assert.equal(scrollToShow({ fieldTop: 500, fieldBottom: 560, keyboardTop: 1150, viewTop: 0 }), 0);
+  // a very tall field (multi-line) is brought up only until its top reaches the top of the page, never past it
+  assert.equal(scrollToShow({ fieldTop: 300, fieldBottom: 1600, keyboardTop: 1150, viewTop: 200 }), 100);
+  // no keyboard / unknown numbers -> no scroll
+  assert.equal(scrollToShow({ fieldTop: 1140, fieldBottom: 1200, keyboardTop: 0, viewTop: 0 }), 0);
+  assert.equal(scrollToShow({ fieldTop: NaN, fieldBottom: 1200, keyboardTop: 1150, viewTop: 0 }), 0);
+});

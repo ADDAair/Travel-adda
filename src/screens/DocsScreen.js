@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Modal, ActivityIndicator, Alert, Linking, BackHandler, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Modal, ActivityIndicator, Alert, Linking, BackHandler, Platform } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';

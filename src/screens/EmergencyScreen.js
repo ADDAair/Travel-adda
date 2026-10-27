@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Modal, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking, Modal, BackHandler } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';

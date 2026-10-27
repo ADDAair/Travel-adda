@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { T } from '../strings';

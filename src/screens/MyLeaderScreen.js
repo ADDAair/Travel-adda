@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator, Image } from 'react-native';
+import { View, Text, Pressable, Linking, ActivityIndicator, Image } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';

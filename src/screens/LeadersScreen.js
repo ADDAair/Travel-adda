@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { areaText } from '../components/WorkAreaFields';
 import { LEADER_KINDS } from '../lib/leaderKinds';
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, Pressable, Image, ActivityIndicator, Linking } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import DistrictPicker from '../components/DistrictPicker';

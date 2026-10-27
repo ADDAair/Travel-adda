@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Alert, ScrollView, StyleSheet, Image, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Alert, StyleSheet, Image, Modal, ActivityIndicator } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, BackHandler } from 'react-native';
+import { View, Text, Pressable, BackHandler } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';

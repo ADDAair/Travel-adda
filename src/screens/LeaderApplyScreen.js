@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S } from '../theme';

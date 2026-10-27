@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, BackHandler } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';

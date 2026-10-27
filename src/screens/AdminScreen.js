@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { areaText } from '../components/WorkAreaFields';
 import { LEADER_KINDS } from '../lib/leaderKinds';
-import { View, Text, ScrollView, Pressable, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Linking, ActivityIndicator } from 'react-native';
+import ScrollView from '../components/KbScroll';
 import { C, S, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
