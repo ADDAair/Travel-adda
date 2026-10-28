@@ -18,6 +18,14 @@ const err = (r) => r.error?.message;
 const H = mk(); const L = mk(); const A = mk();
 const hs = await H.auth.signInWithPassword({ email: await loginId(H, process.env.H_PHONE), password: process.env.H_PW });
 const ls = await L.auth.signInWithPassword({ email: await loginId(L, process.env.L_PHONE), password: process.env.L_PW });
+// The code is public: the OLD test passwords (made from the repository id, which anyone can see) must not work any more.
+if (process.env.H_OLD_PW && process.env.H_OLD_PW !== process.env.H_PW) {
+  for (const [who, phone, pw] of [['haji', process.env.H_PHONE, process.env.H_OLD_PW], ['leader', process.env.L_PHONE, process.env.L_OLD_PW]]) {
+    const o = mk(); const t = await o.auth.signInWithPassword({ email: await loginId(o, phone), password: pw });
+    check(`পুরনো পরীক্ষার পাসওয়ার্ডে (${who}) লগইন হয় না`, !!t.error, t.error ? '' : 'OLD PASSWORD STILL WORKS');
+    if (!t.error) await o.auth.signOut();
+  }
+}
 if (hs.error || ls.error) { console.log('login failed', hs.error?.message, ls.error?.message); process.exit(1); }
 const hid = hs.data.user.id; const lid = ls.data.user.id;
 const hcode = (await H.from('profiles').select('haji_code').single()).data.haji_code;

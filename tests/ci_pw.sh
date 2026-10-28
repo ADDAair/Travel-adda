@@ -13,3 +13,7 @@ else
   export H_PW="$H_OLD_PW" L_PW="$L_OLD_PW"
 fi
 export TEST_PHONE="$H_PHONE" TEST_PW="$H_PW"
+# GitHub hides secrets in logs, but not passwords made FROM a secret: hide them too (the code is public).
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+  echo "::add-mask::$H_PW"; echo "::add-mask::$L_PW"; echo "::add-mask::$H_OLD_PW"; echo "::add-mask::$L_OLD_PW"
+fi
