@@ -31,6 +31,8 @@ test('service kinds have Bengali names and icons', () => {
 test('a service cost is checked in the app first (amount, kind, note), then sent', async () => {
   await assert.rejects(addServiceCost('L', null, 'visa', 'abc', 'ভিসা ফি'), (e) => e.code === 'amount');
   await assert.rejects(addServiceCost('L', null, 'visa', '০', 'ভিসা ফি'), (e) => e.code === 'amount');
+  await assert.rejects(addServiceCost('L', null, 'visa', '', 'ভিসা ফি'), (e) => e.code === 'amount');      // empty field
+  await assert.rejects(addServiceCost('L', null, 'visa', null, 'ভিসা ফি'), (e) => e.code === 'amount');
   await assert.rejects(addServiceCost('L', null, 'gift', '১০০০', 'ভিসা ফি'), (e) => e.code === 'kind');
   await assert.rejects(addServiceCost('L', null, 'visa', '১০০০', ' ক '), (e) => e.code === 'note');
   assert.equal(rpcCalls().length, 0);
