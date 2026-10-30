@@ -7,6 +7,8 @@ import { existsSync, readFileSync } from 'node:fs';
 const root = new URL('../../', import.meta.url);
 const STEP1 = ['src/lib/mfa', 'src/lib/chatConsent', 'src/lib/adminMoney', 'src/lib/payments'];
 // Step 2: login, password, account deletion, app lock, phone codes, SOS, admin tools
+// Step 3: contracts & leaders, groups, help chat
+const STEP3 = ['src/lib/market', 'src/lib/groups', 'src/lib/help'];
 const STEP2 = ['src/lib/account', 'src/lib/applock', 'src/lib/password', 'src/lib/login', 'src/lib/otp', 'src/lib/sos', 'src/lib/admin'];
 
 test('step 1 files are TypeScript (and the old JavaScript copy is gone)', () => {
@@ -15,8 +17,8 @@ test('step 1 files are TypeScript (and the old JavaScript copy is gone)', () => 
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
 });
-test('step 2 files are TypeScript (and the old JavaScript copy is gone)', () => {
-  for (const f of STEP2) {
+test('step 2 and 3 files are TypeScript (and the old JavaScript copy is gone)', () => {
+  for (const f of [...STEP2, ...STEP3]) {
     assert.ok(existsSync(new URL(`${f}.ts`, root)), `${f}.ts missing`);
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
