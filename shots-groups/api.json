@@ -1,0 +1,482 @@
+[
+ {
+  "check": "পুরনো পরীক্ষার পাসওয়ার্ডে (haji) লগইন হয় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "পুরনো পরীক্ষার পাসওয়ার্ডে (leader) লগইন হয় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী নিজেকে লিডার বানাতে পারেন না",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "হাজী অ্যাকাউন্টের ধরন বদলাতে পারেন না",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "হাজী নিজে নম্বর \"যাচাই করা\" বানাতে পারেন না",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "লিডার নিজেকে অ্যাডমিন বানাতে পারেন না",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "লিডার হাজীর প্রোফাইল সরাসরি পড়তে পারেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী অ্যাকাউন্ট লিডার আবেদন করতে পারে না",
+  "ok": true,
+  "note": "new row violates row-level security policy for table \"leader_applications\""
+ },
+ {
+  "check": "তালিকায় লিডার আছেন",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "তালিকায় কোনো ফোন নম্বর নেই",
+  "ok": true,
+  "note": "id,full_name,leader_code,agency_name,district,upazila,avatar_path,umrah_license,hajj_license,rating_avg,rating_count,complaints_verified,only_mine,union_name,le"
+ },
+ {
+  "check": "লগইন ছাড়া তালিকা দেখা যায় না",
+  "ok": true,
+  "note": "permission denied for function list_leaders"
+ },
+ {
+  "check": "চুক্তির টেবিল সরাসরি পড়া যায় না",
+  "ok": true,
+  "note": "permission denied for table haji_contracts"
+ },
+ {
+  "check": "হাজী চুক্তি পাঠাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "লিডার নিজেকে বা লিডার অ্যাকাউন্টকে চুক্তি পাঠাতে পারেন না",
+  "ok": true,
+  "note": "bad_code"
+ },
+ {
+  "check": "লিডার হাজীর হয়ে রাজি হতে পারেন না",
+  "ok": true,
+  "note": "not_found"
+ },
+ {
+  "check": "লিডার নিজেকে রেটিং দিতে পারেন না",
+  "ok": true,
+  "note": "not_allowed"
+ },
+ {
+  "check": "বাতিল চুক্তিতে লিডারের ফোন দেখা যায় না",
+  "ok": true,
+  "note": "cancelled"
+ },
+ {
+  "check": "রেটিং টেবিল সরাসরি পড়া যায় না",
+  "ok": true,
+  "note": "permission denied for table leader_ratings"
+ },
+ {
+  "check": "অভিযোগের টেবিল সরাসরি পড়া যায় না",
+  "ok": true,
+  "note": "permission denied for table complaints"
+ },
+ {
+  "check": "লিডার হাজীর অভিযোগের প্রমাণ দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "রেফারেল টেবিল সরাসরি পড়া যায় না",
+  "ok": true,
+  "note": "permission denied for table leader_referrals"
+ },
+ {
+  "check": "হাজী লিডারের রেফারেল তালিকা দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "চুক্তি ছাড়া দলের লিডারের নম্বর দেখা যায় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "অন্যের রিপোর্ট দেখা যায় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "অন্যের হয়ে ব্লক করা যায় না",
+  "ok": true,
+  "note": "permission denied for table user_blocks"
+ },
+ {
+  "check": "লিডার admin_list_applications দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার admin_list_complaints দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার admin_list_reports দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার admin_referral_cancels দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার admin_list_interests দেখতে পান না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী ব্যবহারকারী খুঁজতে পারেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার কাউকে বন্ধ করতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী নিজেকে স্টাফ বানাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী এক্সেল ডাউনলোড করতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী কাজের রেকর্ড দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী পরিসংখ্যান দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "শর্তাবলি কেউ লিখতে পারে না",
+  "ok": true,
+  "note": "permission denied for table app_texts"
+ },
+ {
+  "check": "হাজী শর্তাবলি বদলাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "এসএমএস কোডের টেবিল কেউ পড়তে পারে না",
+  "ok": true,
+  "note": "permission denied for table phone_otps"
+ },
+ {
+  "check": "লগইন ছাড়া চুক্তি দেখা যায় না",
+  "ok": true,
+  "note": "permission denied for function my_contracts"
+ },
+ {
+  "check": "চালু নয় এমন চুক্তিতে টাকা জমা দেওয়া যায় না",
+  "ok": true,
+  "note": "new row violates row-level security policy for table \"haji_payments\""
+ },
+ {
+  "check": "লিডার হাজীর নামে টাকা জমা দিতে পারেন না",
+  "ok": true,
+  "note": "new row violates row-level security policy for table \"haji_payments\""
+ },
+ {
+  "check": "লিডার নিজেকে টাকা দেওয়া লিখতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "লিডার নিজের কমিশন বদলাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী নিজের চুক্তির টাকার হিসাব দেখেন, কমিশন দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার হাজীদের রসিদ/জমার তালিকা সরাসরি দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী অ্যাডমিনের টাকার তালিকা দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার অ্যাডমিনের হিসাব দেখেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী টাকা \"পাওয়া গেছে\" করতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী টাকার অ্যাকাউন্ট নম্বর বদলাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "লগইন ছাড়া টাকার তথ্য দেখা যায় না",
+  "ok": true,
+  "note": "permission denied for table haji_payments"
+ },
+ {
+  "check": "অন্যের নোটিফিকেশন বক্সে কিছু লেখা যায় না",
+  "ok": true,
+  "note": "permission denied for table user_notifications"
+ },
+ {
+  "check": "অন্যের নোটিফিকেশন পড়া যায় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "হাজী সবাইকে নোটিফিকেশন পাঠাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "লিডার সবাইকে নোটিফিকেশন পাঠাতে পারেন না",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "নোটিশের মূল টেবিল সরাসরি পড়া যায় না",
+  "ok": true,
+  "note": "permission denied for table broadcasts"
+ },
+ {
+  "check": "লগইন ছাড়া নোটিফিকেশন দেখা যায় না",
+  "ok": true,
+  "note": "permission denied for function my_notifications"
+ },
+ {
+  "check": "লগইন ছাড়া কোনো টেবিল পড়া বা লেখা যায় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লগইন ছাড়া কোনো তালিকা বা অ্যাডমিন কাজ চলে না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লগইন ছাড়া কারো ফাইল দেখা বা রাখা যায় না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার হাজীর ফোল্ডারে ফাইল দেখতে বা রাখতে পারেন না",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "অজানা ফাইল-বাক্সে কিছু রাখা যায় না",
+  "ok": true,
+  "note": "Bucket not found"
+ },
+ {
+  "check": "লগইন ঠিকানায় ফোন নম্বর নেই, আর অ্যাকাউন্ট আছে কি না বোঝা যায় না (০১৬)",
+  "ok": true,
+  "note": "u8d9b621f643e4ac59733@users.traveladda.app / uc6dce7c4f786001e6260@users.traveladda.app"
+ },
+ {
+  "check": "কেউ নিজে ইমেইল \"যাচাই করা\" বানাতে পারে না (০১৬)",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "কেউ নিজের লগইন চাবি বদলাতে পারে না (০১৬)",
+  "ok": true,
+  "note": "permission denied for table profiles"
+ },
+ {
+  "check": "লিডার নিজেকে \"Travel Adda-র নিজস্ব লিডার\" বানাতে পারেন না (০১৭)",
+  "ok": true,
+  "note": "permission denied for table leader_profiles"
+ },
+ {
+  "check": "লিডার এজেন্সির নাম \"Travel Adda\" করতে পারেন না (০১৭)",
+  "ok": true,
+  "note": "permission denied for table leader_profiles"
+ },
+ {
+  "check": "হাজী অ্যাকাউন্ট Travel Adda লিডার আবেদন করতে পারে না (০১৭)",
+  "ok": true,
+  "note": "new row violates row-level security policy for table \"leader_applications\""
+ },
+ {
+  "check": "লিডার নিজের প্যাকেজ নিজে অনুমোদন দিতে পারেন না (০১৯)",
+  "ok": true,
+  "note": "permission denied for table offers"
+ },
+ {
+  "check": "লিডার অ্যাডমিনের অনুমোদন বোতাম চালাতে পারেন না (০১৯)",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী অপেক্ষায় থাকা প্যাকেজের তালিকা দেখতে পারেন না (০১৯)",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "অ্যাডমিনের নতুন কাজগুলো হাজী বা লিডার চালাতে পারেন না (০২২)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "ভিডিও লিংক অ্যাডমিন ছাড়া কেউ বসাতে পারেন না (০২২)",
+  "ok": true,
+  "note": "permission denied for table app_videos"
+ },
+ {
+  "check": "পাসওয়ার্ড-লগইনের সেশন 2FA ছাড়া (aal1) বলে চেনা যায় (০২৩)",
+  "ok": true,
+  "note": "{\"aal\":\"aal1\",\"staff\":false}"
+ },
+ {
+  "check": "2FA ছাড়া কারও অ্যাডমিন মেনু খোলে না (০২৩)",
+  "ok": true,
+  "note": "[]"
+ },
+ {
+  "check": "2FA ছাড়া কেউ অ্যাডমিন নন (০২৩)",
+  "ok": true,
+  "note": "false"
+ },
+ {
+  "check": "হাজী বা লিডার অন্যের প্রশ্ন-উত্তর পড়তে বা গাইড বদলাতে পারেন না (০২৪)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "অনুমতির তালিকা সরাসরি পড়া যায় না (০২৪)",
+  "ok": true,
+  "note": "permission denied for table chat_consents"
+ },
+ {
+  "check": "গাইডের লেখা সরাসরি বদলানো যায় না (০২৪)",
+  "ok": true,
+  "note": "permission denied for table content_overrides"
+ },
+ {
+  "check": "অন্যের অনুমতির অনুরোধে উত্তর দেওয়া যায় না (০২৪)",
+  "ok": true,
+  "note": "not_found"
+ },
+ {
+  "check": "টাকার বকেয়া, সেবা-খরচ, কাজের রেকর্ড, নোটিফিকেশন ও জরুরি রেকর্ড শুধু স্টাফের (০২৬)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "লিডার সেবা-খরচের তালিকা দেখতে পারেন না (০২৬)",
+  "ok": true,
+  "note": "permission denied for table service_costs"
+ },
+ {
+  "check": "জরুরি রেকর্ড সরাসরি পড়া যায় না (০২৬)",
+  "ok": true,
+  "note": "permission denied for table sos_events"
+ },
+ {
+  "check": "ভুল নম্বরে জরুরি রেকর্ড হয় না (০২৬)",
+  "ok": true,
+  "note": "bad number"
+ },
+ {
+  "check": "রেটিং গণনার ভেতরের নিয়ম বাইরে থেকে চালানো যায় না (০২১)",
+  "ok": true,
+  "note": "permission denied for function rating_counts"
+ },
+ {
+  "check": "হাজী অন্য দলের পাঠানো আমন্ত্রণ দেখতে পারেন না (০২১)",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "অন্যের আমন্ত্রণ বাতিল করা যায় না (০২১)",
+  "ok": true,
+  "note": "not_found"
+ },
+ {
+  "check": "অনুরোধ ছাড়া নিজে নিজে খাদেম হওয়া যায় না (০২১)",
+  "ok": true,
+  "note": "not_found"
+ },
+ {
+  "check": "আমন্ত্রণের টেবিল সরাসরি পড়া যায় না (০২১)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "প্যাকেজের তালিকায় লিডারের আইডি ও রেটিং আছে (০২০)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "প্যাকেজের তালিকায় কোনো ফোন নম্বর নেই (০২০)",
+  "ok": true,
+  "note": "id,kind,title,price_bdt,depart_on,return_on,makkah_hotel,makkah_distance_m,madinah_hotel,madinah_distance_m,room_share,includes,notes,agency_name,created_at,val"
+ },
+ {
+  "check": "অন্যের দলে খাদেম যোগ করা যায় না (০১৮)",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "হাজী অন্য দলের প্রশ্নের তালিকা দেখতে পারেন না (০১৮)",
+  "ok": true,
+  "note": "not allowed"
+ },
+ {
+  "check": "দলের বাইরে থেকে প্রশ্ন পাঠানো যায় না (০১৮)",
+  "ok": true,
+  "note": "not a member"
+ },
+ {
+  "check": "খাদেম/চ্যাটের টেবিল সরাসরি পড়া যায় না (০১৮)",
+  "ok": true,
+  "note": ""
+ },
+ {
+  "check": "অন্যদের সম্পর্কে প্রশ্নের ভেতরের ফাংশন বাইরে থেকে চলে না (০১৫)",
+  "ok": true,
+  "note": ""
+ }
+]
