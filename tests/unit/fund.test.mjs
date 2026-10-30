@@ -82,3 +82,20 @@ test('the fund page is part of the app (route + video topic)', () => {
   assert.ok(app.includes('<Tab.Screen name="Fund"'));
   assert.ok(VIDEO_TOPICS.Fund);
 });
+
+// Owner's screenshots (Oct 2026): a real date choice instead of "আজ / গতকাল / অন্য দিন"; written rules for the fund.
+test('date choice: the last 60 days, newest first, in Bengali, today and yesterday named', async () => {
+  const { recentDates } = await import('../../src/lib/fund.ts');
+  const d = recentDates(new Date('2026-10-31T10:00:00Z'), 60);
+  assert.equal(d.length, 60);
+  assert.equal(d[0].ymd, '2026-10-31');
+  assert.ok(d[0].label.startsWith('আজ') && d[0].label.includes('৩১ অক্টোবর ২০২৬'));
+  assert.ok(d[1].label.startsWith('গতকাল') && d[1].ymd === '2026-10-30');
+  assert.equal(d[2].label, '২৯ অক্টোবর ২০২৬');
+  assert.equal(new Set(d.map((x) => x.label)).size, 60, 'every label is different');
+});
+test('fund rules: sadaqah only, no refund, Travel Adda decides, spending is public, names only with consent', async () => {
+  const { FUND_RULES } = await import('../../src/lib/fund.ts');
+  const all = FUND_RULES.join(' ');
+  for (const w of ['সদকা', 'যাকাত', 'ফেরত', 'Travel Adda', 'সবাই', 'রাজি', 'ভুয়া']) assert.ok(all.includes(w), w);
+});

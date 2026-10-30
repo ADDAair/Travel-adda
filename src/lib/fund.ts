@@ -135,3 +135,27 @@ export async function fundPayInfo(): Promise<{ bank: string; bkash: string }> {
   const m: Record<string, string> = Object.fromEntries(((r.data || []) as Row[]).map((x) => [x.key, x.value]));
   return { bank: m.fund_bank || m.pay_bank || '', bkash: m.fund_bkash || m.pay_bkash || '' };
 }
+
+// ---------- date choice and rules ----------
+const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+// The last n days (Bangladesh time), newest first: { ymd: '2026-10-31', label: 'আজ — ৩১ অক্টোবর ২০২৬' }.
+export function recentDates(now: Date = new Date(), n = 60): { ymd: string; label: string }[] {
+  const bd = new Date(now.getTime() + 6 * 3600000);     // Bangladesh is UTC+6 all year
+  const out: { ymd: string; label: string }[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const d = new Date(Date.UTC(bd.getUTCFullYear(), bd.getUTCMonth(), bd.getUTCDate() - i));
+    const text = `${toBn(d.getUTCDate())} ${BN_MONTH[d.getUTCMonth()]} ${toBn(d.getUTCFullYear())}`;
+    out.push({ ymd: d.toISOString().slice(0, 10), label: i === 0 ? `আজ — ${text}` : i === 1 ? `গতকাল — ${text}` : text });
+  }
+  return out;
+}
+
+// Shown on the fund page; sending a gift or an application means agreeing to these.
+export const FUND_RULES: readonly string[] = [
+  'এটি সদকার তহবিল, যাকাতের নয়। যাকাতের টাকা এখানে দেবেন না।',
+  'দান শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে পাঠান। Travel Adda টাকা মিলিয়ে নিশ্চিত করলে তবেই মোট জমায় যোগ হয়।',
+  'দেওয়া সদকা ফেরত দেওয়া হয় না। ভুল করে বেশি বা ভুল নম্বরে পাঠালে সাথে সাথে হেল্পলাইনে জানান।',
+  'কাকে, কখন, কত টাকা দেওয়া হবে, তা Travel Adda যাচাই করে ঠিক করে। প্রতিটি খরচ সবাই দেখতে পান।',
+  'দাতা ও আবেদনকারীর নাম দেখানো হয় কেবল তিনি রাজি হলে। ফোন নম্বর ও আবেদনের কারণ কখনো প্রকাশ্যে আসে না।',
+  'ভুয়া আবেদন বা ভুয়া লেনদেন নম্বর দিলে আবেদন বাতিল হবে এবং অ্যাকাউন্ট বন্ধ করা হতে পারে।',
+];

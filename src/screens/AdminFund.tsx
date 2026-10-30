@@ -26,7 +26,14 @@ export default function FundTab({ perms }: { perms: string[] }) {
   return (
     <>
       <Text style={[st.small, { marginBottom: S.sm }]}>সদকার তহবিল। আবেদনকারীর দেওয়া পরিচিত মানুষকে ফোন করে যাচাই করুন। প্রতিটি সিদ্ধান্ত ও খরচ কাজের রেকর্ডে থাকে, আর খরচ সবাই (নাম ছাড়া) দেখেন।</Text>
-      {tabs.length > 1 ? <Segmented value={tab} onChange={setTab} options={tabs} /> : null}
+      {tabs.length > 1 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }} accessibilityRole="tablist">
+          {tabs.map((t) => (
+            <Button key={t.id} title={`${tab === t.id ? '✓ ' : ''}${t.label}`} icon={t.icon} kind={tab === t.id ? 'primary' : 'secondary'}
+              onPress={() => setTab(t.id)} style={{ width: '48.5%', marginBottom: S.xs }} />
+          ))}
+        </View>
+      ) : null}
       <View style={{ height: S.sm }} />
       {tab === 'apps' ? <Apps /> : tab === 'gifts' ? <Gifts /> : tab === 'spend' ? <Spend /> : tab === 'acct' ? <Account /> : null}
     </>
