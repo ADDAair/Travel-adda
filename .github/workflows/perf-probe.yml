@@ -1,0 +1,17 @@
+name: perf-probe
+# Times the app's common server calls on the real database (read-only, test accounts). Results as a notice.
+on: workflow_dispatch
+permissions: { contents: read }
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: time server calls
+        env: { CI_TEST_SECRET: '${{ secrets.CI_TEST_SECRET }}' }
+        run: |
+          . tests/ci_pw.sh
+          npm install --no-save --legacy-peer-deps @supabase/supabase-js@2 >/dev/null 2>&1
+          node tests/perf_probe.mjs
