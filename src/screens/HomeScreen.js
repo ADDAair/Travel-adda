@@ -8,6 +8,7 @@ import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
 import { loadSavedLocation } from '../lib/location';
+import { finishStartup } from '../lib/startup';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
 import { processPendingReferral, processPendingTerms } from '../lib/market';
@@ -89,6 +90,7 @@ export default function HomeScreen({ navigation }) {
   let next = null;
   if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz, pl.next.key), nm: pl.nextAt === pl.times.dhuhr ? prayerName(pl.next, pl.today) : pl.next.name }; } catch (e) { next = null; } }
 
+  useEffect(() => { if (state !== 'load') finishStartup('home'); }, [state]);
   if (state === 'load') {
     return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
   }
