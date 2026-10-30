@@ -18,6 +18,7 @@ import { ContractsTab, GroupsTab, RatingsTab, UserPage, AppSettingsBox } from '.
 import NotifyTab from './AdminNotify';
 import AdminMfa from './AdminMfa';
 import ContentTab from './AdminContent';
+import SpeedTab from './AdminSpeed';
 import { MoneyAlertsTab, ServiceCostsTab, SegmentNotifyBox, SosTab, AuditSearchTab } from './AdminPart4';
 import { AppState } from 'react-native';
 import { idleExpired } from '../lib/idle';
@@ -53,6 +54,7 @@ const SECTIONS = [
   { id: 'terms', icon: '📜', label: 'শর্তাবলি', perm: 'admin' },
   { id: 'audit', icon: '🧾', label: 'কাজের রেকর্ড', perm: 'admin' },
   { id: 'content', icon: '📝', label: 'গাইড ও দোয়ার লেখা', perm: 'admin' },
+  { id: 'speed', icon: '⏱️', label: 'গতি পরীক্ষা', perm: 'admin' },
   { id: 'help', icon: '☎️', label: 'হেল্পলাইন ও অ্যাপ সেটিং', perm: 'admin' },
 ];
 
@@ -132,7 +134,8 @@ export default function AdminScreen({ navigation }) {
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
                           : cur.id === 'audit' ? <AuditSearchTab actionText={(a) => ACTION[a] || a} />
-                          : cur.id === 'content' ? <ContentTab /> : <HelpTab />
+                          : cur.id === 'content' ? <ContentTab />
+                          : cur.id === 'speed' ? <SpeedTab /> : <HelpTab />
       ) : null}
     </ScrollView>
   );
