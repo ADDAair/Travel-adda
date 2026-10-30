@@ -1,6 +1,6 @@
 // Admin: speed check from this phone (read-only server calls, 3 times each). Shows plain Bengali results so the owner
 // can tell whether slow loading comes from the internet, the server, or the app.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
 import { timeCall, speedText } from '../lib/speed';
 import { toBn } from '../lib/phone';
+import { lastStartup, startupText } from '../lib/startup';
 import { st } from './GroupScreen';
 
 const CHECKS = [
@@ -22,6 +23,8 @@ const CHECKS = [
 export default function SpeedTab() {
   const [res, setRes] = useState({});
   const [busy, setBusy] = useState(false);
+  const [start, setStart] = useState(undefined);
+  useEffect(() => { lastStartup().then(setStart); }, []);
   const run = async () => {
     if (busy) return;
     setBusy(true); setRes({});
@@ -35,6 +38,7 @@ export default function SpeedTab() {
   return (
     <>
       <Text style={[st.p, { marginBottom: S.sm }]}>এই ফোন আর এই ইন্টারনেটে অ্যাপের তথ্য আসতে কত সময় লাগে, মেপে দেখায়। শুধু তথ্য পড়া হয়, কিছু বদলায় না। প্রতিটি ৩ বার মাপা হয়।</Text>
+      {start !== undefined ? <Notice kind="info" title="🚀 অ্যাপ খোলার সময়" text={startupText(start)} /> : null}
       <Button title={busy ? 'মাপা হচ্ছে…' : 'গতি পরীক্ষা শুরু করুন'} icon="⏱️" onPress={run} loading={busy} style={{ marginBottom: S.md }} />
       {CHECKS.map((c) => (res[c.id] ? (
         <View key={c.id} style={st.card}>
