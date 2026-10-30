@@ -60,6 +60,7 @@ import { loadContentOverrides } from './src/lib/contentEdit';
 import { GUIDES } from './src/content/guides';
 import { DUAS } from './src/content/duas';
 import ChatConsentScreen from './src/screens/ChatConsentScreen';
+import FundScreen from './src/screens/FundScreen';
 import { updateGate, APP_VERSION } from './src/lib/appVersion';
 
 const Tab = createBottomTabNavigator();
@@ -202,6 +203,7 @@ function Main() {
       <Tab.Screen name="GroupStaff" component={GroupStaffScreen} options={{ title: 'খাদেম ও তৈরি উত্তর' }} />
       <Tab.Screen name="KhademHome" component={KhademHomeScreen} options={{ title: 'খাদেমের পাতা' }} />
       <Tab.Screen name="ChatConsent" component={ChatConsentScreen} options={{ title: 'প্রশ্ন-উত্তর দেখার অনুমতি' }} />
+      <Tab.Screen name="Fund" component={FundScreen} options={{ title: 'হজ-ওমরাহ সহায়তা তহবিল' }} />
     </Tab.Navigator>
   );
 }

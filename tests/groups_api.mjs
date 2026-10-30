@@ -323,6 +323,28 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 026 not run yet:', p.error.message);
 }
 
+// --- 027: help fund — public total for signed-in users; applications, donations and spending only for Travel Adda
+{
+  const p = await H.rpc('fund_summary');
+  if (!p.error) {
+    check('তহবিলের মোট হিসাব সবাই দেখতে পারেন (০২৭)', p.data && 'collected' in p.data && Array.isArray(p.data.spends), JSON.stringify(p.data || {}).slice(0, 80));
+    const fake = '00000000-0000-0000-0000-000000000001';
+    const open = [];
+    for (const [fn, args] of [['admin_help_applications', { p_status: null }], ['admin_decide_help', { p_id: fake, p_decision: 'approve', p_note: null }],
+      ['admin_fund_donations', { p_status: null }], ['admin_review_donation', { p_id: fake, p_confirm: true, p_note: null }],
+      ['admin_spend_fund', { p_app: fake, p_amount: 1, p_purpose: 'হ্যাক চেষ্টা', p_ref: 'X-1' }], ['admin_help_travelled', { p_id: fake }]]) {
+      for (const who of [H, L]) { const r = await who.rpc(fn, args); if (!r.error) open.push(fn); }
+    }
+    check('তহবিলের আবেদন, দান যাচাই ও খরচ হাজী বা লিডার চালাতে পারেন না (০২৭)', open.length === 0, open.join(', '));
+    for (const t of ['help_applications', 'fund_donations', 'fund_spends']) {
+      const x = await H.from(t).select('id').limit(1);
+      check(`${t} সরাসরি পড়া যায় না (০২৭)`, !!x.error, err(x));
+    }
+    const w = JSON.stringify(p.data.waiting || []) + JSON.stringify(p.data.spends || []);
+    check('তহবিলের প্রকাশ্য তালিকায় কারও ফোন নম্বর নেই (০২৭)', !/01[3-9]\d{8}/.test(w), '');
+  } else console.log('step 027 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');
