@@ -12,6 +12,7 @@ import LeaderOffersScreen from './LeaderOffersScreen';
 import { OfferCard, OfferSummary } from '../components/OfferCard';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
+import FundCard from '../components/FundCard';
 
 export { OfferCard };
 
@@ -196,6 +197,7 @@ function HajiOffers({ navigation, route }) {
   return (
     <ScrollView ref={scroller} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <Text style={st.title} accessibilityRole="header">🎁 অফার ও প্যাকেজ</Text>
+      <FundCard onOpen={() => navigation.navigate('Fund')} />
       <Segmented options={[{ id: 'umrah', icon: '🔄', label: 'ওমরাহ' }, { id: 'hajj', icon: '🕋', label: 'হজ' }]} value={kind} onChange={(k) => { setRows(null); setKind(k); setMsg(null); setMonth(null); }} />
       <View style={{ height: S.sm }} />
       <Field label="লিডারের আইডি বা নাম দিয়ে খুঁজুন" hint="যেমন: TL-00004 বা এজেন্সির নাম" value={q} onChangeText={setQ} maxLength={40} autoCorrect={false} />

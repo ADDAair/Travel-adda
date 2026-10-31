@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -17,6 +18,7 @@ export async function uploadAvatar(uri) {
   // .single() fails when no row was changed (for example if a policy blocked it), so a silent no-op is caught.
   const upd = await supabase.from('profiles').update({ avatar_path: path }).eq('id', uid).select('avatar_path').single();
   if (upd.error) throw upd.error;
+  AsyncStorage.setItem('ta.photoOk.v1', 'yes').catch(() => {});
   return path;
 }
 
@@ -33,10 +35,17 @@ export async function signedAvatarUrl(path) {
 
 // 'missing' | 'ok'. Any error counts as 'ok' on purpose: a network hiccup (or the database step not yet applied)
 // must never lock a person out of the app. The check runs again at the next app start.
+// Once a photo is known to exist it is remembered on the phone, so later app starts skip this server call.
+const PHOTO_OK = 'ta.photoOk.v1';
 export async function photoGateState(timeoutMs = 6000) {
+  try { if ((await AsyncStorage.getItem(PHOTO_OK)) === 'yes') return 'ok'; } catch (e) { /* ask the server */ }
   try {
     const q = supabase.from('profiles').select('avatar_path').single()
-      .then(({ data, error }) => (error ? 'ok' : (data && data.avatar_path ? 'ok' : 'missing')));
+      .then(({ data, error }) => {
+        if (error) return 'ok';
+        if (data && data.avatar_path) { AsyncStorage.setItem(PHOTO_OK, 'yes').catch(() => {}); return 'ok'; }
+        return 'missing';
+      });
     const t = new Promise((resolve) => setTimeout(() => resolve('ok'), timeoutMs));
     return await Promise.race([q, t]);
   } catch (e) {

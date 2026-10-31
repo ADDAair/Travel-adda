@@ -22,3 +22,7 @@ test('the location permission text on the phone does not say it stays on the pho
   assert.ok(!/শুধু ফোনেই থাকে/.test(appJson));
   assert.ok(/জরুরি/.test(appJson));
 });
+
+test('the policy explains the help fund: application details stay private, names only with consent', () => {
+  assert.ok(/সহায়তা তহবিল/.test(all) && /রাজি/.test(all) && /পরিচিত/.test(all));
+});

@@ -19,6 +19,7 @@ import NotifyTab from './AdminNotify';
 import AdminMfa from './AdminMfa';
 import ContentTab from './AdminContent';
 import SpeedTab from './AdminSpeed';
+import FundTab from './AdminFund';
 import { MoneyAlertsTab, ServiceCostsTab, SegmentNotifyBox, SosTab, AuditSearchTab } from './AdminPart4';
 import { AppState } from 'react-native';
 import { idleExpired } from '../lib/idle';
@@ -30,10 +31,10 @@ const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অ
 
 // Sections, each shown only to people with the matching permission ('admin' = the owner only).
 // key in admin_counts() for the sections that have waiting work
-const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers', alerts: 'money_alerts', sos: 'sos' };
+const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers', alerts: 'money_alerts', sos: 'sos', fund: 'fund' };
 const COUNT_TEXT = { apps: 'লিডার আবেদন যাচাই বাকি', calls: 'হাজী ফোনের অপেক্ষায়', complaints: 'অভিযোগ যাচাই বাকি', reports: 'রিপোর্ট / রেফারেল বাতিলের অনুরোধ',
   money: 'টাকা জমা যাচাই বাকি', offers: 'প্যাকেজ অনুমোদনের অপেক্ষায়',
-  alerts: 'টাকার বকেয়া', sos: 'গত ২৪ ঘণ্টায় জরুরি ফোন' };
+  alerts: 'টাকার বকেয়া', sos: 'গত ২৪ ঘণ্টায় জরুরি ফোন', fund: 'সহায়তা তহবিলে যাচাই বাকি' };
 const SECTIONS = [
   { id: 'stats', icon: '📊', label: 'পরিসংখ্যান', perm: 'reports' },
   { id: 'apps', icon: '🧭', label: 'লিডার আবেদন', perm: 'applications' },
@@ -46,6 +47,7 @@ const SECTIONS = [
   { id: 'alerts', icon: '⏰', label: 'টাকার বকেয়া', perm: 'payments' },
   { id: 'services', icon: '🧾', label: 'নিজস্ব লিডারের সেবা-খরচ', perm: 'payments' },
   { id: 'sos', icon: '🆘', label: 'জরুরি রেকর্ড', perm: 'users' },
+  { id: 'fund', icon: '🤲', label: 'সহায়তা তহবিল', perm: ['users', 'payments'] },
   { id: 'offers', icon: '🎁', label: 'প্যাকেজ', perm: 'offers' },
   { id: 'contracts', icon: '📄', label: 'চুক্তি ও বিরোধ', perm: ['payments', 'complaints', 'users'] },
   { id: 'groups', icon: '🧑‍🤝‍🧑', label: 'দল ও খাদেম', perm: 'users' },
@@ -77,7 +79,7 @@ export default function AdminScreen({ navigation }) {
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
   }, [state]);
   const [counts, setCounts] = useState({});
-  useEffect(() => { if (state === 'ok' && !tab) adminCounts().then(setCounts).catch(() => {}); }, [state, tab]);
+  useEffect(() => { if (state === 'ok' && !tab) adminCounts().then((c) => setCounts({ ...c, fund: (c.help_apps || 0) + (c.donations || 0) })).catch(() => {}); }, [state, tab]);
   const mine = SECTIONS.filter((x) => perms && [].concat(x.perm).some((p) => perms.includes(p)));
   const todo = mine.filter((x) => counts[COUNT_KEY[x.id]] > 0);
   const cur = mine.find((x) => x.id === tab);
@@ -127,6 +129,7 @@ export default function AdminScreen({ navigation }) {
                     : cur.id === 'alerts' ? <MoneyAlertsTab />
                     : cur.id === 'services' ? <ServiceCostsTab />
                     : cur.id === 'sos' ? <SosTab />
+                    : cur.id === 'fund' ? <FundTab perms={perms} />
                     : cur.id === 'offers' ? <OffersTab />
                     : cur.id === 'contracts' ? <ContractsTab />
                     : cur.id === 'groups' ? <GroupsTab />
