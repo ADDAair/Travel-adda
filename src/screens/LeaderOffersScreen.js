@@ -9,6 +9,7 @@ import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffe
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
 import { OfferCard, OfferSummary } from '../components/OfferCard';
+import FundCard from '../components/FundCard';
 import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute } from '../lib/offerRoute';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -85,6 +86,7 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       {!inTab ? <Pressable onPress={() => navigation.navigate('Leader')} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ লিডার প্যানেল</Text></Pressable> : null}
+      <FundCard onOpen={() => navigation.navigate('Fund')} />
       <Text style={st.title} accessibilityRole="header">🎁 আমার প্যাকেজ (অফার)</Text>
       {state === 'ok' ? <Text style={[st.small, { marginBottom: S.sm }]}>ওমরাহ ও হজ প্যাকেজ এখান থেকে দিন। যেগুলো দিয়েছেন সেগুলো নিচে দেখবেন, চাইলে লুকাতে পারবেন।</Text> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}

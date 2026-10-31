@@ -7,10 +7,11 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import { st, fmtDay, confirm } from './GroupScreen';
 import { toBn } from '../lib/phone';
 import { fundSummary, donate, myDonations, myConfirmedTotal, applyHelp, myHelpApplication, withdrawHelp, helpErrorText, personLabel,
-  kindLabel, helpStatusText, fundPayInfo, recentDates, FUND_RULES, donateAccess, donateAccessText, requestDonateAccess, requestAccessText,
+  kindLabel, helpStatusText, fundPayInfo, fundTabs, recentDates, FUND_RULES, donateAccess, donateAccessText, requestDonateAccess, requestAccessText,
   type FundSummary, type HelpForm, type DonateAccess } from '../lib/fund';
 import { PAY_METHODS, PAY_STATUS } from '../lib/payments';
 import DistrictPicker from '../components/DistrictPicker';
+import { useMe } from '../lib/me';
 
 type Row = Record<string, any>;
 type Nav = { navigate: (r: string, p?: object) => void };
@@ -65,6 +66,9 @@ function Rules() {
 
 export default function FundScreen({ navigation }: { navigation: Nav & { addListener?: (e: string, f: () => void) => () => void } }) {
   const [tab, setTab] = useState<'give' | 'apply' | 'report'>('give');
+  const { me } = useMe();
+  const tabs = fundTabs(me);
+  const shown = tabs.some((t) => t.id === tab) ? tab : 'give';   // a leader never lands on "apply"
   const [s, setS] = useState<FundSummary | null | undefined>(undefined);
   const load = useCallback(() => { fundSummary().then(setS).catch(() => setS(null)); }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
@@ -94,11 +98,10 @@ export default function FundScreen({ navigation }: { navigation: Nav & { addList
       </View>
       {s ? (
         <>
-          <Segmented value={tab} onChange={(v: 'give' | 'apply' | 'report') => setTab(v)}
-            options={[{ id: 'give', label: 'দান করুন' }, { id: 'apply', label: 'আবেদন' }, { id: 'report', label: 'হিসাব' }]} />
+          <Segmented value={shown} onChange={(v: 'give' | 'apply' | 'report') => setTab(v)} options={tabs} />
           <View style={{ height: S.sm }} />
-          {tab !== 'report' ? <Rules /> : null}
-          {tab === 'give' ? <Give onDone={load} /> : tab === 'apply' ? <Apply /> : <Report s={s} />}
+          {shown !== 'report' ? <Rules /> : null}
+          {shown === 'give' ? <Give onDone={load} /> : shown === 'apply' ? <Apply /> : <Report s={s} />}
         </>
       ) : null}
     </ScrollView>
