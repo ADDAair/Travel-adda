@@ -345,6 +345,23 @@ check('লগইন ছাড়া চুক্তি দেখা যায়
   } else console.log('step 027 not run yet:', p.error.message);
 }
 
+// --- 028: giving to the fund needs Travel Adda's permission; only admin / payments staff turn people on or off
+{
+  const p = await H.rpc('my_donate_access');
+  if (!p.error) {
+    check('দানের অনুমতির অবস্থা দেখা যায় (০২৮)', p.data && ['approved', 'open', 'closed'].includes(p.data.mode) && typeof p.data.can === 'boolean', JSON.stringify(p.data || {}));
+    const fake = '00000000-0000-0000-0000-000000000001';
+    const open = [];
+    for (const [fn, args] of [['admin_donor_access', { p_query: null }], ['admin_set_donor_access', { p_user: fake, p_status: 'allowed', p_note: null }],
+      ['admin_set_setting', { p_key: 'fund_donate_mode', p_value: 'open' }]]) {
+      for (const who of [H, L]) { const r = await who.rpc(fn, args); if (!r.error) open.push(fn); }
+    }
+    check('দানের অনুমতি হাজী বা লিডার নিজে চালু করতে পারেন না (০২৮)', open.length === 0, open.join(', '));
+    const x = await H.from('fund_donor_access').select('user_id').limit(1);
+    check('fund_donor_access সরাসরি পড়া যায় না (০২৮)', !!x.error, err(x));
+  } else console.log('step 028 not run yet:', p.error.message);
+}
+
 // --- 021: invitations never reveal who owns a number; rating helper internal; delete needs a fresh password (not called here)
 {
   const p = await H.rpc('my_khadem_invites');
