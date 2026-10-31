@@ -1,7 +1,7 @@
 // Admin: help fund — applications (admin / staff with "users"), donations to confirm and spending (staff with "payments").
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Linking } from 'react-native';
-import { C, S } from '../theme';
+import { View, Text, ActivityIndicator, Linking, Pressable } from 'react-native';
+import { C, S, R, F, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { st, fmtDay, confirm } from './GroupScreen';
 import { toBn } from '../lib/phone';
@@ -28,10 +28,20 @@ export default function FundTab({ perms }: { perms: string[] }) {
       <Text style={[st.small, { marginBottom: S.sm }]}>সদকার তহবিল। আবেদনকারীর দেওয়া পরিচিত মানুষকে ফোন করে যাচাই করুন। প্রতিটি সিদ্ধান্ত ও খরচ কাজের রেকর্ডে থাকে, আর খরচ সবাই (নাম ছাড়া) দেখেন।</Text>
       {tabs.length > 1 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }} accessibilityRole="tablist">
-          {tabs.map((t) => (
-            <Button key={t.id} title={`${tab === t.id ? '✓ ' : ''}${t.label}`} icon={t.icon} kind={tab === t.id ? 'primary' : 'secondary'}
-              onPress={() => setTab(t.id)} style={{ width: '48.5%', marginBottom: S.xs }} />
-          ))}
+          {tabs.map((t) => {
+            const on = tab === t.id;
+            // Icon above the word, so even a long word has the full width. Only the border and background change when
+            // chosen (never the text style: on some Android phones the label is cut when its style changes).
+            return (
+              <Pressable key={t.id} onPress={() => setTab(t.id)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={t.label}
+                style={{ width: '48.5%', minHeight: TOUCH + 28, marginBottom: S.xs, paddingVertical: S.xs, alignItems: 'center', justifyContent: 'center',
+                  borderRadius: R.md, borderWidth: on ? 3 : 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
+                <Text style={{ fontSize: 26 }} importantForAccessibility="no">{t.icon}</Text>
+                <Text style={{ fontSize: F.body, fontWeight: '700', color: C.text, textAlign: 'center' }}>{t.label}</Text>
+                <View style={{ height: 4, width: 40, borderRadius: 2, marginTop: 2, backgroundColor: on ? C.accent : 'transparent' }} />
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
       <View style={{ height: S.sm }} />
