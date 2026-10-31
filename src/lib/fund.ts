@@ -121,6 +121,7 @@ const ERR: Record<string, string> = {
   refPhone: 'পরিচিত মানুষের ১১ অঙ্কের মোবাইল নম্বর লিখুন।', exists: 'আপনার একটি আবেদন আগেই চালু আছে।',
   not_allowed: 'দান করতে Travel Adda-র অনুমতি লাগে। "অনুমতি চাই" বোতাম চাপুন।',
   short: 'আইডি নম্বর, মোবাইল নম্বর বা নামের অন্তত ৩ অক্ষর লিখুন।', status: 'অবস্থা বাছুন।', mode: 'একটি নিয়ম বাছুন।',
+  leader: 'লিডার আইডি থেকে সাহায্যের আবেদন করা যায় না। আপনি চাইলে দান করতে পারেন।',
   reason_admin: 'কারণ অন্তত ৫ অক্ষরে লিখুন।', purpose: 'কী কাজে খরচ, লিখুন (যেমন: ওমরাহ প্যাকেজ)।', not_found: 'এটি আর পাওয়া যায়নি।',
 };
 export function helpErrorText(e: unknown): string {
@@ -145,6 +146,13 @@ const STATUS: Record<string, string> = {
   withdrawn: '↩️ আপনি আবেদন ফিরিয়ে নিয়েছেন',
 };
 export const helpStatusText = (s: string): string => STATUS[s] || s;
+
+// The fund page's parts. Leaders give and see the account but don't apply for help (029; the server checks too).
+export type FundTab = { id: 'give' | 'apply' | 'report'; label: string };
+export function fundTabs(me: { role?: string; account_type?: string } | null): FundTab[] {
+  const leader = !!me && (me.role === 'leader' || me.account_type === 'leader');
+  return [{ id: 'give', label: 'দান করুন' }, ...(leader ? [] : [{ id: 'apply' as const, label: 'আবেদন' }]), { id: 'report', label: 'হিসাব' }];
+}
 
 // ---------- Travel Adda ----------
 const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
