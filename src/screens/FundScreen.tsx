@@ -7,7 +7,8 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import { st, fmtDay, confirm } from './GroupScreen';
 import { toBn } from '../lib/phone';
 import { fundSummary, donate, myDonations, myConfirmedTotal, applyHelp, myHelpApplication, withdrawHelp, helpErrorText, personLabel,
-  kindLabel, helpStatusText, fundPayInfo, recentDates, FUND_RULES, type FundSummary, type HelpForm } from '../lib/fund';
+  kindLabel, helpStatusText, fundPayInfo, recentDates, FUND_RULES, donateAccess, donateAccessText, requestDonateAccess, requestAccessText,
+  type FundSummary, type HelpForm, type DonateAccess } from '../lib/fund';
 import { PAY_METHODS, PAY_STATUS } from '../lib/payments';
 import DistrictPicker from '../components/DistrictPicker';
 
@@ -105,27 +106,85 @@ export default function FundScreen({ navigation }: { navigation: Nav & { addList
 }
 
 // ---------- give ----------
+// Giving needs Travel Adda's permission (028). Without it the form is hidden and one button asks for permission.
 function Give({ onDone }: { onDone: () => void }) {
-  const [info, setInfo] = useState<{ bank: string; bkash: string } | null>(null);
+  const [access, setAccess] = useState<DonateAccess | null | undefined>(undefined);   // undefined = loading, null = could not load
+  const [asking, setAsking] = useState(false);
+  const [askMsg, setAskMsg] = useState<Msg>(null);
+  const loadAccess = useCallback(() => { setAccess(undefined); donateAccess().then(setAccess).catch(() => setAccess(null)); }, []);
+  useEffect(() => { loadAccess(); }, [loadAccess]);
+  const ask = async () => {
+    if (asking) return;
+    setAsking(true); setAskMsg(null);
+    try {
+      const r = await requestDonateAccess();
+      setAskMsg({ kind: r === 'requested' || r === 'already' || r === 'allowed' ? 'ok' : 'warn', text: requestAccessText(r) });
+      donateAccess().then(setAccess).catch(() => {});
+    } catch (e) { setAskMsg({ kind: 'bad', text: helpErrorText(e) }); }
+    finally { setAsking(false); }
+  };
+  if (access === undefined) return <View style={st.card}><ActivityIndicator color={C.primary} accessibilityLabel="অনুমতি দেখা হচ্ছে" /></View>;
+  if (access === null) return (
+    <View style={st.card}>
+      <Notice kind="bad" title="তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।" />
+      <Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={loadAccess} />
+    </View>
+  );
+  const m = donateAccessText(access);
+  if (!m) return <GiveForm onDone={onDone} onNotAllowed={loadAccess} />;
+  return (
+    <>
+      <View style={[st.card, { borderWidth: 2, borderColor: C.gold }]}>
+        <Text style={st.h} accessibilityRole="header">{m.icon} {m.title}</Text>
+        <Text style={[st.p, { marginBottom: S.sm }]}>{m.body}</Text>
+        {askMsg ? <Notice kind={askMsg.kind} title={askMsg.text} /> : null}
+        {m.canAsk ? <Button title="অনুমতি চাই" icon="🙋" onPress={ask} loading={asking} /> : null}
+      </View>
+      <MyGifts />
+    </>
+  );
+}
+
+function MyGifts({ reload = 0 }: { reload?: number }) {
   const [mine, setMine] = useState<Row[] | null>(null);
+  useEffect(() => { myDonations().then(setMine).catch(() => setMine([])); }, [reload]);
+  if (mine && !mine.length) return null;
+  const total = mine ? myConfirmedTotal(mine) : 0;
+  return (
+    <View style={st.card}>
+      <Text style={st.h}>🧾 আমার দান</Text>
+      {mine === null ? <ActivityIndicator color={C.primary} /> : null}
+      {mine && mine.length ? <Text style={[st.val, { color: C.primary }]}>যাচাই করা মোট: {taka(total)}</Text> : null}
+      {(mine || []).map((d) => {
+        const ps = (PAY_STATUS as Record<string, { icon: string; label: string }>)[d.status] || { icon: '', label: d.status };
+        return <Text key={d.id} style={st.p}>{fmtDay(d.created_at)} · {taka(Number(d.amount))} · {ps.icon} {ps.label}{d.admin_note && d.status === 'rejected' ? ` (${d.admin_note})` : ''}</Text>;
+      })}
+    </View>
+  );
+}
+
+function GiveForm({ onDone, onNotAllowed }: { onDone: () => void; onNotAllowed: () => void }) {
+  const [info, setInfo] = useState<{ bank: string; bkash: string } | null>(null);
+  const [reload, setReload] = useState(0);
   const dates = recentDates();
   const [f, setF] = useState({ amount: '', method: 'bkash', ref: '', paidOn: dates[0].ymd, showName: false });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const loadMine = useCallback(() => { myDonations().then(setMine).catch(() => setMine([])); }, []);
-  useEffect(() => { fundPayInfo().then(setInfo).catch(() => setInfo({ bank: '', bkash: '' })); loadMine(); }, [loadMine]);
+  useEffect(() => { fundPayInfo().then(setInfo).catch(() => setInfo({ bank: '', bkash: '' })); }, []);
   const set = (k: string) => (v: string | boolean) => setF((x) => ({ ...x, [k]: v }));
   const send = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try {
       const r = await donate({ amount: f.amount, method: f.method, ref: f.ref, paidOn: f.paidOn, showName: f.showName });
-      if (r === 'ok') { setMsg({ kind: 'ok', text: 'জমা দেওয়া হয়েছে। Travel Adda টাকা মিলিয়ে দেখলে মোট জমায় যোগ হবে, আর আপনি নোটিফিকেশন পাবেন। জাযাকাল্লাহু খাইরান।' }); setF((x) => ({ ...x, amount: '', ref: '' })); loadMine(); onDone(); }
+      if (r === 'ok') { setMsg({ kind: 'ok', text: 'জমা দেওয়া হয়েছে। Travel Adda টাকা মিলিয়ে দেখলে মোট জমায় যোগ হবে, আর আপনি নোটিফিকেশন পাবেন। জাযাকাল্লাহু খাইরান।' }); setF((x) => ({ ...x, amount: '', ref: '' })); setReload((n) => n + 1); onDone(); }
       else setMsg({ kind: 'warn', text: helpErrorText({ code: r || '' }) });
-    } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }       // the form keeps what was typed
+    } catch (e) {
+      if ((e as { code?: string }).code === 'not_allowed') { onNotAllowed(); return; }   // permission was turned off meanwhile
+      setMsg({ kind: 'bad', text: helpErrorText(e) });                                 // the form keeps what was typed
+    }
     finally { setBusy(false); }
   };
-  const total = mine ? myConfirmedTotal(mine) : 0;
   return (
     <>
       <View style={st.card}>
@@ -152,16 +211,7 @@ function Give({ onDone }: { onDone: () => void }) {
         <Text style={[st.small, { marginBottom: S.sm }]}>জমা দিলে আপনি ওপরের "তহবিলের নিয়ম" মেনে নিচ্ছেন।</Text>
         <Button title="দানের তথ্য জমা দিন" icon="💝" onPress={send} loading={busy} />
       </View>
-      <View style={st.card}>
-        <Text style={st.h}>🧾 আমার দান</Text>
-        {mine === null ? <ActivityIndicator color={C.primary} /> : null}
-        {mine && !mine.length ? <Text style={st.p}>এখনো কোনো দান নেই।</Text> : null}
-        {mine && mine.length ? <Text style={[st.val, { color: C.primary }]}>যাচাই করা মোট: {taka(total)}</Text> : null}
-        {(mine || []).map((d) => {
-          const ps = (PAY_STATUS as Record<string, { icon: string; label: string }>)[d.status] || { icon: '', label: d.status };
-          return <Text key={d.id} style={st.p}>{fmtDay(d.created_at)} · {taka(Number(d.amount))} · {ps.icon} {ps.label}{d.admin_note && d.status === 'rejected' ? ` (${d.admin_note})` : ''}</Text>;
-        })}
-      </View>
+      <MyGifts reload={reload} />
     </>
   );
 }

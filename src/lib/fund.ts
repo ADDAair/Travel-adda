@@ -1,4 +1,4 @@
-// Hajj & Umrah help fund (supabase/027_help_fund.sql). Sadaqah only — not a zakat fund.
+// Hajj & Umrah help fund (supabase/027_help_fund.sql; giving needs permission since 028_fund_access.sql). Sadaqah only — not a zakat fund.
 // The database checks every rule; this file checks the forms first (so mistakes are caught before sending) and turns
 // answers into plain Bengali. Every function throws on failure, so screens never show a false success.
 import { supabase } from './supabase';
@@ -39,13 +39,52 @@ export async function donate(f: DonateForm): Promise<string | null> {
   const ref = String(f.ref || '').trim();
   if (ref.length < 3) throw fail('ref');
   if (!ymdOk(f.paidOn)) throw fail('date');
+  let r: string | null;
   try {
-    return await rpc<string>('donate_fund', { p_amount: amount, p_method: f.method, p_ref: ref, p_paid_on: f.paidOn, p_show_name: !!f.showName });
+    r = await rpc<string>('donate_fund', { p_amount: amount, p_method: f.method, p_ref: ref, p_paid_on: f.paidOn, p_show_name: !!f.showName });
   } catch (e) {
     if (/fund_ref_uq|duplicate/i.test(String((e as { message?: string }).message || ''))) throw fail('duplicate');
     throw e;
   }
+  if (r === 'not_allowed' || r === 'limit') throw fail(r);
+  return r;
 }
+
+// ---------- permission to give (028) ----------
+export type DonateMode = 'approved' | 'open' | 'closed';
+export type DonateAccess = { mode: DonateMode; status: 'none' | 'requested' | 'allowed' | 'blocked'; can: boolean };
+export async function donateAccess(): Promise<DonateAccess> {
+  try {
+    const a = (await rpc<Row>('my_donate_access')) || {};
+    return { mode: a.mode, status: a.status || 'none', can: a.can === true };
+  } catch (e) {
+    if (notReady(e)) return { mode: 'open', status: 'none', can: true };   // step 028 not run yet: giving works as before
+    throw e;
+  }
+}
+export type AccessMessage = { icon: string; title: string; body: string; canAsk: boolean };
+// null = may give now (show the form); otherwise what to show instead of the form.
+export function donateAccessText(a: DonateAccess): AccessMessage | null {
+  if (a.can) return null;
+  if (a.mode === 'closed') return { icon: '⏸️', title: 'এখন তহবিলে দান নেওয়া বন্ধ আছে',
+    body: 'Travel Adda আবার চালু করলে এখানে দান করতে পারবেন। তহবিলের হিসাব "হিসাব" অংশে দেখা যাবে।', canAsk: false };
+  if (a.status === 'blocked') return { icon: '🚫', title: 'আপনার আইডি থেকে দান নেওয়া বন্ধ আছে',
+    body: 'কিছু জানার থাকলে Travel Adda-র হেল্পলাইনে ফোন করুন।', canAsk: false };
+  if (a.status === 'requested') return { icon: '⏳', title: 'অনুমতির অনুরোধ পাঠানো হয়েছে',
+    body: 'Travel Adda দেখে অনুমতি দিলে আপনাকে নোটিফিকেশন পাঠানো হবে। তারপর এখানেই দান করতে পারবেন।', canAsk: false };
+  return { icon: '🔐', title: 'দান করতে Travel Adda-র অনুমতি লাগে',
+    body: 'নিচের বোতাম চাপলে Travel Adda জানতে পারবে। অনুমতি দিলে নোটিফিকেশন পাবেন।', canAsk: true };
+}
+export const requestDonateAccess = async (): Promise<string | null> => rpc<string>('request_donate_access');
+const REQ: Record<string, string> = {
+  requested: 'অনুরোধ পাঠানো হয়েছে। Travel Adda অনুমতি দিলে নোটিফিকেশন পাবেন।',
+  already: 'আপনার অনুরোধ আগেই পাঠানো আছে। Travel Adda দেখে জানাবে।',
+  allowed: 'আপনার অনুমতি আছে। এখন দান করতে পারবেন।',
+  blocked: 'আপনার আইডি থেকে দান নেওয়া বন্ধ আছে। হেল্পলাইনে যোগাযোগ করুন।',
+  closed: 'এখন তহবিলে দান নেওয়া বন্ধ আছে।',
+  limit: 'আজ আর অনুরোধ পাঠানো যাবে না। কাল আবার চেষ্টা করুন।',
+};
+export const requestAccessText = (code: string | null): string => REQ[code || ''] || 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
 export const myDonations = async (): Promise<Row[]> => (await rpc<Row[]>('my_donations')) || [];
 export const myConfirmedTotal = (rows: Row[]): number => rows.filter((r) => r.status === 'confirmed').reduce((s, r) => s + num(r.amount), 0);
 
@@ -80,6 +119,8 @@ const ERR: Record<string, string> = {
   kind: 'হজ না ওমরাহ, বাছুন।', age: 'বয়স সংখ্যায় লিখুন (১৮ থেকে ১১০)।', district: 'জেলার নাম লিখুন।', profession: 'পেশা লিখুন।',
   reason: 'কেন সাহায্য দরকার, অন্তত ১৫ অক্ষরে লিখুন।', refName: 'পরিচিত একজনের নাম লিখুন (যেমন মসজিদের ইমাম)।',
   refPhone: 'পরিচিত মানুষের ১১ অঙ্কের মোবাইল নম্বর লিখুন।', exists: 'আপনার একটি আবেদন আগেই চালু আছে।',
+  not_allowed: 'দান করতে Travel Adda-র অনুমতি লাগে। "অনুমতি চাই" বোতাম চাপুন।',
+  short: 'আইডি নম্বর, মোবাইল নম্বর বা নামের অন্তত ৩ অক্ষর লিখুন।', status: 'অবস্থা বাছুন।', mode: 'একটি নিয়ম বাছুন।',
   reason_admin: 'কারণ অন্তত ৫ অক্ষরে লিখুন।', purpose: 'কী কাজে খরচ, লিখুন (যেমন: ওমরাহ প্যাকেজ)।', not_found: 'এটি আর পাওয়া যায়নি।',
 };
 export function helpErrorText(e: unknown): string {
@@ -128,6 +169,29 @@ export async function spendFund(appId: string, amount: unknown, purpose: unknown
   return rpc<string>('admin_spend_fund', { p_app: appId, p_amount: a, p_purpose: p, p_ref: r });
 }
 
+// Who may give (028): the mode for everyone, then one person at a time.
+export const DONATE_MODES: readonly { key: DonateMode; icon: string; label: string; hint: string }[] = [
+  { key: 'approved', icon: '🔐', label: 'শুধু অনুমতি পাওয়া আইডি', hint: 'Travel Adda যাদের চালু করেছে, শুধু তারাই দান করতে পারবেন।' },
+  { key: 'open', icon: '✅', label: 'সবার জন্য খোলা', hint: 'সবাই দান করতে পারবেন, শুধু যাদের বন্ধ করা হয়েছে তারা ছাড়া।' },
+  { key: 'closed', icon: '⏸️', label: 'সবার জন্য বন্ধ', hint: 'কেউ দান করতে পারবেন না, অনুমতি পাওয়া আইডিও না।' },
+];
+export async function setDonateMode(mode: string): Promise<string | null> {
+  if (!DONATE_MODES.some((m) => m.key === mode)) throw fail('mode');
+  return rpc<string>('admin_set_setting', { p_key: 'fund_donate_mode', p_value: mode });
+}
+export async function donorAccess(query: string): Promise<Row[]> {
+  const q = String(query || '').replace(/[০-৯]/g, (d) => String('০১২৩৪৫৬৭৮৯'.indexOf(d))).trim();   // Bengali digits → English
+  if (q && q.length < 3 && !/^\d+$/.test(q)) throw fail('short');                                     // "12" = ID TA-00012
+  return list('admin_donor_access', { p_query: q || null });
+}
+export async function setDonorAccess(userId: string, status: 'allowed' | 'blocked' | null, note?: string | null): Promise<string | null> {
+  if (status !== null && status !== 'allowed' && status !== 'blocked') throw fail('status');
+  const n = String(note || '').trim();
+  return rpc<string>('admin_set_donor_access', { p_user: userId, p_status: status, p_note: n || null });
+}
+const ACCESS: Record<string, string> = { none: '— কিছু ঠিক করা নেই', requested: '⏳ অনুমতি চেয়েছেন', allowed: '✅ দান করতে পারবেন', blocked: '🚫 দান বন্ধ' };
+export const accessStatusText = (s: string): string => ACCESS[s] || s;
+
 // Where donors send money: the fund's own account if set, else Travel Adda's normal payment account.
 export async function fundPayInfo(): Promise<{ bank: string; bkash: string }> {
   const r = await supabase.from('app_settings').select('key,value').in('key', ['fund_bank', 'fund_bkash', 'pay_bank', 'pay_bkash']);
@@ -157,5 +221,6 @@ export const FUND_RULES: readonly string[] = [
   'দেওয়া সদকা ফেরত দেওয়া হয় না। ভুল করে বেশি বা ভুল নম্বরে পাঠালে সাথে সাথে হেল্পলাইনে জানান।',
   'কাকে, কখন, কত টাকা দেওয়া হবে, তা Travel Adda যাচাই করে ঠিক করে। প্রতিটি খরচ সবাই দেখতে পান।',
   'দাতা ও আবেদনকারীর নাম দেখানো হয় কেবল তিনি রাজি হলে। ফোন নম্বর ও আবেদনের কারণ কখনো প্রকাশ্যে আসে না।',
+  'দান করতে Travel Adda-র অনুমতি লাগতে পারে। অনুমতি না থাকলে "অনুমতি চাই" বোতাম চাপুন।',
   'ভুয়া আবেদন বা ভুয়া লেনদেন নম্বর দিলে আবেদন বাতিল হবে এবং অ্যাকাউন্ট বন্ধ করা হতে পারে।',
 ];

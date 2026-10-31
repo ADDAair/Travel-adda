@@ -79,7 +79,7 @@ export default function AdminScreen({ navigation }) {
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
   }, [state]);
   const [counts, setCounts] = useState({});
-  useEffect(() => { if (state === 'ok' && !tab) adminCounts().then((c) => setCounts({ ...c, fund: (c.help_apps || 0) + (c.donations || 0) })).catch(() => {}); }, [state, tab]);
+  useEffect(() => { if (state === 'ok' && !tab) adminCounts().then((c) => setCounts({ ...c, fund: (c.help_apps || 0) + (c.donations || 0) + (c.donor_requests || 0) })).catch(() => {}); }, [state, tab]);
   const mine = SECTIONS.filter((x) => perms && [].concat(x.perm).some((p) => perms.includes(p)));
   const todo = mine.filter((x) => counts[COUNT_KEY[x.id]] > 0);
   const cur = mine.find((x) => x.id === tab);

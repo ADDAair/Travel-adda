@@ -1,4 +1,5 @@
-// Admin: help fund — applications (admin / staff with "users"), donations to confirm and spending (staff with "payments").
+// Admin: help fund — applications (admin / staff with "users"), donations to confirm, who may give (028) and spending
+// (staff with "payments").
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Linking, Pressable } from 'react-native';
 import { C, S, R, F, TOUCH } from '../theme';
@@ -7,7 +8,7 @@ import { st, fmtDay, confirm } from './GroupScreen';
 import { toBn } from '../lib/phone';
 import { telBd } from '../lib/groups';
 import { helpApplications, decideHelp, helpTravelled, fundDonations, reviewDonation, spendFund, helpErrorText, kindLabel, helpStatusText,
-  fundSummary } from '../lib/fund';
+  fundSummary, DONATE_MODES, setDonateMode, donorAccess, setDonorAccess, accessStatusText, type DonateMode } from '../lib/fund';
 import { methodLabel } from '../lib/payments';
 import { setSetting } from '../lib/offers';
 import { supabase } from '../lib/supabase';
@@ -21,7 +22,7 @@ export default function FundTab({ perms }: { perms: string[] }) {
   const canApps = perms.includes('admin') || perms.includes('users');
   const canMoney = perms.includes('admin') || perms.includes('payments');
   const tabs = [canApps ? { id: 'apps', icon: '📝', label: 'আবেদন' } : null, canMoney ? { id: 'gifts', icon: '💝', label: 'দান যাচাই' } : null,
-    canMoney ? { id: 'spend', icon: '💸', label: 'খরচ' } : null, perms.includes('admin') ? { id: 'acct', icon: '🏦', label: 'অ্যাকাউন্ট' } : null].filter(Boolean) as { id: string; icon: string; label: string }[];
+    canMoney ? { id: 'access', icon: '🔐', label: 'দানের অনুমতি' } : null, canMoney ? { id: 'spend', icon: '💸', label: 'খরচ' } : null, perms.includes('admin') ? { id: 'acct', icon: '🏦', label: 'অ্যাকাউন্ট' } : null].filter(Boolean) as { id: string; icon: string; label: string }[];
   const [tab, setTab] = useState(tabs[0] ? tabs[0].id : '');
   return (
     <>
@@ -45,7 +46,7 @@ export default function FundTab({ perms }: { perms: string[] }) {
         </View>
       ) : null}
       <View style={{ height: S.sm }} />
-      {tab === 'apps' ? <Apps /> : tab === 'gifts' ? <Gifts /> : tab === 'spend' ? <Spend /> : tab === 'acct' ? <Account /> : null}
+      {tab === 'apps' ? <Apps /> : tab === 'gifts' ? <Gifts /> : tab === 'access' ? <Access isAdmin={perms.includes('admin')} /> : tab === 'spend' ? <Spend /> : tab === 'acct' ? <Account /> : null}
     </>
   );
 }
@@ -175,6 +176,93 @@ function Spend() {
           <Button title="খরচ লিখুন" icon="💸" loading={busy} onPress={() => confirm('খরচ লিখবেন?', 'এটি পরে মোছা যাবে না; ভুল হলে উল্টো হিসাব অ্যাডমিনকে জানাতে হবে।', 'হ্যাঁ, লিখুন', send)} />
         </View>
       ) : null}
+    </>
+  );
+}
+
+// Who may give (028). The rule for everyone (admin only) and one person at a time: search an ID, phone or name.
+function Access({ isAdmin }: { isAdmin: boolean }) {
+  const [mode, setMode] = useState<DonateMode | null>(null);
+  const [q, setQ] = useState('');
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [searched, setSearched] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<Msg>(null);
+  const loadMode = useCallback(() => {
+    supabase.from('app_settings').select('key,value').eq('key', 'fund_donate_mode').then((r: { data: Row[] | null }) => {
+      const v = (r.data || [])[0]?.value;
+      setMode(DONATE_MODES.some((m) => m.key === v) ? v : 'approved');
+    }, () => setMode('approved'));
+  }, []);
+  const load = useCallback(async (query: string) => {
+    setRows(null);
+    try { setRows(await donorAccess(query)); setSearched(query.trim()); }
+    catch (e) { setRows([]); setMsg({ kind: 'bad', text: helpErrorText(e) }); }
+  }, []);
+  useEffect(() => { loadMode(); load(''); }, [loadMode, load]);
+  const pickMode = (m: (typeof DONATE_MODES)[number]) => {
+    if (busy || m.key === mode) return;
+    confirm(`"${m.label}" করবেন?`, m.hint, 'হ্যাঁ, করুন', async () => {
+      setBusy('mode'); setMsg(null);
+      try { await setDonateMode(m.key); setMode(m.key); setMsg({ kind: 'ok', text: `নিয়ম বদলেছে: ${m.label}` }); }
+      catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }
+      finally { setBusy(null); }
+    });
+  };
+  const setOne = async (r: Row, status: 'allowed' | 'blocked' | null, ok: string) => {
+    if (busy) return;
+    setBusy(r.user_id); setMsg(null);
+    try { await setDonorAccess(r.user_id, status); setMsg({ kind: 'ok', text: `${r.full_name}: ${ok}` }); await load(searched); }
+    catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }
+    finally { setBusy(null); }
+  };
+  const block = (r: Row) => confirm(`${r.full_name}-এর দান বন্ধ করবেন?`, '"সবার জন্য খোলা" থাকলেও এই আইডি দান করতে পারবে না।', 'হ্যাঁ, বন্ধ করুন',
+    () => setOne(r, 'blocked', 'দান বন্ধ করা হয়েছে।'));
+  return (
+    <>
+      <View style={st.card}>
+        <Text style={st.h}>সবার জন্য নিয়ম</Text>
+        {mode === null ? <ActivityIndicator color={C.primary} /> : DONATE_MODES.map((m) => {
+          const on = m.key === mode;
+          return (
+            <Pressable key={m.key} onPress={() => (isAdmin ? pickMode(m) : null)} disabled={!isAdmin || busy !== null} accessibilityRole="radio"
+              accessibilityState={{ selected: on, disabled: !isAdmin }} accessibilityLabel={`${m.label}। ${m.hint}`}
+              style={{ minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center', padding: S.sm, marginTop: S.xs, borderRadius: R.md,
+                borderWidth: on ? 3 : 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
+              <Text style={[st.p, { width: 30, color: C.primary }]} importantForAccessibility="no">{on ? '✓' : ''}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={st.val}>{m.icon} {m.label}</Text>
+                <Text style={st.small}>{m.hint}</Text>
+              </View>
+            </Pressable>
+          );
+        })}
+        {!isAdmin ? <Text style={[st.small, { marginTop: S.xs }]}>এই নিয়ম শুধু অ্যাডমিন বদলাতে পারেন।</Text> : null}
+        {busy === 'mode' ? <ActivityIndicator color={C.primary} style={{ marginTop: S.xs }} /> : null}
+      </View>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      <View style={st.card}>
+        <Text style={st.h}>একজনকে চালু বা বন্ধ করুন</Text>
+        <Field label="আইডি, মোবাইল নম্বর বা নাম" hint="যেমন: TA-00012, শুধু ১২, বা 01712345678" value={q} onChangeText={setQ} autoCorrect={false} maxLength={60}
+          returnKeyType="search" onSubmitEditing={() => load(q)} />
+        <Button title="খুঁজুন" icon="🔍" kind="secondary" onPress={() => load(q)} disabled={rows === null} />
+        {searched ? <Button title="অনুরোধের তালিকায় ফিরুন" icon="↩️" kind="secondary" onPress={() => { setQ(''); load(''); }} style={{ marginTop: S.xs }} /> : null}
+      </View>
+      <Text style={[st.h, { marginBottom: S.xs }]}>{searched ? `"${searched}" খোঁজার ফল` : 'অনুমতি চেয়েছেন / চালু / বন্ধ'}</Text>
+      {rows === null ? <ActivityIndicator color={C.primary} /> : null}
+      {rows && !rows.length ? <Notice kind="info" title={searched ? 'কাউকে পাওয়া যায়নি। আইডি বা নম্বর আবার দেখুন।' : 'এখনো কেউ অনুমতি চাননি।'} /> : null}
+      {(rows || []).map((r) => (
+        <View key={r.user_id} style={st.card}>
+          <Text style={st.val}>{r.full_name || '—'} ({r.haji_code || '—'})</Text>
+          {r.phone ? <Text style={st.p} selectable>{r.phone}</Text> : null}
+          <Text style={[st.p, { marginBottom: S.sm }]}>{accessStatusText(r.status)}{r.requested_at && r.status === 'requested' ? ` · ${fmtDay(r.requested_at)}` : ''}</Text>
+          {r.status !== 'allowed' ? <Button title="দান চালু করুন" icon="✅" loading={busy === r.user_id} disabled={busy !== null && busy !== r.user_id}
+            onPress={() => setOne(r, 'allowed', 'দান চালু হয়েছে। তিনি নোটিফিকেশন পাবেন।')} /> : null}
+          {r.status === 'requested' ? <Button title="এখন না" icon="↩️" kind="secondary" disabled={busy !== null} style={{ marginTop: S.xs }}
+            onPress={() => setOne(r, null, 'অনুরোধ সরানো হয়েছে।')} /> : null}
+          {r.status !== 'blocked' ? <Button title="দান বন্ধ করুন" icon="🚫" kind="danger" disabled={busy !== null} style={{ marginTop: S.xs }} onPress={() => block(r)} /> : null}
+        </View>
+      ))}
     </>
   );
 }
