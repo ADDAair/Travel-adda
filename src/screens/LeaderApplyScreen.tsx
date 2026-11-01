@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import * as DocumentPicker from 'expo-document-picker';
@@ -10,35 +10,39 @@ import DistrictPicker from '../components/DistrictPicker';
 import { applyLeader, myApplication, notReady, leaderKindsReady } from '../lib/groups';
 import { LEADER_KINDS, PROFESSIONS, validateApplication } from '../lib/leaderKinds';
 import { useMe } from '../lib/me';
-import { getTerms, agreeTerms } from '../lib/market';
+import { getTerms, agreeTerms, type TermsText } from '../lib/market';
 import { DocCamera } from './DocsScreen';
 import { st, errText, fmtDay } from './GroupScreen';
+import type { Nav, Row, Msg } from './navTypes';
+
+type Kind = 'agency' | 'travel_adda';
+type PickedFile = { uri: string; kind: 'image' | 'pdf'; name: string };
 
 // Last step of a LEADER account. First the kind of leader:
 //  * own agency: office details (agency, Umrah and Hajj licence numbers, licence picture)
 //  * Travel Adda's own leader: no office or licence, a picture of the national ID (NID) instead
 // then profession (optional) and the WORK AREA (district > upazila from lists, union typed) -- not the office address.
 // The admin checks them by hand; until then the leader panel stays locked. (Haji accounts never see this.)
-export default function LeaderApplyScreen({ navigation }) {
+export default function LeaderApplyScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const { me, refreshMe } = useMe();
-  const [app, setApp] = useState(undefined);      // undefined = loading, null = none yet
-  const [state, setState] = useState('load');
-  const [kind, setKind] = useState(null);           // 'agency' | 'travel_adda'
+  const [app, setApp] = useState<Row | null | undefined>(undefined);      // undefined = loading, null = none yet
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [kind, setKind] = useState<Kind | null>(null);           // 'agency' | 'travel_adda'
   const [kindsOk, setKindsOk] = useState(true);       // false = database step 017 not run yet
   const [profession, setProfession] = useState('');
   const [f, setF] = useState({ agency: '', umrah: '', hajj: '' });
   const [area, setArea] = useState({ district: '', upazila: '', union: '' });
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<PickedFile | null>(null);
   const [cam, setCam] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState({});
-  const [msg, setMsg] = useState(null);
-  const [terms, setTerms] = useState(null);          // leader terms text (null = none written)
+  const [err, setErr] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState<Msg>(null);
+  const [terms, setTerms] = useState<TermsText | null>(null);          // leader terms text (null = none written)
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   useEffect(() => { getTerms('leader').then(setTerms).catch(() => {}); leaderKindsReady().then(setKindsOk).catch(() => {}); }, []);
-  const chooseKind = (k) => { if (busy) return; setKind(k); setFile(null); setErr({}); setMsg(null); };
-  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const chooseKind = (k: Kind | null) => { if (busy) return; setKind(k); setFile(null); setErr({}); setMsg(null); };
+  const set = (k: 'agency' | 'umrah' | 'hajj') => (v: string) => setF((x) => ({ ...x, [k]: v }));
 
   const load = useCallback(async () => {
     try { setApp(await myApplication()); setState('ok'); if (refreshMe) refreshMe(); }
@@ -59,14 +63,15 @@ export default function LeaderApplyScreen({ navigation }) {
 
   const submit = async () => {
     if (busy) return;
-    const e = validateApplication({ kind, agency: f.agency, umrah: f.umrah, hajj: f.hajj, area, file, agreed: agree, termsExist: !!terms });
+    const e = validateApplication({ kind: kind || '', agency: f.agency, umrah: f.umrah, hajj: f.hajj, area, file, agreed: agree, termsExist: !!terms });
     setErr(e); setMsg(null);
     if (Object.keys(e).length) { setMsg({ kind: 'bad', text: 'লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।' }); return; }
     setBusy(true);
     try {
       if (terms) await agreeTerms('leader');           // recorded first: the database refuses an application without it
-      await applyLeader({ kind, agency: f.agency, umrah: f.umrah, hajj: f.hajj, area, profession: kindsOk ? profession : '', file }); await load(); }
-    catch (x) {
+      await applyLeader({ kind: kind || 'agency', agency: f.agency, umrah: f.umrah, hajj: f.hajj, area, profession: kindsOk ? profession : '', file }); await load(); }
+    catch (err0) {
+      const x = err0 as { code?: string; message?: string } | null;
       const m = String((x && x.message) || '');
       if (notReady(x)) setMsg({ kind: 'info', text: 'লিডার নিবন্ধন শীঘ্রই চালু হবে।' });
       else if (x && x.code === 'kinds-soon') { setKindsOk(false); setMsg({ kind: 'info', text: 'Travel Adda-র নিজস্ব লিডার হিসেবে নিবন্ধন শীঘ্রই চালু হবে। নিজের এজেন্সি থাকলে সেই ধরনটি বেছে জমা দিতে পারেন।' }); }
@@ -81,7 +86,7 @@ export default function LeaderApplyScreen({ navigation }) {
   if (cam) {
     return (
       <Modal visible animationType="slide" onRequestClose={() => setCam(false)}>
-        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri) => { setCam(false); setFile({ uri, kind: 'image', name: 'ক্যামেরার ছবি' }); }} /></SafeAreaProvider>
+        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri: string) => { setCam(false); setFile({ uri, kind: 'image', name: 'ক্যামেরার ছবি' }); }} /></SafeAreaProvider>
       </Modal>
     );
   }
@@ -105,9 +110,9 @@ export default function LeaderApplyScreen({ navigation }) {
           <Button title="লিডার প্যানেল খুলুন" icon="🧭" onPress={() => navigation.navigate('Leader')} />
         </>
       ) : null}
-      {pending ? (
+      {pending && app ? (
         <>
-          <Notice kind="info" title="আপনার আবেদন যাচাই হচ্ছে" text={`জমা দিয়েছেন: ${fmtDay(app.created_at)}। অ্যাডমিন ${app.leader_kind === 'travel_adda' ? 'পরিচয়পত্র' : 'লাইসেন্স'} মিলিয়ে দেখবেন, দরকার হলে ফোন করবেন। অনুমোদন হলে হোমে "লিডার প্যানেল" চালু হবে।`} />
+          <Notice kind="info" title="আপনার আবেদন যাচাই হচ্ছে" text={`জমা দিয়েছেন: ${fmtDay(app?.created_at)}। অ্যাডমিন ${app?.leader_kind === 'travel_adda' ? 'পরিচয়পত্র' : 'লাইসেন্স'} মিলিয়ে দেখবেন, দরকার হলে ফোন করবেন। অনুমোদন হলে হোমে "লিডার প্যানেল" চালু হবে।`} />
           <View style={st.card}>
             <Text style={st.lbl}>লিডারের ধরন</Text><Text style={st.p}>{app.leader_kind === 'travel_adda' ? LEADER_KINDS.travel_adda.badge : `🏢 এজেন্সি: ${app.agency_name}`}</Text>
             {app.profession ? <><Text style={st.lbl}>পেশা</Text><Text style={st.p}>{app.profession}</Text></> : null}
@@ -125,7 +130,7 @@ export default function LeaderApplyScreen({ navigation }) {
           {!kind ? (
             <>
               <Text style={[st.h, { marginBottom: S.sm }]} accessibilityRole="header">আপনি কোন ধরনের লিডার?</Text>
-              {['agency', 'travel_adda'].map((k) => {
+              {(['agency', 'travel_adda'] as const).map((k) => {
                 const soon = k === 'travel_adda' && !kindsOk;
                 return (
                   <Pressable key={k} onPress={() => !soon && chooseKind(k)} disabled={soon}

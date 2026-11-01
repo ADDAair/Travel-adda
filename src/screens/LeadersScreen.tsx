@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { areaText } from '../components/WorkAreaFields';
 import { LEADER_KINDS } from '../lib/leaderKinds';
 import { View, Text, Pressable, Image, ActivityIndicator, Linking } from 'react-native';
@@ -13,21 +13,23 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { getHelpline } from '../lib/offers';
 import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall } from '../lib/market';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
+import type { Nav, Row, Msg, Route } from './navTypes';
+import type { Helpline } from '../lib/offers';
 
-export function Avatar({ path, size = 64, name }) {
-  const [url, setUrl] = useState(null);
+export function Avatar({ path, size = 64, name }: { path?: string | null; size?: number; name?: string }): JSX.Element {
+  const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { let on = true; if (path) signedAvatarUrl(path).then((u) => on && setUrl(u)); return () => { on = false; }; }, [path]);
   return url ? <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.line }} accessibilityLabel={`${name}-এর ছবি`} />
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: size / 2 }}>👤</Text></View>;
 }
 
 // Directory of approved leaders: photo, agency, area, licences, rating and verified complaints. No phone numbers.
-export default function LeadersScreen({ navigation, route }) {
+export default function LeadersScreen({ navigation, route }: { navigation: Nav; route?: Route<{ id?: string }> }): JSX.Element {
   const [district, setDistrict] = useState('');
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState(null);
-  const [state, setState] = useState('load');
-  const [open, setOpen] = useState(route?.params?.id || null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [open, setOpen] = useState<string | null>(route?.params?.id || null);
 
   const load = useCallback(async () => {
     try { setRows(await listLeaders(district, q)); setState('ok'); }
@@ -52,8 +54,8 @@ export default function LeadersScreen({ navigation, route }) {
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="লিডারের তালিকা চালু হওয়ার শেষ ধাপ বাকি আছে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তালিকা আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
-      {state === 'ok' && rows.length === 0 ? <Notice kind="info" title="এই খোঁজে কোনো লিডার পাওয়া যায়নি" text="জেলা বা খোঁজার লেখা বদলে দেখুন।" /> : null}
-      {state === 'ok' ? rows.map((l) => (
+      {state === 'ok' && rows && rows.length === 0 ? <Notice kind="info" title="এই খোঁজে কোনো লিডার পাওয়া যায়নি" text="জেলা বা খোঁজার লেখা বদলে দেখুন।" /> : null}
+      {state === 'ok' && rows ? rows.map((l) => (
         <Pressable key={l.id} onPress={() => setOpen(l.id)} style={({ pressed }) => [st.card, { flexDirection: 'row', gap: S.sm, alignItems: 'center' }, pressed && { opacity: 0.9 }]}
           accessibilityRole="button" accessibilityLabel={`${l.full_name}, ${l.agency_name}, ${starText(l.rating_avg, l.rating_count)}। প্রোফাইল খুলুন`}>
           <Avatar path={l.avatar_path} name={l.full_name} />
@@ -71,13 +73,13 @@ export default function LeadersScreen({ navigation, route }) {
   );
 }
 
-function LeaderProfile({ id, onBack, navigation }) {
-  const [l, setL] = useState(undefined);
-  const [reviews, setReviews] = useState([]);
-  const [help, setHelp] = useState(null);
-  const [req, setReq] = useState(null);
+function LeaderProfile({ id, onBack, navigation }: { id: string; onBack: () => void; navigation: Nav }): JSX.Element {
+  const [l, setL] = useState<Row | null | undefined>(undefined);
+  const [reviews, setReviews] = useState<Row[]>([]);
+  const [help, setHelp] = useState<Helpline | null>(null);
+  const [req, setReq] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     try {
       const [p, r, q] = await Promise.all([leaderPublic(id), leaderReviews(id), myLeaderCallRequest(id).catch(() => null)]);
@@ -86,10 +88,12 @@ function LeaderProfile({ id, onBack, navigation }) {
   }, [id]);
   useEffect(() => { load(); getHelpline().then(setHelp).catch(() => {}); }, [load]);
 
-  const ask = () => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?', `আপনার নাম ও নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে ${l.full_name}-এর সাথে কথা বলার বা দেখা করার ব্যবস্থা করবে।`, 'হ্যাঁ, পাঠান', async () => {
+  const ask = () => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?', `আপনার নাম ও নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে ${l ? l.full_name : 'লিডার'}-এর সাথে কথা বলার বা দেখা করার ব্যবস্থা করবে।`, 'হ্যাঁ, পাঠান', async () => {
     setBusy(true); setMsg(null);
     try { await requestLeaderCall(id); setMsg({ kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। Travel Adda টিম আপনাকে ফোন করবে।' }); await load(); }
-    catch (e) { setMsg({ kind: e?.code === '23505' ? 'info' : 'bad', text: e?.code === '23505' ? 'এই লিডারের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' : e?.code === '42501' ? 'অনুরোধ পাঠানো যায়নি (হয়তো আপনার ১০টি অনুরোধ খোলা আছে)।' : errText(e) }); }
+    catch (err) {
+      const e = err as { code?: string } | null;
+      setMsg({ kind: e?.code === '23505' ? 'info' : 'bad', text: e?.code === '23505' ? 'এই লিডারের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' : e?.code === '42501' ? 'অনুরোধ পাঠানো যায়নি (হয়তো আপনার ১০টি অনুরোধ খোলা আছে)।' : errText(e) }); }
     finally { setBusy(false); }
   });
 
@@ -127,7 +131,7 @@ function LeaderProfile({ id, onBack, navigation }) {
               : <Button title="আমাকে ফোন করুন" icon="🙋" kind="secondary" onPress={ask} loading={busy} style={{ marginTop: S.sm }} />}
           </View>
           {reviews.length ? <Text style={[st.h, { marginTop: S.sm }]}>হাজীদের মন্তব্য ও যাচাই করা অভিযোগ</Text> : null}
-          {reviews.map((r, i) => (
+          {reviews.map((r, i: number) => (
             <View key={`${r.kind}${i}`} style={[st.card, r.kind === 'complaint' && { borderWidth: 2, borderColor: C.bad }]}>
               <Text style={st.small}>{r.kind === 'complaint' ? '⚠️ যাচাই করা অভিযোগ' : `${'⭐'.repeat(r.stars || 0)} রেটিং`} · {fmtDay(r.at)}</Text>
               <Text style={st.p}>{r.body}</Text>

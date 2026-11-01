@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Image, Share, Linking, ActivityIndicator, BackHandler } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
@@ -9,19 +9,20 @@ import { parseDate } from '../lib/dates';
 import { inviteResultText, mySentInvites, cancelInvite } from '../lib/help';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, createContract, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
+import type { Nav, Row, Msg } from './navTypes';
 
-const STATUS = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
-const call = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
+const STATUS: Record<string, string> = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
+const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
 
 // Verified leaders: make groups, share the join code, invite by phone, see members, and write package terms.
-export default function LeaderScreen({ navigation }) {
-  const [state, setState] = useState('load');   // load | ok | soon | err | denied
-  const [groups, setGroups] = useState([]);
-  const [sel, setSel] = useState(null);
+export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err' | 'denied'>('load');
+  const [groups, setGroups] = useState<Row[]>([]);
+  const [sel, setSel] = useState<Row | null>(null);
   const [name, setName] = useState('');
   const [season, setSeason] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
 
   const load = useCallback(async () => {
     try {
@@ -82,11 +83,11 @@ export default function LeaderScreen({ navigation }) {
   );
 }
 
-function AnnounceBox({ g }) {
-  const [rows, setRows] = useState(null);
+function AnnounceBox({ g }: { g: Row }): JSX.Element {
+  const [rows, setRows] = useState<Row[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     try { setRows((await groupAnnouncements([g.id])).rows); } catch (e) { setRows([]); if (notReady(e)) setMsg({ kind: 'info', text: 'ঘোষণা পাঠানো শীঘ্রই চালু হবে।' }); }
   }, [g]);
@@ -97,11 +98,11 @@ function AnnounceBox({ g }) {
     confirm('দলের সবাইকে ঘোষণাটি পাঠাবেন?', text.trim(), 'হ্যাঁ, পাঠান', async () => {
       setBusy(true); setMsg(null);
       try { await postAnnouncement(g.id, text); setText(''); setMsg({ kind: 'ok', text: 'ঘোষণা পাঠানো হয়েছে। হাজীরা "আমার দল" পাতায় দেখবেন।' }); await load(); }
-      catch (e) { setMsg({ kind: 'bad', text: e?.code === '42501' ? 'পাঠানো যায়নি। একদিনে ৩০টির বেশি ঘোষণা পাঠানো যায় না।' : errText(e) }); }   // the text stays in the box
+      catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string } | null)?.code === '42501' ? 'পাঠানো যায়নি। একদিনে ৩০টির বেশি ঘোষণা পাঠানো যায় না।' : errText(e) }); }   // the text stays in the box
       finally { setBusy(false); }
     });
   };
-  const del = (a) => confirm('ঘোষণাটি মুছে ফেলবেন?', 'হাজীরা আর এটি দেখবেন না।', 'হ্যাঁ, মুছুন', async () => {
+  const del = (a: Row) => confirm('ঘোষণাটি মুছে ফেলবেন?', 'হাজীরা আর এটি দেখবেন না।', 'হ্যাঁ, মুছুন', async () => {
     setBusy(true); setMsg(null);
     try { await deleteAnnouncement(a.id); setMsg({ kind: 'ok', text: 'ঘোষণা মুছে ফেলা হয়েছে।' }); await load(); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -125,14 +126,12 @@ function AnnounceBox({ g }) {
   );
 }
 
-function GroupAdmin({ g, onBack, navigation }) {
-  const [members, setMembers] = useState(null);
-  const [contracts, setContracts] = useState([]);
-  const [acc, setAcc] = useState([]);
+function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; navigation: Nav }): JSX.Element {
+  const [members, setMembers] = useState<Row[] | null>(null);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState([]);
-  const [msg, setMsg] = useState(null);
+  const [sent, setSent] = useState<Row[]>([]);
+  const [msg, setMsg] = useState<Msg>(null);
   const [form, setForm] = useState(false);
 
   const load = useCallback(async () => {
@@ -152,18 +151,18 @@ function GroupAdmin({ g, onBack, navigation }) {
     try {
       const r = await inviteByPhone(g.id, p);
       if (r === 'sent') setPhone('');
-      setMsg({ kind: r === 'sent' ? 'ok' : 'warn', text: r === 'sent' ? `${inviteResultText('sent')} অ্যাকাউন্ট না থাকলে তাঁকে দলের কোডটি পাঠান।` : inviteResultText(r) });
+      setMsg({ kind: r === 'sent' ? 'ok' : 'warn', text: r === 'sent' ? `${inviteResultText('sent')} অ্যাকাউন্ট না থাকলে তাঁকে দলের কোডটি পাঠান।` : inviteResultText(String(r)) });
       await load();
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
-  const cancelSent = (x) => confirm('আমন্ত্রণটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', async () => {
+  const cancelSent = (x: Row) => confirm('আমন্ত্রণটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', async () => {
     setBusy(true); setMsg(null);
     try { await cancelInvite(x.id); await load(); setMsg({ kind: 'ok', text: 'আমন্ত্রণ বাতিল হয়েছে।' }); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   });
-  const remove = (m) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
+  const remove = (m: Row) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
     setBusy(true); setMsg(null);
     try { await removeMember(g.id, m.user_id); await load(); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -173,7 +172,7 @@ function GroupAdmin({ g, onBack, navigation }) {
   const active = (members || []).filter((m) => m.status === 'active');
   const nameOf = Object.fromEntries((members || []).map((m) => [m.user_id, m.full_name]));
 
-  if (form) return <ContractForm g={g} onDone={(saved) => { setForm(false); if (saved) { setMsg({ kind: 'ok', text: 'শর্ত সংরক্ষণ হয়েছে। দলের হাজীরা এখন পড়ে সম্মতি দিতে পারবেন।' }); load(); } }} />;
+  if (form) return <ContractForm g={g} onDone={(saved: boolean) => { setForm(false); if (saved) { setMsg({ kind: 'ok', text: 'শর্ত সংরক্ষণ হয়েছে। দলের হাজীরা এখন পড়ে সম্মতি দিতে পারবেন।' }); load(); } }} />;
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
@@ -227,8 +226,8 @@ function GroupAdmin({ g, onBack, navigation }) {
   );
 }
 
-function MemberRow({ m, onRemove, busy }) {
-  const [url, setUrl] = useState(null);
+function MemberRow({ m, onRemove, busy }: { m: Row; onRemove: () => void; busy: boolean }): JSX.Element {
+  const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { let on = true; signedAvatarUrl(m.avatar_path).then((u) => { if (on) setUrl(u); }); return () => { on = false; }; }, [m.avatar_path]);
   const isActive = m.status === 'active' || m.status === 'invited';
   return (
@@ -252,12 +251,12 @@ function MemberRow({ m, onRemove, busy }) {
   );
 }
 
-function ContractForm({ g, onDone }) {
+function ContractForm({ g, onDone }: { g: Row; onDone: (saved: boolean) => void }): JSX.Element {
   const [f, setF] = useState({ title: '', price: '', includes: '', excludes: '', from: '', to: '', refund: '' });
-  const [err, setErr] = useState({});
+  const [err, setErr] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState('');
-  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { onDone(false); return true; });
     return () => sub.remove();
@@ -265,7 +264,7 @@ function ContractForm({ g, onDone }) {
 
   const save = () => {
     if (busy) return;
-    const e = {};
+    const e: Record<string, string> = {};
     const price = Number(normalizeDigits(f.price).replace(/[,\s]/g, ''));
     const from = parseDate(f.from); const to = parseDate(f.to);
     if (f.title.trim().length < 2) e.title = 'প্যাকেজের নাম লিখুন।';

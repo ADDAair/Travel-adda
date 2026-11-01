@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { Text, Pressable, ActivityIndicator } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
@@ -11,18 +11,20 @@ import { supabase } from '../lib/supabase';
 import { notReady } from '../lib/groups';
 import { leaderPublic } from '../lib/market';
 import { st, errText } from './GroupScreen';
+import type { Nav, Row, Msg } from './navTypes';
 
 // Leader: how hajis see me in the directory; I can change my work area and a short introduction (licences only via admin).
-export default function LeaderMeScreen({ navigation }) {
-  const [p, setP] = useState(undefined);
+export default function LeaderMeScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [p, setP] = useState<Row | null | undefined>(undefined);
   const [area, setArea] = useState({ district: '', upazila: '', union: '' });
   const [bio, setBio] = useState('');
   const [profession, setProfession] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     try {
       const { data: s } = await supabase.auth.getSession();
+      if (!s.session) throw new Error('no session');
       const me = await leaderPublic(s.session.user.id);
       setP(me || null);
       if (me) { setArea({ district: me.district || '', upazila: me.upazila || '', union: me.union_name || '' }); setBio(me.bio || ''); setProfession(me.profession || ''); }
@@ -34,14 +36,16 @@ export default function LeaderMeScreen({ navigation }) {
     setBusy(true); setMsg(null);
     try {
       const { data: s } = await supabase.auth.getSession();
-      const row = { district: area.district || null, upazila: area.upazila.trim() || null, bio: bio.trim() || null, union_name: area.union.trim() || null };
+      if (!s.session) throw new Error('no session');
+      const uid = s.session.user.id;
+      const row: Record<string, string | null> = { district: area.district || null, upazila: area.upazila.trim() || null, bio: bio.trim() || null, union_name: area.union.trim() || null };
       if (p && 'profession' in p) row.profession = profession.trim() || null;      // step 017
-      let r = await supabase.from('leader_profiles').update(row).eq('user_id', s.session.user.id).select('user_id');
+      let r = await supabase.from('leader_profiles').update(row).eq('user_id', uid).select('user_id');
       if (r.error && (r.error.code === 'PGRST204' || r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {
         // step 014 not run yet: keep the union inside the upazila text so nothing typed is lost
         const un = row.union_name; delete row.union_name;
         if (un) row.upazila = [row.upazila, un].filter(Boolean).join(', ').slice(0, 60);
-        r = await supabase.from('leader_profiles').update(row).eq('user_id', s.session.user.id).select('user_id');
+        r = await supabase.from('leader_profiles').update(row).eq('user_id', uid).select('user_id');
       }
       if (r.error) throw r.error;
       if (!r.data || !r.data.length) throw new Error('not saved');

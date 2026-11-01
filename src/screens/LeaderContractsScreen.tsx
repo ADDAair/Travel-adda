@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator, BackHandler } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
@@ -10,10 +10,14 @@ import { parseDate } from '../lib/dates';
 import { INCLUDES, myOffers } from '../lib/offers';
 import { leaderContracts, sendContract, withdrawContract, cancelContract, completeContract, leaderReferralList, leaderDecideReferral } from '../lib/market';
 import { shareContractPdf } from '../lib/contractPdf';
-import { contractMoney } from '../lib/payments';
+import { contractMoney, type ContractMoney } from '../lib/payments';
 import { st, confirm, errText, fmtDay, fmtTaka } from './GroupScreen';
+import type { Nav, Row, Msg } from './navTypes';
 
-const SEND_RESULT = {
+type M = NonNullable<Msg>;
+type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
+
+const SEND_RESULT: Record<string, M> = {
   sent: { kind: 'ok', text: 'চুক্তির অনুরোধ পাঠানো হয়েছে। হাজী অ্যাপে পড়ে রাজি হলে চুক্তি চালু হবে।' },
   bad_code: { kind: 'bad', text: 'এই আইডিতে কোনো হাজী পাওয়া যায়নি। আইডি দেখে আবার লিখুন (যেমন TA-00123)।' },
   blocked: { kind: 'bad', text: 'এই হাজীকে চুক্তি পাঠানো যাবে না।' },
@@ -24,14 +28,14 @@ const SEND_RESULT = {
 };
 
 // Leader: send a contract to one haji ID, follow the answers, cancel with a reason, finish, PDF; confirm referred hajis.
-export default function LeaderContractsScreen({ navigation }) {
+export default function LeaderContractsScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [tab, setTab] = useState('contracts');
-  const [rows, setRows] = useState(null);
-  const [refs, setRefs] = useState([]);
-  const [state, setState] = useState('load');
+  const [rows, setRows] = useState<Row[]>([]);
+  const [refs, setRefs] = useState<Row[]>([]);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
 
   const load = useCallback(async () => {
     try { const [c, r] = await Promise.all([leaderContracts(), leaderReferralList()]); setRows(c); setRefs(r); setState('ok'); }
@@ -39,7 +43,7 @@ export default function LeaderContractsScreen({ navigation }) {
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
-  const act = async (fn, ok) => {
+  const act: Act = async (fn, ok) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { const r = await fn(); setMsg(ok(r)); await load(); }
@@ -47,7 +51,7 @@ export default function LeaderContractsScreen({ navigation }) {
     finally { setBusy(false); }
   };
 
-  if (form) return <SendForm onDone={(m) => { setForm(false); if (m) { setMsg(m); load(); } }} />;
+  if (form) return <SendForm onDone={(m: Msg) => { setForm(false); if (m) { setMsg(m); load(); } }} />;
   const pendingRefs = refs.filter((r) => r.status === 'pending');
 
   return (
@@ -95,7 +99,7 @@ export default function LeaderContractsScreen({ navigation }) {
   );
 }
 
-function LeaderContract({ c, busy, act, setMsg }) {
+function LeaderContract({ c, busy, act, setMsg }: { c: Row; busy: boolean; act: Act; setMsg: (m: Msg) => void }): JSX.Element {
   const [cancel, setCancel] = useState(false);
   const [open, setOpen] = useState(c.status === 'accepted' || c.status === 'sent');
   const [pdf, setPdf] = useState(false);
@@ -117,7 +121,7 @@ function LeaderContract({ c, busy, act, setMsg }) {
           <Button title="সফর শেষ, চুক্তি সম্পন্ন" icon="🏁" kind="secondary" onPress={() => confirm('চুক্তি সম্পন্ন হিসেবে চিহ্নিত করবেন?', 'সফর শেষ হলে এটি করুন। এরপর আর বাতিল করা যাবে না।', 'হ্যাঁ, সম্পন্ন', () => act(() => completeContract(c.id), () => ({ kind: 'ok', text: 'চুক্তি সম্পন্ন হিসেবে চিহ্নিত হয়েছে।' })))} disabled={busy} style={{ marginTop: S.sm }} />
           {cancel ? (
             <ReasonBox title="চুক্তি বাতিল" hint="কেন বাতিল করছেন, পরিষ্কার করে লিখুন" button="চুক্তি বাতিল করুন" busy={busy} onClose={() => setCancel(false)}
-              onSubmit={(reason) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
+              onSubmit={(reason: string) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
           ) : <Pressable onPress={() => setCancel(true)} style={st.leave} accessibilityRole="button"><Text style={st.leaveT}>চুক্তি বাতিল করুন</Text></Pressable>}
         </>
       ) : null}
@@ -127,11 +131,11 @@ function LeaderContract({ c, busy, act, setMsg }) {
 }
 
 // Money for one contract as the leader sees it: what Travel Adda received, its commission, what was paid to the leader.
-function LeaderMoney({ contractId }) {
-  const [m, setM] = useState(null);
+function LeaderMoney({ contractId }: { contractId: string }): JSX.Element | null {
+  const [m, setM] = useState<ContractMoney | null>(null);
   useEffect(() => { contractMoney(contractId).then(setM).catch(() => setM(null)); }, [contractId]);
   if (!m) return null;     // step 008 not run yet or no internet
-  const L = ({ l, v, b }) => <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}><Text style={st.p}>{l}</Text><Text style={[st.p, b && { fontWeight: '700' }]}>{v}</Text></View>;
+  const L = ({ l, v, b }: { l: string; v: string; b?: boolean }) => <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}><Text style={st.p}>{l}</Text><Text style={[st.p, b && { fontWeight: '700' }]}>{v}</Text></View>;
   return (
     <View style={[st.cRow, { paddingTop: S.sm }]}>
       <Text style={st.h}>💳 টাকার হিসাব</Text>
@@ -147,19 +151,19 @@ function LeaderMoney({ contractId }) {
   );
 }
 
-function SendForm({ onDone }) {
+function SendForm({ onDone }: { onDone: (m: Msg) => void }): JSX.Element {
   const [f, setF] = useState({ hajiCode: '', title: '', price: '', includes: '', excludes: '', from: '', to: '', refund: '', extra: '' });
   const [kind, setKind] = useState('umrah');
-  const [offers, setOffers] = useState([]);
-  const [offerId, setOfferId] = useState(null);
-  const [err, setErr] = useState({});
-  const [fail, setFail] = useState(null);
+  const [offers, setOffers] = useState<Row[]>([]);
+  const [offerId, setOfferId] = useState<string | null>(null);
+  const [err, setErr] = useState<Record<string, string>>({});
+  const [fail, setFail] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
-  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
   useEffect(() => { myOffers().then((r) => setOffers(r.filter((o) => o.active && !o.hidden_by_admin))).catch(() => {}); }, []);
   useEffect(() => { const sub = BackHandler.addEventListener('hardwareBackPress', () => { onDone(null); return true; }); return () => sub.remove(); }, [onDone]);
 
-  const fromOffer = (o) => {
+  const fromOffer = (o: Row) => {
     setOfferId(o.id); setKind(o.kind);
     const inc = INCLUDES.filter((x) => (o.includes || []).includes(x.id)).map((x) => x.label);
     const exc = INCLUDES.filter((x) => !(o.includes || []).includes(x.id)).map((x) => x.label);
@@ -171,7 +175,7 @@ function SendForm({ onDone }) {
 
   const send = () => {
     if (busy) return;
-    const e = {};
+    const e: Record<string, string> = {};
     const code = f.hajiCode.trim().toUpperCase().replace(/\s/g, '').replace(/^TA(\d)/, 'TA-$1');
     const price = Number(normalizeDigits(f.price).replace(/[,\s]/g, ''));
     const from = parseDate(f.from); const to = parseDate(f.to);
@@ -189,7 +193,7 @@ function SendForm({ onDone }) {
       setBusy(true);
       try {
         const r = await sendContract({ hajiCode: code, kind, title: f.title, price, includes: f.includes, excludes: f.excludes, from: from || null, to: to || null, refund: f.refund, extra: f.extra, offerId });
-        const m = SEND_RESULT[r] || { kind: 'bad', text: 'পাঠানো যায়নি।' };
+        const m: M = SEND_RESULT[r || ''] || { kind: 'bad', text: 'পাঠানো যায়নি।' };
         if (r === 'sent') onDone(m); else { setFail(m); setBusy(false); }   // form keeps what was typed
       } catch (x) { setFail({ kind: 'bad', text: errText(x) }); setBusy(false); }
     });
@@ -200,7 +204,7 @@ function SendForm({ onDone }) {
       <Pressable onPress={() => onDone(null)} style={st.back} accessibilityRole="button" accessibilityLabel="না পাঠিয়ে ফিরে যান"><Text style={st.backT}>‹ ফিরে যান</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">✍️ চুক্তির অনুরোধ</Text>
       {fail ? <Notice kind={fail.kind} title={fail.text} /> : null}
-      <Field label="হাজীর আইডি" hint="যেমন: TA-00123 (হাজীর অ্যাপের হোমে লেখা থাকে)" value={f.hajiCode} onChangeText={(v) => set('hajiCode')(v.toUpperCase())} maxLength={12} autoCapitalize="characters" error={err.hajiCode} />
+      <Field label="হাজীর আইডি" hint="যেমন: TA-00123 (হাজীর অ্যাপের হোমে লেখা থাকে)" value={f.hajiCode} onChangeText={(v: string) => set('hajiCode')(v.toUpperCase())} maxLength={12} autoCapitalize="characters" error={err.hajiCode} />
       {offers.length ? (
         <View style={st.card}>
           <Text style={st.h}>আমার প্যাকেজ থেকে ভরুন (ইচ্ছা করলে)</Text>

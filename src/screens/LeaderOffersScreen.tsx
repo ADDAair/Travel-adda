@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, ActivityIndicator, BackHandler } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, S, R, TOUCH } from '../theme';
@@ -10,45 +10,46 @@ import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
 import { OfferCard, OfferSummary } from '../components/OfferCard';
 import FundCard from '../components/FundCard';
-import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute } from '../lib/offerRoute';
+import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute, type RouteForm } from '../lib/offerRoute';
+import type { Nav, Row, Msg } from './navTypes';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-const statusOf = (o) => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? reviewLabel(o) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
+const statusOf = (o: Row): string => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? reviewLabel(o) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
   : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ অনুমোদিত, হাজীরা দেখতে পাচ্ছেন');
-const dateIn = (iso) => (iso ? toBn(String(iso).split('-').reverse().join('-')) : '');
+const dateIn = (iso: string | null | undefined): string => (iso ? toBn(String(iso).split('-').reverse().join('-')) : '');
 
 // Verified leaders send packages for the Offers page. The admin checks each one first (step 019); until it is approved
 // the leader can change it. After approval it cannot be changed (no bait-and-switch), only hidden.
-export default function LeaderOffersScreen({ navigation, inTab }) {
-  const [rows, setRows] = useState(null);
-  const [counts, setCounts] = useState({});
-  const [state, setState] = useState('load');
-  const [form, setForm] = useState(null);              // null | 'new' | the package being changed
+export default function LeaderOffersScreen({ navigation, inTab }: { navigation: Nav; inTab?: boolean }): JSX.Element {
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [counts, setCounts] = useState<Record<string, Row>>({});
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [form, setForm] = useState<'new' | Row | null>(null);              // null | 'new' | the package being changed
   const [reviewOn, setReviewOn] = useState(false);
-  const [openId, setOpenId] = useState(null);           // package shown on its own page
+  const [openId, setOpenId] = useState<string | null>(null);           // package shown on its own page
   useEffect(() => {
     if (!openId) return undefined;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { setOpenId(null); return true; });
     return () => sub.remove();
   }, [openId]);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     try { const [r, c, on] = await Promise.all([myOffers(), myInterestCounts(), offerReviewReady()]); setRows(r); setCounts(c); setReviewOn(on); setState('ok'); }
     catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const toggle = (o) => confirm(o.active ? 'প্যাকেজটি লুকাবেন?' : 'প্যাকেজটি আবার দেখাবেন?', o.active ? 'হাজীরা আর এটি দেখতে পাবেন না।' : '', o.active ? 'হ্যাঁ, লুকান' : 'হ্যাঁ, দেখান', async () => {
+  const toggle = (o: Row) => confirm(o.active ? 'প্যাকেজটি লুকাবেন?' : 'প্যাকেজটি আবার দেখাবেন?', o.active ? 'হাজীরা আর এটি দেখতে পাবেন না।' : '', o.active ? 'হ্যাঁ, লুকান' : 'হ্যাঁ, দেখান', async () => {
     setBusy(true); setMsg(null);
     try { await setOfferActive(o.id, !o.active); await load(); setMsg({ kind: 'ok', text: o.active ? 'প্যাকেজ লুকানো হয়েছে।' : 'প্যাকেজ আবার দেখানো হচ্ছে।' }); }
-    catch (e) { setMsg({ kind: 'bad', text: e?.code === '42501' ? 'একসাথে ২০টির বেশি প্যাকেজ দেখানো যায় না।' : errText(e) }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string } | null)?.code === '42501' ? 'একসাথে ২০টির বেশি প্যাকেজ দেখানো যায় না।' : errText(e) }); }
     finally { setBusy(false); }
   });
 
   if (form) {
     const editing = form !== 'new' ? form : null;
-    return <OfferForm initial={editing} reviewOn={reviewOn} onDone={(saved) => {
+    return <OfferForm initial={editing} reviewOn={reviewOn} onDone={(saved: boolean) => {
       setForm(null);
       if (saved) {
         setMsg({ kind: 'ok', text: editing ? 'বদল সংরক্ষণ হয়েছে। অ্যাডমিন আবার দেখে অনুমোদন দেবেন।'
@@ -59,7 +60,7 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
     }} />;
   }
 
-  const actions = (o) => {
+  const actions = (o: Row) => {
     const c = counts[o.id];
     return (
       <View style={st.cRow}>
@@ -108,7 +109,7 @@ export default function LeaderOffersScreen({ navigation, inTab }) {
   );
 }
 
-function Chip({ on, label, icon, onPress }) {
+function Chip({ on, label, icon, onPress }: { on: boolean; label: string; icon: string; onPress: () => void }): JSX.Element {
   return (
     <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={label}
       style={{ minHeight: TOUCH, width: '100%', flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.md, paddingVertical: S.xs, marginBottom: S.xs,
@@ -121,7 +122,8 @@ function Chip({ on, label, icon, onPress }) {
 }
 
 // One choice from a short list, shown as big buttons. The error is said in words under it.
-function Choice({ label, options, value, onChange, error }) {
+type Opt = { id: string; icon?: string; label: string; full?: string };
+function Choice({ label, options, value, onChange, error }: { label: string; options: readonly Opt[]; value: string; onChange: (v: string) => void; error?: string }): JSX.Element {
   return (
     <View style={{ marginBottom: S.md }}>
       <Text style={st.lbl}>{label}</Text>
@@ -131,25 +133,27 @@ function Choice({ label, options, value, onChange, error }) {
   );
 }
 
-function OfferForm({ onDone, initial, reviewOn }) {
+type OfferFields = { title: string; price: string; from: string; to: string; until?: string; mh: string; md: string; dh: string; dd: string; room: string; notes: string };
+function OfferForm({ onDone, initial, reviewOn }: { onDone: (saved: boolean) => void; initial: Row | null; reviewOn: boolean }): JSX.Element {
   const o = initial;
-  const [kind, setKindRaw] = useState(o ? o.kind : 'umrah');
-  const [f, setF] = useState(o ? {
+  const [kind, setKindRaw] = useState<string>(o ? o.kind : 'umrah');
+  const [f, setF] = useState<OfferFields>(o ? {
     title: o.title || '', price: o.price_bdt != null ? String(Math.round(Number(o.price_bdt))) : '', from: dateIn(o.depart_on), to: dateIn(o.return_on),
     until: dateIn(o.valid_until), mh: o.makkah_hotel || '', md: o.madinah_hotel || '', dh: o.makkah_distance_m != null ? String(o.makkah_distance_m) : '',
     dd: o.madinah_distance_m != null ? String(o.madinah_distance_m) : '', room: o.room_share != null ? String(o.room_share) : '', notes: o.notes || '',
   } : { title: '', price: '', from: '', to: '', mh: '', md: '', dh: '', dd: '', room: '', notes: '' });
-  const [inc, setInc] = useState(new Set(o ? o.includes || [] : ['flight', 'visa']));
-  const [rt, setRt] = useState(o && hasRoute(o) ? { from: o.from_airport, arrive: o.arrive_at, first: o.first_city, mk: toBn(o.makkah_nights), md: toBn(o.madinah_nights),
+  const [inc, setInc] = useState<Set<string>>(new Set<string>(o ? o.includes || [] : ['flight', 'visa']));
+  type RouteText = { from: string; arrive: string; first: string; mk: string; md: string; back: string; to: string; airline: string };
+  const [rt, setRt] = useState<RouteText>(o && hasRoute(o) ? { from: o.from_airport, arrive: o.arrive_at, first: o.first_city, mk: toBn(o.makkah_nights), md: toBn(o.madinah_nights),
     back: o.return_from, to: o.return_to, airline: o.airline || '' } : { from: 'DAC', arrive: 'JED', first: 'makkah', mk: '', md: '', back: '', to: 'DAC', airline: '' });
-  const setR = (k) => (v) => setRt((x) => ({ ...x, [k]: v }));
+  const setR = (k: keyof RouteText) => (v: string) => setRt((x) => ({ ...x, [k]: v }));
   // umrah has no qurbani: switching to umrah removes it from the choices and from what was ticked
-  const setKind = (k) => { setKindRaw(k); setInc((x) => new Set(cleanIncludes(k, [...x]))); };
-  const [err, setErr] = useState({});
+  const setKind = (k: string) => { setKindRaw(k); setInc((x) => new Set(cleanIncludes(k, [...x]))); };
+  const [err, setErr] = useState<Record<string, string>>({});
   const [fail, setFail] = useState('');
   const [busy, setBusy] = useState(false);
-  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
-  const num = (v) => { const t = normalizeDigits(v).replace(/[,\s]/g, ''); return t === '' ? null : Number(t); };
+  const set = (k: keyof OfferFields) => (v: string) => setF((x) => ({ ...x, [k]: v }));
+  const num = (v: string): number | null => { const t = normalizeDigits(v).replace(/[,\s]/g, ''); return t === '' ? null : Number(t); };
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { onDone(false); return true; });
     return () => sub.remove();
@@ -157,11 +161,11 @@ function OfferForm({ onDone, initial, reviewOn }) {
 
   const save = () => {
     if (busy) return;
-    const e = {};
+    const e: Record<string, string> = {};
     const price = num(f.price); const from = parseDate(f.from); const to = parseDate(f.to); const until = parseDate(f.until || '');
     const mDist = num(f.dh); const dDist = num(f.dd); const room = num(f.room);
     if (f.title.trim().length < 2) e.title = 'প্যাকেজের নাম লিখুন।';
-    if (!Number.isFinite(price) || price <= 0 || price >= 1e8) e.price = 'জনপ্রতি দাম শুধু সংখ্যায় লিখুন (যেমন: 150000)।';
+    if (price === null || !Number.isFinite(price) || price <= 0 || price >= 1e8) e.price = 'জনপ্রতি দাম শুধু সংখ্যায় লিখুন (যেমন: 150000)।';
     if (!from) e.from = 'যাওয়ার তারিখ লিখুন, যেমন: ২০-০১-২০২৭';
     else if (from < today()) e.from = 'যাওয়ার তারিখ আজকের পরে হতে হবে।';
     if (!to) e.to = 'ফেরার তারিখ লিখুন, যেমন: ০৩-০২-২০২৭';
@@ -174,7 +178,7 @@ function OfferForm({ onDone, initial, reviewOn }) {
     if (dDist !== null && !(Number.isInteger(dDist) && dDist >= 0 && dDist <= 50000)) e.dd = 'দূরত্ব মিটারে লিখুন (যেমন: 300)।';
     if (room !== null && !(Number.isInteger(room) && room >= 1 && room <= 10)) e.room = '১ থেকে ১০ এর মধ্যে লিখুন।';
     const days = from && to && to >= from ? Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1 : 0;
-    const re = checkRoute(rt, days);
+    const re = checkRoute(rt as RouteForm, days);
     Object.keys(re).forEach((k) => { e[`r_${k}`] = re[k]; });
     setErr(e); setFail('');
     if (Object.keys(e).length) { setFail('লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।'); return; }
@@ -187,13 +191,14 @@ function OfferForm({ onDone, initial, reviewOn }) {
         kind, title: f.title.trim(), price_bdt: price, depart_on: from, return_on: to,
         makkah_hotel: f.mh.trim() || null, makkah_distance_m: mDist, madinah_hotel: f.md.trim() || null, madinah_distance_m: dDist,
         room_share: room, includes: cleanIncludes(kind, INCLUDES.map((x) => x.id).filter((id) => inc.has(id))), notes: f.notes.trim() || null,
-        ...routeRow(rt),
+        ...routeRow(rt as RouteForm),
       };
       try {
         if (o) await updateOffer(o.id, { ...row, valid_until: until || null });
         else await createOffer({ ...(until ? { valid_until: until } : {}), ...row });
         onDone(true);
-      } catch (x) {
+      } catch (err0) {
+        const x = err0 as { code?: string; message?: string } | null;
         setFail(x?.code === '42501' ? 'জমা দেওয়া যায়নি। একসাথে ২০টির বেশি প্যাকেজ রাখা যায় না; পুরোনো কোনোটি লুকান।' : offerErrorText(x) || errText(x));
         setBusy(false);       // what was typed stays in the form
       }

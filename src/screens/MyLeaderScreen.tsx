@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator, Image } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import * as DocumentPicker from 'expo-document-picker';
@@ -8,23 +8,27 @@ import { ContractDetails, ReasonBox, Stars } from '../components/market';
 import { toBn } from '../lib/phone';
 import { notReady, telBd } from '../lib/groups';
 import { signedAvatarUrl } from '../lib/avatar';
-import { myContracts, respondContract, cancelContract, rateLeader, fileComplaint, myComplaints, myReferral, setReferral, requestReferralCancel } from '../lib/market';
+import { myContracts, respondContract, cancelContract, rateLeader, fileComplaint, myComplaints, myReferral, setReferral, requestReferralCancel, type Evidence } from '../lib/market';
 import { shareContractPdf } from '../lib/contractPdf';
 import PaymentBox from '../components/PaymentBox';
-import { myChatConsents } from '../lib/chatConsent';
+import { myChatConsents, type MyConsent } from '../lib/chatConsent';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
+import type { Nav, Row, Msg } from './navTypes';
 
-const COMPLAINT_STATUS = { pending: '⏳ অ্যাডমিন যাচাই করছেন', verified: '✅ যাচাই হয়েছে (সবাই দেখতে পাবেন)', rejected: '✖️ প্রমাণ পাওয়া যায়নি' };
+type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
+type Box = { c: Row; busy: boolean; act: Act; setMsg: (m: Msg) => void };
+
+const COMPLAINT_STATUS: Record<string, string> = { pending: '⏳ অ্যাডমিন যাচাই করছেন', verified: '✅ যাচাই হয়েছে (সবাই দেখতে পাবেন)', rejected: '✖️ প্রমাণ পাওয়া যায়নি' };
 
 // Haji: my leader (referral), contracts to read and accept, cancel with a reason, PDF, rating and complaints.
-export default function MyLeaderScreen({ navigation }) {
-  const [rows, setRows] = useState(null);
-  const [ref, setRef] = useState(undefined);
-  const [complaints, setComplaints] = useState([]);
-  const [state, setState] = useState('load');
-  const [msg, setMsg] = useState(null);
+export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [ref, setRef] = useState<Row | null | undefined>(undefined);
+  const [complaints, setComplaints] = useState<Row[]>([]);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
-  const [asks, setAsks] = useState([]);
+  const [asks, setAsks] = useState<MyConsent[]>([]);
 
   const load = useCallback(async () => {
     myChatConsents().then(setAsks).catch(() => {});
@@ -35,7 +39,7 @@ export default function MyLeaderScreen({ navigation }) {
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
-  const act = async (fn, ok) => {
+  const act: Act = async (fn, ok) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { const r = await fn(); const t = ok(r); if (t) setMsg(t); await load(); }
@@ -107,13 +111,13 @@ export default function MyLeaderScreen({ navigation }) {
   );
 }
 
-function PdfButton({ c, setMsg }) {
+function PdfButton({ c, setMsg }: { c: Row; setMsg: (m: Msg) => void }): JSX.Element {
   const [busy, setBusy] = useState(false);
   return <Button title="চুক্তির PDF নিন" icon="📄" kind="secondary" loading={busy} style={{ marginTop: S.sm }}
     onPress={async () => { setBusy(true); try { await shareContractPdf(c); } catch (e) { setMsg({ kind: 'bad', text: 'PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।' }); } finally { setBusy(false); } }} />;
 }
 
-function ActiveContract({ c, busy, act, setMsg }) {
+function ActiveContract({ c, busy, act, setMsg }: Box): JSX.Element {
   const [cancel, setCancel] = useState(false);
   return (
     <View style={[st.card, { borderWidth: 2, borderColor: C.ok }]}>
@@ -125,7 +129,7 @@ function ActiveContract({ c, busy, act, setMsg }) {
       <ComplaintBox c={c} setMsg={setMsg} />
       {cancel ? (
         <ReasonBox title="চুক্তি বাতিল" hint="যেমন: লিডার ভিসার কাজ শুরু করেননি" button="চুক্তি বাতিল করুন" busy={busy} onClose={() => setCancel(false)}
-          onSubmit={(reason) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে। Travel Adda-তে জমা দেওয়া টাকা চুক্তির ফেরতের নিয়ম অনুযায়ী মেটানো হবে; Travel Adda হেল্পলাইনে যোগাযোগ করুন।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
+          onSubmit={(reason: string) => act(() => cancelContract(c.id, reason), (r) => { setCancel(false); return r === 'ok' ? { kind: 'ok', text: 'চুক্তি বাতিল হয়েছে। Travel Adda-তে জমা দেওয়া টাকা চুক্তির ফেরতের নিয়ম অনুযায়ী মেটানো হবে; Travel Adda হেল্পলাইনে যোগাযোগ করুন।' } : { kind: 'warn', text: 'চুক্তিটি আর চালু নেই।' }; })} />
       ) : (
         <Pressable onPress={() => setCancel(true)} style={st.leave} accessibilityRole="button" accessibilityLabel="চুক্তি বাতিল করুন"><Text style={st.leaveT}>চুক্তি বাতিল করুন</Text></Pressable>
       )}
@@ -133,7 +137,7 @@ function ActiveContract({ c, busy, act, setMsg }) {
   );
 }
 
-function PastContract({ c, busy, act, setMsg }) {
+function PastContract({ c, busy, act, setMsg }: Box): JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <View style={st.card}>
@@ -149,8 +153,8 @@ function PastContract({ c, busy, act, setMsg }) {
   );
 }
 
-function RateBox({ c, busy, act }) {
-  const [stars, setStars] = useState(c.my_stars || 0);
+function RateBox({ c, busy, act }: { c: Row; busy: boolean; act: Act }): JSX.Element {
+  const [stars, setStars] = useState<number>(c.my_stars || 0);
   const [comment, setComment] = useState(c.my_comment || '');
   const [open, setOpen] = useState(false);
   if (!open) {
@@ -168,10 +172,10 @@ function RateBox({ c, busy, act }) {
   );
 }
 
-function ComplaintBox({ c, setMsg }) {
+function ComplaintBox({ c, setMsg }: { c: Row; setMsg: (m: Msg) => void }): JSX.Element {
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState('');
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState<(Evidence & { name: string })[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const pick = async () => {
@@ -180,7 +184,7 @@ function ComplaintBox({ c, setMsg }) {
       if (r.canceled || !r.assets || !r.assets[0]) return;
       const a = r.assets[0];
       const mime = a.mimeType || '';
-      const kind = mime.startsWith('image/') ? 'image' : mime.startsWith('audio/') ? 'audio' : mime.startsWith('video/') ? 'video' : null;
+      const kind: Evidence['kind'] | null = mime.startsWith('image/') ? 'image' : mime.startsWith('audio/') ? 'audio' : mime.startsWith('video/') ? 'video' : null;
       if (!kind) { setErr('শুধু ছবি, অডিও বা ভিডিও দেওয়া যাবে।'); return; }
       if (a.size && a.size > 20 * 1024 * 1024) { setErr('ফাইলটি ২০ এমবির বেশি বড়। ছোট ফাইল দিন।'); return; }
       if (files.length >= 5) { setErr('সর্বোচ্চ ৫টি ফাইল দেওয়া যায়।'); return; }
@@ -195,7 +199,7 @@ function ComplaintBox({ c, setMsg }) {
         const r = await fileComplaint(c.id, body, files);
         setOpen(false); setBody(''); setFiles([]);
         setMsg(r.failed ? { kind: 'warn', text: `অভিযোগ জমা হয়েছে, কিন্তু ${toBn(r.failed)}টি ফাইল পাঠানো যায়নি।` } : { kind: 'ok', text: 'অভিযোগ জমা হয়েছে। অ্যাডমিন যাচাই করে জানাবেন।' });
-      } catch (e) { setErr(String(e?.message || '').includes('too many') ? 'আজ আর অভিযোগ পাঠানো যাবে না।' : errText(e)); }   // text stays
+      } catch (e) { setErr(String((e as { message?: string } | null)?.message || '').includes('too many') ? 'আজ আর অভিযোগ পাঠানো যাবে না।' : errText(e)); }   // text stays
       finally { setBusy(false); }
     });
   };
@@ -212,10 +216,10 @@ function ComplaintBox({ c, setMsg }) {
   );
 }
 
-function ReferralCard({ r, busy, act, hasContract }) {
+function ReferralCard({ r, busy, act, hasContract }: { r: Row | null | undefined; busy: boolean; act: Act; hasContract: boolean }): JSX.Element {
   const [code, setCode] = useState('');
   const [cancel, setCancel] = useState(false);
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState<string | null>(null);
   useEffect(() => { if (r && r.avatar_path) signedAvatarUrl(r.avatar_path).then(setPhoto); }, [r]);
   if (r && r.status !== 'rejected') {
     return (
@@ -232,7 +236,7 @@ function ReferralCard({ r, busy, act, hasContract }) {
         <Text style={st.small}>রেফারেল থাকা অবস্থায় তালিকায় শুধু এই লিডারকে দেখবেন, আর শুধু তিনিই চুক্তি পাঠাতে পারবেন।</Text>
         {r.cancel_requested ? <Notice kind="info" title="রেফারেল বাতিলের অনুরোধ অ্যাডমিনের কাছে আছে" /> : cancel ? (
           <ReasonBox title="রেফারেল বাতিলের অনুরোধ" hint="কেন অন্য লিডার খুঁজতে চান" button="অনুরোধ পাঠান" min={5} busy={busy} onClose={() => setCancel(false)}
-            onSubmit={(reason) => act(() => requestReferralCancel(reason), (x) => { setCancel(false); return x === 'ok' ? { kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। অ্যাডমিন অনুমোদন দিলে অন্য লিডার দেখতে পাবেন।' } : { kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি।' }; })} />
+            onSubmit={(reason: string) => act(() => requestReferralCancel(reason), (x) => { setCancel(false); return x === 'ok' ? { kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। অ্যাডমিন অনুমোদন দিলে অন্য লিডার দেখতে পাবেন।' } : { kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি।' }; })} />
         ) : !hasContract ? (
           <Pressable onPress={() => setCancel(true)} style={st.leave} accessibilityRole="button"><Text style={st.leaveT}>রেফারেল বাতিলের অনুরোধ</Text></Pressable>
         ) : null}
@@ -243,7 +247,7 @@ function ReferralCard({ r, busy, act, hasContract }) {
     <View style={st.card}>
       <Text style={st.h}>🔑 লিডারের রেফারেল কোড আছে?</Text>
       {r && r.status === 'rejected' ? <Text style={st.small}>আগের লিডার রেফারেল নিশ্চিত করেননি। চাইলে নতুন কোড দিন।</Text> : null}
-      <Field label="রেফারেল কোড" hint="যেমন: TL-00012" value={code} onChangeText={(v) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
+      <Field label="রেফারেল কোড" hint="যেমন: TL-00012" value={code} onChangeText={(v: string) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
       <Button title="কোড যুক্ত করুন" icon="➕" kind="secondary" loading={busy} onPress={() => {
         const c = code.trim().replace(/\s/g, '').replace(/^TL(\d)/, 'TL-$1');
         if (!/^TL-\d{1,8}$/.test(c)) return act(async () => 'format', () => ({ kind: 'bad', text: 'কোড এমন হয়: TL-00012' }));

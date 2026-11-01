@@ -49,6 +49,15 @@ test('step 5: money and security screens are TypeScript (.tsx)', () => {
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
 });
+// Step 6 (Nov 2026): leader and contract screens.
+const STEP6 = ['src/screens/LeaderScreen', 'src/screens/LeaderContractsScreen', 'src/screens/MyLeaderScreen', 'src/screens/LeaderApplyScreen',
+  'src/screens/LeaderOffersScreen', 'src/screens/LeadersScreen', 'src/screens/LeaderMeScreen'];
+test('step 6: leader and contract screens are TypeScript (.tsx)', () => {
+  for (const f of STEP6) {
+    assert.ok(existsSync(new URL(`${f}.tsx`, root)), `${f}.tsx missing`);
+    assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
+  }
+});
 test('strict type checking is on and runs in CI', () => {
   const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
   assert.equal(ts.compilerOptions.strict, true);
