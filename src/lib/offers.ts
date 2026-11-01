@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
 import { rows } from './rpc';
+import type { OwnPackage, ReviewPackage } from './types';
 import { notReady } from './groups';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
@@ -60,7 +61,7 @@ export async function cancelCallback(id: string): Promise<void> {
 }
 
 // ---------- Leader ----------
-export async function myOffers(): Promise<Row[]> {
+export async function myOffers(): Promise<OwnPackage[]> {
   const me = (await supabase.auth.getSession()).data?.session?.user?.id;
   return check(await supabase.from('offers').select('*').eq('leader_id', me).order('created_at', { ascending: false })) || [];
 }
@@ -116,7 +117,7 @@ export async function myInterestCounts(): Promise<Record<string, Row>> {
 export const adminInterests = async (): Promise<Row[]> => check(await supabase.rpc('admin_list_interests')) || [];
 export const markInterest = async (id: string, note?: string | null) => check(await supabase.rpc('admin_mark_interest', { p_id: id, p_note: note || null }));
 export const hideOffer = async (id: string, hide: boolean) => check(await supabase.rpc('admin_hide_offer', { p_offer: id, p_hide: hide }));
-export async function adminOffersReview(): Promise<Row[]> {
+export async function adminOffersReview(): Promise<(ReviewPackage | Row)[]> {
   const r = await supabase.rpc('admin_offers_review');
   if (r.error && notReady(r.error)) return adminOffers();      // step 019 not run yet
   return check(r) || [];

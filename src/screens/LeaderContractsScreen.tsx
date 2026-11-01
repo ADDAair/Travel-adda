@@ -14,6 +14,7 @@ import { contractMoney, type ContractMoney } from '../lib/payments';
 import { st, confirm, errText, fmtDay, fmtTaka } from './GroupScreen';
 import type { Msg, Nav, Row } from './navTypes';
 
+import type { LeaderContract as LeaderContractRow } from '../lib/types';
 type M = NonNullable<Msg>;
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
 
@@ -30,7 +31,7 @@ const SEND_RESULT: Record<string, M> = {
 // Leader: send a contract to one haji ID, follow the answers, cancel with a reason, finish, PDF; confirm referred hajis.
 export default function LeaderContractsScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [tab, setTab] = useState('contracts');
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<LeaderContractRow[]>([]);
   const [refs, setRefs] = useState<Row[]>([]);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState(false);
@@ -99,7 +100,7 @@ export default function LeaderContractsScreen({ navigation }: { navigation: Nav 
   );
 }
 
-function LeaderContract({ c, busy, act, setMsg }: { c: Row; busy: boolean; act: Act; setMsg: (m: Msg) => void }): JSX.Element {
+function LeaderContract({ c, busy, act, setMsg }: { c: LeaderContractRow; busy: boolean; act: Act; setMsg: (m: Msg) => void }): JSX.Element {
   const [cancel, setCancel] = useState(false);
   const [open, setOpen] = useState(c.status === 'accepted' || c.status === 'sent');
   const [pdf, setPdf] = useState(false);

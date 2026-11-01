@@ -7,8 +7,9 @@ import { routeSteps, routeShort, hasRoute } from '../lib/offerRoute';
 import { LEADER_KINDS } from '../lib/leaderKinds';
 import { st, fmtDay, fmtTaka } from '../screens/GroupScreen';
 import { Avatar } from '../screens/LeadersScreen';
+import type { AnyPackage } from '../lib/types';
 
-type Offer = Record<string, any>;   // an offers row
+type Offer = AnyPackage;   // a package row (haji list, leader's own, or admin check)
 
 const dist = (m: number | null | undefined, place: string): string => (m == null ? '' : m >= 1000 ? `${place} থেকে প্রায় ${toBn((m / 1000).toFixed(1))} কিমি` : `${place} থেকে প্রায় ${toBn(m)} মিটার`);
 const stars = (n: number): string => (n > 0 ? `⭐ ${toBn(Number(n).toFixed(1))}` : '⭐ এখনো রেটিং নেই');

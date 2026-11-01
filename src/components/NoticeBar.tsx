@@ -4,11 +4,12 @@ import { C, F, S, R, TOUCH } from '../theme';
 import { toBn } from '../lib/phone';
 import { KIND_ICON, listNotifications, useUnread } from '../lib/notifications';
 import type { Nav } from '../screens/navTypes';
+import type { NotificationRow } from '../lib/types';
 
 // Bar on Home with the newest unread notice (an important one from Travel Adda first). Tapping opens the box.
 export default function NoticeBar({ navigation }: { navigation: Nav }) {
   const { unread, ready } = useUnread();
-  const [top, setTop] = useState<any>(null);
+  const [top, setTop] = useState<NotificationRow | null>(null);
   const load = useCallback(async () => {
     try {
       const { rows } = await listNotifications();

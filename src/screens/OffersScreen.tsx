@@ -14,6 +14,7 @@ import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, mont
 import { toBn } from '../lib/phone';
 import FundCard from '../components/FundCard';
 import type { Msg, Nav, Route, Row } from './navTypes';
+import type { PackageRow } from '../lib/types';
 
 export { OfferCard };
 
@@ -95,7 +96,7 @@ function MonthDropdown({ options, value, onChange }: { options: { id: string; la
 
 function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [kind, setKind] = useState('umrah');
-  const [rows, setRows] = useState<any>(null);
+  const [rows, setRows] = useState<PackageRow[] | null>(null);
   const [state, setState] = useState('load');
   const [help, setHelp] = useState<any>(null);
   const [mine, setMine] = useState<Record<string, any>>({});

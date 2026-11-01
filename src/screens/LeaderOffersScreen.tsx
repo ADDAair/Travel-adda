@@ -12,6 +12,7 @@ import { OfferCard, OfferSummary } from '../components/OfferCard';
 import FundCard from '../components/FundCard';
 import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute, type RouteForm } from '../lib/offerRoute';
 import type { Msg, Nav, Row } from './navTypes';
+import type { OwnPackage } from '../lib/types';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const statusOf = (o: Row): string => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? String(reviewLabel(o)) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
@@ -21,10 +22,10 @@ const dateIn = (iso: string | null | undefined): string => (iso ? toBn(String(is
 // Verified leaders send packages for the Offers page. The admin checks each one first (step 019); until it is approved
 // the leader can change it. After approval it cannot be changed (no bait-and-switch), only hidden.
 export default function LeaderOffersScreen({ navigation, inTab }: { navigation: Nav; inTab?: boolean }): JSX.Element {
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<OwnPackage[] | null>(null);
   const [counts, setCounts] = useState<Record<string, Row>>({});
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
-  const [form, setForm] = useState<'new' | Row | null>(null);              // null | 'new' | the package being changed
+  const [form, setForm] = useState<'new' | OwnPackage | null>(null);              // null | 'new' | the package being changed
   const [reviewOn, setReviewOn] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);           // package shown on its own page
   useEffect(() => {

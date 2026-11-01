@@ -15,14 +15,16 @@ import { myChatConsents, type MyConsent } from '../lib/chatConsent';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
 import type { Msg, Nav, Row } from './navTypes';
 
+import type { MyContract } from '../lib/types';
+
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
-type Box = { c: Row; busy: boolean; act: Act; setMsg: (m: Msg) => void };
+type Box = { c: MyContract; busy: boolean; act: Act; setMsg: (m: Msg) => void };
 
 const COMPLAINT_STATUS: Record<string, string> = { pending: '⏳ অ্যাডমিন যাচাই করছেন', verified: '✅ যাচাই হয়েছে (সবাই দেখতে পাবেন)', rejected: '✖️ প্রমাণ পাওয়া যায়নি' };
 
 // Haji: my leader (referral), contracts to read and accept, cancel with a reason, PDF, rating and complaints.
 export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX.Element {
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<MyContract[] | null>(null);
   const [ref, setRef] = useState<Row | null | undefined>(undefined);
   const [complaints, setComplaints] = useState<Row[]>([]);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
@@ -111,7 +113,7 @@ export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX
   );
 }
 
-function PdfButton({ c, setMsg }: { c: Row; setMsg: (m: Msg) => void }): JSX.Element {
+function PdfButton({ c, setMsg }: { c: MyContract; setMsg: (m: Msg) => void }): JSX.Element {
   const [busy, setBusy] = useState(false);
   return <Button title="চুক্তির PDF নিন" icon="📄" kind="secondary" loading={busy} style={{ marginTop: S.sm }}
     onPress={async () => { setBusy(true); try { await shareContractPdf(c); } catch (e) { setMsg({ kind: 'bad', text: 'PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।' }); } finally { setBusy(false); } }} />;
@@ -153,7 +155,7 @@ function PastContract({ c, busy, act, setMsg }: Box): JSX.Element {
   );
 }
 
-function RateBox({ c, busy, act }: { c: Row; busy: boolean; act: Act }): JSX.Element {
+function RateBox({ c, busy, act }: { c: MyContract; busy: boolean; act: Act }): JSX.Element {
   const [stars, setStars] = useState<number>(c.my_stars || 0);
   const [comment, setComment] = useState(c.my_comment || '');
   const [open, setOpen] = useState(false);
@@ -172,7 +174,7 @@ function RateBox({ c, busy, act }: { c: Row; busy: boolean; act: Act }): JSX.Ele
   );
 }
 
-function ComplaintBox({ c, setMsg }: { c: Row; setMsg: (m: Msg) => void }): JSX.Element {
+function ComplaintBox({ c, setMsg }: { c: MyContract; setMsg: (m: Msg) => void }): JSX.Element {
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState('');
   const [files, setFiles] = useState<(Evidence & { name: string })[]>([]);

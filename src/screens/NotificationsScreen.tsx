@@ -8,10 +8,11 @@ import { KIND_ICON, listNotifications, markRead, hideNotification, markAllRead }
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import PushCard from '../components/PushCard';
 import type { Msg, Nav, Row } from './navTypes';
+import type { NotificationRow } from '../lib/types';
 
 // Notification box: everything Travel Adda or the app told this person, newest first.
 export default function NotificationsScreen({ navigation }: { navigation: Nav }) {
-  const [rows, setRows] = useState<any>(null);
+  const [rows, setRows] = useState<NotificationRow[] | null>(null);
   const [state, setState] = useState('load');   // load | ok | soon | err
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);

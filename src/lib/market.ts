@@ -7,6 +7,7 @@ import { notReady } from './groups';
 import { rpc, check, rows, firstRow } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+import type { MyContract } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 const first = firstRow;
 
@@ -85,7 +86,7 @@ export const cancelContract = (id: string, reason: string) => rpc('cancel_contra
 export const completeContract = (id: string) => rpc('leader_complete_contract', { p_id: id });
 // The leader of my ACTIVE contract is kept on this phone, so the Emergency page can call them without internet.
 const CONTRACT_LEADER = 'ta.contractLeader.v1';
-export async function myContracts(): Promise<Row[]> {
+export async function myContracts(): Promise<MyContract[]> {
   const rows = await list('my_contracts');
   const a = rows.find((c) => c.status === 'accepted');
   try {
