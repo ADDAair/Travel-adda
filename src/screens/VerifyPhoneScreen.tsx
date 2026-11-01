@@ -14,7 +14,7 @@ import { st } from './GroupScreen';
 // Verify the account with a code: by SMS to the mobile number OR by e-mail. Either one makes the account "verified".
 // A verified e-mail can also be used to log in and to reset the password.
 type Profile = { phone: string; phone_verified?: boolean; email?: string | null; email_verified?: boolean };
-type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string; fix?: string } | null;
+type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string; fix?: string | null } | null;
 type Tab = 'phone' | 'email';
 type Props = { navigation: { navigate: (r: string) => void; addListener?: (e: string, f: () => void) => () => void }; route?: { params?: { channel?: string } } };
 

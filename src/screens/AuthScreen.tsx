@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState, type JSX } from 'react';
-import { View, Text, StyleSheet, Pressable, type ScrollView as RNScrollView, type TextInput } from 'react-native';
+import React, { useEffect, useRef, useState, type ComponentRef, type JSX } from 'react';
+import { View, Text, StyleSheet, Pressable, type TextInput } from 'react-native';
+import type { ScrollRef } from '../components/KbScroll';
 import ScrollView from '../components/KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
@@ -49,9 +50,9 @@ export default function AuthScreen(): JSX.Element {
   const terms = accType === 'leader' ? allTerms.leader : allTerms.haji;      // the terms for the account type being opened
   const termsName = accType === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
   useEffect(() => { setAgree(false); }, [accType]);                       // a different type means different terms: tick again
-  const phoneRef = useRef<TextInput | null>(null);
-  const pwRef = useRef<TextInput | null>(null);
-  const scrollRef = useRef<RNScrollView | null>(null);
+  const phoneRef = useRef<ComponentRef<typeof TextInput> | null>(null);
+  const pwRef = useRef<ComponentRef<typeof TextInput> | null>(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
   const kb = useKeyboardHeight();
   const strength = passwordStrength(pw, normalizePhone(phone));
 
