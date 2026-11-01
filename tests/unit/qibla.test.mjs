@@ -61,6 +61,6 @@ test('weak compass warning: Android reports 0–3 (3 = best), iPhone reports deg
 });
 
 test('the qibla page uses the smoothed heading and these rules', () => {
-  const s = readFileSync(new URL('../../src/screens/PrayerScreen.js', import.meta.url), 'utf8');
+  const s = readFileSync(new URL('../../src/screens/PrayerScreen.tsx', import.meta.url), 'utf8');
   assert.ok(s.includes('smoothHeading(') && s.includes('qiblaTurn(') && s.includes('compassWeak('));
 });

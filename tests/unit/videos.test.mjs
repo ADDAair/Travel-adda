@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { VIDEO_TOPICS, videoFor } from '../../src/content/videos.js';
 
-const app = readFileSync(new URL('../../App.js', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8');
 const routes = [...app.matchAll(/<Tab\.Screen name="([A-Za-z]+)"/g)].map((m) => m[1]);
 
 test('every page of the app has a video topic in Bengali', () => {

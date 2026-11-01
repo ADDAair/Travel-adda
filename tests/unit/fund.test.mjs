@@ -78,7 +78,7 @@ test('fund account: its own numbers if set, else the normal payment account', as
 });
 
 test('the fund page is part of the app (route + video topic)', () => {
-  const app = readFileSync(new URL('../../App.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8');
   assert.ok(app.includes('<Tab.Screen name="Fund"'));
   assert.ok(VIDEO_TOPICS.Fund);
 });

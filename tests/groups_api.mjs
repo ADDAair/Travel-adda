@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { loginId } from './login_id.mjs';
 
-const cfg = fs.readFileSync('src/config.js', 'utf8');
+const cfg = fs.readFileSync('src/config.ts', 'utf8');
 const URL = cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1];
 const KEY = cfg.match(/SUPABASE_ANON_KEY\s*=\s*'([^']+)'/)[1];
 const mk = () => createClient(URL, KEY, { auth: { persistSession: false, autoRefreshToken: false } });

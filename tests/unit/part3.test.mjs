@@ -57,7 +57,7 @@ test('reading the chat goes through the logged server function only', async () =
 });
 
 test('the haji consent page exists and has a video topic', () => {
-  const app = readFileSync(new URL('../../App.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8');
   assert.ok(app.includes('<Tab.Screen name="ChatConsent"'));
   assert.ok(VIDEO_TOPICS.ChatConsent);
 });

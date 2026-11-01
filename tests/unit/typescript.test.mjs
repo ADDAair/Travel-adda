@@ -67,6 +67,18 @@ test('step 7: admin screens are TypeScript (.tsx)', () => {
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
 });
+// Step 8 (Nov 2026, last step): everything else — all screens, components, content and the app itself.
+test('step 8: no JavaScript left anywhere in src, the app root is App.tsx, and the type check covers it', async () => {
+  const { readdirSync, statSync } = await import('node:fs');
+  const left = [];
+  const walk = (dir) => { for (const f of readdirSync(dir)) { const p = new URL(f, dir); if (statSync(p).isDirectory()) walk(new URL(`${f}/`, dir)); else if (f.endsWith('.js')) left.push(p.pathname); } };
+  walk(new URL('src/', root));
+  assert.deepEqual(left, []);
+  assert.ok(existsSync(new URL('App.tsx', root)) && !existsSync(new URL('App.js', root)));
+  const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
+  assert.ok(ts.include.includes('App.tsx'));
+  assert.ok(readFileSync(new URL('tools/fetch_quran.py', root), 'utf8').includes('loaders.ts'), 'the Quran generator writes TypeScript too');
+});
 test('strict type checking is on and runs in CI', () => {
   const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
   assert.equal(ts.compilerOptions.strict, true);

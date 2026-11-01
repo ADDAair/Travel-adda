@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { loginId } from './login_id.mjs';
-const cfg = fs.readFileSync('src/config.js', 'utf8');
+const cfg = fs.readFileSync('src/config.ts', 'utf8');
 const sb = createClient(cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1], cfg.match(/SUPABASE_ANON_KEY\s*=\s*'([^']+)'/)[1], { auth: { persistSession: false } });
 const out = {};
 const s = await sb.auth.signInWithPassword({ email: await loginId(sb, process.env.H_PHONE), password: process.env.H_PW });
