@@ -1,17 +1,18 @@
 // Admin: speed check from this phone (read-only server calls, 3 times each). Shows plain Bengali results so the owner
 // can tell whether slow loading comes from the internet, the server, or the app.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
-import { timeCall, speedText } from '../lib/speed';
+import { timeCall, speedText, type Timing } from '../lib/speed';
 import { toBn } from '../lib/phone';
-import { lastStartup, startupText } from '../lib/startup';
+import { lastStartup, startupText, type Startup } from '../lib/startup';
 import { st } from './GroupScreen';
 
-const CHECKS = [
+type Check = { id: string; label: string; run: () => PromiseLike<{ error?: unknown }> };
+const CHECKS: Check[] = [
   { id: 'net', label: 'ইন্টারনেট থেকে সার্ভার (শুধু যাওয়া-আসা)',
     run: () => fetch(`${SUPABASE_URL}/auth/v1/health`, { headers: { apikey: SUPABASE_ANON_KEY } }).then((r) => (r.ok ? {} : { error: r.status })) },
   { id: 'profile', label: 'আমার তথ্য', run: () => supabase.from('profiles').select('full_name').single() },
@@ -20,10 +21,10 @@ const CHECKS = [
   { id: 'notes', label: 'নোটিফিকেশন', run: () => supabase.rpc('my_notifications', { p_limit: 100 }) },
 ];
 
-export default function SpeedTab() {
-  const [res, setRes] = useState({});
+export default function SpeedTab(): JSX.Element {
+  const [res, setRes] = useState<Record<string, Timing>>({});
   const [busy, setBusy] = useState(false);
-  const [start, setStart] = useState(undefined);
+  const [start, setStart] = useState<Startup | null | undefined>(undefined);
   useEffect(() => { lastStartup().then(setStart); }, []);
   const run = async () => {
     if (busy) return;

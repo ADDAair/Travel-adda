@@ -1,23 +1,27 @@
 // Admin part 4 (supabase/026_admin_part4.sql): money alerts, service costs for own leaders, notifications to one part,
 // SOS record, and the work record filtered by staff member.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type DependencyList, type JSX } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { notReady, telBd } from '../lib/groups';
-import { moneyAlerts, alertText, SERVICE_KINDS, serviceKindLabel, addServiceCost, serviceResultText, deleteServiceCost, serviceCosts, leaderBalance, contractChoices } from '../lib/adminMoney';
+import { moneyAlerts, alertText, SERVICE_KINDS, serviceKindLabel, addServiceCost, serviceResultText, deleteServiceCost, serviceCosts, leaderBalance, contractChoices,
+  type LeaderBalance, type LedgerRow, type ServiceCost } from '../lib/adminMoney';
 import { ledger, leaderRates } from '../lib/payments';
 import { auditSearch, auditActors, listAudit, adminGroups, segmentSize, notifySegment, monthOk } from '../lib/admin';
 import { supabase } from '../lib/supabase';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
+import type { Msg, Row } from './navTypes';
+
+type Coded = { code?: string } | null;
 
 const SOON = 'এই অংশের ডেটাবেস ধাপ (০২৬) এখনো চালানো হয়নি।';
-const errMsg = (e) => (notReady(e) ? SOON : errText(e));
+const errMsg = (e: unknown): string => (notReady(e) ? SOON : errText(e));
 
 // One full-width row per choice: long Bengali names wrap instead of being cut (side-by-side chips cut them on
 // some Android phones). Selection = border + background + a tick; the text style itself never changes.
-function Pills({ options, value, onChange, label }) {
+function Pills({ options, value, onChange, label }: { options: readonly { id: string; label: string }[]; value: string; onChange: (v: string) => void; label?: string }): JSX.Element {
   return (
     <View style={{ marginBottom: S.md }}>
       {label ? <Text style={st.lbl}>{label}</Text> : null}
@@ -36,9 +40,9 @@ function Pills({ options, value, onChange, label }) {
   );
 }
 
-function useLoad(fn, deps = []) {
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState(null);
+function useLoad<T>(fn: () => Promise<T[]>, deps: DependencyList = []) {
+  const [data, setData] = useState<T[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const load = useCallback(async () => {
     setErr(null);
     try { setData(await fn()); } catch (e) { setData([]); setErr(errMsg(e)); }
@@ -48,7 +52,7 @@ function useLoad(fn, deps = []) {
 }
 
 // ---------- 1) money alerts ----------
-export function MoneyAlertsTab() {
+export function MoneyAlertsTab(): JSX.Element {
   const { data, err } = useLoad(moneyAlerts);
   const groups = ['haji_due', 'leader_due', 'not_closed'].map((k) => ({ k, rows: (data || []).filter((r) => r.kind === k) }));
   return (
@@ -74,9 +78,9 @@ export function MoneyAlertsTab() {
 }
 
 // ---------- 2) service costs for own leaders ----------
-export function ServiceCostsTab() {
-  const { data: leaders, err } = useLoad(async () => (await leaderRates()).filter((l) => /travel\s*adda/i.test(String(l.agency_name || ''))));
-  const [open, setOpen] = useState(null);
+export function ServiceCostsTab(): JSX.Element {
+  const { data: leaders, err } = useLoad<Row>(async () => (await leaderRates()).filter((l) => /travel\s*adda/i.test(String(l.agency_name || ''))));
+  const [open, setOpen] = useState<Row | null>(null);
   if (open) return <LeaderCosts leader={open} onBack={() => setOpen(null)} />;
   return (
     <>
@@ -95,25 +99,25 @@ export function ServiceCostsTab() {
   );
 }
 
-function LeaderCosts({ leader, onBack }) {
-  const id = leader.leader_id;
-  const [bal, setBal] = useState(null);
-  const [rows, setRows] = useState(null);
-  const [contracts, setContracts] = useState([]);
+function LeaderCosts({ leader, onBack }: { leader: Row; onBack: () => void }): JSX.Element {
+  const id: string = leader.leader_id;
+  const [bal, setBal] = useState<LeaderBalance | null>(null);
+  const [rows, setRows] = useState<ServiceCost[] | null>(null);
+  const [contracts, setContracts] = useState<LedgerRow[]>([]);
   const [form, setForm] = useState({ contract: '', kind: 'visa', amount: '', note: '' });
-  const [forWho, setForWho] = useState('group');        // 'group' | 'haji'
+  const [forWho, setForWho] = useState<'group' | 'haji'>('group');        // 'group' | 'haji'
   const [find, setFind] = useState('');
-  const [del, setDel] = useState(null);             // { id, reason }
+  const [del, setDel] = useState<{ id: string; reason: string } | null>(null);             // { id, reason }
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     try {
       const [b, r, l] = await Promise.all([leaderBalance(id), serviceCosts(id), ledger()]);
-      setBal(b); setRows(r); setContracts(l);
+      setBal(b); setRows(r); setContracts(l as LedgerRow[]);
     } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
-  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: 'contract' | 'kind' | 'amount' | 'note') => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const add = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
@@ -123,15 +127,15 @@ function LeaderCosts({ leader, onBack }) {
       setMsg({ kind: r === 'ok' ? 'ok' : 'warn', text: serviceResultText(r) });
       if (r === 'ok') { setForm((f) => ({ ...f, amount: '', note: '' })); await load(); }
     } catch (e) {
-      setMsg({ kind: 'bad', text: e.code === 'amount' ? 'টাকার পরিমাণ সংখ্যায় লিখুন।' : e.code === 'note' ? 'কী খরচ, ছোট করে লিখুন (যেমন: ৪০ জনের গ্রুপ টিকিট)।' : errMsg(e) });
+      setMsg({ kind: 'bad', text: (e as Coded)?.code === 'amount' ? 'টাকার পরিমাণ সংখ্যায় লিখুন।' : (e as Coded)?.code === 'note' ? 'কী খরচ, ছোট করে লিখুন (যেমন: ৪০ জনের গ্রুপ টিকিট)।' : errMsg(e) });
     }                                                // the typed form stays
     finally { setBusy(false); }
   };
   const remove = async () => {
-    if (busy) return;
+    if (busy || !del) return;
     setBusy(true); setMsg(null);
     try { await deleteServiceCost(del.id, del.reason); setDel(null); setMsg({ kind: 'ok', text: 'খরচটি মুছে ফেলা হয়েছে (কাজের রেকর্ডে লেখা আছে)।' }); await load(); }
-    catch (e) { setMsg({ kind: 'bad', text: e.code === 'reason' ? 'কেন মুছছেন, অন্তত ৫ অক্ষরে লিখুন।' : errMsg(e) }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as Coded)?.code === 'reason' ? 'কেন মুছছেন, অন্তত ৫ অক্ষরে লিখুন।' : errMsg(e) }); }
     finally { setBusy(false); }
   };
   const allHajis = contractChoices(contracts, id);
@@ -152,7 +156,7 @@ function LeaderCosts({ leader, onBack }) {
       <View style={st.card}>
         <Text style={st.h}>➕ নতুন খরচ লিখুন</Text>
         <Text style={st.lbl}>কার জন্য</Text>
-        <Segmented value={forWho} onChange={(v) => { setForWho(v); set('contract')(''); }} options={[{ id: 'group', label: '👥 পুরো দল' }, { id: 'haji', label: '🕋 একজন হাজী' }]} />
+        <Segmented value={forWho} onChange={(v: 'group' | 'haji') => { setForWho(v); set('contract')(''); }} options={[{ id: 'group', label: '👥 পুরো দল' }, { id: 'haji', label: '🕋 একজন হাজী' }]} />
         {forWho === 'haji' ? (
           allHajis.length ? (
             <>
@@ -177,7 +181,7 @@ function LeaderCosts({ leader, onBack }) {
           <Text style={st.p}>{r.note}</Text>
           {del && del.id === r.id ? (
             <>
-              <Field label="কেন মুছছেন" hint="যেমন: দুবার লেখা হয়েছিল" value={del.reason} onChangeText={(v) => setDel({ id: r.id, reason: v })} maxLength={200} editable={!busy} />
+              <Field label="কেন মুছছেন" hint="যেমন: দুবার লেখা হয়েছিল" value={del.reason} onChangeText={(v: string) => setDel({ id: r.id, reason: v })} maxLength={200} editable={!busy} />
               <Button title="হ্যাঁ, মুছে ফেলুন" icon="🗑️" kind="danger" onPress={() => confirm('খরচটি মুছবেন?', 'লিডারের পাওনা আবার বেড়ে যাবে।', 'মুছুন', remove)} loading={busy} />
               <Button title="বাতিল" kind="secondary" onPress={() => setDel(null)} disabled={busy} style={{ marginTop: S.xs }} />
             </>
@@ -190,23 +194,23 @@ function LeaderCosts({ leader, onBack }) {
 
 // ---------- 4) notifications to one part ----------
 const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-function nextMonths(n = 12) {
-  const d = new Date(); const out = [];
+function nextMonths(n = 12): { id: string; label: string }[] {
+  const d = new Date(); const out: { id: string; label: string }[] = [];
   for (let i = 0; i < n; i += 1) {
     const y = d.getFullYear(); const m = d.getMonth() + i; const yy = y + Math.floor(m / 12); const mm = (m % 12) + 1;
     out.push({ id: `${yy}-${String(mm).padStart(2, '0')}`, label: `${BN_MONTH[mm - 1]} ${toBn(yy)}` });
   }
   return out;
 }
-export function SegmentNotifyBox() {
+export function SegmentNotifyBox(): JSX.Element {
   const [kind, setKind] = useState('group');
   const [value, setValue] = useState('');
-  const [groups, setGroups] = useState(null);
-  const [size, setSize] = useState(null);
+  const [groups, setGroups] = useState<Row[] | null>(null);
+  const [size, setSize] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { adminGroups(null).then(setGroups).catch(() => setGroups([])); }, []);
   useEffect(() => {
     setSize(null);
@@ -220,7 +224,7 @@ export function SegmentNotifyBox() {
     setBusy(true); setMsg(null);
     try { const n = await notifySegment(kind, kind === 'district' ? value.trim() : value, title, body); setMsg({ kind: 'ok', text: `✅ ${toBn(n)} জনকে পাঠানো হয়েছে।` }); setTitle(''); setBody(''); }
     catch (e) {
-      setMsg({ kind: 'bad', text: e.code === 'title' ? 'শিরোনাম লিখুন (অন্তত ২ অক্ষর)।' : e.code === 'too_many' ? 'এক ঘণ্টায় ২০টির বেশি পাঠানো যায় না। একটু পরে চেষ্টা করুন।' : errMsg(e) });
+      setMsg({ kind: 'bad', text: (e as Coded)?.code === 'title' ? 'শিরোনাম লিখুন (অন্তত ২ অক্ষর)।' : (e as Coded)?.code === 'too_many' ? 'এক ঘণ্টায় ২০টির বেশি পাঠানো যায় না। একটু পরে চেষ্টা করুন।' : errMsg(e) });
     }
     finally { setBusy(false); }
   };
@@ -228,7 +232,7 @@ export function SegmentNotifyBox() {
   return (
     <View style={st.card}>
       <Text style={st.h}>🎯 নির্দিষ্ট অংশকে নোটিফিকেশন</Text>
-      <Segmented value={kind} onChange={(v) => { setKind(v); setValue(''); setMsg(null); }}
+      <Segmented value={kind} onChange={(v: string) => { setKind(v); setValue(''); setMsg(null); }}
         options={[{ id: 'group', label: 'একটি দল' }, { id: 'month', label: 'যাত্রার মাস' }, { id: 'district', label: 'জেলার লিডার' }]} />
       {kind === 'group' ? (
         groups === null ? <ActivityIndicator color={C.primary} />
@@ -247,17 +251,17 @@ export function SegmentNotifyBox() {
 }
 
 // ---------- 5) SOS record ----------
-export function SosTab() {
+export function SosTab(): JSX.Element {
   const [days, setDays] = useState(7);
-  const { data, err } = useLoad(async () => {
+  const { data, err } = useLoad<Row>(async () => {
     const r = await supabase.rpc('admin_sos_list', { p_days: days });
     if (r.error) throw r.error;
-    return r.data || [];
+    return (r.data || []) as Row[];
   }, [days]);
   return (
     <>
       <Text style={[st.p, { marginBottom: S.sm }]}>হাজী অ্যাপের "জরুরি" পাতা থেকে জরুরি নম্বরে ফোন করলে এখানে আসে। অবস্থান আসে শুধু হাজী আগে রাজি হলে।</Text>
-      <Segmented value={String(days)} onChange={(v) => setDays(Number(v))} options={[{ id: '1', label: 'আজ' }, { id: '7', label: '৭ দিন' }, { id: '30', label: '৩০ দিন' }]} />
+      <Segmented value={String(days)} onChange={(v: string) => setDays(Number(v))} options={[{ id: '1', label: 'আজ' }, { id: '7', label: '৭ দিন' }, { id: '30', label: '৩০ দিন' }]} />
       {err ? <Notice kind="info" title={err} /> : null}
       {data === null ? <ActivityIndicator color={C.primary} /> : null}
       {data && !err && !data.length ? <Notice kind="ok" title="এই সময়ে কোনো জরুরি ফোন হয়নি" /> : null}
@@ -277,20 +281,20 @@ export function SosTab() {
 }
 
 // ---------- 3) work record by staff member ----------
-export function AuditSearchTab({ actionText }) {
-  const [actors, setActors] = useState(null);
+export function AuditSearchTab({ actionText }: { actionText: (a: string) => string }): JSX.Element {
+  const [actors, setActors] = useState<Row[] | null>(null);
   const [who, setWho] = useState('');
   const [days, setDays] = useState(30);
   const [old, setOld] = useState(false);                // step 026 not run: the old list
   useEffect(() => { auditActors().then(setActors).catch((e) => { setActors([]); if (notReady(e)) setOld(true); }); }, []);
-  const { data, err } = useLoad(() => (old ? listAudit() : auditSearch(who || null, null, days)), [who, days, old]);
+  const { data, err } = useLoad<Row>(() => (old ? listAudit() : auditSearch(who || null, null, days)), [who, days, old]);
   return (
     <>
       <Text style={st.small}>অ্যাডমিন ও স্টাফ কে কবে কী করেছেন, তার রেকর্ড। এটা কেউ মুছতে বা বদলাতে পারেন না।</Text>
       {!old && actors && actors.length ? (
         <Pills label="কার কাজ" options={[{ id: '', label: 'সবার' }, ...actors.map((a) => ({ id: a.actor_id, label: `${a.actor_name || '—'} (${toBn(Number(a.n))})` }))]} value={who} onChange={setWho} />
       ) : null}
-      {!old ? <Segmented value={String(days)} onChange={(v) => setDays(Number(v))} options={[{ id: '7', label: '৭ দিন' }, { id: '30', label: '৩০ দিন' }, { id: '365', label: '১ বছর' }]} /> : null}
+      {!old ? <Segmented value={String(days)} onChange={(v: string) => setDays(Number(v))} options={[{ id: '7', label: '৭ দিন' }, { id: '30', label: '৩০ দিন' }, { id: '365', label: '১ বছর' }]} /> : null}
       {err ? <Notice kind="bad" title={err} /> : null}
       {data === null ? <ActivityIndicator color={C.primary} /> : null}
       {data && !err && !data.length ? <Notice kind="info" title="এই সময়ে কোনো রেকর্ড নেই" /> : null}

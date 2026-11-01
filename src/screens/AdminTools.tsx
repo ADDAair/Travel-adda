@@ -1,6 +1,6 @@
 // Admin panel part 1 (supabase/022_admin_tools.sql): contracts & disputes, one page per user, rating comments,
 // groups & khadems, app settings (forced update, video links). Every action is refused by the server without permission.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -12,14 +12,17 @@ import { setSetting } from '../lib/offers';
 import { VIDEO_TOPICS, mergeVideos } from '../content/videos';
 import { APP_VERSION } from '../lib/appVersion';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
-import { requestChatConsent, adminChatConsents, viewHelpChat, requestResultText, consentStatusText } from '../lib/chatConsent';
+import { requestChatConsent, adminChatConsents, viewHelpChat, requestResultText, consentStatusText, type AdminConsent, type ChatLine } from '../lib/chatConsent';
+import type { Msg, Row as Rec } from './navTypes';
 
-const CSTATUS = { sent: '📩 পাঠানো, উত্তরের অপেক্ষায়', accepted: '✅ চালু', declined: '✖️ হাজী রাজি হননি', withdrawn: '↩️ লিডার ফিরিয়ে নিয়েছেন', cancelled: '⛔ বাতিল', completed: '🏁 শেষ' };
-const PSTATUS = { submitted: '⏳ যাচাই বাকি', confirmed: '✅ নিশ্চিত', rejected: '✖️ বাতিল' };
-const errMsg = (e) => (notReady(e) ? 'এই অংশের ডেটাবেস ধাপ (০২২) এখনো চালানো হয়নি।' : e && e.code === 'short' ? 'কারণ বা নোট অন্তত ৫ অক্ষরে লিখুন।' : errText(e));
-const Row = ({ l, v }) => (v || v === 0 ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p} selectable>{v}</Text></View> : null);
+type Coded = { code?: string; message?: string } | null;
 
-function Search({ label, hint, onSearch, busy, initial = '' }) {
+const CSTATUS: Record<string, string> = { sent: '📩 পাঠানো, উত্তরের অপেক্ষায়', accepted: '✅ চালু', declined: '✖️ হাজী রাজি হননি', withdrawn: '↩️ লিডার ফিরিয়ে নিয়েছেন', cancelled: '⛔ বাতিল', completed: '🏁 শেষ' };
+const PSTATUS: Record<string, string> = { submitted: '⏳ যাচাই বাকি', confirmed: '✅ নিশ্চিত', rejected: '✖️ বাতিল' };
+const errMsg = (e: unknown): string => (notReady(e) ? 'এই অংশের ডেটাবেস ধাপ (০২২) এখনো চালানো হয়নি।' : (e as Coded)?.code === 'short' ? 'কারণ বা নোট অন্তত ৫ অক্ষরে লিখুন।' : errText(e));
+const Row = ({ l, v }: { l: string; v: unknown }) => (v || v === 0 ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p} selectable>{String(v)}</Text></View> : null);
+
+function Search({ label, hint, onSearch, busy, initial = '' }: { label: string; hint?: string; onSearch: (q: string) => void; busy: boolean; initial?: string }): JSX.Element {
   const [q, setQ] = useState(initial);
   return (
     <>
@@ -30,12 +33,12 @@ function Search({ label, hint, onSearch, busy, initial = '' }) {
 }
 
 // ---------- 1) Contracts & disputes ----------
-export function ContractsTab() {
-  const [rows, setRows] = useState(null);
-  const [open, setOpen] = useState(null);
+export function ContractsTab(): JSX.Element {
+  const [rows, setRows] = useState<Rec[] | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const search = async (q) => {
+  const [msg, setMsg] = useState<Msg>(null);
+  const search = async (q: string) => {
     setBusy(true); setMsg(null);
     try { setRows(await findContracts(q)); } catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); } finally { setBusy(false); }
   };
@@ -62,11 +65,11 @@ export function ContractsTab() {
   );
 }
 
-function ContractPage({ id, onBack }) {
-  const [d, setD] = useState(null);
+function ContractPage({ id, onBack }: { id: string; onBack: () => void }): JSX.Element {
+  const [d, setD] = useState<Rec | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => { try { setD(await contractDetail(id)); } catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); } }, [id]);
   useEffect(() => { load(); }, [load]);
   const save = async () => {
@@ -98,20 +101,20 @@ function ContractPage({ id, onBack }) {
           <View style={st.card}>
             <Text style={st.h}>💳 টাকা জমা</Text>
             {(d.payments || []).length === 0 ? <Text style={st.p}>কোনো টাকা জমা নেই।</Text> : null}
-            {(d.payments || []).map((p, i) => <Text key={i} style={st.p}>{fmtTaka(p.amount)} · {p.method} · {p.txn_ref} · {PSTATUS[p.status] || p.status}{p.admin_note ? ` · নোট: ${p.admin_note}` : ''}</Text>)}
+            {(d.payments || []).map((p: Rec, i: number) => <Text key={i} style={st.p}>{fmtTaka(p.amount)} · {p.method} · {p.txn_ref} · {PSTATUS[p.status] || p.status}{p.admin_note ? ` · নোট: ${p.admin_note}` : ''}</Text>)}
             <Text style={[st.h, { marginTop: S.sm }]}>↗️ দেওয়া টাকা (লিডার / ফেরত)</Text>
             {(d.payouts || []).length === 0 ? <Text style={st.p}>এখনো কিছু দেওয়া হয়নি।</Text> : null}
-            {(d.payouts || []).map((p, i) => <Text key={i} style={st.p}>{p.payee === 'haji' ? '↩️ হাজীকে ফেরত' : '🧭 লিডারকে'} · {fmtTaka(p.amount)} · {p.txn_ref}{p.note ? ` · ${p.note}` : ''}</Text>)}
+            {(d.payouts || []).map((p: Rec, i: number) => <Text key={i} style={st.p}>{p.payee === 'haji' ? '↩️ হাজীকে ফেরত' : '🧭 লিডারকে'} · {fmtTaka(p.amount)} · {p.txn_ref}{p.note ? ` · ${p.note}` : ''}</Text>)}
           </View>
           <View style={st.card}>
             <Text style={st.h}>🚩 অভিযোগ ও রেটিং</Text>
             {(d.complaints || []).length === 0 ? <Text style={st.p}>কোনো অভিযোগ নেই।</Text> : null}
-            {(d.complaints || []).map((m, i) => <Text key={i} style={st.p}>[{m.status === 'pending' ? 'যাচাই বাকি' : m.status === 'verified' ? 'যাচাই হয়েছে' : 'বাতিল'}] {m.body}</Text>)}
+            {(d.complaints || []).map((m: Rec, i: number) => <Text key={i} style={st.p}>[{m.status === 'pending' ? 'যাচাই বাকি' : m.status === 'verified' ? 'যাচাই হয়েছে' : 'বাতিল'}] {m.body}</Text>)}
             {d.rating ? <Text style={st.p}>⭐ {toBn(d.rating.stars)}{d.rating.comment ? ` · "${d.rating.comment}"` : ''}{d.rating.hidden ? ' (লুকানো)' : ''}</Text> : null}
           </View>
           <View style={st.card}>
             <Text style={st.h}>📝 অ্যাডমিনের নোট</Text>
-            {(d.notes || []).map((n, i) => <Text key={i} style={st.p}>{fmtDay(n.created_at)} · {n.author || 'অ্যাডমিন'}: {n.note}</Text>)}
+            {(d.notes || []).map((n: Rec, i: number) => <Text key={i} style={st.p}>{fmtDay(n.created_at)} · {n.author || 'অ্যাডমিন'}: {n.note}</Text>)}
             <Field label="নতুন নোট" hint="যেমন: দুই পক্ষের সাথে কথা হয়েছে, লিডার হোটেল বদলাবেন" value={note} onChangeText={setNote} multiline maxLength={1000} editable={!busy} />
             <Button title="নোট রাখুন" icon="📝" onPress={save} loading={busy} />
           </View>
@@ -123,13 +126,13 @@ function ContractPage({ id, onBack }) {
 }
 
 // Help chat of this haji with this leader: only after the haji agrees in the app; every reading is logged.
-const ROLE = { haji: '🕋 হাজী', leader: '🧭 লিডার', khadem: '🤝 খাদেম' };
-function ChatConsentBox({ contractId }) {
-  const [rows, setRows] = useState(null);
+const ROLE: Record<string, string> = { haji: '🕋 হাজী', leader: '🧭 লিডার', khadem: '🤝 খাদেম' };
+function ChatConsentBox({ contractId }: { contractId: string }): JSX.Element {
+  const [rows, setRows] = useState<AdminConsent[] | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [chat, setChat] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
+  const [chat, setChat] = useState<ChatLine[] | null>(null);
   const load = useCallback(async () => {
     try { setRows(await adminChatConsents(contractId)); } catch (e) { setRows([]); if (notReady(e)) setMsg({ kind: 'info', text: 'এই অংশের ডেটাবেস ধাপ (০২৪) এখনো চালানো হয়নি।' }); }
   }, [contractId]);
@@ -138,10 +141,10 @@ function ChatConsentBox({ contractId }) {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { const r = await requestChatConsent(contractId, reason); setMsg({ kind: r === 'sent' ? 'ok' : 'info', text: requestResultText(r) }); if (r === 'sent') setReason(''); await load(); }
-    catch (e) { setMsg({ kind: 'bad', text: e.code === 'reason' ? 'কেন দেখতে চান, অন্তত ৫ অক্ষরে লিখুন (হাজী এটা দেখবেন)।' : errMsg(e) }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as Coded)?.code === 'reason' ? 'কেন দেখতে চান, অন্তত ৫ অক্ষরে লিখুন (হাজী এটা দেখবেন)।' : errMsg(e) }); }
     finally { setBusy(false); }
   };
-  const view = async (k) => {
+  const view = async (k: AdminConsent) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { setChat(await viewHelpChat(k.id)); } catch (e) { setMsg({ kind: 'bad', text: 'অনুমতি নেই বা মেয়াদ শেষ। আবার অনুমতি চাইতে হবে।' }); await load(); }
@@ -167,7 +170,7 @@ function ChatConsentBox({ contractId }) {
       {chat && active ? (
         <View style={{ marginTop: S.md }}>
           {chat.length === 0 ? <Text style={st.p}>এই লিডারের দলে হাজীর কোনো প্রশ্ন-উত্তর নেই।</Text> : null}
-          {chat.map((m, i) => (
+          {chat.map((m: Rec, i: number) => (
             <Text key={i} style={[st.p, { marginBottom: S.sm }]} selectable>
               <Text style={{ fontWeight: '700' }}>{ROLE[m.sender_role] || m.sender_role} {m.sender_name}</Text> · {fmtWhen(m.created_at)}{'\n'}{m.body}
             </Text>
@@ -179,11 +182,11 @@ function ChatConsentBox({ contractId }) {
 }
 
 // ---------- 2) One user, everything ----------
-export function UserPage({ id, onBack }) {
-  const [d, setD] = useState(null);
+export function UserPage({ id, onBack }: { id: string; onBack: () => void }): JSX.Element {
+  const [d, setD] = useState<Rec | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => { try { setD(await userDetail(id)); } catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); } }, [id]);
   useEffect(() => { load(); }, [load]);
   const listed = d && d.leader ? d.leader.listed : true;
@@ -194,10 +197,10 @@ export function UserPage({ id, onBack }) {
       catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); }
       finally { setBusy(false); }
     });
-  const List = ({ title, items, render }) => (
+  const List = ({ title, items, render }: { title: string; items?: Rec[] | null; render: (x: Rec) => string }) => (
     <View style={st.card}>
       <Text style={st.h}>{title}: {toBn((items || []).length)}টি</Text>
-      {(items || []).map((x, i) => <Text key={i} style={st.p}>{render(x)}</Text>)}
+      {(items || []).map((x, i: number) => <Text key={i} style={st.p}>{render(x)}</Text>)}
     </View>
   );
   return (
@@ -240,14 +243,14 @@ export function UserPage({ id, onBack }) {
 }
 
 // ---------- 4) Rating comments ----------
-export function RatingsTab() {
-  const [rows, setRows] = useState(null);
-  const [reason, setReason] = useState({});
+export function RatingsTab(): JSX.Element {
+  const [rows, setRows] = useState<Rec[] | null>(null);
+  const [reason, setReason] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const search = async (q) => { setMsg(null); try { setRows(await listRatings(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } };
+  const [msg, setMsg] = useState<Msg>(null);
+  const search = async (q: string) => { setMsg(null); try { setRows(await listRatings(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } };
   useEffect(() => { search(''); }, []);
-  const act = (r) => confirm(r.comment_hidden ? 'মন্তব্যটি আবার দেখাবেন?' : 'মন্তব্যটি লুকাবেন?', 'তারা (রেটিং) গণনায় থাকবে, শুধু লেখাটা লুকাবে।', r.comment_hidden ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', async () => {
+  const act = (r: Rec) => confirm(r.comment_hidden ? 'মন্তব্যটি আবার দেখাবেন?' : 'মন্তব্যটি লুকাবেন?', 'তারা (রেটিং) গণনায় থাকবে, শুধু লেখাটা লুকাবে।', r.comment_hidden ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', async () => {
     setBusy(true); setMsg(null);
     try { await hideRating(r.contract_id, !r.comment_hidden, reason[r.contract_id]); setMsg({ kind: 'ok', text: r.comment_hidden ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।' }); await search(''); }
     catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); }
@@ -266,7 +269,7 @@ export function RatingsTab() {
           <Text style={st.val}>{'⭐'.repeat(r.stars)} {r.counted ? '' : '(টাকা যাচাই বাকি, এখনো গণনায় নেই)'}</Text>
           <Text style={[st.p, r.comment_hidden && { color: C.muted }]}>"{r.comment}"</Text>
           {r.comment_hidden ? <Text style={st.small}>🙈 লুকানো · কারণ: {r.hidden_reason}</Text> : null}
-          <Field label="কারণ" hint="অন্তত ৫ অক্ষর" value={reason[r.contract_id] || ''} onChangeText={(v) => setReason((x) => ({ ...x, [r.contract_id]: v }))} maxLength={300} editable={!busy} />
+          <Field label="কারণ" hint="অন্তত ৫ অক্ষর" value={reason[r.contract_id] || ''} onChangeText={(v: string) => setReason((x) => ({ ...x, [r.contract_id]: v }))} maxLength={300} editable={!busy} />
           <Button title={r.comment_hidden ? 'আবার দেখান' : 'মন্তব্য লুকান'} icon={r.comment_hidden ? '👁️' : '🙈'} kind={r.comment_hidden ? 'secondary' : 'danger'} onPress={() => act(r)} disabled={busy} />
         </View>
       ))}
@@ -275,11 +278,11 @@ export function RatingsTab() {
 }
 
 // ---------- 8) Groups & khadems ----------
-export function GroupsTab() {
-  const [rows, setRows] = useState(null);
+export function GroupsTab(): JSX.Element {
+  const [rows, setRows] = useState<Rec[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const search = async (q) => { setBusy(true); setMsg(null); try { setRows(await adminGroups(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } finally { setBusy(false); } };
+  const [msg, setMsg] = useState<Msg>(null);
+  const search = async (q: string) => { setBusy(true); setMsg(null); try { setRows(await adminGroups(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } finally { setBusy(false); } };
   useEffect(() => { search(''); }, []);
   return (
     <>
@@ -301,21 +304,21 @@ export function GroupsTab() {
 }
 
 // ---------- 6) forced update + 5) video links (owner only) ----------
-export function AppSettingsBox() {
+export function AppSettingsBox(): JSX.Element {
   const [minV, setMinV] = useState('');
   const [store, setStore] = useState('');
-  const [videos, setVideos] = useState({});
+  const [videos, setVideos] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => {
-    supabase.from('app_settings').select('key,value').then((r) => {
-      const h = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
+    supabase.from('app_settings').select('key,value').then((r: { data: Rec[] | null }) => {
+      const h: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
       setMinV(h.min_app_version || ''); setStore(h.store_url || '');
     });
-    supabase.from('app_videos').select('route,url').then((r) => setVideos(Object.fromEntries((r.data || []).map((x) => [x.route, x.url]))));
+    supabase.from('app_videos').select('route,url').then((r: { data: Rec[] | null }) => setVideos(Object.fromEntries((r.data || []).map((x) => [x.route, x.url]))));
   }, []);
-  const run = async (fn, ok) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); setMsg({ kind: 'ok', text: ok }); } catch (e) { setMsg({ kind: 'bad', text: /bad url/.test(e?.message || '') ? 'লিংক https:// দিয়ে শুরু হতে হবে।' : /bad version/.test(e?.message || '') ? 'সংস্করণ এভাবে লিখুন: 0.2.0' : errMsg(e) }); } finally { setBusy(false); } };
-  const topics = mergeVideos(VIDEO_TOPICS, []);
+  const run = async (fn: () => Promise<unknown>, ok: string) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); setMsg({ kind: 'ok', text: ok }); } catch (e) { setMsg({ kind: 'bad', text: /bad url/.test((e as Coded)?.message || '') ? 'লিংক https:// দিয়ে শুরু হতে হবে।' : /bad version/.test((e as Coded)?.message || '') ? 'সংস্করণ এভাবে লিখুন: 0.2.0' : errMsg(e) }); } finally { setBusy(false); } };
+  const topics: Record<string, { title: string }> = mergeVideos(VIDEO_TOPICS, []);
   return (
     <>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
@@ -332,7 +335,7 @@ export function AppSettingsBox() {
         <Text style={st.small}>প্রতিটি পাতার "▶️ ভিডিও দেখুন" বোতামের লিংক। https:// দিয়ে শুরু হতে হবে। খালি রাখলে "শীঘ্রই আসছে" দেখাবে।</Text>
         {Object.entries(topics).map(([route, t]) => (
           <View key={route} style={{ borderTopWidth: 1, borderColor: C.line, paddingTop: S.sm }}>
-            <Field label={t.title} hint="https://..." value={videos[route] || ''} onChangeText={(v) => setVideos((x) => ({ ...x, [route]: v }))} maxLength={500} autoCapitalize="none" autoCorrect={false} />
+            <Field label={t.title} hint="https://..." value={videos[route] || ''} onChangeText={(v: string) => setVideos((x) => ({ ...x, [route]: v }))} maxLength={500} autoCapitalize="none" autoCorrect={false} />
             <Button title="এই ভিডিও সংরক্ষণ করুন" kind="secondary" disabled={busy} onPress={() => run(() => setVideo(route, videos[route] || ''), (videos[route] || '').trim() ? 'ভিডিও লিংক বসানো হয়েছে।' : 'লিংক সরানো হয়েছে, এখন "শীঘ্রই আসছে" দেখাবে।')} style={{ marginBottom: S.sm }} />
           </View>
         ))}

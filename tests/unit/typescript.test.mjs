@@ -58,6 +58,15 @@ test('step 6: leader and contract screens are TypeScript (.tsx)', () => {
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
 });
+// Step 7 (Nov 2026): the admin panel.
+const STEP7 = ['src/screens/AdminScreen', 'src/screens/AdminTools', 'src/screens/AdminPart4', 'src/screens/AdminNotify',
+  'src/screens/AdminContent', 'src/screens/AdminSpeed'];
+test('step 7: admin screens are TypeScript (.tsx)', () => {
+  for (const f of STEP7) {
+    assert.ok(existsSync(new URL(`${f}.tsx`, root)), `${f}.tsx missing`);
+    assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
+  }
+});
 test('strict type checking is on and runs in CI', () => {
   const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
   assert.equal(ts.compilerOptions.strict, true);

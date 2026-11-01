@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { areaText } from '../components/WorkAreaFields';
 import { LEADER_KINDS } from '../lib/leaderKinds';
 import { View, Text, Pressable, Linking, ActivityIndicator } from 'react-native';
@@ -26,16 +26,21 @@ import { idleExpired } from '../lib/idle';
 import { filterOffers } from '../lib/offerRoute';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
+import type { Nav, Msg, Row } from './navTypes';
 
-const STATUS = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
+type Coded = { code?: string; message?: string } | null;
+type Cb = { onDone: (t: string) => void; onFail: (t: string) => void };
+
+const STATUS: Record<string, string> = { pending: '⏳ যাচাই বাকি', approved: '✅ অনুমোদিত', rejected: '✖️ বাতিল' };
 
 // Sections, each shown only to people with the matching permission ('admin' = the owner only).
 // key in admin_counts() for the sections that have waiting work
-const COUNT_KEY = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers', alerts: 'money_alerts', sos: 'sos', fund: 'fund' };
-const COUNT_TEXT = { apps: 'লিডার আবেদন যাচাই বাকি', calls: 'হাজী ফোনের অপেক্ষায়', complaints: 'অভিযোগ যাচাই বাকি', reports: 'রিপোর্ট / রেফারেল বাতিলের অনুরোধ',
+const COUNT_KEY: Record<string, string> = { apps: 'apps', calls: 'calls', complaints: 'complaints', reports: 'reports', money: 'payments', offers: 'offers', alerts: 'money_alerts', sos: 'sos', fund: 'fund' };
+const COUNT_TEXT: Record<string, string> = { apps: 'লিডার আবেদন যাচাই বাকি', calls: 'হাজী ফোনের অপেক্ষায়', complaints: 'অভিযোগ যাচাই বাকি', reports: 'রিপোর্ট / রেফারেল বাতিলের অনুরোধ',
   money: 'টাকা জমা যাচাই বাকি', offers: 'প্যাকেজ অনুমোদনের অপেক্ষায়',
   alerts: 'টাকার বকেয়া', sos: 'গত ২৪ ঘণ্টায় জরুরি ফোন', fund: 'সহায়তা তহবিলে যাচাই বাকি' };
-const SECTIONS = [
+type Section = { id: string; icon: string; label: string; perm: string | string[] };
+const SECTIONS: Section[] = [
   { id: 'stats', icon: '📊', label: 'পরিসংখ্যান', perm: 'reports' },
   { id: 'apps', icon: '🧭', label: 'লিডার আবেদন', perm: 'applications' },
   { id: 'calls', icon: '🙋', label: 'ফোনের অনুরোধ', perm: 'calls' },
@@ -61,10 +66,10 @@ const SECTIONS = [
 ];
 
 // Admin and staff (the database refuses everyone else).
-export default function AdminScreen({ navigation }) {
-  const [perms, setPerms] = useState(null);
-  const [state, setState] = useState('mfa'); // 2FA first, then the menu
-  const [tab, setTab] = useState(null);
+export default function AdminScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [perms, setPerms] = useState<string[] | null>(null);
+  const [state, setState] = useState<'mfa' | 'locked' | 'load' | 'ok' | 'soon' | 'denied' | 'err'>('mfa'); // 2FA first, then the menu
+  const [tab, setTab] = useState<string | null>(null);
   // 15 minutes without use: ask for the 2FA code again (the open page stays where it was)
   const last = React.useRef(Date.now());
   const mfaDone = useCallback(() => { last.current = Date.now(); setState((s) => (s === 'locked' ? 'ok' : 'load')); }, []);
@@ -78,9 +83,10 @@ export default function AdminScreen({ navigation }) {
     if (state !== 'load') return;
     myPerms().then((p) => { setPerms(p); setState(p.length ? 'ok' : 'denied'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err'));
   }, [state]);
-  const [counts, setCounts] = useState({});
+  const [counts, setCounts] = useState<Record<string, number>>({});
   useEffect(() => { if (state === 'ok' && !tab) adminCounts().then((c) => setCounts({ ...c, fund: (c.help_apps || 0) + (c.donations || 0) + (c.donor_requests || 0) })).catch(() => {}); }, [state, tab]);
-  const mine = SECTIONS.filter((x) => perms && [].concat(x.perm).some((p) => perms.includes(p)));
+  const mine = SECTIONS.filter((x) => perms && ([] as string[]).concat(x.perm).some((p) => perms.includes(p)));
+  const has = (p: string): boolean => !!perms && perms.includes(p);
   const todo = mine.filter((x) => counts[COUNT_KEY[x.id]] > 0);
   const cur = mine.find((x) => x.id === tab);
   return (
@@ -118,25 +124,25 @@ export default function AdminScreen({ navigation }) {
         </View>
       ) : null}
       {cur && state === 'ok' ? (
-        cur.id === 'stats' ? <StatsTab admin={perms.includes('admin')} />
+        cur.id === 'stats' ? <StatsTab admin={has('admin')} />
           : cur.id === 'apps' ? <AppsTab />
             : cur.id === 'calls' ? <CallsTab />
               : cur.id === 'complaints' ? <ComplaintsTab />
-                : cur.id === 'reports' ? <ReportsTab canUsers={perms.includes('users')} />
+                : cur.id === 'reports' ? <ReportsTab canUsers={has('users')} />
                   : cur.id === 'users' ? <UsersTab />
-                    : cur.id === 'money' ? <MoneyTab owner={perms.includes('admin')} />
+                    : cur.id === 'money' ? <MoneyTab owner={has('admin')} />
                     : cur.id === 'notify' ? <><SegmentNotifyBox /><NotifyTab /></>
                     : cur.id === 'alerts' ? <MoneyAlertsTab />
                     : cur.id === 'services' ? <ServiceCostsTab />
                     : cur.id === 'sos' ? <SosTab />
-                    : cur.id === 'fund' ? <FundTab perms={perms} />
+                    : cur.id === 'fund' ? <FundTab perms={perms || []} />
                     : cur.id === 'offers' ? <OffersTab />
                     : cur.id === 'contracts' ? <ContractsTab />
                     : cur.id === 'groups' ? <GroupsTab />
                     : cur.id === 'ratings' ? <RatingsTab />
                       : cur.id === 'staff' ? <StaffTab />
                         : cur.id === 'terms' ? <TermsTab />
-                          : cur.id === 'audit' ? <AuditSearchTab actionText={(a) => ACTION[a] || a} />
+                          : cur.id === 'audit' ? <AuditSearchTab actionText={(a: string) => ACTION[a] || a} />
                           : cur.id === 'content' ? <ContentTab />
                           : cur.id === 'speed' ? <SpeedTab /> : <HelpTab />
       ) : null}
@@ -145,9 +151,9 @@ export default function AdminScreen({ navigation }) {
 }
 
 // Shared loader: 'load' | 'ok' | 'soon' | 'err', with a retry button.
-function useLoad(fn) {
-  const [state, setState] = useState('load');
-  const [data, setData] = useState(null);
+function useLoad<T>(fn: () => Promise<T>) {
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [data, setData] = useState<T | null>(null);
   const load = useCallback(async () => {
     try { setData(await fn()); setState('ok'); } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, [fn]);
@@ -158,9 +164,9 @@ function useLoad(fn) {
   return { state, data, load, gate };
 }
 
-function AppsTab() {
+function AppsTab(): JSX.Element {
   const { state, data, load, gate } = useLoad(adminApplications);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const rows = data || [];
   const pending = rows.filter((r) => r.status === 'pending');
   const done = rows.filter((r) => r.status !== 'pending');
@@ -172,7 +178,7 @@ function AppsTab() {
         <>
           <Notice kind="info" title="অনুমোদনের আগে যাচাই করুন" text="ধর্ম মন্ত্রণালয়ের হজ এজেন্সির তালিকায় লাইসেন্স নম্বর মিলিয়ে দেখুন, আর আবেদনকারীকে ফোন করে নিশ্চিত হোন।" />
           {pending.length === 0 ? <Notice kind="ok" title="কোনো আবেদন বাকি নেই" /> : null}
-          {pending.map((r) => <AppCard key={r.id} r={r} onDone={(t) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t) => setMsg({ kind: 'bad', text: t })} />)}
+          {pending.map((r) => <AppCard key={r.id} r={r} onDone={(t: string) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t: string) => setMsg({ kind: 'bad', text: t })} />)}
           {done.length ? <Text style={[st.h, { marginTop: S.md }]}>আগের সিদ্ধান্ত</Text> : null}
           {done.map((r) => (
             <View key={r.id} style={st.card}>
@@ -186,9 +192,9 @@ function AppsTab() {
   );
 }
 
-function CallsTab() {
+function CallsTab(): JSX.Element {
   const { state, data, load, gate } = useLoad(adminInterests);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const rows = data || [];
   const open = rows.filter((r) => r.status === 'new');
   const done = rows.filter((r) => r.status !== 'new');
@@ -200,7 +206,7 @@ function CallsTab() {
         <>
           <Text style={st.small}>হাজীরা প্যাকেজ বা লিডারের প্রোফাইল দেখে "আমাকে ফোন করুন" চাপলে এখানে আসে। লিডার এই নাম-নম্বর দেখেন না। হাজী ও লিডারের সাথে কথা বলে মিটিংয়ের ব্যবস্থা করুন।</Text>
           {open.length === 0 ? <Notice kind="ok" title="কোনো অনুরোধ বাকি নেই" /> : null}
-          {open.map((r) => <CallCard key={r.id} r={r} onDone={(t) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t) => setMsg({ kind: 'bad', text: t })} />)}
+          {open.map((r) => <CallCard key={r.id} r={r} onDone={(t: string) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t: string) => setMsg({ kind: 'bad', text: t })} />)}
           {done.length ? <Text style={[st.h, { marginTop: S.md }]}>যাদের সাথে কথা হয়েছে</Text> : null}
           {done.map((r) => (
             <View key={r.id} style={st.card}>
@@ -214,7 +220,7 @@ function CallsTab() {
   );
 }
 
-function CallCard({ r, onDone, onFail }) {
+function CallCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const mark = () => confirm('এই হাজীর সাথে কথা হয়েছে?', 'অনুরোধটি "কথা হয়েছে" তালিকায় চলে যাবে।', 'হ্যাঁ, কথা হয়েছে', async () => {
@@ -222,7 +228,7 @@ function CallCard({ r, onDone, onFail }) {
     try { const res = await markInterest(r.id, note.trim()); onDone(res === 'ok' ? 'চিহ্নিত করা হয়েছে।' : 'অনুরোধটি আর খোলা নেই (হয়তো হাজী বাতিল করেছেন)।'); }
     catch (e) { onFail(errText(e)); setBusy(false); }
   });
-  const tel = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
+  const tel = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
   return (
     <View style={[st.card, st.invite]}>
       <Text style={st.gName}>{r.full_name}</Text>
@@ -240,21 +246,21 @@ function CallCard({ r, onDone, onFail }) {
 }
 
 // Packages: waiting ones first. Approve, or send back with a reason (the leader fixes it). Any package can be hidden.
-function OffersTab() {
+function OffersTab(): JSX.Element {
   const { state, data, load, gate } = useLoad(adminOffersReview);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
-  const [back, setBack] = useState(null);                 // { id, note } while writing a reason
-  const act = async (fn, ok) => {
+  const [back, setBack] = useState<{ id: string; note: string } | null>(null);                 // { id, note } while writing a reason
+  const act = async (fn: () => Promise<unknown>, ok: string) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { const r = await fn(); setMsg(r === 'not_pending' ? { kind: 'info', text: 'এটি আগেই সিদ্ধান্ত হয়ে গেছে। তালিকা নতুন করে আনা হলো।' } : { kind: 'ok', text: ok }); setBack(null); await load(); }
-    catch (e) { setMsg({ kind: 'bad', text: e?.code === 'reason' ? 'ফেরত পাঠানোর কারণ লিখুন, যেন লিডার বুঝে ঠিক করতে পারেন।' : errText(e) }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as Coded)?.code === 'reason' ? 'ফেরত পাঠানোর কারণ লিখুন, যেন লিডার বুঝে ঠিক করতে পারেন।' : errText(e) }); }
     finally { setBusy(false); }
   };
-  const approve = (o) => confirm('প্যাকেজটি অনুমোদন দেবেন?', 'অনুমোদনের পর হাজীরা দেখবেন, আর লিডার দাম বা তথ্য বদলাতে পারবেন না।', 'হ্যাঁ, অনুমোদন দিন',
+  const approve = (o: Row) => confirm('প্যাকেজটি অনুমোদন দেবেন?', 'অনুমোদনের পর হাজীরা দেখবেন, আর লিডার দাম বা তথ্য বদলাতে পারবেন না।', 'হ্যাঁ, অনুমোদন দিন',
     () => act(() => reviewOffer(o.id, 'approve'), 'অনুমোদন দেওয়া হয়েছে। লিডার নোটিফিকেশন পাবেন।'));
-  const hide = (o) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
+  const hide = (o: Row) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
     o.hidden_by_admin ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', () => act(() => hideOffer(o.id, !o.hidden_by_admin), o.hidden_by_admin ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।'));
   const [find, setFind] = useState('');
   const all = data || [];
@@ -276,8 +282,8 @@ function OffersTab() {
             {reviewOf(o) === 'pending' ? (
               back && back.id === o.id ? (
                 <>
-                  <Field label="ফেরত পাঠানোর কারণ (লিডার দেখবেন)" hint="যেমন: মক্কার হোটেলের নাম দিন" value={back.note} onChangeText={(v) => setBack({ id: o.id, note: v })} multiline maxLength={300} editable={!busy} />
-                  <Button title="ফেরত পাঠান" icon="↩️" kind="danger" onPress={() => act(() => reviewOffer(o.id, 'reject', back.note), 'ফেরত পাঠানো হয়েছে। লিডার কারণসহ নোটিফিকেশন পাবেন।')} loading={busy} />
+                  <Field label="ফেরত পাঠানোর কারণ (লিডার দেখবেন)" hint="যেমন: মক্কার হোটেলের নাম দিন" value={back.note} onChangeText={(v: string) => setBack({ id: o.id, note: v })} multiline maxLength={300} editable={!busy} />
+                  <Button title="ফেরত পাঠান" icon="↩️" kind="danger" onPress={() => act(() => reviewOffer(o.id, 'reject', back ? back.note : ''), 'ফেরত পাঠানো হয়েছে। লিডার কারণসহ নোটিফিকেশন পাবেন।')} loading={busy} />
                   <Button title="বাতিল" kind="secondary" onPress={() => setBack(null)} disabled={busy} style={{ marginTop: S.xs }} />
                 </>
               ) : (
@@ -295,11 +301,11 @@ function OffersTab() {
   );
 }
 
-function HelpTab() {
+function HelpTab(): JSX.Element {
   const [phone, setPhone] = useState('');
   const [hours, setHours] = useState('');
-  const [state, setState] = useState('load');
-  const [msg, setMsg] = useState(null);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   const [otpLive, setOtpLive] = useState(false);
   useEffect(() => { getHelpline().then((h) => { setPhone(h.phone); setHours(h.hours); setOtpLive(!!h.otpLive); setState('ok'); }).catch((e) => setState(notReady(e) ? 'soon' : 'err')); }, []);
@@ -347,10 +353,10 @@ function HelpTab() {
   );
 }
 
-function AppCard({ r, onDone, onFail }) {
+function AppCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const decide = (approve) => confirm(approve ? `${r.full_name}-কে লিডার হিসেবে অনুমোদন দেবেন?` : 'আবেদনটি বাতিল করবেন?',
+  const decide = (approve: boolean) => confirm(approve ? `${r.full_name}-কে লিডার হিসেবে অনুমোদন দেবেন?` : 'আবেদনটি বাতিল করবেন?',
     approve ? 'অনুমোদনের পর তিনি লিডার তালিকায় দেখা যাবেন, প্যাকেজ দিতে ও হাজীদের চুক্তি পাঠাতে পারবেন।' : 'আবেদনকারী আপনার নোট দেখতে পাবেন।',
     approve ? 'হ্যাঁ, অনুমোদন দিন' : 'হ্যাঁ, বাতিল করুন', async () => {
       setBusy(true);
@@ -389,24 +395,24 @@ function AppCard({ r, onDone, onFail }) {
   );
 }
 
-function Photo({ path }) {
-  const [u, setU] = useState(null);
+function Photo({ path }: { path?: string | null }): JSX.Element | null {
+  const [u, setU] = useState<string | null>(null);
   useEffect(() => { if (path) signedAvatarUrl(path).then(setU); }, [path]);
   return u ? <Image source={{ uri: u }} style={{ width: 96, height: 96, borderRadius: 48, marginTop: S.sm }} accessibilityLabel="আবেদনকারীর ছবি" /> : null;
 }
 
-const STAT_LABELS = [
+const STAT_LABELS: [string, string][] = [
   ['hajis', 'হাজী অ্যাকাউন্ট'], ['leaders', 'অনুমোদিত লিডার'], ['leaders_pending', 'লিডার আবেদন বাকি'], ['suspended', 'বন্ধ অ্যাকাউন্ট'],
   ['contracts_active', 'চালু চুক্তি'], ['contracts_sent', 'উত্তরের অপেক্ষায় চুক্তি'], ['contracts_completed', 'সম্পন্ন চুক্তি'], ['contracts_cancelled', 'বাতিল চুক্তি'],
   ['complaints_pending', 'অভিযোগ যাচাই বাকি'], ['reports_new', 'নতুন রিপোর্ট'], ['calls_new', 'ফোনের অনুরোধ বাকি'], ['offers_visible', 'দেখানো প্যাকেজ'], ['offers_pending', 'অনুমোদনের অপেক্ষায় প্যাকেজ'], ['new_users_7d', 'গত ৭ দিনে নতুন অ্যাকাউন্ট'],
   ['payments_pending', 'টাকার জমা যাচাই বাকি'], ['money_in', 'মোট পাওয়া টাকা'], ['money_out_leaders', 'লিডারদের দেওয়া'], ['money_refunded', 'হাজীদের ফেরত'],
 ];
 const MONEY_STATS = ['money_in', 'money_out_leaders', 'money_refunded'];
-function StatsTab({ admin }) {
+function StatsTab({ admin }: { admin: boolean }): JSX.Element {
   const { state, data, gate } = useLoad(stats);
-  const [busy, setBusy] = useState(null);
-  const [msg, setMsg] = useState(null);
-  const dl = async (kind) => {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<Msg>(null);
+  const dl = async (kind: string) => {
     setBusy(kind); setMsg(null);
     try { const n = await exportCsv(kind); setMsg({ kind: 'ok', text: `${toBn(n)}টি সারি তৈরি হয়েছে। ফোনের মেনু থেকে সংরক্ষণ বা পাঠান (Excel-এ খোলে)।` }); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -436,9 +442,9 @@ function StatsTab({ admin }) {
   );
 }
 
-function ComplaintsTab() {
+function ComplaintsTab(): JSX.Element {
   const { state, data, load, gate } = useLoad(listComplaints);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const rows = data || [];
   return (
     <>
@@ -448,18 +454,18 @@ function ComplaintsTab() {
         <>
           <Text style={st.small}>যাচাই করলে অভিযোগের লেখা লিডারের প্রোফাইলে সবাই দেখবে (হাজীর নাম দেখাবে না)। আগে প্রমাণ দেখুন, দুপক্ষকে ফোন করুন।</Text>
           {rows.filter((r) => r.status === 'pending').length === 0 ? <Notice kind="ok" title="যাচাই বাকি এমন অভিযোগ নেই" /> : null}
-          {rows.map((r) => <ComplaintCard key={r.id} r={r} onDone={(t) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t) => setMsg({ kind: 'bad', text: t })} />)}
+          {rows.map((r) => <ComplaintCard key={r.id} r={r} onDone={(t: string) => { setMsg({ kind: 'ok', text: t }); load(); }} onFail={(t: string) => setMsg({ kind: 'bad', text: t })} />)}
         </>
       ) : null}
     </>
   );
 }
-function ComplaintCard({ r, onDone, onFail }) {
+function ComplaintCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const tel = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
-  const open = async (f) => { try { await Linking.openURL(await evidenceUrl(f.path)); } catch (e) { onFail('ফাইলটি খোলা যায়নি।'); } };
-  const decide = (v) => confirm(v ? 'অভিযোগটি যাচাই করা হিসেবে প্রকাশ করবেন?' : 'অভিযোগটি বাতিল করবেন?', v ? 'লিডারের প্রোফাইলে সবাই দেখবেন।' : 'হাজী আপনার নোট দেখবেন।', v ? 'হ্যাঁ, প্রকাশ করুন' : 'হ্যাঁ, বাতিল', async () => {
+  const tel = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
+  const open = async (f: Row) => { try { await Linking.openURL(await evidenceUrl(f.path)); } catch (e) { onFail('ফাইলটি খোলা যায়নি।'); } };
+  const decide = (v: boolean) => confirm(v ? 'অভিযোগটি যাচাই করা হিসেবে প্রকাশ করবেন?' : 'অভিযোগটি বাতিল করবেন?', v ? 'লিডারের প্রোফাইলে সবাই দেখবেন।' : 'হাজী আপনার নোট দেখবেন।', v ? 'হ্যাঁ, প্রকাশ করুন' : 'হ্যাঁ, বাতিল', async () => {
     setBusy(true);
     try { const x = await decideComplaint(r.id, v, note.trim()); onDone(x === 'ok' ? (v ? 'অভিযোগ যাচাই করা হিসেবে প্রকাশ হয়েছে।' : 'অভিযোগ বাতিল হয়েছে।') : 'আগেই সিদ্ধান্ত নেওয়া হয়েছে।'); }
     catch (e) { onFail(errText(e)); setBusy(false); }
@@ -471,7 +477,7 @@ function ComplaintCard({ r, onDone, onFail }) {
       <Text style={st.p} selectable>{r.body}</Text>
       <View style={st.cRow}><Text style={st.lbl}>হাজী</Text><Text style={st.p}>{r.haji_name} ({r.haji_code}){r.haji_phone ? ` · ${toBn(r.haji_phone)}` : ''}</Text></View>
       <View style={st.cRow}><Text style={st.lbl}>লিডার</Text><Text style={st.p}>{r.leader_name} ({r.leader_code}) · {toBn(r.leader_phone)}</Text></View>
-      {(r.files || []).map((f, i) => <Button key={f.path} title={`প্রমাণ ${toBn(i + 1)} দেখুন (${f.kind === 'image' ? 'ছবি' : f.kind === 'audio' ? 'অডিও' : 'ভিডিও'})`} icon="📎" kind="secondary" onPress={() => open(f)} style={{ marginTop: S.xs }} />)}
+      {(r.files || []).map((f: Row, i: number) => <Button key={f.path} title={`প্রমাণ ${toBn(i + 1)} দেখুন (${f.kind === 'image' ? 'ছবি' : f.kind === 'audio' ? 'অডিও' : 'ভিডিও'})`} icon="📎" kind="secondary" onPress={() => open(f)} style={{ marginTop: S.xs }} />)}
       {pending ? (
         <>
           {r.haji_phone ? <Button title="হাজীকে ফোন করুন" icon="📞" kind="secondary" onPress={() => tel(r.haji_phone)} style={{ marginTop: S.sm }} /> : null}
@@ -485,14 +491,14 @@ function ComplaintCard({ r, onDone, onFail }) {
   );
 }
 
-const REASON = { fraud: 'প্রতারণা/টাকা', abuse: 'খারাপ ব্যবহার', fake: 'ভুয়া তথ্য', spam: 'বিরক্তিকর', other: 'অন্য' };
-function ReportsTab({ canUsers }) {
+const REASON: Record<string, string> = { fraud: 'প্রতারণা/টাকা', abuse: 'খারাপ ব্যবহার', fake: 'ভুয়া তথ্য', spam: 'বিরক্তিকর', other: 'অন্য' };
+function ReportsTab({ canUsers }: { canUsers: boolean }): JSX.Element {
   const { state, data, load, gate } = useLoad(listReports);
-  const [cancels, setCancels] = useState([]);
-  const [msg, setMsg] = useState(null);
+  const [cancels, setCancels] = useState<Row[]>([]);
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (canUsers) referralCancels().then(setCancels).catch(() => {}); }, [canUsers, data]);
-  const act = async (fn, t) => { setBusy(true); setMsg(null); try { await fn(); setMsg({ kind: 'ok', text: t }); await load(); } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); } finally { setBusy(false); } };
+  const act = async (fn: () => Promise<unknown>, t: string) => { setBusy(true); setMsg(null); try { await fn(); setMsg({ kind: 'ok', text: t }); await load(); } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); } finally { setBusy(false); } };
   return (
     <>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
@@ -508,8 +514,8 @@ function ReportsTab({ canUsers }) {
       ))}
       <Text style={st.h}>📮 ব্যবহারকারীর রিপোর্ট</Text>
       {gate}
-      {state === 'ok' && data.length === 0 ? <Notice kind="ok" title="কোনো রিপোর্ট নেই" /> : null}
-      {state === 'ok' ? data.map((r) => (
+      {state === 'ok' && (data || []).length === 0 ? <Notice kind="ok" title="কোনো রিপোর্ট নেই" /> : null}
+      {state === 'ok' ? (data || []).map((r) => (
         <View key={r.id} style={[st.card, r.status === 'new' && st.invite]}>
           <Text style={st.small}>{fmtDay(r.created_at)} · {REASON[r.reason]} · {r.status === 'new' ? 'নতুন' : 'দেখা হয়েছে'}</Text>
           <Text style={st.val}>{r.target_name} ({r.target_code}) · {r.target_type === 'leader' ? 'লিডার' : 'হাজী'}{r.target_status === 'suspended' ? ' · বন্ধ' : ''}</Text>
@@ -523,20 +529,20 @@ function ReportsTab({ canUsers }) {
   );
 }
 
-function UsersTab() {
+function UsersTab(): JSX.Element {
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState(null);
-  const [msg, setMsg] = useState(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
-  const [reason, setReason] = useState({});
-  const [detail, setDetail] = useState(null);
+  const [reason, setReason] = useState<Record<string, string>>({});
+  const [detail, setDetail] = useState<string | null>(null);
   const search = async () => {
     if (q.trim().length < 3) { setMsg({ kind: 'bad', text: 'অন্তত ৩ অক্ষর লিখুন (নাম, আইডি বা মোবাইল নম্বর)।' }); return; }
     setBusy(true); setMsg(null);
     try { setRows(await findUsers(q.trim())); } catch (e) { setMsg({ kind: notReady(e) ? 'info' : 'bad', text: notReady(e) ? 'শীঘ্রই চালু হবে।' : errText(e) }); }
     finally { setBusy(false); }
   };
-  const change = (u, status) => {
+  const change = (u: Row, status: 'suspended' | 'active') => {
     const why = (reason[u.id] || '').trim();
     if (why.length < 5) { setMsg({ kind: 'bad', text: 'কারণ লিখুন (অন্তত ৫ অক্ষর)।' }); return; }
     confirm(status === 'suspended' ? `${u.full_name}-এর অ্যাকাউন্ট বন্ধ করবেন?` : `${u.full_name}-এর অ্যাকাউন্ট আবার চালু করবেন?`,
@@ -561,7 +567,7 @@ function UsersTab() {
           <Button title="পুরো বিবরণ দেখুন" icon="📋" kind="secondary" onPress={() => setDetail(u.id)} style={{ marginVertical: S.xs }} />
           {u.role !== 'admin' ? (
             <>
-              <Field label="কারণ" hint="যেমন: একাধিক যাচাই করা অভিযোগ" value={reason[u.id] || ''} onChangeText={(v) => setReason((x) => ({ ...x, [u.id]: v }))} maxLength={300} />
+              <Field label="কারণ" hint="যেমন: একাধিক যাচাই করা অভিযোগ" value={reason[u.id] || ''} onChangeText={(v: string) => setReason((x) => ({ ...x, [u.id]: v }))} maxLength={300} />
               {u.status === 'active'
                 ? <Button title="অ্যাকাউন্ট বন্ধ করুন" icon="⛔" kind="danger" onPress={() => change(u, 'suspended')} disabled={busy} />
                 : <Button title="আবার চালু করুন" icon="✅" kind="secondary" onPress={() => change(u, 'active')} disabled={busy} />}
@@ -573,13 +579,13 @@ function UsersTab() {
   );
 }
 
-function StaffTab() {
+function StaffTab(): JSX.Element {
   const { state, data, load, gate } = useLoad(listStaff);
   const [phone, setPhone] = useState('');
-  const [sel, setSel] = useState([]);
-  const [msg, setMsg] = useState(null);
+  const [sel, setSel] = useState<string[]>([]);
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
-  const save = (ph, perms) => confirm(perms.length ? 'এই স্টাফকে এই অধিকারগুলো দেবেন?' : 'এই স্টাফের সব অধিকার সরিয়ে দেবেন?', perms.map((x) => PERMS.find((p) => p.id === x)?.label).join(', '), 'হ্যাঁ', async () => {
+  const save = (ph: string, perms: string[]) => confirm(perms.length ? 'এই স্টাফকে এই অধিকারগুলো দেবেন?' : 'এই স্টাফের সব অধিকার সরিয়ে দেবেন?', perms.map((x) => PERMS.find((p) => p.id === x)?.label).join(', '), 'হ্যাঁ', async () => {
     setBusy(true); setMsg(null);
     try {
       const r = await setStaff(ph, perms);
@@ -605,11 +611,11 @@ function StaffTab() {
         <Button title="সংরক্ষণ করুন" icon="💾" onPress={() => { if (!/^01[3-9]\d{8}$/.test(phone.trim())) { setMsg({ kind: 'bad', text: 'সঠিক ১১ সংখ্যার নম্বর লিখুন।' }); return; } if (!sel.length) { setMsg({ kind: 'bad', text: 'অন্তত একটি কাজ বাছুন।' }); return; } save(phone.trim(), sel); }} loading={busy} />
       </View>
       {gate}
-      {state === 'ok' && data.length === 0 ? <Notice kind="info" title="এখনো কোনো স্টাফ নেই" /> : null}
-      {state === 'ok' ? data.map((u) => (
+      {state === 'ok' && (data || []).length === 0 ? <Notice kind="info" title="এখনো কোনো স্টাফ নেই" /> : null}
+      {state === 'ok' ? (data || []).map((u) => (
         <View key={u.user_id} style={st.card}>
           <Text style={st.val}>{u.full_name} · {toBn(u.phone)}</Text>
-          <Text style={st.small}>{u.perms.map((x) => PERMS.find((p) => p.id === x)?.label).join(', ')}</Text>
+          <Text style={st.small}>{u.perms.map((x: string) => PERMS.find((p) => p.id === x)?.label).join(', ')}</Text>
           <Button title="অধিকার বদলান" kind="secondary" onPress={() => { setPhone(u.phone); setSel(u.perms); }} disabled={busy} style={{ marginTop: S.sm }} />
           <Button title="স্টাফ থেকে সরান" kind="danger" onPress={() => save(u.phone, [])} disabled={busy} style={{ marginTop: S.sm }} />
         </View>
@@ -618,13 +624,13 @@ function StaffTab() {
   );
 }
 
-function TermsTab() {
-  const [kind, setKind] = useState('haji');
+function TermsTab(): JSX.Element {
+  const [kind, setKind] = useState<'haji' | 'leader'>('haji');
   const [body, setBody] = useState('');
-  const [key, setKey] = useState(null);             // which stored text was loaded ('terms' = the old single text)
-  const [counts, setCounts] = useState({});
-  const [state, setState] = useState('load');
-  const [msg, setMsg] = useState(null);
+  const [key, setKey] = useState<string | null>(null);             // which stored text was loaded ('terms' = the old single text)
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [state, setState] = useState<'load' | 'ok'>('load');
+  const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
     setState('load'); setMsg(null);
@@ -638,12 +644,12 @@ function TermsTab() {
   const save = () => confirm(`${name} সংরক্ষণ করবেন?`, `সবার অ্যাপে সঙ্গে সঙ্গে বদলে যাবে। যাঁরা আগের লেখা মেনে নিয়েছিলেন, তাঁদের "শর্তাবলি" পাতায় নতুনটি মেনে নিতে বলা হবে।`, 'হ্যাঁ, সংরক্ষণ', async () => {
     setBusy(true); setMsg(null);
     try { await setText(k, body.trim()); setMsg({ kind: 'ok', text: body.trim() ? `${name} সংরক্ষণ হয়েছে।` : `${name} সরানো হয়েছে।` }); setKey(body.trim() ? k : null); }
-    catch (e) { setMsg({ kind: 'bad', text: notReady(e) || /bad key/.test(String(e?.message)) ? 'হাজী ও লিডারের আলাদা শর্তাবলির ডেটাবেস ধাপ (০১২) এখনো চালানো হয়নি।' : errText(e) }); }   // text stays in the box
+    catch (e) { setMsg({ kind: 'bad', text: notReady(e) || /bad key/.test(String((e as Coded)?.message)) ? 'হাজী ও লিডারের আলাদা শর্তাবলির ডেটাবেস ধাপ (০১২) এখনো চালানো হয়নি।' : errText(e) }); }   // text stays in the box
     finally { setBusy(false); }
   });
   return (
     <>
-      <Segmented value={kind} onChange={(v) => !busy && setKind(v)} options={[{ id: 'haji', label: 'হাজীদের' }, { id: 'leader', label: 'লিডারদের' }]} />
+      <Segmented value={kind} onChange={(v: 'haji' | 'leader') => { if (!busy) setKind(v); }} options={[{ id: 'haji', label: 'হাজীদের' }, { id: 'leader', label: 'লিডারদের' }]} />
       <View style={{ height: S.md }} />
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : (
@@ -659,7 +665,7 @@ function TermsTab() {
   );
 }
 
-const ACTION = { approve_leader: 'লিডার অনুমোদন', reject_leader: 'লিডার আবেদন বাতিল', complaint_verified: 'অভিযোগ প্রকাশ', complaint_rejected: 'অভিযোগ বাতিল',
+const ACTION: Record<string, string> = { approve_leader: 'লিডার অনুমোদন', reject_leader: 'লিডার আবেদন বাতিল', complaint_verified: 'অভিযোগ প্রকাশ', complaint_rejected: 'অভিযোগ বাতিল',
   report_handled: 'রিপোর্ট দেখা', suspend_user: 'অ্যাকাউন্ট বন্ধ', reactivate_user: 'অ্যাকাউন্ট চালু', staff_set: 'স্টাফের অধিকার', staff_removed: 'স্টাফ সরানো',
   referral_cancel_ok: 'রেফারেল বাতিল অনুমোদন', referral_cancel_no: 'রেফারেল বাতিল নাকচ', call_done: 'ফোনের অনুরোধ শেষ', offer_approved: 'প্যাকেজ অনুমোদন', offer_rejected: 'প্যাকেজ ফেরত', offer_hidden: 'প্যাকেজ লুকানো', offer_shown: 'প্যাকেজ দেখানো',
   text_terms: 'শর্তাবলি বদল', export_users: 'ব্যবহারকারী ডাউনলোড', export_contracts: 'চুক্তি ডাউনলোড', export_complaints: 'অভিযোগ ডাউনলোড',

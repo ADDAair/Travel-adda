@@ -1,23 +1,27 @@
 // Admin: correct guide and dua text without an app update (supabase/024_admin_part3.sql).
 // Only existing text can be changed; phones get the change the next time the app opens with internet.
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { GUIDES } from '../content/guides';
 import { DUAS } from '../content/duas';
-import { textFields, applyOverrides, listOverrides, setContent, originalText } from '../lib/contentEdit';
+import { textFields, applyOverrides, listOverrides, setContent, originalText, type TextField, type Override } from '../lib/contentEdit';
 import { notReady } from '../lib/groups';
 import { st, errText, confirm } from './GroupScreen';
+import type { Msg } from './navTypes';
 
-const LISTS = { guide: GUIDES, dua: DUAS };
+type Item = Record<string, any> & { id: string; title: string; icon?: string };
+type Kind = 'guide' | 'dua';
 
-export default function ContentTab() {
-  const [kind, setKind] = useState('guide');
-  const [item, setItem] = useState(null);
+const LISTS: Record<Kind, Item[]> = { guide: GUIDES as unknown as Item[], dua: DUAS as unknown as Item[] };
+
+export default function ContentTab(): JSX.Element {
+  const [kind, setKind] = useState<Kind>('guide');
+  const [item, setItem] = useState<string | null>(null);
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState(null);
-  const [err, setErr] = useState(null);
+  const [rows, setRows] = useState<Override[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     try { const r = await listOverrides(); Object.entries(LISTS).forEach(([k, l]) => applyOverrides(l, r, k)); setRows(r); setErr(null); }
     catch (e) { setRows([]); setErr(notReady(e) ? 'এই অংশের ডেটাবেস ধাপ (০২৪) এখনো চালানো হয়নি।' : errText(e)); }
@@ -25,7 +29,7 @@ export default function ContentTab() {
   useEffect(() => { refresh(); }, [refresh]);
 
   const list = LISTS[kind].filter((x) => !q.trim() || String(x.title).includes(q.trim()));
-  const changed = (id) => (rows || []).filter((r) => r.kind === kind && r.item_id === id).length;
+  const changed = (id: string): number => (rows || []).filter((r) => r.kind === kind && r.item_id === id).length;
   const cur = item && LISTS[kind].find((x) => x.id === item);
 
   if (cur) return (
@@ -40,7 +44,7 @@ export default function ContentTab() {
   return (
     <>
       <Text style={[st.p, { marginBottom: S.sm }]}>ভুল বানান বা তথ্য ঠিক করতে গাইড বা দোয়া বেছে নিন। নতুন গাইড যোগ করতে অ্যাপ আপডেট লাগবে।</Text>
-      <Segmented value={kind} onChange={(v) => { setKind(v); setItem(null); setQ(''); }} options={[{ id: 'guide', label: 'গাইড' }, { id: 'dua', label: 'দোয়া' }]} />
+      <Segmented value={kind} onChange={(v: Kind) => { setKind(v); setItem(null); setQ(''); }} options={[{ id: 'guide', label: 'গাইড' }, { id: 'dua', label: 'দোয়া' }]} />
       {err ? <Notice kind="info" title={err} /> : null}
       {rows === null ? <ActivityIndicator color={C.primary} /> : null}
       <Field label="নাম দিয়ে খুঁজুন" hint={kind === 'guide' ? 'যেমন: স্বাস্থ্য' : 'যেমন: ছানা'} value={q} onChangeText={setQ} />
@@ -55,17 +59,17 @@ export default function ContentTab() {
   );
 }
 
-function FieldEditor({ kind, item, f, overridden, onSaved }) {
+function FieldEditor({ kind, item, f, overridden, onSaved }: { kind: Kind; item: string; f: TextField; overridden: boolean; onSaved: () => Promise<void> }): JSX.Element {
   const [draft, setDraft] = useState(f.value);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { setDraft(f.value); }, [f.value]);
   const orig = originalText(kind, item, f.path);
-  const run = async (body, ok) => {
+  const run = async (body: string | null, ok: string) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { await setContent(kind, item, f.path, body); await onSaved(); setMsg({ kind: 'ok', text: ok }); }
-    catch (e) { setMsg({ kind: 'bad', text: e.code === 'empty' ? 'লেখা খালি রাখা যাবে না।' : errText(e) }); }   // the draft stays
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'empty' ? 'লেখা খালি রাখা যাবে না।' : errText(e) }); }   // the draft stays
     finally { setBusy(false); }
   };
   return (

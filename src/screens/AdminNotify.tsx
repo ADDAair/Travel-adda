@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
@@ -6,22 +6,24 @@ import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { audienceSize, sendNotification, listBroadcasts, withdrawBroadcast } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
+import type { Msg, Row } from './navTypes';
 
-const AUD = { all: 'সবাই', haji: 'সব হাজী', leader: 'সব লিডার', one: 'একজন' };
+type Aud = 'all' | 'haji' | 'leader' | 'one';
+const AUD: Record<string, string> = { all: 'সবাই', haji: 'সব হাজী', leader: 'সব লিডার', one: 'একজন' };
 
 // Admin / staff with the 'notify' permission: send a notice to everyone, to hajis, to leaders, or to one account.
-export default function NotifyTab() {
-  const [aud, setAud] = useState('all');
+export default function NotifyTab(): JSX.Element {
+  const [aud, setAud] = useState<Aud>('all');
   const [target, setTarget] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [important, setImportant] = useState(false);
-  const [size, setSize] = useState(null);
+  const [size, setSize] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [err, setErr] = useState({});
-  const [sent, setSent] = useState(null);
-  const [state, setState] = useState('load');
+  const [msg, setMsg] = useState<Msg>(null);
+  const [err, setErr] = useState<Record<string, string>>({});
+  const [sent, setSent] = useState<Row[] | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
 
   const loadSent = useCallback(async () => {
     try { setSent(await listBroadcasts()); setState('ok'); } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
@@ -29,12 +31,12 @@ export default function NotifyTab() {
   useEffect(() => { loadSent(); }, [loadSent]);
   useEffect(() => {
     setSize(null);
-    if (aud !== 'one') audienceSize(aud).then(setSize).catch(() => setSize(null));
+    if (aud !== 'one') audienceSize(aud).then((n) => setSize(n == null ? null : Number(n))).catch(() => setSize(null));
   }, [aud]);
 
   const send = () => {
     if (busy) return;
-    const e = {};
+    const e: Record<string, string> = {};
     if (title.trim().length < 2) e.title = 'শিরোনাম লিখুন।';
     if (aud === 'one' && target.trim().length < 5) e.target = 'হাজী/লিডার আইডি (যেমন TA-00123) বা মোবাইল নম্বর লিখুন।';
     setErr(e); setMsg(null);
@@ -52,7 +54,7 @@ export default function NotifyTab() {
       finally { setBusy(false); }
     });
   };
-  const withdraw = (b) => confirm('নোটিফিকেশনটি তুলে নেবেন?', 'যাঁরা এখনো দেখেননি, তাঁরা আর দেখবেন না।', 'হ্যাঁ, তুলে নিন', async () => {
+  const withdraw = (b: Row) => confirm('নোটিফিকেশনটি তুলে নেবেন?', 'যাঁরা এখনো দেখেননি, তাঁরা আর দেখবেন না।', 'হ্যাঁ, তুলে নিন', async () => {
     try { await withdrawBroadcast(b.id); setMsg({ kind: 'ok', text: 'তুলে নেওয়া হয়েছে।' }); loadSent(); } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
   });
 
