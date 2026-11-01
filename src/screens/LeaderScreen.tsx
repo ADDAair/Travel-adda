@@ -10,7 +10,9 @@ import { inviteResultText, mySentInvites, cancelInvite } from '../lib/help';
 import { removeGroup, reopenGroup, removeGroupText } from '../lib/groups';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, createContract, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
+import type { Announcement, LeaderGroup } from '../lib/groups';
+import type { Item } from '../lib/types';
 
 const STATUS: Record<string, string> = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
 const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
@@ -18,8 +20,8 @@ const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
 // Verified leaders: make groups, share the join code, invite by phone, see members, and write package terms.
 export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err' | 'denied'>('load');
-  const [groups, setGroups] = useState<Row[]>([]);
-  const [sel, setSel] = useState<Row | null>(null);
+  const [groups, setGroups] = useState<LeaderGroup[]>([]);
+  const [sel, setSel] = useState<LeaderGroup | null>(null);
   const [name, setName] = useState('');
   const [season, setSeason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -86,8 +88,8 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
   );
 }
 
-function AnnounceBox({ g }: { g: Row }): JSX.Element {
-  const [rows, setRows] = useState<Row[] | null>(null);
+function AnnounceBox({ g }: { g: LeaderGroup }): JSX.Element {
+  const [rows, setRows] = useState<Announcement[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -105,7 +107,7 @@ function AnnounceBox({ g }: { g: Row }): JSX.Element {
       finally { setBusy(false); }
     });
   };
-  const del = (a: Row) => confirm('ঘোষণাটি মুছে ফেলবেন?', 'হাজীরা আর এটি দেখবেন না।', 'হ্যাঁ, মুছুন', async () => {
+  const del = (a: Announcement) => confirm('ঘোষণাটি মুছে ফেলবেন?', 'হাজীরা আর এটি দেখবেন না।', 'হ্যাঁ, মুছুন', async () => {
     setBusy(true); setMsg(null);
     try { await deleteAnnouncement(a.id); setMsg({ kind: 'ok', text: 'ঘোষণা মুছে ফেলা হয়েছে।' }); await load(); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -129,12 +131,12 @@ function AnnounceBox({ g }: { g: Row }): JSX.Element {
   );
 }
 
-function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: (m?: Msg) => void; navigation: Nav }): JSX.Element {
+function GroupAdmin({ g, onBack, navigation }: { g: LeaderGroup; onBack: (m?: Msg) => void; navigation: Nav }): JSX.Element {
   const [active, setActive] = useState<boolean>(g.active !== false);
-  const [members, setMembers] = useState<Row[] | null>(null);
+  const [members, setMembers] = useState<Item<typeof groupMembers>[] | null>(null);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState<Row[]>([]);
+  const [sent, setSent] = useState<Item<typeof mySentInvites>[]>([]);
   const [msg, setMsg] = useState<Msg>(null);
   const [form, setForm] = useState(false);
 
@@ -160,7 +162,7 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: (m?: Msg) => vo
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
-  const cancelSent = (x: Row) => confirm('আমন্ত্রণটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', async () => {
+  const cancelSent = (x: Item<typeof mySentInvites>) => confirm('আমন্ত্রণটি বাতিল করবেন?', x.hint, 'হ্যাঁ, বাতিল', async () => {
     setBusy(true); setMsg(null);
     try { await cancelInvite(x.id); await load(); setMsg({ kind: 'ok', text: 'আমন্ত্রণ বাতিল হয়েছে।' }); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -184,7 +186,7 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: (m?: Msg) => vo
     catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'soon' ? 'এই সুবিধা শীঘ্রই আসছে।' : errText(e) }); }
     finally { setBusy(false); }
   };
-  const remove = (m: Row) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
+  const remove = (m: Item<typeof groupMembers>) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
     setBusy(true); setMsg(null);
     try { await removeMember(g.id, m.user_id); await load(); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -264,7 +266,7 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: (m?: Msg) => vo
   );
 }
 
-function MemberRow({ m, onRemove, busy }: { m: Row; onRemove: () => void; busy: boolean }): JSX.Element {
+function MemberRow({ m, onRemove, busy }: { m: Item<typeof groupMembers>; onRemove: () => void; busy: boolean }): JSX.Element {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { let on = true; signedAvatarUrl(m.avatar_path).then((u) => { if (on) setUrl(u); }); return () => { on = false; }; }, [m.avatar_path]);
   const isActive = m.status === 'active' || m.status === 'invited';
@@ -289,7 +291,7 @@ function MemberRow({ m, onRemove, busy }: { m: Row; onRemove: () => void; busy: 
   );
 }
 
-function ContractForm({ g, onDone }: { g: Row; onDone: (saved: boolean) => void }): JSX.Element {
+function ContractForm({ g, onDone }: { g: LeaderGroup; onDone: (saved: boolean) => void }): JSX.Element {
   const [f, setF] = useState({ title: '', price: '', includes: '', excludes: '', from: '', to: '', refund: '' });
   const [err, setErr] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);

@@ -13,8 +13,8 @@ import { VIDEO_TOPICS, mergeVideos } from '../content/videos';
 import { APP_VERSION } from '../lib/appVersion';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
 import { requestChatConsent, adminChatConsents, viewHelpChat, requestResultText, consentStatusText, type AdminConsent, type ChatLine } from '../lib/chatConsent';
-import type { Msg, Row as Rec } from './navTypes';
-import type { ContractDetail, UserDetail } from '../lib/types';
+import type { Msg } from './navTypes';
+import type { ContractDetail, Item, Res, UserDetail } from '../lib/types';
 
 type Coded = { code?: string; message?: string } | null;
 
@@ -35,7 +35,7 @@ function Search({ label, hint, onSearch, busy, initial = '' }: { label: string; 
 
 // ---------- 1) Contracts & disputes ----------
 export function ContractsTab(): JSX.Element {
-  const [rows, setRows] = useState<Rec[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof findContracts> | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -245,13 +245,13 @@ export function UserPage({ id, onBack }: { id: string; onBack: () => void }): JS
 
 // ---------- 4) Rating comments ----------
 export function RatingsTab(): JSX.Element {
-  const [rows, setRows] = useState<Rec[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof listRatings> | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const search = async (q: string) => { setMsg(null); try { setRows(await listRatings(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } };
   useEffect(() => { search(''); }, []);
-  const act = (r: Rec) => confirm(r.comment_hidden ? 'মন্তব্যটি আবার দেখাবেন?' : 'মন্তব্যটি লুকাবেন?', 'তারা (রেটিং) গণনায় থাকবে, শুধু লেখাটা লুকাবে।', r.comment_hidden ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', async () => {
+  const act = (r: Item<typeof listRatings>) => confirm(r.comment_hidden ? 'মন্তব্যটি আবার দেখাবেন?' : 'মন্তব্যটি লুকাবেন?', 'তারা (রেটিং) গণনায় থাকবে, শুধু লেখাটা লুকাবে।', r.comment_hidden ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', async () => {
     setBusy(true); setMsg(null);
     try { await hideRating(r.contract_id, !r.comment_hidden, reason[r.contract_id]); setMsg({ kind: 'ok', text: r.comment_hidden ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।' }); await search(''); }
     catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); }
@@ -280,7 +280,7 @@ export function RatingsTab(): JSX.Element {
 
 // ---------- 8) Groups & khadems ----------
 export function GroupsTab(): JSX.Element {
-  const [rows, setRows] = useState<Rec[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof adminGroups> | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const search = async (q: string) => { setBusy(true); setMsg(null); try { setRows(await adminGroups(q)); } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); } finally { setBusy(false); } };
@@ -312,11 +312,11 @@ export function AppSettingsBox(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => {
-    supabase.from('app_settings').select('key,value').then((r: { data: Rec[] | null }) => {
-      const h: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
+    supabase.from('app_settings').select('key,value').then((r) => {
+      const h: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value || '']));
       setMinV(h.min_app_version || ''); setStore(h.store_url || '');
     });
-    supabase.from('app_videos').select('route,url').then((r: { data: Rec[] | null }) => setVideos(Object.fromEntries((r.data || []).map((x) => [x.route, x.url]))));
+    supabase.from('app_videos').select('route,url').then((r) => setVideos(Object.fromEntries((r.data || []).map((x) => [x.route, x.url]))));
   }, []);
   const run = async (fn: () => Promise<unknown>, ok: string) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); setMsg({ kind: 'ok', text: ok }); } catch (e) { setMsg({ kind: 'bad', text: /bad url/.test((e as Coded)?.message || '') ? 'লিংক https:// দিয়ে শুরু হতে হবে।' : /bad version/.test((e as Coded)?.message || '') ? 'সংস্করণ এভাবে লিখুন: 0.2.0' : errMsg(e) }); } finally { setBusy(false); } };
   const topics: Record<string, { title: string }> = mergeVideos(VIDEO_TOPICS, []);

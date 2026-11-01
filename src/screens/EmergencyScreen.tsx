@@ -9,7 +9,11 @@ import { Button, Field, Notice } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
 import { telBd } from '../lib/groups';
 import { myContracts, cachedContractLeader } from '../lib/market';
-import { getHelpline } from '../lib/offers';
+import { getHelpline, type Helpline } from '../lib/offers';
+import type { Res } from '../lib/types';
+
+type Info = Record<string, string>;   // what the haji typed on this page (kept on the phone)
+type Who = { full_name?: string | null; haji_code?: string | null };
 import * as Location from 'expo-location';
 import { logSos, sosLocationWanted, setSosLocationWanted } from '../lib/sos';
 
@@ -39,16 +43,16 @@ const cleanPhone = (v: string) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
 const phoneOk = (v: unknown) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
 export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
-  const [info, setInfo] = useState<Record<string, any>>({});
-  const [draft, setDraft] = useState<Record<string, any>>({});
+  const [info, setInfo] = useState<Info>({});
+  const [draft, setDraft] = useState<Info>({});
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [lost, setLost] = useState(false);
-  const [me, setMe] = useState<any>(null);
+  const [me, setMe] = useState<Who | null>(null);
   const [showMore, setShowMore] = useState(false);
-  const [grp, setGrp] = useState<any>(null);   // leader of my active contract (used when none is typed below)
-  const [help, setHelp] = useState<any>(null); // Travel Adda helpline, when there is no contracted leader
+  const [grp, setGrp] = useState<Res<typeof cachedContractLeader>>(null);   // leader of my active contract (used when none is typed below)
+  const [help, setHelp] = useState<Helpline | null>(null); // Travel Adda helpline, when there is no contracted leader
 
   useEffect(() => {
     const load = async () => {
@@ -77,7 +81,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
 
   const has = Object.keys(info).length > 0;
   // SOS order (from the design): the leader of my active contract, otherwise a leader typed here, otherwise the helpline.
-  const lead = grp ? { name: grp.name, phone: telBd(grp.phone) } : info.leaderPhone ? { name: info.leaderName, phone: info.leaderPhone } : {};
+  const lead: { name?: string | null; phone?: string | null } = grp ? { name: grp.name, phone: telBd(grp.phone) } : info.leaderPhone ? { name: info.leaderName, phone: info.leaderPhone } : {};
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <View style={st.sos}>
@@ -158,7 +162,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
 const AR = 'أنا من حجاج بنغلاديش، وقد ضللت الطريق. أرجو مساعدتي في الوصول إلى فندقي أو الاتصال بقائد مجموعتي.';
 const EN = 'I am a pilgrim from Bangladesh and I am lost. Please help me reach my hotel or call my group leader.';
 
-function LostCard({ info, me, onClose }: { info: Record<string, any>; me: any; onClose: () => void }) {
+function LostCard({ info, me, onClose }: { info: Info; me: Who | null; onClose: () => void }) {
   const ins = useSafeAreaInsets();
   const [speaking, setSpeaking] = useState(false);
   const [ttsErr, setTtsErr] = useState('');

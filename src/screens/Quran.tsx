@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ActivityIndicator, type ViewToken } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Notice } from '../components/ui';
@@ -21,13 +21,16 @@ export function stripBismillah(text: string): string {
   if (words.length > 4 && words.slice(0, 4).join(' ').replace(MARKS, '') === BISM_BARE) return words.slice(4).join(' ');
   return text;
 }
+type Verse = { a: number; ar: string; bn: string; pr: string };
+type Spot = { n: number; a: number };   // where the reader stopped
+type Raw = [string, string, string?][];   // one surah file: [arabic, bangla, pronunciation] per ayah
 const typeBn = (t: string) => (t === 'Meccan' ? 'মাক্কী' : 'মাদানী');
 
 export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void }) {
   const [q, setQ] = useState('');
-  const [last, setLast] = useState<any>(null);
+  const [last, setLast] = useState<Spot | null>(null);
   useEffect(() => {
-    AsyncStorage.getItem(LAST_KEY).then((v) => { try { const o = JSON.parse(v || 'null'); if (o && o.n) setLast(o); } catch (e) {} }).catch(() => {});
+    AsyncStorage.getItem(LAST_KEY).then((v) => { try { const o = JSON.parse(v || 'null'); if (o && Number(o.n)) setLast({ n: Number(o.n), a: Number(o.a) || 1 }); } catch (e) {} }).catch(() => {});
   }, []);
   const list = useMemo(() => {
     const t = normalizeDigits(q.trim());
@@ -89,13 +92,13 @@ export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void 
 
 export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah?: number; onBack: () => void }) {
   const meta = META[n - 1];
-  const [verses, setVerses] = useState<any>(null);
+  const [verses, setVerses] = useState<Verse[] | null>(null);
   const [err, setErr] = useState(false);
   const [scaleIx, setScaleIx] = useState(1);
   const [showTr, setShowTr] = useState(true);
   const [showPr, setShowPr] = useState(true);
-  const listRef = useRef<any>(null);
-  const saveTimer = useRef<any>(null);
+  const listRef = useRef<FlatList<Verse> | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
@@ -103,8 +106,8 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
     // Load on the next tick so the screen appears immediately even for long surahs.
     const t = setTimeout(() => {
       try {
-        const raw = (SURAH as Record<number, () => any>)[n]();
-        const data = raw.map(([ar, bn, pr]: string[], i: number) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
+        const raw = (SURAH as Record<number, () => Raw>)[n]();
+        const data: Verse[] = raw.map(([ar, bn, pr], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
         if (alive) setVerses(data);
       } catch (e) { if (alive) setErr(true); }
     }, 30);
@@ -125,7 +128,7 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
     return undefined;
   }, [verses, startAyah]);
 
-  const onViewable = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<Verse>[] }) => {
     const first = viewableItems && viewableItems[0];
     if (!first || !first.item) return;
     clearTimeout(saveTimer.current);

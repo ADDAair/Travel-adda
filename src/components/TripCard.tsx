@@ -7,7 +7,8 @@ import { toBn } from '../lib/phone';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import { myContracts, cachedContractLeader } from '../lib/market';
 import { supabase } from '../lib/supabase';
-import { contractMoney } from '../lib/payments';
+import { contractMoney, type ContractMoney } from '../lib/payments';
+import type { Res } from '../lib/types';
 import type { Nav } from '../screens/navTypes';
 
 const TRIP_KEY = 'ta.trip.v1';
@@ -16,10 +17,10 @@ const docsKey = (id: string) => `ta.docsCache.v1.${id}`;
 
 // Haji's trip at a glance: days to departure, active contract, documents. Works offline from what the phone kept.
 export default function TripCard({ navigation }: { navigation: Nav }) {
-  const [c, setC] = useState<any>(null);            // active contract (cached)
-  const [own, setOwn] = useState<any>(null);        // date typed by the haji when there is no contract
-  const [docs, setDocs] = useState<any>(null);      // { count, passport }
-  const [money, setMoney] = useState<any>(null);    // { paid_in, pending_in, still_to_pay } of the active contract
+  const [c, setC] = useState<Res<typeof cachedContractLeader>>(null);            // active contract (cached)
+  const [own, setOwn] = useState<{ date: string } | null>(null);        // date typed by the haji when there is no contract
+  const [docs, setDocs] = useState<{ count: number; hasPassport: boolean; hasVisa: boolean; passLeft: number | null } | null>(null);      // { count, passport }
+  const [money, setMoney] = useState<ContractMoney | null>(null);    // { paid_in, pending_in, still_to_pay } of the active contract
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState('');
   const [err, setErr] = useState('');

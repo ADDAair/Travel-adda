@@ -7,16 +7,19 @@ import NoticeBar from '../components/NoticeBar';
 import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
-import { loadSavedLocation } from '../lib/location';
+import { loadSavedLocation, type Place } from '../lib/location';
 import { finishStartup } from '../lib/startup';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
-import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE } from '../lib/me';
+import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE, type Me } from '../lib/me';
 import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
 import { myKhademGroups, myKhademInvites } from '../lib/help';
 import type { Nav } from './navTypes';
+import type { Res } from '../lib/types';
+
+type Hello = { full_name?: string | null; haji_code?: string | null };   // name and ID shown at the top
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -44,15 +47,15 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
   const { me, refreshMe } = useMe();
   const leaderAcc = isLeaderAccount(me);
-  const [refMsg, setRefMsg] = useState<any>(null);
+  const [refMsg, setRefMsg] = useState<Res<typeof processPendingReferral>>(null);
   // A referral code typed at sign-up is attached once the account exists.
   useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); processPendingTerms(); }, [me]);
-  const [p, setP] = useState<any>(null);
+  const [p, setP] = useState<Hello | null>(null);
   const [state, setState] = useState('load');
   // An e-mail typed at sign-up waits here until it is verified with the code (then it can be used to log in).
-  const [pendingEmail, setPendingEmail] = useState<any>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   // Khadem of some group? Then a card leads to the khadem page (questions waiting are counted).
-  const [khadem, setKhadem] = useState<any>(null);
+  const [khadem, setKhadem] = useState<{ n: number; waiting: number; invites: number } | null>(null);
   useEffect(() => {
     const check = () => Promise.all([myKhademGroups(), myKhademInvites().catch(() => [])])
       .then(([g, iv]) => setKhadem(g.length || iv.length ? { n: g.length, waiting: g.reduce((s, x) => s + (x.waiting || 0), 0), invites: iv.length } : null)).catch(() => setKhadem(null));
@@ -66,7 +69,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   // The guides work offline (e.g. inside the Haram without data), so Home must never be blocked by a failed fetch.
   // Name and ID come from the profile the app already loaded (no second request); the phone's copy is shown meanwhile.
   const load = useCallback(async () => {
-    let cached = null;
+    let cached: Hello | null = null;
     try { cached = JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null'); } catch (e) { cached = null; }
     if (cached) { setP(cached); setState('ok'); }
   }, []);
@@ -79,7 +82,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const retry = useCallback(async () => { setState((x) => (x === 'err' && !p ? 'load' : x)); const m = await refreshMe(); if (!m) setState('err'); }, [refreshMe, p]);
 
   // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
-  const [ploc, setPloc] = useState<any>(null);
+  const [ploc, setPloc] = useState<Place | null>(null);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const refresh = () => { setNow(Date.now()); loadSavedLocation().then(setPloc); };
@@ -189,8 +192,8 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
 }
 
 // Leader accounts: the panel when approved, otherwise where the application stands.
-function LeaderHomeCard({ me, navigation }: { me: any; navigation: Nav }) {
-  const approved = me.role === 'leader';
+function LeaderHomeCard({ me, navigation }: { me: Me | null; navigation: Nav }) {
+  const approved = me?.role === 'leader';
   return (
     <Pressable onPress={() => navigation.navigate(approved ? 'Leader' : 'LeaderApply')} style={({ pressed }) => [st.ready, { borderWidth: 2, borderColor: C.gold }, pressed && { opacity: 0.9 }]}
       accessibilityRole="button" accessibilityLabel={approved ? 'লিডার প্যানেল খুলুন' : 'লিডার আবেদনের অবস্থা দেখুন'}>

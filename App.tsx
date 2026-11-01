@@ -5,7 +5,8 @@ import { NavigationContainer, createNavigationContainerRef } from '@react-naviga
 import * as Notifications from 'expo-notifications';
 import { pushSupported, syncPush, isPushTap } from './src/lib/push';
 import { refreshUnread } from './src/lib/notifications';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { Session } from '@supabase/supabase-js';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from './src/lib/supabase';
 import { Button } from './src/components/ui';
@@ -50,7 +51,7 @@ import HelpInboxScreen from './src/screens/HelpInboxScreen';
 import GroupStaffScreen from './src/screens/GroupStaffScreen';
 import KhademHomeScreen from './src/screens/KhademHomeScreen';
 import TermsScreen from './src/screens/TermsScreen';
-import { MeCtx, loadMe } from './src/lib/me';
+import { MeCtx, loadMe, type Me } from './src/lib/me';
 import { useKeyboardHeight, keyboardPad } from './src/lib/keyboard';
 import { photoGateState } from './src/lib/avatar';
 import { markStart, mark } from './src/lib/startup';
@@ -119,14 +120,14 @@ function KeyboardRoom({ children }: { children: React.ReactNode }) {
 }
 const KbCtx = React.createContext(false);
 
-function TabBar({ state, navigation }: { state: any; navigation: any }) {   // bottom-tabs props
+function TabBar({ state, navigation }: BottomTabBarProps) {
   const ins = useSafeAreaInsets();
   const { handsOnPending, completeHandsOn } = useTutorial();
   const kbOpen = React.useContext(KbCtx);
   if (kbOpen) return null;                   // no tab bar while typing: more room for the form
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
-      {state.routes.map((r: { key: string; name: string }, i: number) => {
+      {state.routes.map((r, i) => {
         if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
         const label = (T.tabs as Record<string, string>)[r.name];
@@ -215,11 +216,11 @@ function Main() {
 const navRef = createNavigationContainerRef();
 
 export default function App() {
-  const [session, setSession] = useState<any>(undefined);
-  const [onboarded, setOnboarded] = useState<any>(undefined);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [onboarded, setOnboarded] = useState<boolean | undefined>(undefined);
   const [handsOnPending, setHandsOnPending] = useState(false);
-  const [photoGate, setPhotoGate] = useState<any>(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
-  const [me, setMe] = useState<any>(null);                      // profile: account type, role, status (offline copy if no internet)
+  const [photoGate, setPhotoGate] = useState<'missing' | 'ok' | 'skipped' | undefined>(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
+  const [me, setMe] = useState<Me | null>(null);                      // profile: account type, role, status (offline copy if no internet)
   const userId = session ? session.user.id : null;
 
   useEffect(() => {
@@ -241,7 +242,7 @@ export default function App() {
   }, [session]);
 
   // After login: video links set by the admin, and the forced-update check (supabase/022).
-  const [gate, setGate] = useState<any>(null);
+  const [gate, setGate] = useState<{ key: string; value: string | null }[] | null>(null);
   const [skipUpdate, setSkipUpdate] = useState(false);
   useEffect(() => {
     if (!session) { setGate(null); return; }

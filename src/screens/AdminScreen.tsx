@@ -26,7 +26,10 @@ import { idleExpired } from '../lib/idle';
 import { filterOffers } from '../lib/offerRoute';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
+import type { AnyPackage, Item, Res } from '../lib/types';
+
+type Evidence = { path: string; kind: string };   // a complaint's proof file (stored as JSON)
 
 type Coded = { code?: string; message?: string } | null;
 type Cb = { onDone: (t: string) => void; onFail: (t: string) => void };
@@ -220,7 +223,7 @@ function CallsTab(): JSX.Element {
   );
 }
 
-function CallCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
+function CallCard({ r, onDone, onFail }: { r: Item<typeof adminInterests> } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const mark = () => confirm('এই হাজীর সাথে কথা হয়েছে?', 'অনুরোধটি "কথা হয়েছে" তালিকায় চলে যাবে।', 'হ্যাঁ, কথা হয়েছে', async () => {
@@ -258,9 +261,9 @@ function OffersTab(): JSX.Element {
     catch (e) { setMsg({ kind: 'bad', text: (e as Coded)?.code === 'reason' ? 'ফেরত পাঠানোর কারণ লিখুন, যেন লিডার বুঝে ঠিক করতে পারেন।' : errText(e) }); }
     finally { setBusy(false); }
   };
-  const approve = (o: Row) => confirm('প্যাকেজটি অনুমোদন দেবেন?', 'অনুমোদনের পর হাজীরা দেখবেন, আর লিডার দাম বা তথ্য বদলাতে পারবেন না।', 'হ্যাঁ, অনুমোদন দিন',
+  const approve = (o: AnyPackage) => confirm('প্যাকেজটি অনুমোদন দেবেন?', 'অনুমোদনের পর হাজীরা দেখবেন, আর লিডার দাম বা তথ্য বদলাতে পারবেন না।', 'হ্যাঁ, অনুমোদন দিন',
     () => act(() => reviewOffer(o.id, 'approve'), 'অনুমোদন দেওয়া হয়েছে। লিডার নোটিফিকেশন পাবেন।'));
-  const hide = (o: Row) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
+  const hide = (o: AnyPackage) => confirm(o.hidden_by_admin ? 'প্যাকেজটি আবার দেখাবেন?' : 'প্যাকেজটি সবার কাছ থেকে লুকাবেন?', o.hidden_by_admin ? '' : 'ভুল বা সন্দেহজনক তথ্য থাকলে লুকান। লিডার নিজে আর দেখাতে পারবেন না।',
     o.hidden_by_admin ? 'হ্যাঁ, দেখান' : 'হ্যাঁ, লুকান', () => act(() => hideOffer(o.id, !o.hidden_by_admin), o.hidden_by_admin ? 'আবার দেখানো হচ্ছে।' : 'লুকানো হয়েছে।'));
   const [find, setFind] = useState('');
   const all = data || [];
@@ -353,7 +356,7 @@ function HelpTab(): JSX.Element {
   );
 }
 
-function AppCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
+function AppCard({ r, onDone, onFail }: { r: Item<typeof adminApplications> } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const decide = (approve: boolean) => confirm(approve ? `${r.full_name}-কে লিডার হিসেবে অনুমোদন দেবেন?` : 'আবেদনটি বাতিল করবেন?',
@@ -460,11 +463,11 @@ function ComplaintsTab(): JSX.Element {
     </>
   );
 }
-function ComplaintCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
+function ComplaintCard({ r, onDone, onFail }: { r: Item<typeof listComplaints> } & Cb): JSX.Element {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const tel = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
-  const open = async (f: Row) => { try { await Linking.openURL(await evidenceUrl(f.path)); } catch (e) { onFail('ফাইলটি খোলা যায়নি।'); } };
+  const open = async (f: Evidence) => { try { await Linking.openURL(await evidenceUrl(f.path)); } catch (e) { onFail('ফাইলটি খোলা যায়নি।'); } };
   const decide = (v: boolean) => confirm(v ? 'অভিযোগটি যাচাই করা হিসেবে প্রকাশ করবেন?' : 'অভিযোগটি বাতিল করবেন?', v ? 'লিডারের প্রোফাইলে সবাই দেখবেন।' : 'হাজী আপনার নোট দেখবেন।', v ? 'হ্যাঁ, প্রকাশ করুন' : 'হ্যাঁ, বাতিল', async () => {
     setBusy(true);
     try { const x = await decideComplaint(r.id, v, note.trim()); onDone(x === 'ok' ? (v ? 'অভিযোগ যাচাই করা হিসেবে প্রকাশ হয়েছে।' : 'অভিযোগ বাতিল হয়েছে।') : 'আগেই সিদ্ধান্ত নেওয়া হয়েছে।'); }
@@ -477,7 +480,7 @@ function ComplaintCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
       <Text style={st.p} selectable>{r.body}</Text>
       <View style={st.cRow}><Text style={st.lbl}>হাজী</Text><Text style={st.p}>{r.haji_name} ({r.haji_code}){r.haji_phone ? ` · ${toBn(r.haji_phone)}` : ''}</Text></View>
       <View style={st.cRow}><Text style={st.lbl}>লিডার</Text><Text style={st.p}>{r.leader_name} ({r.leader_code}) · {toBn(r.leader_phone)}</Text></View>
-      {(r.files || []).map((f: Row, i: number) => <Button key={f.path} title={`প্রমাণ ${toBn(i + 1)} দেখুন (${f.kind === 'image' ? 'ছবি' : f.kind === 'audio' ? 'অডিও' : 'ভিডিও'})`} icon="📎" kind="secondary" onPress={() => open(f)} style={{ marginTop: S.xs }} />)}
+      {((r.files || []) as Evidence[]).map((f, i) => <Button key={f.path} title={`প্রমাণ ${toBn(i + 1)} দেখুন (${f.kind === 'image' ? 'ছবি' : f.kind === 'audio' ? 'অডিও' : 'ভিডিও'})`} icon="📎" kind="secondary" onPress={() => open(f)} style={{ marginTop: S.xs }} />)}
       {pending ? (
         <>
           {r.haji_phone ? <Button title="হাজীকে ফোন করুন" icon="📞" kind="secondary" onPress={() => tel(r.haji_phone)} style={{ marginTop: S.sm }} /> : null}
@@ -494,7 +497,7 @@ function ComplaintCard({ r, onDone, onFail }: { r: Row } & Cb): JSX.Element {
 const REASON: Record<string, string> = { fraud: 'প্রতারণা/টাকা', abuse: 'খারাপ ব্যবহার', fake: 'ভুয়া তথ্য', spam: 'বিরক্তিকর', other: 'অন্য' };
 function ReportsTab({ canUsers }: { canUsers: boolean }): JSX.Element {
   const { state, data, load, gate } = useLoad(listReports);
-  const [cancels, setCancels] = useState<Row[]>([]);
+  const [cancels, setCancels] = useState<Res<typeof referralCancels>>([]);
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (canUsers) referralCancels().then(setCancels).catch(() => {}); }, [canUsers, data]);
@@ -531,7 +534,7 @@ function ReportsTab({ canUsers }: { canUsers: boolean }): JSX.Element {
 
 function UsersTab(): JSX.Element {
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof findUsers> | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState<Record<string, string>>({});
@@ -542,7 +545,7 @@ function UsersTab(): JSX.Element {
     try { setRows(await findUsers(q.trim())); } catch (e) { setMsg({ kind: notReady(e) ? 'info' : 'bad', text: notReady(e) ? 'শীঘ্রই চালু হবে।' : errText(e) }); }
     finally { setBusy(false); }
   };
-  const change = (u: Row, status: 'suspended' | 'active') => {
+  const change = (u: Item<typeof findUsers>, status: 'suspended' | 'active') => {
     const why = (reason[u.id] || '').trim();
     if (why.length < 5) { setMsg({ kind: 'bad', text: 'কারণ লিখুন (অন্তত ৫ অক্ষর)।' }); return; }
     confirm(status === 'suspended' ? `${u.full_name}-এর অ্যাকাউন্ট বন্ধ করবেন?` : `${u.full_name}-এর অ্যাকাউন্ট আবার চালু করবেন?`,

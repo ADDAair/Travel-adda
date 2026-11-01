@@ -5,7 +5,12 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, notReady, telBd, groupAnnouncements } from '../lib/groups';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
+import type { Announcement, Profile } from '../lib/groups';
+import type { Item, TableRow } from '../lib/types';
+
+type MyGroup = Item<typeof myGroups>;
+type Contract = TableRow<'contracts'>;
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 export const fmtDay = (iso: string | number | Date | null | undefined): string => { if (!iso) return ''; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
@@ -30,14 +35,14 @@ const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
 
 // Haji side: my group(s), the leader, invitations, joining with a code, and the package terms to agree to.
 export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.Element {
-  const [me, setMe] = useState<Row | null>(null);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [me, setMe] = useState<Profile | null>(null);
+  const [rows, setRows] = useState<MyGroup[] | null>(null);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const [open, setOpen] = useState<Row | null>(null);           // group shown with its terms
-  const [ann, setAnn] = useState<{ rows: Row[]; offline: boolean } | null>(null);             // { rows, offline } leader announcements
+  const [open, setOpen] = useState<MyGroup | null>(null);           // group shown with its terms
+  const [ann, setAnn] = useState<{ rows: Announcement[]; offline: boolean } | null>(null);             // { rows, offline } leader announcements
 
   const load = useCallback(async () => {
     try {
@@ -137,7 +142,7 @@ export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.El
   );
 }
 
-function Announcements({ rows, offline }: { rows: Row[] | null; offline?: boolean | null }): JSX.Element | null {
+function Announcements({ rows, offline }: { rows: Announcement[] | null; offline?: boolean | null }): JSX.Element | null {
   const [all, setAll] = useState(false);
   if (!rows || rows.length === 0) return null;
   const list = all ? rows : rows.slice(0, 3);
@@ -160,8 +165,8 @@ function Announcements({ rows, offline }: { rows: Row[] | null; offline?: boolea
   );
 }
 
-function GroupTerms({ group, onBack }: { group: Row; onBack: () => void }): JSX.Element {
-  const [rows, setRows] = useState<Row[] | null>(null);
+function GroupTerms({ group, onBack }: { group: MyGroup; onBack: () => void }): JSX.Element {
+  const [rows, setRows] = useState<Contract[] | null>(null);
   const [acc, setAcc] = useState<Record<string, string>>({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -171,7 +176,7 @@ function GroupTerms({ group, onBack }: { group: Row; onBack: () => void }): JSX.
     catch (e) { setErr(errText(e)); setRows((x) => x || []); }
   }, [group]);
   useEffect(() => { load(); }, [load]);
-  const agree = (c: Row) => confirm('এই শর্তে সম্মতি দেবেন?', 'সম্মতি দেওয়ার পর আর ফেরানো যাবে না। আগে পুরোটা পড়ে নিন।', 'হ্যাঁ, আমি সম্মত', async () => {
+  const agree = (c: Contract) => confirm('এই শর্তে সম্মতি দেবেন?', 'সম্মতি দেওয়ার পর আর ফেরানো যাবে না। আগে পুরোটা পড়ে নিন।', 'হ্যাঁ, আমি সম্মত', async () => {
     setBusy(true); setErr('');
     try { await acceptContract(c.id); await load(); } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   });
@@ -189,7 +194,7 @@ function GroupTerms({ group, onBack }: { group: Row; onBack: () => void }): JSX.
   );
 }
 
-export function ContractCard({ c, acceptedAt, onAgree, busy, footer }: { c: Row; acceptedAt?: string | null; onAgree?: () => void; busy?: boolean; footer?: ReactNode }): JSX.Element {
+export function ContractCard({ c, acceptedAt, onAgree, busy, footer }: { c: Contract; acceptedAt?: string | null; onAgree?: () => void; busy?: boolean; footer?: ReactNode }): JSX.Element {
   const Line = ({ l, v }: { l: string; v?: string | null }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p}>{v}</Text></View> : null);
   return (
     <View style={st.card}>

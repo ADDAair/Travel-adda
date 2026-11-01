@@ -12,7 +12,11 @@ import { ledger, leaderRates } from '../lib/payments';
 import { auditSearch, auditActors, listAudit, adminGroups, segmentSize, notifySegment, monthOk } from '../lib/admin';
 import { supabase } from '../lib/supabase';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
-import type { Msg, Row } from './navTypes';
+import type { Msg } from './navTypes';
+import type { Item, Loose, Res, RpcRow } from '../lib/types';
+
+type Rate = Item<typeof leaderRates>;
+type AuditLine = Loose<Item<typeof listAudit> & Item<typeof auditSearch>>;   // old and new record lists
 
 type Coded = { code?: string } | null;
 
@@ -79,8 +83,8 @@ export function MoneyAlertsTab(): JSX.Element {
 
 // ---------- 2) service costs for own leaders ----------
 export function ServiceCostsTab(): JSX.Element {
-  const { data: leaders, err } = useLoad<Row>(async () => (await leaderRates()).filter((l) => /travel\s*adda/i.test(String(l.agency_name || ''))));
-  const [open, setOpen] = useState<Row | null>(null);
+  const { data: leaders, err } = useLoad<Rate>(async () => (await leaderRates()).filter((l) => /travel\s*adda/i.test(String(l.agency_name || ''))));
+  const [open, setOpen] = useState<Rate | null>(null);
   if (open) return <LeaderCosts leader={open} onBack={() => setOpen(null)} />;
   return (
     <>
@@ -99,7 +103,7 @@ export function ServiceCostsTab(): JSX.Element {
   );
 }
 
-function LeaderCosts({ leader, onBack }: { leader: Row; onBack: () => void }): JSX.Element {
+function LeaderCosts({ leader, onBack }: { leader: Rate; onBack: () => void }): JSX.Element {
   const id: string = leader.leader_id;
   const [bal, setBal] = useState<LeaderBalance | null>(null);
   const [rows, setRows] = useState<ServiceCost[] | null>(null);
@@ -205,7 +209,7 @@ function nextMonths(n = 12): { id: string; label: string }[] {
 export function SegmentNotifyBox(): JSX.Element {
   const [kind, setKind] = useState('group');
   const [value, setValue] = useState('');
-  const [groups, setGroups] = useState<Row[] | null>(null);
+  const [groups, setGroups] = useState<Res<typeof adminGroups> | null>(null);
   const [size, setSize] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -253,10 +257,10 @@ export function SegmentNotifyBox(): JSX.Element {
 // ---------- 5) SOS record ----------
 export function SosTab(): JSX.Element {
   const [days, setDays] = useState(7);
-  const { data, err } = useLoad<Row>(async () => {
+  const { data, err } = useLoad<RpcRow<'admin_sos_list'>>(async () => {
     const r = await supabase.rpc('admin_sos_list', { p_days: days });
     if (r.error) throw r.error;
-    return (r.data || []) as Row[];
+    return r.data || [];
   }, [days]);
   return (
     <>
@@ -282,12 +286,12 @@ export function SosTab(): JSX.Element {
 
 // ---------- 3) work record by staff member ----------
 export function AuditSearchTab({ actionText }: { actionText: (a: string) => string }): JSX.Element {
-  const [actors, setActors] = useState<Row[] | null>(null);
+  const [actors, setActors] = useState<Res<typeof auditActors> | null>(null);
   const [who, setWho] = useState('');
   const [days, setDays] = useState(30);
   const [old, setOld] = useState(false);                // step 026 not run: the old list
   useEffect(() => { auditActors().then(setActors).catch((e) => { setActors([]); if (notReady(e)) setOld(true); }); }, []);
-  const { data, err } = useLoad<Row>(() => (old ? listAudit() : auditSearch(who || null, null, days)), [who, days, old]);
+  const { data, err } = useLoad<AuditLine>(async () => (old ? await listAudit() : await auditSearch(who || null, null, days)) as AuditLine[], [who, days, old]);
   return (
     <>
       <Text style={st.small}>অ্যাডমিন ও স্টাফ কে কবে কী করেছেন, তার রেকর্ড। এটা কেউ মুছতে বা বদলাতে পারেন না।</Text>

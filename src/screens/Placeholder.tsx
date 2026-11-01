@@ -21,10 +21,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
-import type { Nav } from './navTypes';
+import type { Msg, Nav, Route } from './navTypes';
+import type { TableRow } from '../lib/types';
+import { errInfo } from '../lib/errors';
+
+// The account card's profile (older database steps give fewer columns, so the newer ones may be missing).
+type MyProfile = Pick<TableRow<'profiles'>, 'full_name' | 'haji_code' | 'phone'> & Partial<Pick<TableRow<'profiles'>, 'avatar_path' | 'phone_verified' | 'email' | 'email_verified'>>;
 
 // Honest placeholder for features that are not built yet.
-export function Soon({ title, icon, what, route, navigation }: { title: string; icon: string; what: string; route?: any; navigation: Nav }) {
+export function Soon({ title, icon, what, route, navigation }: { title: string; icon: string; what: string; route?: Route; navigation: Nav }) {
   const justTried = !!route?.params?.tutorialDone;
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
@@ -41,15 +46,15 @@ export function Soon({ title, icon, what, route, navigation }: { title: string; 
 export function Account({ navigation }: { navigation: Nav }) {
   const { replay } = useTutorial();
   const { me } = useMe();
-  const [p, setP] = useState<any>(null);
-  const [photoUrl, setPhotoUrl] = useState<any>(null);
+  const [p, setP] = useState<MyProfile | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [imgFail, setImgFail] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
   const [delPw, setDelPw] = useState('');
   const [lockOn, setLockOn] = useState(false);
-  const [lockMsg, setLockMsg] = useState<any>(null);
+  const [lockMsg, setLockMsg] = useState<Msg>(null);
   useEffect(() => { lockWanted().then(setLockOn); }, []);
   const toggleLock = async () => {
     setLockMsg(null);
@@ -69,9 +74,10 @@ export function Account({ navigation }: { navigation: Nav }) {
       if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone,avatar_path').single();   // step 006 not applied yet
       if (r.error) r = await supabase.from('profiles').select('full_name,haji_code,phone').single();   // photo step not applied yet
       if (r.data) {
-        setP(r.data);
+        const d: MyProfile = r.data;
+        setP(d);
         setImgFail(false);
-        setPhotoUrl(await signedAvatarUrl(r.data.avatar_path));
+        setPhotoUrl(await signedAvatarUrl(d.avatar_path));
       }
     } catch (e) { /* the card keeps showing "…" */ }
   }, []);
@@ -89,9 +95,9 @@ export function Account({ navigation }: { navigation: Nav }) {
     try {
       await deleteMyAccount(delPw);   // on success the app returns to the login screen by itself
     } catch (e) {
-      const m = String((e && (e as any).message) || '').toLowerCase();
-      setDelErr(e && (e as any).code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
-        : e && (e as any).code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
+      const { code, message } = errInfo(e); const m = message.toLowerCase();
+      setDelErr(code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
+        : code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
         : m.includes('password needed') ? 'নিরাপত্তার জন্য পাসওয়ার্ড আবার লিখে চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
         : m.includes('network') || m.includes('fetch') ? 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
         : 'এখন অ্যাকাউন্ট মুছে ফেলা যায়নি। একটু পরে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট আগের মতোই আছে।');

@@ -4,7 +4,7 @@ import ScrollView from '../components/KbScroll';
 import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { notReady } from '../lib/groups';
-import { KIND, refOf, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
+import { KIND, refOf, type Helpline, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import { useMe, isLeaderAccount } from '../lib/me';
 import LeaderOffersScreen from './LeaderOffersScreen';
@@ -13,7 +13,10 @@ import { OfferCard, OfferSummary } from '../components/OfferCard';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 import FundCard from '../components/FundCard';
-import type { Msg, Nav, Route, Row } from './navTypes';
+import type { Msg, Nav, Route } from './navTypes';
+import type { Res } from '../lib/types';
+import { errInfo } from '../lib/errors';
+import type { ScrollRef } from '../components/KbScroll';
 import type { PackageRow } from '../lib/types';
 
 export { OfferCard };
@@ -40,7 +43,7 @@ function PendingLeader({ navigation }: { navigation: Nav }) {
 }
 
 // A row of choice pills (one may be chosen, tap again to clear). Words, not colour, say what is chosen.
-function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v: any) => void }) {
+function Pills<T extends string | number>({ label, options, value, onChange }: { label?: string; options: { id: T; label: string }[]; value: T | null; onChange: (v: T | null) => void }) {
   return (
     <View style={{ marginBottom: S.sm }}>
       <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>
@@ -98,20 +101,20 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [kind, setKind] = useState('umrah');
   const [rows, setRows] = useState<PackageRow[] | null>(null);
   const [state, setState] = useState('load');
-  const [help, setHelp] = useState<any>(null);
-  const [mine, setMine] = useState<Record<string, any>>({});
-  const [busy, setBusy] = useState<any>(null);
+  const [help, setHelp] = useState<Helpline | null>(null);
+  const [mine, setMine] = useState<Res<typeof myInterests>>({});
+  const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [q, setQ] = useState(route?.params?.leader || '');
-  const [month, setMonth] = useState<any>(null);
-  const [airport, setAirport] = useState<any>(null);
+  const [month, setMonth] = useState<string | null>(null);
+  const [airport, setAirport] = useState<string | null>(null);
   const [priceText, setPriceText] = useState('');      // typed by the haji, or filled by a quick button
   const typed = parsePrice(priceText);
   const maxPrice = Number.isFinite(typed) ? typed : null;
   const setMaxPrice = (n: number | null) => setPriceText(n ? toBn(n) : '');
   const [showFilters, setShowFilters] = useState(false);
-  const [openId, setOpenId] = useState<any>(null);             // package shown on its own page
-  const scroller = React.useRef<any>(null);
+  const [openId, setOpenId] = useState<string | null>(null);             // package shown on its own page
+  const scroller = React.useRef<ScrollRef | null>(null);
   useEffect(() => { if (route?.params?.leader) { setQ(route.params.leader); setOpenId(null); } }, [route?.params?.leader]);
 
   const load = useCallback(async (k: string) => {
@@ -130,20 +133,20 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     return () => sub.remove();
   }, [openId]);
 
-  const ask = (o: Row) => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?',
+  const ask = (o: PackageRow) => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?',
     'আপনার নাম ও মোবাইল নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে লিডারের সাথে কথা বলার ব্যবস্থা করবে।',
     'হ্যাঁ, পাঠান', async () => {
       if (busy) return;
       setBusy(o.id); setMsg(null);
       try { await requestCallback(o.id); setMsg({ kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। Travel Adda টিম আপনাকে ফোন করবে।' }); await load(kind); }
       catch (e) {
-        const m = String((e as any)?.message || '');
-        if ((e as any)?.code === '23505') setMsg({ kind: 'info', text: 'এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' });
-        else if ((e as any)?.code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।' });
+        const { code, message: m } = errInfo(e);
+        if (code === '23505') setMsg({ kind: 'info', text: 'এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' });
+        else if (code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।' });
         else setMsg({ kind: 'bad', text: errText(e) });
       } finally { setBusy(null); }
     });
-  const cancel = (r: Row) => confirm('অনুরোধটি বাতিল করবেন?', 'টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'হ্যাঁ, বাতিল', async () => {
+  const cancel = (r: Res<typeof myInterests>[string]) => confirm('অনুরোধটি বাতিল করবেন?', 'টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'হ্যাঁ, বাতিল', async () => {
     setBusy(r.offer_id); setMsg(null);
     try { await cancelCallback(r.id); setMsg({ kind: 'ok', text: 'অনুরোধ বাতিল করা হয়েছে।' }); await load(kind); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }

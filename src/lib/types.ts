@@ -1,6 +1,7 @@
 // Named shapes of server rows, taken from the generated database types (src/lib/dbTypes.ts), so pages know exactly
 // which fields a contract, a package or a notification has.
 import type { RpcRow, Tables } from './dbTypes';
+export type { RpcRow };
 
 // Every field optional and possibly empty: for pages that show rows coming from different server functions.
 export type Loose<T> = { [K in keyof T]?: T[K] | null };
