@@ -34,7 +34,7 @@ const LOST_TIPS = [
 
 const call = (n: string) => Linking.openURL(`tel:${String(n).replace(/[^\d+]/g, '')}`).catch(() => {});
 // Emergency numbers: open the dialer FIRST, then quietly tell Travel Adda (never delays the call).
-const callSos = (x: { n: string; label: string }) => { call(x.n); logSos(x); };
+const callSos = (x: { n: string; t?: string }) => { call(x.n); logSos(x); };
 const cleanPhone = (v: string) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
 const phoneOk = (v: unknown) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
@@ -65,7 +65,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
   const startEdit = () => { setDraft({ ...info }); setErr(''); setMsg(''); setEditing(true); };
   const save = async () => {
     if (draft.leaderPhone && !phoneOk(draft.leaderPhone)) { setErr('লিডারের মোবাইল নম্বর ঠিক নেই। দেশের কোডসহ পুরো নম্বর লিখুন।'); return; }
-    const clean = {};
+    const clean: Record<string, string> = {};
     FIELDS.forEach((f) => { const v = String(draft[f.k] || '').trim(); if (v) clean[f.k] = v.slice(0, 120); });
     try {
       await AsyncStorage.setItem(KEY, JSON.stringify(clean));

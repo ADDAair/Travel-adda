@@ -21,7 +21,7 @@ export default function TermsScreen({ navigation }: { navigation: Nav }) {
 
   const load = useCallback(async () => {
     setT(undefined); setMsg(null);
-    getTerms(kind).then(setT).catch(() => setT(null));
+    getTerms(kind as 'haji' | 'leader').then(setT).catch(() => setT(null));
     myTermsStatus().then(setStatus).catch(() => setStatus(null));
   }, [kind]);
   useEffect(() => { load(); }, [load]);

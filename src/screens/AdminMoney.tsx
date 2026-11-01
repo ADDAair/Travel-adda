@@ -7,7 +7,6 @@ import { notReady, telBd } from '../lib/groups';
 import { PAY_STATUS, methodLabel, listPayments, reviewPayment, ledger, leaderRates, setLeaderRate, setCommission, addPayout, receiptUrl, payInfo } from '../lib/payments';
 import { setSetting } from '../lib/offers';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
-import type { Msg, Row } from './navTypes';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
 type Msg = { kind: 'ok' | 'bad'; text: string } | null;

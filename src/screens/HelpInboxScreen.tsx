@@ -28,7 +28,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
   const loadGroups = useCallback(async () => {
     try {
       const led = me && me.role === 'leader' ? (await leaderGroups()).filter((g) => g.active).map((g) => ({ id: g.id, name: g.name, role: 'leader' })) : [];
-      let kh = [];
+      let kh: any[] = [];
       try { kh = (await myKhademGroups()).map((g) => ({ id: g.group_id, name: g.group_name, role: 'khadem', waiting: g.waiting })); } catch (e) { if (!notReady(e)) throw e; }
       const all = [...led, ...kh.filter((k) => !led.some((l) => l.id === k.id))];
       setGroups(all);
@@ -49,7 +49,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
   useEffect(() => { loadInbox(); }, [loadInbox]);
   useEffect(() => { loadThread(); }, [loadThread]);
   useEffect(() => {
-    let t = null;
+    let t: ReturnType<typeof setInterval> | null = null;
     const start = () => { if (!t) t = setInterval(() => { loadInbox(true); loadThread(true); }, 15000); };
     const stop = () => { if (t) { clearInterval(t); t = null; } };
     start();

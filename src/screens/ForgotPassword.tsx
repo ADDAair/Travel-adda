@@ -10,7 +10,6 @@ import { loginEmailFor, looksLikeEmail, normalizeEmail, isValidEmail, emailReady
 import { passwordStrength } from '../lib/password';
 import { otp, otpText } from '../lib/otp';
 import { st } from './GroupScreen';
-import type { Msg } from './navTypes';
 
 // "Forgot password": a code by SMS (to the number) or by e-mail (to a verified e-mail), then a new password.
 type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;

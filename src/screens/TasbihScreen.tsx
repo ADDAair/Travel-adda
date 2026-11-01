@@ -72,7 +72,7 @@ export default function TasbihScreen({ navigation }: { navigation: Nav }) {
       </View>
 
       {preset.steps ? (
-        <Text style={st.seq}>{preset.steps.map((id, i) => `${i < cur.step ? '✅' : i === cur.step ? '▶' : '•'} ${P(id).label} ${toBn(P(id).target)}`).join('   ')}</Text>
+        <Text style={st.seq}>{preset.steps.map((id: string, i: number) => `${i < cur.step ? '✅' : i === cur.step ? '▶' : '•'} ${P(id).label} ${toBn(P(id).target)}`).join('   ')}</Text>
       ) : null}
       {!allDone && phrase.ar ? <Text style={st.ar} accessibilityLanguage="ar">{phrase.ar}</Text> : null}
       {!allDone ? <Text style={st.pron}>{phrase.pron}</Text> : null}

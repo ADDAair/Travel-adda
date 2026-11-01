@@ -11,7 +11,6 @@ import { PAY_METHODS, PAY_STATUS, methodLabel, payInfo, myPayments, contractMone
   type ContractMoney, type MyPayment, type PayInfo, type PayMethod } from '../lib/payments';
 import { DocCamera } from '../screens/DocsScreen';
 import { st, confirm, errText, fmtDay, fmtTaka } from '../screens/GroupScreen';
-import type { Msg } from '../screens/navTypes';
 
 // Haji: pay Travel Adda (never the leader directly), record the payment with a receipt, and follow its status.
 type Contract = Record<string, any>;   // a contracts row (needs its id)

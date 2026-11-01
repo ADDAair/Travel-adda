@@ -12,7 +12,6 @@ import { helpApplications, decideHelp, helpTravelled, fundDonations, reviewDonat
 import { methodLabel } from '../lib/payments';
 import { setSetting } from '../lib/offers';
 import { supabase } from '../lib/supabase';
-import type { Msg, Row } from './navTypes';
 
 type Row = Record<string, any>;
 type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;

@@ -46,7 +46,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
   useEffect(() => { loadChat(); }, [loadChat]);
   // fetch new answers every 15 s, only while this page is on screen
   useEffect(() => {
-    let t = null;
+    let t: ReturnType<typeof setInterval> | null = null;
     const start = () => { if (!t) t = setInterval(() => loadChat(true), 15000); };
     const stop = () => { if (t) { clearInterval(t); t = null; } };
     start();

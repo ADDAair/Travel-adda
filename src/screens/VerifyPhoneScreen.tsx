@@ -10,7 +10,6 @@ import { otp, otpText } from '../lib/otp';
 import { PENDING_EMAIL, normalizeEmail, isValidEmail, emailTypoFix } from '../lib/login';
 import { useMe } from '../lib/me';
 import { st } from './GroupScreen';
-import type { Msg } from './navTypes';
 
 // Verify the account with a code: by SMS to the mobile number OR by e-mail. Either one makes the account "verified".
 // A verified e-mail can also be used to log in and to reset the password.

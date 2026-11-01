@@ -107,7 +107,7 @@ function Phrases({ items }: { items: any[] }) {
       setPlaying(i);
       Speech.speak(text, {
         language: 'ar-SA', rate: 0.8,
-        onDone: () => alive.current && setPlaying(null), onStopped: () => alive.current && setPlaying(null),
+        onDone: () => { if (alive.current) setPlaying(null); }, onStopped: () => { if (alive.current) setPlaying(null); },
         onError: () => { if (alive.current) { setPlaying(null); setMsg('শোনানো যায়নি। লেখাটা দেখান।'); } },
       });
     } catch (e) { setPlaying(null); setMsg('শোনানো যায়নি। লেখাটা দেখান।'); }

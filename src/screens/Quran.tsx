@@ -27,7 +27,7 @@ export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void 
   const [q, setQ] = useState('');
   const [last, setLast] = useState<any>(null);
   useEffect(() => {
-    AsyncStorage.getItem(LAST_KEY).then((v) => { try { const o = JSON.parse(v); if (o && o.n) setLast(o); } catch (e) {} }).catch(() => {});
+    AsyncStorage.getItem(LAST_KEY).then((v) => { try { const o = JSON.parse(v || 'null'); if (o && o.n) setLast(o); } catch (e) {} }).catch(() => {});
   }, []);
   const list = useMemo(() => {
     const t = normalizeDigits(q.trim());
@@ -103,7 +103,7 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
     // Load on the next tick so the screen appears immediately even for long surahs.
     const t = setTimeout(() => {
       try {
-        const raw = SURAH[n]();
+        const raw = (SURAH as Record<number, () => any>)[n]();
         const data = raw.map(([ar, bn, pr]: string[], i: number) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
         if (alive) setVerses(data);
       } catch (e) { if (alive) setErr(true); }

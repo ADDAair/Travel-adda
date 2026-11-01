@@ -12,7 +12,6 @@ import { fundSummary, donate, myDonations, myConfirmedTotal, applyHelp, myHelpAp
 import { PAY_METHODS, PAY_STATUS } from '../lib/payments';
 import DistrictPicker from '../components/DistrictPicker';
 import { useMe } from '../lib/me';
-import type { Msg, Nav, Row } from './navTypes';
 
 type Row = Record<string, any>;
 type Nav = { navigate: (r: string, p?: object) => void };
