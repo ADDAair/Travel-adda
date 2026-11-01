@@ -65,6 +65,7 @@ import { DUAS } from './src/content/duas';
 import ChatConsentScreen from './src/screens/ChatConsentScreen';
 import FundScreen from './src/screens/FundScreen';
 import { updateGate, APP_VERSION } from './src/lib/appVersion';
+import type { Nav, Route } from './src/screens/navTypes';
 
 const Tab = createBottomTabNavigator();
 const ICON: Record<string, string> = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
@@ -125,7 +126,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {   // b
   if (kbOpen) return null;                   // no tab bar while typing: more room for the form
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
-      {state.routes.map((r, i) => {
+      {state.routes.map((r: { key: string; name: string }, i: number) => {
         if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
         const label = (T.tabs as Record<string, string>)[r.name];
@@ -163,7 +164,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {   // b
   );
 }
 
-const soon = (title: string, icon: string, what: string) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
+const soon = (title: string, icon: string, what: string) => (props: { navigation: Nav; route?: Route }) => <Soon {...props} title={title} icon={icon} what={what} />;
 
 function Main() {
   return (

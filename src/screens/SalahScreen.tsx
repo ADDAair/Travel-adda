@@ -5,6 +5,7 @@ import { Button, Notice } from '../components/ui';
 import { DuaInline } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { Block } from './GuidesScreen';
+import type { RakatRow } from '../content/types';
 import { SALAH, SALAH_GROUPS, KIND, DAILY_FARD } from '../content/salah';
 import { CONTENT_REVIEWED } from '../content/ihram';
 import type { ScrollRef } from '../components/KbScroll';
@@ -12,8 +13,8 @@ import type { Nav, Route } from './navTypes';
 
 // "নামাজের রাকাত ও নিয়ম". Can be opened at one section from other screens: navigate('Salah', { section: 'jumuah', t: Date.now() }).
 export default function SalahScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
-  const [open, setOpen] = useState<any>(null);
-  const [from, setFrom] = useState<any>(null);         // screen to return to when opened from elsewhere
+  const [open, setOpen] = useState<string | null>(null);
+  const [from, setFrom] = useState<string | null>(null);         // screen to return to when opened from elsewhere
   const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
 
@@ -61,7 +62,8 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
             <View key={g.title}>
               <Text style={st.group}>{g.title}</Text>
               {g.ids.map((id) => {
-                const x: any = SALAH.find((s) => s.id === id);
+                const x = SALAH.find((s) => s.id === id);
+                if (!x) return null;
                 return (
                   <Pressable key={id} onPress={() => go(id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
                     accessibilityRole="button" accessibilityLabel={`${x.title}। ${x.what}`} accessibilityHint="বিস্তারিত খুলবে">
@@ -84,12 +86,12 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
 }
 
 // Table of rak'ahs: every row shows the number, the kind in words (never colour alone) and when.
-function Rakat({ rows }: { rows: any[] }) {
+function Rakat({ rows }: { rows: RakatRow[] }) {
   const total = rows.reduce((a, r) => a + r.n, 0);
   return (
-    <View style={st.table} accessible accessibilityLabel={rows.map((r) => `${r.n} রাকাত ${(KIND as Record<string, any>)[r.kind].label}${r.when ? `, ${r.when}` : ''}`).join('। ')}>
+    <View style={st.table} accessible accessibilityLabel={rows.map((r) => `${r.n} রাকাত ${KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`).join('। ')}>
       {rows.map((r, i) => {
-        const k = (KIND as Record<string, any>)[r.kind];
+        const k = KIND[r.kind];
         return (
           <View key={i} style={[st.tRow, i > 0 && st.tLine]}>
             <View style={[st.badge, { borderColor: (C as Record<string, string>)[k.color] }]}><Text style={[st.badgeN, { color: (C as Record<string, string>)[k.color] }]}>{toBn(r.n)}</Text></View>

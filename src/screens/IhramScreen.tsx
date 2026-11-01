@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
+import type { DuaPart } from '../content/types';
 import { findDua } from '../content/duas';
 import {
   CONTENT_REVIEWED, SECTIONS, MIKAT_ROUTES, MIKAT_LIST, MIKAT_SOURCE, CHECKLIST, STEPS, FORBIDDEN, ALLOWED, MISTAKES,
@@ -19,7 +20,7 @@ const ROUTE_KEY = 'ta.ihramRoute.v1';
 
 // Mikat & Ihram guide: a short list of sections; each section is one simple page.
 export default function IhramScreen({ navigation }: { navigation: Nav }) {
-  const [open, setOpen] = useState<any>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
 
   const go = useCallback((id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); }, []);
@@ -130,7 +131,7 @@ function Mikat() {
 }
 
 function Checklist() {
-  const [done, setDone] = useState<any[]>([]);
+  const [done, setDone] = useState<string[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(CHECK_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) {} }).catch(() => {});
   }, []);
@@ -186,8 +187,8 @@ function Steps({ onTalbiyah, onRules }: { onTalbiyah: () => void; onRules: () =>
 }
 
 function Talbiyah() {
-  const niyyah: any = findDua('niyyah');      // both are part of the app's own dua list
-  const talbiyah: any = findDua('talbiyah');
+  const niyyah = findDua('niyyah');      // both are part of the app's own dua list
+  const talbiyah = findDua('talbiyah');
   const [speaking, setSpeaking] = useState(false);
   const [msg, setMsg] = useState('');
   const alive = useRef(true);
@@ -204,7 +205,7 @@ function Talbiyah() {
         return;
       }
       setSpeaking(true);
-      Speech.speak(talbiyah.parts.map((p) => p.bn).join(' '), {
+      Speech.speak((talbiyah?.parts || []).map((p) => p.bn).join(' '), {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
         onDone: () => { if (alive.current) setSpeaking(false); },
         onStopped: () => { if (alive.current) setSpeaking(false); },
@@ -213,7 +214,7 @@ function Talbiyah() {
     } catch (e) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); }
   };
 
-  const Block = ({ label, p }: { label?: string; p: any }) => (
+  const Block = ({ label, p }: { label?: string; p: DuaPart }) => (
     <View style={st.duaCard}>
       {label ? <Text style={st.partL}>{label}</Text> : null}
       <Text style={st.ar} accessibilityLanguage="ar">{p.ar}</Text>

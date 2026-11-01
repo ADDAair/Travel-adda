@@ -5,6 +5,7 @@ import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
+import type { Dua } from '../content/types';
 import { CATEGORIES, DUAS, CONTENT_REVIEWED, findDua } from '../content/duas';
 import { toBn } from '../lib/phone';
 import { QuranList, QuranReader } from './Quran';
@@ -17,9 +18,9 @@ const SIZES = [1, 1.2, 1.4, 1.6];
 export default function DuaScreen({ route, navigation }: { route?: Route; navigation: Nav }) {
   const [cat, setCat] = useState('namaz');
   const [q, setQ] = useState('');
-  const [openId, setOpenId] = useState<any>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [mode, setMode] = useState('dua');          // 'dua' | 'quran'
-  const [surah, setSurah] = useState<any>(null);         // { n, a } when a surah is open
+  const [surah, setSurah] = useState<{ n: number; a: number } | null>(null);         // { n, a } when a surah is open
   const [dismissed, setDismissed] = useState(false);
   const justTried = !!route?.params?.tutorialDone && !dismissed;
   useEffect(() => { setDismissed(false); }, [route?.params?.tutorialDone]);
@@ -27,11 +28,11 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
   // Opened from elsewhere to read a surah (e.g. Surah Kahf from the Jumu'ah guide).
   useEffect(() => {
     const n = route?.params?.openSurah;
-    if (n) { setOpenId(null); setMode('quran'); setSurah({ n, a: 1 }); }
+    if (n) { setOpenId(null); setMode('quran'); setSurah({ n: Number(n), a: 1 }); }
   }, [route?.params?.t]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Favourite duas, kept on this phone.
-  const [favs, setFavs] = useState<any[]>([]);
+  const [favs, setFavs] = useState<string[]>([]);
   useEffect(() => { AsyncStorage.getItem(FAV_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setFavs(a); } catch (e) { /* none */ } }).catch(() => {}); }, []);
   const toggleFav = (id: string) => {
     const next = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id];
@@ -51,7 +52,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
   const list = useMemo(() => {
     const t = q.trim();
     if (t) return DUAS.filter((d) => (d.title + ' ' + d.when).includes(t));
-    if (cat === 'fav') return favs.map(findDua).filter(Boolean);
+    if (cat === 'fav') return favs.map(findDua).filter((d): d is Dua => !!d);
     return DUAS.filter((d) => d.cat === cat);
   }, [cat, q, favs]);
 
@@ -139,7 +140,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
   );
 }
 
-function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; fav: boolean; onFav: () => void }) {
+function DuaDetail({ dua, onBack, fav, onFav }: { dua: Dua | undefined; onBack: () => void; fav: boolean; onFav: () => void }) {
   const [scaleIx, setScaleIx] = useState(1);
   const [speaking, setSpeaking] = useState(false);
   const [ttsMsg, setTtsMsg] = useState('');
@@ -167,7 +168,7 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; 
         setTtsMsg('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।');
         return;
       }
-      const text = dua.parts.map((p) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
+      const text = (dua?.parts || []).map((p) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
       setSpeaking(true);
       Speech.speak(text, {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,

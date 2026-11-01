@@ -149,7 +149,7 @@ function Give({ onDone }: { onDone: () => void }) {
 }
 
 function MyGifts({ reload = 0 }: { reload?: number }) {
-  const [mine, setMine] = useState<Row[] | null>(null);
+  const [mine, setMine] = useState<Awaited<ReturnType<typeof myDonations>> | null>(null);
   useEffect(() => { myDonations().then(setMine).catch(() => setMine([])); }, [reload]);
   if (mine && !mine.length) return null;
   const total = mine ? myConfirmedTotal(mine) : 0;
@@ -222,7 +222,7 @@ function GiveForm({ onDone, onNotAllowed }: { onDone: () => void; onNotAllowed: 
 // ---------- apply ----------
 const EMPTY: HelpForm = { kind: 'umrah', age: '', district: '', profession: '', reason: '', wentBefore: false, refName: '', refPhone: '', showName: false };
 function Apply() {
-  const [mine, setMine] = useState<Row | null | undefined>(undefined);
+  const [mine, setMine] = useState<Awaited<ReturnType<typeof myHelpApplication>> | undefined>(undefined);
   const [f, setF] = useState<HelpForm>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);

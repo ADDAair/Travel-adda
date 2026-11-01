@@ -14,13 +14,13 @@ import type { Msg, Nav, Route } from './navTypes';
 // Haji: a private conversation with the group's leader and khadems. Ready answers are shown first.
 // Other hajis never see it. New answers are fetched every 15 seconds while this page is open.
 export default function HelpChatScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
-  const [groups, setGroups] = useState<any>(undefined);
+  const [groups, setGroups] = useState<Awaited<ReturnType<typeof myGroups>> | undefined>(undefined);
   const [gid, setGid] = useState(route?.params?.groupId || null);
   const [state, setState] = useState('load');        // load | ok | soon | err
-  const [msgs, setMsgs] = useState<any[]>([]);
-  const [faq, setFaq] = useState<any[]>([]);
-  const [khadems, setKhadems] = useState<any[]>([]);
-  const [openQ, setOpenQ] = useState<any>(null);
+  const [msgs, setMsgs] = useState<Awaited<ReturnType<typeof myHelpMessages>>>([]);
+  const [faq, setFaq] = useState<Awaited<ReturnType<typeof faqList>>>([]);
+  const [khadems, setKhadems] = useState<Awaited<ReturnType<typeof groupKhadems>>>([]);
+  const [openQ, setOpenQ] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);

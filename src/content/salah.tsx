@@ -3,7 +3,9 @@
 // Block types are rendered by GuidesScreen's <Block/> plus 'rakat' (table of rak'ahs) rendered in SalahScreen.
 
 // kind: sm = সুন্নতে মুয়াক্কাদা (জরুরি সুন্নত), sg = সুন্নতে গায়রে মুয়াক্কাদা, fard, wajib, nafl
-export const KIND = {
+import type { KindInfo, RakatKind, SalahSection } from './types';
+
+export const KIND: Record<RakatKind, KindInfo> = {
   sm: { label: 'সুন্নত (মুয়াক্কাদা)', hint: 'রাসূল (সা.) নিয়মিত পড়তেন, ছাড়া উচিত নয়', color: 'primary' },
   sg: { label: 'সুন্নত (গায়রে মুয়াক্কাদা)', hint: 'পড়লে সওয়াব, না পড়লে গুনাহ নেই', color: 'muted' },
   fard: { label: 'ফরজ', hint: 'অবশ্যই পড়তে হবে', color: 'bad' },
@@ -11,7 +13,7 @@ export const KIND = {
   nafl: { label: 'নফল', hint: 'ঐচ্ছিক, পড়লে সওয়াব', color: 'ok' },
 };
 
-export const SALAH = [
+export const SALAH: SalahSection[] = [
   {
     id: 'fajr', icon: '🌄', title: 'ফজরের নামাজ', what: '২ সুন্নত + ২ ফরজ',
     blocks: [

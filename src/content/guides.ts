@@ -3,7 +3,9 @@
 // Bundled; works offline. IMPORTANT: religious parts must be reviewed by an alim, health parts by a doctor,
 // before public launch (CONTENT_REVIEWED in ihram.js covers the guides).
 
-export const GUIDES = [
+import type { Guide } from './types';
+
+export const GUIDES: Guide[] = [
   {
     id: 'health', icon: '🩺', title: 'স্বাস্থ্য ও গরম থেকে সুরক্ষা', what: 'হিটস্ট্রোক, পানি, পায়ের যত্ন, ওষুধ, টিকা',
     blocks: [

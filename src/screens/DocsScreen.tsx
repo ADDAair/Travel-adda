@@ -152,7 +152,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
 
       {step === 'source' && !busy ? (
         <>
-          <Text style={st.title} accessibilityRole="header">{typeOf(type).icon} {typeOf(type).label}: কীভাবে যোগ করবেন?</Text>
+          <Text style={st.title} accessibilityRole="header">{typeOf(type || '').icon} {typeOf(type || '').label}: কীভাবে যোগ করবেন?</Text>
           <Button title="ক্যামেরায় ছবি তুলুন" icon="📷" onPress={() => { setMsg(null); setCam(true); }} a11yHint="কাগজটি টেবিলে রেখে ওপর থেকে ছবি তুলুন" />
           <Text style={st.small}>কাগজটি সমান জায়গায় রেখে, ভালো আলোতে ওপর থেকে ছবি তুলুন। পুরো কাগজ যেন ফ্রেমে থাকে।</Text>
           <Button title="ফোন থেকে ছবি বা PDF বেছে নিন" icon="📁" kind="secondary" onPress={pickFile} style={{ marginTop: S.md }} />

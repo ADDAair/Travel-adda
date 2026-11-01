@@ -40,7 +40,7 @@ function PendingLeader({ navigation }: { navigation: Nav }) {
 }
 
 // A row of choice pills (one may be chosen, tap again to clear). Words, not colour, say what is chosen.
-function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v) => void }) {
+function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v: any) => void }) {
   return (
     <View style={{ marginBottom: S.sm }}>
       <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>

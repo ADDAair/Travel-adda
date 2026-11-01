@@ -24,19 +24,19 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
-  const open = async (n: Row) => {
-    setRows((x) => x.map((y) => (y.id === n.id ? { ...y, is_read: true } : y)));
+  const open = async (n: NotificationRow) => {
+    setRows((x) => (x || []).map((y) => (y.id === n.id ? { ...y, is_read: true } : y)));
     markRead(n).catch(() => {});
     if (n.route) navigation.navigate(n.route);
   };
-  const remove = (n: Row) => confirm('নোটিফিকেশনটি মুছে ফেলবেন?', '', 'হ্যাঁ, মুছুন', async () => {
-    try { await hideNotification(n); setRows((x) => x.filter((y) => y.id !== n.id)); }
+  const remove = (n: NotificationRow) => confirm('নোটিফিকেশনটি মুছে ফেলবেন?', '', 'হ্যাঁ, মুছুন', async () => {
+    try { await hideNotification(n); setRows((x) => (x || []).filter((y) => y.id !== n.id)); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
   });
   const readAll = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
-    try { await markAllRead(); setRows((x) => x.map((y) => ({ ...y, is_read: true }))); }
+    try { await markAllRead(); setRows((x) => (x || []).map((y) => ({ ...y, is_read: true }))); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
@@ -69,7 +69,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
   );
 }
 
-function Item({ n: x, onOpen, onRemove }: { n: Row; onOpen: (n: Row) => void; onRemove: (n: Row) => void }) {
+function Item({ n: x, onOpen, onRemove }: { n: Row; onOpen: (n: NotificationRow) => void; onRemove: (n: NotificationRow) => void }) {
   const isNew = !x.is_read;
   return (
     <View style={[n.card, isNew && n.cardNew, x.important && isNew && n.cardImp]}>

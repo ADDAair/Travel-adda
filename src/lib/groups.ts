@@ -34,7 +34,7 @@ export async function myProfile(): Promise<Profile> {
   if (r.error && (r.error.code === '42703' || /phone_verified/.test(r.error.message || ''))) {   // step 006 not run yet
     return check(await supabase.from('profiles').select('full_name,haji_code,phone,role,status').single()) as Profile;
   }
-  return check(r) as Profile;
+  return check(r) as unknown as Profile;
 }
 
 // ---------- Leader application ----------

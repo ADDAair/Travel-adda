@@ -5,7 +5,7 @@ import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
 import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders, getAlarms, setAlarm } from '../lib/reminders';
-import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading } from '../lib/location';
+import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading, type Place } from '../lib/location';
 import { smoothHeading, qiblaTurn, compassWeak } from '../lib/qibla';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
 import { SALAH } from '../content/salah';
@@ -19,7 +19,7 @@ const GPS_ERR: Record<string, string> = {
 };
 
 export default function PrayerScreen({ navigation }: { navigation: Nav }) {
-  const [loc, setLoc] = useState<any>(undefined);       // undefined = loading, null = not chosen yet
+  const [loc, setLoc] = useState<Place | null | undefined>(undefined);       // undefined = loading, null = not chosen yet
   const [picking, setPicking] = useState(false);
   const [mode, setMode] = useState('times');
   const [now, setNow] = useState(Date.now());
@@ -32,7 +32,7 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
     return () => sub.remove();
   }, [picking, loc]);
 
-  const choose = (l) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
+  const choose = (l: Place) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
 
   if (loc === undefined) return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /></View>;
 
@@ -62,15 +62,15 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onChoose: (l) => void; onCancel: () => void }) {
+function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onChoose: (l: Place) => void; onCancel: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const useGps = async () => {
     if (busy) return;
     setBusy(true); setErr('');
-    const r: any = await getGpsLocation();   // { lat, lng } or { error }
+    const r = await getGpsLocation();   // { lat, lng } or { error }
     setBusy(false);
-    if (r.error) { setErr(r.error); return; }
+    if ('error' in r) { setErr(r.error); return; }
     onChoose({ kind: 'gps', lat: r.lat, lng: r.lng, label: nearLabel(r.lat, r.lng), at: Date.now() });
   };
   return (
@@ -104,7 +104,7 @@ function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onCho
   );
 }
 
-function Times({ loc, now, navigation }: { loc: any; now: number; navigation: Nav }) {
+function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: Nav }) {
   let plan;
   try { plan = dayPlan(loc, now); } catch (e) { plan = null; }
   if (!plan) return <Notice kind="bad" title="সময় হিসাব করা যায়নি" text="জায়গা বদলে আবার চেষ্টা করুন।" />;
@@ -195,8 +195,8 @@ const REM_ERR: Record<string, string> = {
   blocked: 'নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।',
   failed: 'রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।',
 };
-function Reminders({ loc }: { loc: any }) {
-  const [on, setOn] = useState<any>(null);
+function Reminders({ loc }: { loc: Place }) {
+  const [on, setOn] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   useEffect(() => { remindersOn().then(setOn); }, []);
@@ -226,9 +226,9 @@ function Reminders({ loc }: { loc: any }) {
 }
 
 // Per prayer: a loud alarm (long tone + vibration, "10 minutes later" button) instead of a short notification sound.
-function Alarms({ loc }: { loc: any }) {
-  const [a, setA] = useState<any>(null);
-  const [busy, setBusy] = useState<any>(null);
+function Alarms({ loc }: { loc: Place }) {
+  const [a, setA] = useState<Record<string, boolean> | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   useEffect(() => { getAlarms().then(setA); }, []);
   if (!a) return null;
   const toggle = async (key: string) => {
@@ -253,10 +253,10 @@ function Alarms({ loc }: { loc: any }) {
   );
 }
 
-function Qibla({ loc }: { loc: any }) {
+function Qibla({ loc }: { loc: Place }) {
   const q = qiblaBearing(loc.lat, loc.lng);
   const km = distanceKm(loc.lat, loc.lng);
-  const [h, setH] = useState<any>(null);          // { heading, accuracy } or null
+  const [h, setH] = useState<{ heading: number; accuracy: number } | null>(null);          // { heading, accuracy } or null
   const [state, setState] = useState('start'); // start | on | none
   const wasAligned = useRef(false);
 

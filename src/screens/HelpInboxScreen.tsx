@@ -14,12 +14,13 @@ import type { Msg, Nav, Route } from './navTypes';
 // Leader or khadem: the hajis' questions of a group. Waiting questions first. Opens one conversation to answer.
 export default function HelpInboxScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const { me } = useMe();
-  const [groups, setGroups] = useState<any>(undefined);       // [{ id, name, role }]
-  const [gid, setGid] = useState(route?.params?.groupId || null);
-  const [rows, setRows] = useState<any>(null);
+  type Grp = { id: string; name: string; role: string; waiting?: number };
+  const [groups, setGroups] = useState<Grp[] | undefined>(undefined);       // [{ id, name, role }]
+  const [gid, setGid] = useState<string | null>(route?.params?.groupId || null);
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof helpInbox>> | null>(null);
   const [state, setState] = useState('load');
-  const [thread, setThread] = useState<any>(null);            // inbox row being answered
-  const [msgs, setMsgs] = useState<any[]>([]);
+  const [thread, setThread] = useState<Awaited<ReturnType<typeof helpInbox>>[number] | null>(null);            // inbox row being answered
+  const [msgs, setMsgs] = useState<Awaited<ReturnType<typeof helpThread>>>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -27,8 +28,8 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
 
   const loadGroups = useCallback(async () => {
     try {
-      const led = me && me.role === 'leader' ? (await leaderGroups()).filter((g) => g.active).map((g) => ({ id: g.id, name: g.name, role: 'leader' })) : [];
-      let kh: any[] = [];
+      const led: Grp[] = me && me.role === 'leader' ? (await leaderGroups()).filter((g) => g.active).map((g) => ({ id: g.id, name: g.name, role: 'leader' })) : [];
+      let kh: Grp[] = [];
       try { kh = (await myKhademGroups()).map((g) => ({ id: g.group_id, name: g.group_name, role: 'khadem', waiting: g.waiting })); } catch (e) { if (!notReady(e)) throw e; }
       const all = [...led, ...kh.filter((k) => !led.some((l) => l.id === k.id))];
       setGroups(all);

@@ -7,13 +7,14 @@ import { Button, Notice } from '../components/ui';
 import { StepCard, DuaInline } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { GUIDES } from '../content/guides';
+import type { GuideBlock, Phrase, CheckItem } from '../content/types';
 import { CONTENT_REVIEWED } from '../content/ihram';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav } from './navTypes';
 
 // "More guides": a short list; each guide is one page built from simple blocks.
 export default function GuidesScreen({ navigation }: { navigation: Nav }) {
-  const [open, setOpen] = useState<any>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function GuidesScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-export function Block({ b, navigation }: { b: any; navigation: Nav }) {
+export function Block({ b, navigation }: { b: GuideBlock; navigation: Nav }) {
   if (b.type === 'link') return (
     <Notice kind="info" title={`${b.icon || ''} ${b.title}`} text={b.text}>
       {navigation ? <Button title={b.title} icon={b.icon} onPress={() => navigation.navigate(b.route)} style={{ marginTop: S.sm }} /> : null}
@@ -89,8 +90,8 @@ export function Block({ b, navigation }: { b: any; navigation: Nav }) {
   return null;
 }
 
-function Phrases({ items }: { items: any[] }) {
-  const [playing, setPlaying] = useState<any>(null);
+function Phrases({ items }: { items: Phrase[] }) {
+  const [playing, setPlaying] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; Speech.stop(); }, []);
@@ -130,8 +131,8 @@ function Phrases({ items }: { items: any[] }) {
   );
 }
 
-function Checklist({ storageKey, items }: { storageKey: string; items: any[] }) {
-  const [done, setDone] = useState<any[]>([]);
+function Checklist({ storageKey, items }: { storageKey: string; items: CheckItem[] }) {
+  const [done, setDone] = useState<string[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(storageKey).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) { /* start empty */ } }).catch(() => {});
   }, [storageKey]);

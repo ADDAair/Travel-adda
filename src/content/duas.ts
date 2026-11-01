@@ -2,6 +2,8 @@
 // IMPORTANT: Before public launch every entry must be checked by a qualified alim (reviewed: true).
 // Later this list can be updated from the admin panel; this file stays as the offline fallback.
 
+import type { Dua } from './types';
+
 export const CONTENT_REVIEWED = false;
 
 export const CATEGORIES = [
@@ -17,7 +19,7 @@ export const CATEGORIES = [
 ];
 
 // Each dua: id, cat, title, when, parts[{ label?, ar, pron, bn }], source, note?
-export const DUAS = [
+export const DUAS: Dua[] = [
   // ---------- নামাজ ----------
   {
     id: 'sana', cat: 'namaz', title: 'ছানা',

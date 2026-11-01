@@ -10,12 +10,12 @@ import type { Msg, Nav } from './navTypes';
 
 // Khadem: the groups I serve. For each: questions waiting, the hajis (phone after their contract), the ready answers.
 export default function KhademHomeScreen({ navigation }: { navigation: Nav }) {
-  const [groups, setGroups] = useState<any>(undefined);
+  const [groups, setGroups] = useState<Awaited<ReturnType<typeof myKhademGroups>> | undefined>(undefined);
   const [state, setState] = useState('load');
-  const [open, setOpen] = useState<any>(null);                 // group id shown in detail
-  const [members, setMembers] = useState<any>(null);
-  const [faq, setFaq] = useState<any[]>([]);
-  const [invites, setInvites] = useState<any[]>([]);
+  const [open, setOpen] = useState<string | null>(null);                 // group id shown in detail
+  const [members, setMembers] = useState<Awaited<ReturnType<typeof khademMembers>> | null>(null);
+  const [faq, setFaq] = useState<Awaited<ReturnType<typeof faqList>>>([]);
+  const [invites, setInvites] = useState<Awaited<ReturnType<typeof myKhademInvites>>>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
 
