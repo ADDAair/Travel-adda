@@ -145,8 +145,8 @@ function OfferForm({ onDone, initial, reviewOn }: { onDone: (saved: boolean) => 
   } : { title: '', price: '', from: '', to: '', mh: '', md: '', dh: '', dd: '', room: '', notes: '' });
   const [inc, setInc] = useState<Set<string>>(new Set<string>(o ? o.includes || [] : ['flight', 'visa']));
   type RouteText = { from: string; arrive: string; first: string; mk: string; md: string; back: string; to: string; airline: string };
-  const [rt, setRt] = useState<RouteText>(o && hasRoute(o) ? { from: o.from_airport, arrive: o.arrive_at, first: o.first_city, mk: toBn(o.makkah_nights), md: toBn(o.madinah_nights),
-    back: o.return_from, to: o.return_to, airline: o.airline || '' } : { from: 'DAC', arrive: 'JED', first: 'makkah', mk: '', md: '', back: '', to: 'DAC', airline: '' });
+  const [rt, setRt] = useState<RouteText>(o && hasRoute(o) ? { from: o.from_airport || '', arrive: o.arrive_at || '', first: o.first_city || '', mk: toBn(o.makkah_nights), md: toBn(o.madinah_nights),
+    back: o.return_from || '', to: o.return_to || '', airline: o.airline || '' } : { from: 'DAC', arrive: 'JED', first: 'makkah', mk: '', md: '', back: '', to: 'DAC', airline: '' });
   const setR = (k: keyof RouteText) => (v: string) => setRt((x) => ({ ...x, [k]: v }));
   // umrah has no qurbani: switching to umrah removes it from the choices and from what was ticked
   const setKind = (k: string) => { setKindRaw(k); setInc((x) => new Set(cleanIncludes(k, [...x]))); };
@@ -183,6 +183,7 @@ function OfferForm({ onDone, initial, reviewOn }: { onDone: (saved: boolean) => 
     Object.keys(re).forEach((k) => { e[`r_${k}`] = re[k]; });
     setErr(e); setFail('');
     if (Object.keys(e).length) { setFail('লাল চিহ্ন দেওয়া ঘরগুলো ঠিক করুন।'); return; }
+    if (price === null || !from || !to) return;   // already reported above; this only tells the type checker
     const ask = o ? ['বদলগুলো সংরক্ষণ করবেন?', 'অ্যাডমিন আবার দেখে অনুমোদন দেবেন। অনুমোদনের পর আর বদলানো যাবে না।', 'হ্যাঁ, সংরক্ষণ করুন']
       : reviewOn ? ['প্যাকেজটি জমা দেবেন?', 'অ্যাডমিন দেখে অনুমোদন দিলে হাজীরা দেখবেন। অনুমোদনের আগ পর্যন্ত বদলাতে পারবেন, পরে আর পারবেন না।', 'হ্যাঁ, জমা দিন']
         : ['প্যাকেজটি প্রকাশ করবেন?', 'প্রকাশের পর দাম বা তথ্য বদলানো যাবে না, শুধু লুকানো যাবে। আরেকবার মিলিয়ে নিন।', 'হ্যাঁ, প্রকাশ করুন'];

@@ -35,7 +35,7 @@ function cityOrder(o: Offer): { c: string; n: number }[] {
 // Steps in travel order: fly out, each holy city with its nights, fly home.
 export function routeSteps(o: Offer): RouteStep[] | null {
   if (!hasRoute(o)) return null;
-  const out: RouteStep[] = [{ icon: '🛫', title: 'যাত্রা শুরু', text: `${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, when: o.depart_on }];
+  const out: RouteStep[] = [{ icon: '🛫', title: 'যাত্রা শুরু', text: `${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, when: o.depart_on || undefined }];
   cityOrder(o).forEach(({ c, n }) => {
     const city = CITIES.find((x) => x.id === c);
     if (city) out.push({ icon: city.icon, title: city.label, text: `${nights(n)} থাকা` });

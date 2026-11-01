@@ -305,7 +305,7 @@ export function AuditSearchTab({ actionText }: { actionText: (a: string) => stri
       {(data || []).map((a) => (
         <View key={a.id} style={st.card}>
           <Text style={st.small}>{fmtWhen(a.at)} · {a.actor_name || '—'}</Text>
-          <Text style={st.val}>{actionText(a.action)}{a.target_name ? ` · ${a.target_name} (${a.target_code})` : ''}</Text>
+          <Text style={st.val}>{actionText(a.action || '')}{a.target_name ? ` · ${a.target_name} (${a.target_code})` : ''}</Text>
           {a.detail ? <Text style={st.small}>{a.detail}</Text> : null}
         </View>
       ))}

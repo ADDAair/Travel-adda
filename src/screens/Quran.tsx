@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ActivityIndicator, type ViewToken } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Notice } from '../components/ui';
@@ -128,7 +128,7 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
     return undefined;
   }, [verses, startAyah]);
 
-  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<Verse>[] }) => {
+  const onViewable = useRef(({ viewableItems }: { viewableItems: { item: Verse }[] }) => {
     const first = viewableItems && viewableItems[0];
     if (!first || !first.item) return;
     clearTimeout(saveTimer.current);

@@ -16,7 +16,7 @@ const confirm = (title: string, text: string, yes: string, fn: () => void) => Al
 
 // Leader: one group's khadems (helpers in Makkah/Madinah) and its ready answers (FAQ) for the help chat.
 export default function GroupStaffScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
-  const gid = route?.params?.groupId;
+  const gid = route?.params?.groupId || '';
   const gname = route?.params?.groupName || '';
   const [tab, setTab] = useState(route?.params?.tab === 'faq' ? 'faq' : 'khadem');
   const [state, setState] = useState('load');

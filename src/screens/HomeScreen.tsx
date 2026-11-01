@@ -117,7 +117,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
           accessibilityLabel={`পরের নামাজ ${next.nm}, ${next.t.part} ${next.t.time}। আর ${fmtLeft(next.nextAt - now)} বাকি। নামাজের সময় ও কিবলা খুলুন`}>
           <Text style={st.npIc} importantForAccessibility="no">🕌</Text>
           <View style={{ flex: 1 }}>
-            <Text style={st.npL}>পরের নামাজ · {ploc.label}</Text>
+            <Text style={st.npL}>পরের নামাজ · {ploc?.label}</Text>
             <Text style={st.npT}>{next.nm} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
             <Text style={st.npLeft}>⏳ আর {fmtLeft(next.nextAt - now)} বাকি</Text>
           </View>

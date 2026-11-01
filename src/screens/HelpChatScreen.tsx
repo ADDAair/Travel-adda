@@ -56,7 +56,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
   }, [navigation, loadChat, loadGroups]);
 
   const send = async () => {
-    if (busy) return;
+    if (busy || !gid) return;
     const bad = checkMessage(text);
     if (bad) { setMsg({ kind: 'bad', text: bad }); return; }
     setBusy(true); setMsg(null);

@@ -275,7 +275,7 @@ function Account() {
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => {
     supabase.from('app_settings').select('key,value').in('key', ['fund_bkash', 'fund_bank']).then((r: { data: Setting[] | null }) => {
-      const m: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
+      const m: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value || '']));
       setV({ bkash: m.fund_bkash || '', bank: m.fund_bank || '' });
     }, () => setV({ bkash: '', bank: '' }));
   }, []);

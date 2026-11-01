@@ -152,7 +152,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(null); }
   });
-  const callHelp = () => Linking.openURL(`tel:${help.phone}`).catch(() => {});
+  const callHelp = () => Linking.openURL(`tel:${help ? help.phone : ''}`).catch(() => {});
   const filters = { q, month, airport, maxPrice };
   const shown = filterOffers(rows || [], filters);
   const active = [q.trim() ? 1 : 0, month, airport, maxPrice].filter(Boolean).length;

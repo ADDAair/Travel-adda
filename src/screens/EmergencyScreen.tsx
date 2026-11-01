@@ -111,7 +111,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
       <SosLocationToggle />
 
       {lead.phone ? (
-        <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone)} style={{ marginBottom: S.sm }} />
+        <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone || '')} style={{ marginBottom: S.sm }} />
       ) : help && help.phone ? (
         <Button title="Travel Adda হেল্পলাইনে ফোন করুন" icon="📞" onPress={() => call(help.phone)} a11yHint="চুক্তি করা লিডার না থাকায় হেল্পলাইনে কল যাবে" style={{ marginBottom: S.sm }} />
       ) : null}
@@ -153,7 +153,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
       <Notice kind="info" title="ম্যাপ ও লাইভ লোকেশন শেয়ার শীঘ্রই আসছে" text="লিডারের সাথে নিজের অবস্থান শেয়ার করার সুবিধা এখনো তৈরি হচ্ছে।" />
 
       <Modal visible={lost} animationType="slide" onRequestClose={() => setLost(false)}>
-        <SafeAreaProvider><LostCard info={{ ...info, leaderName: lead.name, leaderPhone: lead.phone }} me={me} onClose={() => setLost(false)} /></SafeAreaProvider>
+        <SafeAreaProvider><LostCard info={{ ...info, leaderName: lead.name || '', leaderPhone: lead.phone || '' }} me={me} onClose={() => setLost(false)} /></SafeAreaProvider>
       </Modal>
     </ScrollView>
   );
