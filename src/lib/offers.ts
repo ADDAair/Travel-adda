@@ -2,6 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
+import { rows } from './rpc';
 import { notReady } from './groups';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
@@ -45,7 +46,7 @@ export const setSetting = async (key: string, value: string | null) => check(awa
 export const cleanHelpline = (v: unknown): string => normalizeDigits(v).replace(/[^\d+]/g, '');
 
 // ---------- Haji ----------
-export const listOffers = async (kind: string | null): Promise<Row[]> => check(await supabase.rpc('list_offers', { p_kind: kind })) || [];
+export const listOffers = (kind: string | null) => rows('list_offers', { p_kind: kind });   // typed by src/lib/dbTypes.ts
 export async function myInterests(): Promise<Record<string, Row>> {
   const rows: Row[] = check(await supabase.from('offer_interests').select('id,offer_id,status,created_at').order('created_at', { ascending: false })) || [];
   const m: Record<string, Row> = {};

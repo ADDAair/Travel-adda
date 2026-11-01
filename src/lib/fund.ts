@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 import { notReady } from './groups';
 import { parsePrice } from './offerRoute';
 import { normalizePhone, isValidBdPhone, normalizeDigits, toBn } from './phone';
-import { rpc, fail } from './rpc';
+import { rpc, fail, rows } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
 const num = (v: unknown): number => Number(v || 0);
@@ -155,7 +155,7 @@ export function fundTabs(me: { role?: string; account_type?: string } | null): F
 }
 
 // ---------- Travel Adda ----------
-const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
+const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 export const helpApplications = (status: string | null) => list('admin_help_applications', { p_status: status });
 export async function decideHelp(id: string, decision: 'approve' | 'reject', note?: string | null): Promise<string | null> {
   const n = String(note || '').trim();

@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { uid, randomId, shrink } from './docs';
-import { rpc, check, fail, type DbResult } from './rpc';
+import { rpc, check, fail, type DbResult, rows } from './rpc';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -91,10 +91,10 @@ export const leaderMoney = async (): Promise<LeaderMoneyRow[]> => (await rpc<Lea
 
 // ---------- Admin (needs the 'payments' permission) ----------
 type Row = Record<string, unknown>;
-export const listPayments = async (status?: string | null): Promise<Row[]> => (await rpc<Row[]>('admin_list_payments', { p_status: status || null })) || [];
+export const listPayments = (status?: string | null) => rows('admin_list_payments', { p_status: status || null });
 export const reviewPayment = (id: string, confirm: boolean, note?: string | null) => rpc<string>('admin_review_payment', { p_id: id, p_confirm: confirm, p_note: note || null });
-export const ledger = async (): Promise<Row[]> => (await rpc<Row[]>('admin_ledger')) || [];
-export const leaderRates = async (): Promise<Row[]> => (await rpc<Row[]>('admin_leader_rates')) || [];
+export const ledger = () => rows('admin_ledger');
+export const leaderRates = () => rows('admin_leader_rates');
 export const setLeaderRate = (leaderId: string, pct: number, note?: string | null) => rpc<string>('admin_set_leader_rate', { p_leader: leaderId, p_pct: pct, p_note: note || null });
 export const setCommission = (contractId: string, amount: number | null) => rpc<string>('admin_set_commission', { p_contract: contractId, p_amount: amount });
 export const addPayout = (contractId: string, payee: 'leader' | 'haji', amount: number, ref: string, note?: string | null) =>

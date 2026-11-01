@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { notReady } from './groups';
 
-import { rpc as call } from './rpc';
+import { rpc as call, rows as typedRows } from './rpc';
 
 type Row = Record<string, any>;   // server rows
 const rpc = <T = any>(fn: string, args?: Record<string, unknown>) => call<T>(fn, args);
@@ -57,7 +57,7 @@ export function resetUnread() { unread = 0; ready = false; last = 0; emit(); }
 // ---------- list (kept on the phone for reading without internet) ----------
 export async function listNotifications(): Promise<{ rows: Row[]; offline: boolean }> {
   try {
-    const rows = (await rpc<Row[]>('my_notifications', { p_limit: 100 })) || [];
+    const rows: Row[] = await typedRows('my_notifications', { p_limit: 100 });
     AsyncStorage.setItem(CACHE, JSON.stringify(rows)).catch(() => {});
     unread = rows.filter((r) => !r.is_read).length; ready = true; emit();
     return { rows, offline: false };

@@ -4,11 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { uid, randomId, shrink } from './docs';
 import { notReady } from './groups';
-import { rpc, check } from './rpc';
+import { rpc, check, rows, firstRow } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
-const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
-const first = async (fn: string, args?: Record<string, unknown>): Promise<Row | null> => { const r = await rpc<Row[]>(fn, args); return r && r[0] ? r[0] : null; };
+const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
+const first = firstRow;
 
 // Bangladesh's 64 districts, for the leader's address and the directory filter.
 export const DISTRICTS: readonly string[] = [

@@ -25,3 +25,10 @@ jobs:
           r=$?
           echo "::notice title=database checks::$(grep SUMMARY /tmp/db.log | tail -1)"
           if [ $r -ne 0 ]; then echo "::error title=database checks failed::$(grep -E '^FAIL|SETUP FAILED' /tmp/db.log | head -15 | tr '\n' ' ' | cut -c1-1800)"; exit 1; fi
+      - name: app types match the database
+        run: |
+          set +e
+          W=/var/tmp/pgt-ci
+          sed -e "s#/home/claude/travel-adda#$PWD#g" -e "s#-h /var/tmp/pgt -p 5544#-h localhost -p 5432#g" -e "s#/var/tmp/pgt/#$W/#g" tests/sql/types_check.sh > $W/types_check.sh
+          out=$(bash $W/types_check.sh 2>&1); r=$?; echo "$out"
+          if [ $r -ne 0 ]; then echo "::error title=src/lib/dbTypes.ts out of date::$(echo "$out" | head -20 | tr '\n' ' ' | cut -c1-1500)"; exit 1; fi

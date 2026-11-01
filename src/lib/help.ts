@@ -2,10 +2,10 @@
 // Every function throws on failure, so screens never show a false success.
 import { normalizeDigits, toBn } from './phone';
 
-import { rpc, fail as err } from './rpc';
+import { rpc, fail as err, rows } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
-const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
+const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 export const MAX_MESSAGE = 1000;
 
 // null = fine; otherwise the Bengali reason.

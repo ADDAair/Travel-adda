@@ -5,10 +5,10 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
 import { toBn } from './phone';
-import { rpc, fail } from './rpc';
+import { rpc, fail, rows } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
-const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
+const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 
 export const PERMS: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'applications', label: 'লিডার আবেদন যাচাই' },
