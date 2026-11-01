@@ -25,7 +25,9 @@ def ts(t):
     if t.startswith('character varying') or t.startswith('character('): return 'string'
     return TS.get(t, 'unknown')
 
-tables = {}
+tables = {}; kinds = {}
+for tbl, kind in q("select c.relname, c.relkind from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','v')"):
+    kinds[tbl] = kind
 for tbl, col, typ, notnull in q("select c.relname, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull from pg_attribute a "
                                 "join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace "
                                 "where n.nspname = 'public' and c.relkind in ('r','v') and a.attnum > 0 and not a.attisdropped order by c.relname, a.attnum"):
@@ -71,5 +73,30 @@ print('export interface Tables {')
 for t in sorted(tables):
     print(f'  {t}: {{ ' + '; '.join(f'{c}: {ty}' for c, ty in tables[t]) + ' };')
 print('}')
+print('')
+print('// The same, in the shape supabase-js expects (createClient<Database>): typed .from(...) and .rpc(...) everywhere.')
+print('export type Database = {')
+print('  public: {')
+print('    Tables: {')
+for t in sorted(tables):
+    if kinds.get(t) != 'r': continue
+    cols = '; '.join(f'{c}: {ty}' for c, ty in tables[t])
+    opt = '; '.join(f'{c}?: {ty}' for c, ty in tables[t])
+    print(f'      {t}: {{ Row: {{ {cols} }}; Insert: {{ {opt} }}; Update: {{ {opt} }}; Relationships: [] }};')
+print('    };')
+print('    Views: {')
+for t in sorted(tables):
+    if kinds.get(t) != 'v': continue
+    print(f'      {t}: {{ Row: {{ ' + '; '.join(f'{c}: {ty}' for c, ty in tables[t]) + ' }; Relationships: [] };')
+print('    };')
+print('    Functions: {')
+for name in sorted(funcs):
+    args, ret = funcs[name]
+    print(f'      {name}: {{ Args: {{ {args} }}; Returns: {ret} }};')
+print('    };')
+print('    Enums: { [_ in never]: never };')
+print('    CompositeTypes: { [_ in never]: never };')
+print('  };')
+print('};')
 print('export type RpcName = keyof Rpc;')
 print('export type RpcRow<K extends RpcName> = Rpc[K][\'returns\'] extends (infer R)[] ? R : Rpc[K][\'returns\'];')
