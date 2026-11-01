@@ -6,7 +6,7 @@ export const notifySupported = Platform.OS === 'android' || Platform.OS === 'ios
 export const DOC_PREFIX = 'doc-';
 
 // Cancels scheduled notifications whose identifier matches. Never throws.
-export async function cancelWhere(match) {
+export async function cancelWhere(match: (id: string) => boolean): Promise<void> {
   if (!notifySupported) return;
   try {
     const all = await Notifications.getAllScheduledNotificationsAsync();
@@ -15,7 +15,7 @@ export async function cancelWhere(match) {
 }
 export const cancelPrayer = () => cancelWhere((id) => !id.startsWith(DOC_PREFIX));
 export const cancelDocs = () => cancelWhere((id) => id.startsWith(DOC_PREFIX));
-export async function cancelEverything() {
+export async function cancelEverything(): Promise<void> {
   if (!notifySupported) return;
   try { await Notifications.cancelAllScheduledNotificationsAsync(); } catch (e) { /* ignore */ }
 }

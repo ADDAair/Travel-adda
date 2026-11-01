@@ -11,7 +11,8 @@ const STEPS = [
   { days: 7, text: 'মেয়াদ শেষ হতে আর ১ সপ্তাহ বাকি।' },
 ];
 
-export async function scheduleDocReminders(rows, { ask = false } = {}) {
+type DocRow = { id: string; doc_type: string; expires_on?: string | null };
+export async function scheduleDocReminders(rows: DocRow[] | null | undefined, { ask = false }: { ask?: boolean } = {}): Promise<{ ok: boolean; reason?: string; count?: number }> {
   if (!notifySupported) return { ok: false, reason: 'unsupported' };
   try {
     let p = await Notifications.getPermissionsAsync();
@@ -25,7 +26,7 @@ export async function scheduleDocReminders(rows, { ask = false } = {}) {
     let n = 0;
     for (const r of rows || []) {
       if (!r.expires_on || !['passport', 'visa'].includes(r.doc_type)) continue;
-      const [y, m, d] = r.expires_on.split('-').map(Number);
+      const [y, m, d] = String(r.expires_on).split('-').map(Number);
       for (const s of STEPS) {
         if (s.days === 180 && r.doc_type !== 'passport') continue;
         const at = new Date(y, m - 1, d - s.days, 10, 0, 0).getTime();

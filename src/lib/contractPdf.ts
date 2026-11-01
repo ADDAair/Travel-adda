@@ -5,12 +5,14 @@ import * as Sharing from 'expo-sharing';
 import { toBn } from './phone';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-const day = (iso) => { if (!iso) return '—'; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '—' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])).replace(/\n/g, '<br>');
-const STATUS = { sent: 'হাজীর উত্তরের অপেক্ষায়', accepted: 'দুপক্ষের সম্মতিতে চালু', declined: 'হাজী রাজি হননি', withdrawn: 'লিডার ফিরিয়ে নিয়েছেন', cancelled: 'বাতিল', completed: 'সম্পন্ন' };
+const day = (iso: string | null | undefined): string => { if (!iso) return '—'; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '—' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
+const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = (s: unknown): string => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ESC[c]).replace(/\n/g, '<br>');
+const STATUS: Record<string, string> = { sent: 'হাজীর উত্তরের অপেক্ষায়', accepted: 'দুপক্ষের সম্মতিতে চালু', declined: 'হাজী রাজি হননি', withdrawn: 'লিডার ফিরিয়ে নিয়েছেন', cancelled: 'বাতিল', completed: 'সম্পন্ন' };
 
-export function contractHtml(c) {
-  const row = (l, v) => (v ? `<tr><th>${esc(l)}</th><td>${esc(v)}</td></tr>` : '');
+export type ContractRow = Record<string, any>;   // a row from the contracts list (server data)
+export function contractHtml(c: ContractRow): string {
+  const row = (l: string, v: unknown): string => (v ? `<tr><th>${esc(l)}</th><td>${esc(v)}</td></tr>` : '');
   const price = `${toBn(Number(c.price_bdt).toLocaleString('en-IN', { maximumFractionDigits: 2 }))} টাকা`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     body{font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;color:#111;padding:24px;font-size:14px;line-height:1.6}
@@ -34,7 +36,7 @@ export function contractHtml(c) {
 }
 
 // Returns 'shared' | 'printed' | throws.
-export async function shareContractPdf(c) {
+export async function shareContractPdf(c: ContractRow): Promise<'shared' | 'printed'> {
   const html = contractHtml(c);
   if (Platform.OS === 'web') { await Print.printAsync({ html }); return 'printed'; }
   const { uri } = await Print.printToFileAsync({ html, base64: false });

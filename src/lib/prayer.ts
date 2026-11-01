@@ -4,27 +4,27 @@
 import { toBn } from './phone';
 
 const KAABA = { lat: 21.422487, lng: 39.826206 };
-const rad = (d) => (d * Math.PI) / 180;
-const deg = (r) => (r * 180) / Math.PI;
-const dsin = (d) => Math.sin(rad(d));
-const dcos = (d) => Math.cos(rad(d));
-const dtan = (d) => Math.tan(rad(d));
-const darcsin = (x) => deg(Math.asin(x));
-const darccos = (x) => deg(Math.acos(x));
-const darctan2 = (y, x) => deg(Math.atan2(y, x));
-const darccot = (x) => deg(Math.atan(1 / x));
-const fix = (a, b) => { const r = a - b * Math.floor(a / b); return r < 0 ? r + b : r; };
-const fixAngle = (a) => fix(a, 360);
-const fixHour = (a) => fix(a, 24);
+const rad = (d: number): number => (d * Math.PI) / 180;
+const deg = (r: number): number => (r * 180) / Math.PI;
+const dsin = (d: number): number => Math.sin(rad(d));
+const dcos = (d: number): number => Math.cos(rad(d));
+const dtan = (d: number): number => Math.tan(rad(d));
+const darcsin = (x: number): number => deg(Math.asin(x));
+const darccos = (x: number): number => deg(Math.acos(x));
+const darctan2 = (y: number, x: number): number => deg(Math.atan2(y, x));
+const darccot = (x: number): number => deg(Math.atan(1 / x));
+const fix = (a: number, b: number): number => { const r = a - b * Math.floor(a / b); return r < 0 ? r + b : r; };
+const fixAngle = (a: number): number => fix(a, 360);
+const fixHour = (a: number): number => fix(a, 24);
 
-function julian(y, m, d) {
+function julian(y: number, m: number, d: number): number {
   if (m <= 2) { y -= 1; m += 12; }
   const A = Math.floor(y / 100);
   const B = 2 - A + Math.floor(A / 4);
   return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
 }
 
-function sunPosition(jd) {
+function sunPosition(jd: number): { decl: number; eqt: number } {
   const D = jd - 2451545.0;
   const g = fixAngle(357.529 + 0.98560028 * D);
   const q = fixAngle(280.459 + 0.98564736 * D);
@@ -36,32 +36,34 @@ function sunPosition(jd) {
 
 // Calculation methods. Saudi Arabia: Umm al-Qura (official). Elsewhere: University of Islamic Sciences, Karachi,
 // which Islamic Foundation Bangladesh uses, with Hanafi Asr.
-export const METHODS = {
+export type Method = { id: string; name: string; fajr: number; isha?: number; ishaMin?: number; asr: number };
+export const METHODS: { ummalqura: Method; karachi: Method } = {
   ummalqura: { id: 'ummalqura', name: 'উম্মুল কুরা (সৌদি আরবের সরকারি পদ্ধতি)', fajr: 18.5, ishaMin: 90, asr: 1 },
   karachi: { id: 'karachi', name: 'করাচি পদ্ধতি, হানাফি আসর (ইসলামিক ফাউন্ডেশন বাংলাদেশ যেভাবে হিসাব করে)', fajr: 18, isha: 18, asr: 2 },
 };
 
 // Saudi Arabia and the nearby +3 hour area (Kuwait, Bahrain, Yemen, south Iraq, Jordan) - rough box, excludes UAE/Qatar.
-export const inSaudiRegion = (lat, lng) => lat >= 16 && lat <= 32.5 && lng >= 34.5 && lng <= 50.8;
-export const inBangladesh = (lat, lng) => lat >= 20.5 && lat <= 26.7 && lng >= 88 && lng <= 92.7;
-export const methodFor = (lat, lng) => (inSaudiRegion(lat, lng) ? METHODS.ummalqura : METHODS.karachi);
+export const inSaudiRegion = (lat: number, lng: number): boolean => lat >= 16 && lat <= 32.5 && lng >= 34.5 && lng <= 50.8;
+export const inBangladesh = (lat: number, lng: number): boolean => lat >= 20.5 && lat <= 26.7 && lng >= 88 && lng <= 92.7;
+export const methodFor = (lat: number, lng: number): Method => (inSaudiRegion(lat, lng) ? METHODS.ummalqura : METHODS.karachi);
 
 // Minutes ahead of UTC used to show times. Known regions use their fixed zone, so a phone whose clock zone was not
 // updated after travelling still shows Makkah times in Makkah. Elsewhere the phone's own zone is used.
-export function tzFor(lat, lng, deviceOffsetMin) {
+export function tzFor(lat: number, lng: number, deviceOffsetMin: number): number {
   if (inSaudiRegion(lat, lng)) return 180;
   if (inBangladesh(lat, lng)) return 360;
   return deviceOffsetMin;
 }
 
 // Calendar date (y, m, d) at the location for a moment in time.
-export function localYMD(ms, tzMin) {
+export type YMD = { y: number; m: number; d: number };
+export function localYMD(ms: number, tzMin: number): YMD {
   const t = new Date(ms + tzMin * 60000);
   return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
 }
 
 // Tabular Islamic calendar (can differ by one day from the announced moon sighting).
-export function hijri(y, m, d) {
+export function hijri(y: number, m: number, d: number): YMD {
   const jd = Math.floor(julian(y, m, d) + 0.5);
   const l0 = jd - 1948440 + 10632;
   const n = Math.floor((l0 - 1) / 10631);
@@ -77,19 +79,21 @@ export function hijri(y, m, d) {
  * Start times are rounded UP to the minute and sunrise DOWN, so the app never shows a prayer as started too early
  * or Fajr as lasting too long.
  */
-export function prayerTimes({ lat, lng, y, m, d, method, asrFactor }) {
+export type PrayerKey = 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+export type Times = Record<PrayerKey | 'asrAlt', number> & { method: Method; asrFactor: number; ramadan: boolean };
+export function prayerTimes({ lat, lng, y, m, d, method, asrFactor }: { lat: number; lng: number; y: number; m: number; d: number; method?: Method; asrFactor?: number }): Times {
   const M = method || methodFor(lat, lng);
   const asrF = asrFactor || M.asr;
   const jDate = julian(y, m, d) - lng / (15 * 24);
-  const pos = (t) => sunPosition(jDate + t / 24);
-  const midDay = (t) => fixHour(12 - pos(t).eqt);
-  const angleTime = (angle, t, ccw) => {
+  const pos = (t: number) => sunPosition(jDate + t / 24);
+  const midDay = (t: number): number => fixHour(12 - pos(t).eqt);
+  const angleTime = (angle: number, t: number, ccw?: boolean): number => {
     const decl = pos(t).decl;
     const v = (-dsin(angle) - dsin(decl) * dsin(lat)) / (dcos(decl) * dcos(lat));
     const T = darccos(v) / 15;
     return midDay(t) + (ccw ? -T : T);
   };
-  const asrTime = (f, t) => {
+  const asrTime = (f: number, t: number): number => {
     const decl = pos(t).decl;
     return angleTime(-darccot(f + dtan(Math.abs(lat - decl))), t);
   };
@@ -112,10 +116,10 @@ export function prayerTimes({ lat, lng, y, m, d, method, asrFactor }) {
   if (!Number.isFinite(t.fajr)) t.fajr = t.sunrise - (M.fajr / 60) * night;
   const h = hijri(y, m, d);
   if (M.ishaMin) t.isha = t.sunset + (M.ishaMin + (h.m === 9 ? 30 : 0)) / 60;
-  else if (!Number.isFinite(t.isha)) t.isha = t.sunset + (M.isha / 60) * night;
+  else if (!Number.isFinite(t.isha)) t.isha = t.sunset + ((M.isha || 18) / 60) * night;
 
   const base = Date.UTC(y, m - 1, d);
-  const toMs = (hours, up) => {
+  const toMs = (hours: number, up: boolean): number => {
     const ms = base + (hours - lng / 15) * 3600000;
     return (up ? Math.ceil(ms / 60000) : Math.floor(ms / 60000)) * 60000;
   };
@@ -127,35 +131,35 @@ export function prayerTimes({ lat, lng, y, m, d, method, asrFactor }) {
 }
 
 // Direction of the Kaaba in degrees clockwise from true north.
-export function qiblaBearing(lat, lng) {
+export function qiblaBearing(lat: number, lng: number): number {
   const dL = rad(KAABA.lng - lng);
   const b = Math.atan2(Math.sin(dL), Math.cos(rad(lat)) * Math.tan(rad(KAABA.lat)) - Math.sin(rad(lat)) * Math.cos(dL));
   return fixAngle(deg(b));
 }
 
-export function distanceKm(lat1, lng1, lat2 = KAABA.lat, lng2 = KAABA.lng) {
+export function distanceKm(lat1: number, lng1: number, lat2: number = KAABA.lat, lng2: number = KAABA.lng): number {
   const a = Math.sin(rad(lat2 - lat1) / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 const DIRS = ['উত্তর', 'উত্তর-পূর্ব', 'পূর্ব', 'দক্ষিণ-পূর্ব', 'দক্ষিণ', 'দক্ষিণ-পশ্চিম', 'পশ্চিম', 'উত্তর-পশ্চিম'];
-export const directionName = (b) => DIRS[Math.round(fixAngle(b) / 45) % 8];
+export const directionName = (b: number): string => DIRS[Math.round(fixAngle(b) / 45) % 8];
 
 // "৫:১২" and a Bengali part-of-day word, shown in the location's own time. With a prayer key the word follows the
 // prayer (Isha is always "রাত", Maghrib "সন্ধ্যা"), so it never looks odd in long summer evenings.
-const PART = { fajr: 'ভোর', sunrise: 'সকাল', dhuhr: 'দুপুর', asr: 'বিকাল', maghrib: 'সন্ধ্যা', isha: 'রাত' };
-export function fmtTime(ms, tzMin, key) {
+const PART: Record<string, string> = { fajr: 'ভোর', sunrise: 'সকাল', dhuhr: 'দুপুর', asr: 'বিকাল', maghrib: 'সন্ধ্যা', isha: 'রাত' };
+export function fmtTime(ms: number, tzMin: number, key?: string): { time: string; part: string } {
   const t = new Date(ms + tzMin * 60000);
   const H = t.getUTCHours();
   const mi = t.getUTCMinutes();
   const mins = H * 60 + mi;
   const part = mins < 240 ? 'রাত' : mins < 360 ? 'ভোর' : mins < 720 ? 'সকাল' : mins < 900 ? 'দুপুর' : mins < 1050 ? 'বিকাল' : mins < 1140 ? 'সন্ধ্যা' : 'রাত';
   const h12 = H % 12 === 0 ? 12 : H % 12;
-  return { time: toBn(`${h12}:${String(mi).padStart(2, '0')}`), part: PART[key] || part };
+  return { time: toBn(`${h12}:${String(mi).padStart(2, '0')}`), part: (key && PART[key]) || part };
 }
 
 // "১ ঘণ্টা ৫ মিনিট"
-export function fmtLeft(ms) {
+export function fmtLeft(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 60000));
   const h = Math.floor(total / 60);
   const mi = total % 60;
@@ -166,14 +170,15 @@ export function fmtLeft(ms) {
 const BN_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 const BN_DAYS = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
 const HIJRI_MONTHS = ['মুহাররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি', 'জমাদিউল আউয়াল', 'জমাদিউস সানি', 'রজব', 'শাবান', 'রমজান', 'শাওয়াল', 'জিলকদ', 'জিলহজ'];
-export function fmtDate(y, m, d) {
+export function fmtDate(y: number, m: number, d: number): { greg: string; hijri: string } {
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   const h = hijri(y, m, d);
   return { greg: `${BN_DAYS[wd]}, ${toBn(d)} ${BN_MONTHS[m - 1]} ${toBn(y)}`, hijri: `${toBn(h.d)} ${HIJRI_MONTHS[h.m - 1]} ${toBn(h.y)} হিজরি` };
 }
 
 // Today's list plus which prayer is next. After Isha the next prayer is tomorrow's Fajr.
-export const ORDER = [
+export type PrayerRow = { key: PrayerKey; name: string; gen: string; icon: string; notPrayer?: boolean };
+export const ORDER: PrayerRow[] = [
   { key: 'fajr', name: 'ফজর', gen: 'ফজরের', icon: '🌄' },
   { key: 'sunrise', name: 'সূর্যোদয়', gen: 'সূর্যোদয়ের', icon: '🌅', notPrayer: true },
   { key: 'dhuhr', name: 'যোহর', gen: 'যোহরের', icon: '☀️' },
@@ -181,13 +186,13 @@ export const ORDER = [
   { key: 'maghrib', name: 'মাগরিব', gen: 'মাগরিবের', icon: '🌇' },
   { key: 'isha', name: 'এশা', gen: 'এশার', icon: '🌙' },
 ];
-export const isFriday = (ymd) => new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d)).getUTCDay() === 5;
+export const isFriday = (ymd: YMD): boolean => new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d)).getUTCDay() === 5;
 // On Fridays the Dhuhr slot is Jumu'ah.
-export const prayerName = (o, ymd) => (o.key === 'dhuhr' && ymd && isFriday(ymd) ? 'জুমা' : o.name);
+export const prayerName = (o: PrayerRow, ymd?: YMD | null): string => (o.key === 'dhuhr' && ymd && isFriday(ymd) ? 'জুমা' : o.name);
 
 // Today's makruh (forbidden) prayer windows, approximate: ~15 min after sunrise, a few minutes before Dhuhr, ~15 min
 // before sunset. Returns [{ label, from, to }] in UTC ms.
-export function makruhWindows(times) {
+export function makruhWindows(times: Times): { key: string; label: string; from: number; to: number }[] {
   return [
     { key: 'sunrise', label: 'সূর্যোদয়ের সময়', from: times.sunrise, to: times.sunrise + 15 * 60000 },
     { key: 'zawal', label: 'ঠিক দুপুর', from: times.dhuhr - 6 * 60000, to: times.dhuhr },
@@ -195,12 +200,12 @@ export function makruhWindows(times) {
   ];
 }
 
-export function dayPlan(loc, nowMs) {
+export function dayPlan(loc: { lat: number; lng: number; deviceTz?: number | null }, nowMs: number): { tz: number; today: YMD; times: Times; next: PrayerRow; nextAt: number } {
   const tz = tzFor(loc.lat, loc.lng, loc.deviceTz != null ? loc.deviceTz : -new Date(nowMs).getTimezoneOffset());
   const today = localYMD(nowMs, tz);
   const times = prayerTimes({ lat: loc.lat, lng: loc.lng, ...today });
   let next = ORDER.find((o) => !o.notPrayer && times[o.key] > nowMs);
-  let nextAt = next ? times[next.key] : null;
+  let nextAt: number = next ? times[next.key] : 0;
   if (!next) {
     const tm = localYMD(nowMs + 24 * 3600000, tz);
     next = ORDER[0];
