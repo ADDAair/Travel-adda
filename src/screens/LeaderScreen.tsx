@@ -7,6 +7,7 @@ import { toBn, normalizeDigits, normalizePhone, isValidBdPhone } from '../lib/ph
 import { signedAvatarUrl } from '../lib/avatar';
 import { parseDate } from '../lib/dates';
 import { inviteResultText, mySentInvites, cancelInvite } from '../lib/help';
+import { removeGroup, reopenGroup, removeGroupText } from '../lib/groups';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, createContract, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import type { Nav, Row, Msg } from './navTypes';
@@ -23,6 +24,7 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
   const [season, setSeason] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
+  const [topMsg, setTopMsg] = useState<Msg>(null);     // what happened to a group that was removed
 
   const load = useCallback(async () => {
     try {
@@ -47,7 +49,7 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
     finally { setBusy(false); }
   };
 
-  if (sel) return <GroupAdmin g={sel} navigation={navigation} onBack={() => { setSel(null); load(); }} />;
+  if (sel) return <GroupAdmin g={sel} navigation={navigation} onBack={(m?: Msg) => { setSel(null); setTopMsg(m || null); load(); }} />;
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
@@ -62,10 +64,11 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
           <Button title="চুক্তি ও রেফারেল হাজী" icon="📜" onPress={() => navigation.navigate('LeaderContracts')} a11yHint="হাজীর আইডিতে চুক্তি পাঠান, উত্তর দেখুন" style={{ marginBottom: S.sm }} />
           <Button title="আমার প্যাকেজ (অফার)" icon="🎁" kind="gold" onPress={() => navigation.navigate('LeaderOffers')} a11yHint="হাজীদের অফার পাতায় প্যাকেজ দিন" style={{ marginBottom: S.sm }} />
           <Button title="আমার লিডার প্রোফাইল" icon="👤" kind="secondary" onPress={() => navigation.navigate('LeaderMe')} a11yHint="হাজীরা তালিকায় আপনাকে কীভাবে দেখেন" style={{ marginBottom: S.md }} />
+          {topMsg ? <Notice kind={topMsg.kind} title={topMsg.text} /> : null}
           <Text style={st.h}>👥 আমার দলগুলো</Text>
           {groups.length === 0 ? <Notice kind="info" title="এখনো কোনো দল নেই" text="নিচে দলের নাম লিখে প্রথম দল বানান।" /> : null}
           {groups.map((g) => (
-            <Pressable key={g.id} onPress={() => setSel(g)} style={st.card} accessibilityRole="button" accessibilityLabel={`${g.name} দল খুলুন`}>
+            <Pressable key={g.id} onPress={() => { setTopMsg(null); setSel(g); }} style={st.card} accessibilityRole="button" accessibilityLabel={`${g.name} দল খুলুন`}>
               <Text style={st.gName}>{g.name} ›</Text>
               <Text style={st.small}>{g.season ? `${g.season} · ` : ''}কোড: {g.join_code}{g.active ? '' : ' · বন্ধ'}</Text>
             </Pressable>
@@ -126,7 +129,8 @@ function AnnounceBox({ g }: { g: Row }): JSX.Element {
   );
 }
 
-function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; navigation: Nav }): JSX.Element {
+function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: (m?: Msg) => void; navigation: Nav }): JSX.Element {
+  const [active, setActive] = useState<boolean>(g.active !== false);
   const [members, setMembers] = useState<Row[] | null>(null);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
@@ -162,6 +166,24 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; nav
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   });
+  const removeIt = () => confirm(`"${g.name}" দল বাদ দেবেন?`,
+    'দলে কেউ না থাকলে দলটি পুরো মুছে যাবে, ফেরানো যাবে না। কেউ যোগ দিয়ে থাকলে মোছা হবে না, বন্ধ করা হবে: নতুন কেউ যোগ দিতে পারবেন না, আগের তথ্য থাকবে।',
+    'হ্যাঁ, বাদ দিন', async () => {
+      setBusy(true); setMsg(null);
+      try {
+        const r = await removeGroup(g.id);
+        if (r === 'deleted' || r === 'closed') { onBack({ kind: 'ok', text: removeGroupText(r) }); return; }
+        setMsg({ kind: 'info', text: removeGroupText(r) });
+      } catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'soon' ? 'দল বাদ দেওয়ার সুবিধা শীঘ্রই আসছে।' : errText(e) }); }
+      setBusy(false);
+    });
+  const reopen = async () => {
+    if (busy) return;
+    setBusy(true); setMsg(null);
+    try { await reopenGroup(g.id); setActive(true); setMsg({ kind: 'ok', text: 'দলটি আবার চালু হয়েছে। হাজীরা কোড দিয়ে যোগ দিতে পারবেন।' }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'soon' ? 'এই সুবিধা শীঘ্রই আসছে।' : errText(e) }); }
+    finally { setBusy(false); }
+  };
   const remove = (m: Row) => confirm(`${m.full_name}-কে দল থেকে সরাবেন?`, 'তিনি আর আপনার দলের শর্ত দেখতে পাবেন না।', 'হ্যাঁ, সরান', async () => {
     setBusy(true); setMsg(null);
     try { await removeMember(g.id, m.user_id); await load(); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); }
@@ -169,22 +191,27 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; nav
     finally { setBusy(false); }
   });
 
-  const active = (members || []).filter((m) => m.status === 'active');
+  const joined = (members || []).filter((m) => m.status === 'active');
   const nameOf = Object.fromEntries((members || []).map((m) => [m.user_id, m.full_name]));
 
   if (form) return <ContractForm g={g} onDone={(saved: boolean) => { setForm(false); if (saved) { setMsg({ kind: 'ok', text: 'শর্ত সংরক্ষণ হয়েছে। দলের হাজীরা এখন পড়ে সম্মতি দিতে পারবেন।' }); load(); } }} />;
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ সব দল</Text></Pressable>
+      <Pressable onPress={() => onBack()} style={st.back} accessibilityRole="button" accessibilityLabel="লিডার প্যানেলে ফিরে যান"><Text style={st.backT}>‹ সব দল</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">{g.name}</Text>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {!active ? (
+        <Notice kind="warn" title="এই দলটি বন্ধ" text="নতুন কেউ যোগ দিতে পারবেন না। আগের সদস্য ও তথ্য রাখা আছে।">
+          <Button title="দলটি আবার চালু করুন" icon="🔓" kind="secondary" onPress={reopen} loading={busy} style={{ marginTop: S.sm }} />
+        </Notice>
+      ) : null}
 
       <View style={st.card}>
         <Text style={st.lbl}>দলে যোগ দেওয়ার কোড</Text>
         <Text style={{ fontSize: 34, fontWeight: '800', color: C.primary, letterSpacing: 4, marginVertical: S.xs }} selectable accessibilityLabel={`কোড ${g.join_code.split('').join(' ')}`}>{g.join_code}</Text>
         <Text style={st.small}>হাজীরা অ্যাপের "আমার দল" পাতায় এই কোড লিখে যোগ দেবেন।</Text>
-        <Button title="কোডটি পাঠান (হোয়াটসঅ্যাপ/এসএমএস)" icon="📤" kind="secondary" onPress={share} />
+        {active ? <Button title="কোডটি পাঠান (হোয়াটসঅ্যাপ/এসএমএস)" icon="📤" kind="secondary" onPress={share} /> : <Text style={st.small}>দল বন্ধ থাকায় এই কোড এখন কাজ করবে না।</Text>}
       </View>
 
       <View style={st.card}>
@@ -199,8 +226,12 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; nav
 
       <View style={st.card}>
         <Text style={st.h}>📱 মোবাইল নম্বরে আমন্ত্রণ</Text>
-        <Field label="হাজীর মোবাইল নম্বর" hint="যেমন: 01712345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={14} />
-        <Button title="আমন্ত্রণ পাঠান" icon="📩" onPress={invite} loading={busy} />
+        {active ? (
+          <>
+            <Field label="হাজীর মোবাইল নম্বর" hint="যেমন: 01712345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={14} />
+            <Button title="আমন্ত্রণ পাঠান" icon="📩" onPress={invite} loading={busy} />
+          </>
+        ) : <Text style={st.small}>দল বন্ধ থাকায় নতুন আমন্ত্রণ পাঠানো যাবে না।</Text>}
         {sent.length ? (
           <>
             <Text style={[st.lbl, { marginTop: S.md }]}>পাঠানো আমন্ত্রণ (গোপনীয়তার জন্য নম্বরের কিছু অংশ লুকানো)</Text>
@@ -215,13 +246,20 @@ function GroupAdmin({ g, onBack, navigation }: { g: Row; onBack: () => void; nav
       </View>
 
       <View style={st.card}>
-        <Text style={st.h}>👥 সদস্য: {toBn(active.length)} জন</Text>
+        <Text style={st.h}>👥 সদস্য: {toBn(joined.length)} জন</Text>
         {members === null ? <ActivityIndicator color={C.primary} /> : null}
         {members && members.length === 0 ? <Text style={st.p}>এখনো কেউ যোগ দেননি।</Text> : null}
         {(members || []).map((m) => <MemberRow key={m.user_id} m={m} onRemove={() => remove(m)} busy={busy} />)}
       </View>
 
       <Notice kind="info" title="চুক্তি এখন প্রতিটি হাজীর সাথে আলাদা" text='লিডার প্যানেলের "চুক্তি" অংশ থেকে হাজীর আইডিতে চুক্তির অনুরোধ পাঠান।' />
+      {active ? (
+        <View style={[st.card, { borderWidth: 1, borderColor: C.bad }]}>
+          <Text style={st.h}>🗑️ ভুল করে দল খুলেছেন?</Text>
+          <Text style={st.small}>কেউ যোগ না দিয়ে থাকলে দলটি পুরো মুছে যাবে। কেউ যোগ দিয়ে থাকলে বা আমন্ত্রণ পেয়ে থাকলে দলটি বন্ধ হবে, রেকর্ড থাকবে।</Text>
+          <Button title="দল বাদ দিন" icon="🗑️" kind="danger" onPress={removeIt} loading={busy} style={{ marginTop: S.sm }} />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

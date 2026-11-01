@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 import { applicationRow } from './leaderKinds';
 import { uid, randomId, shrink } from './docs';
 import { normalizePhone } from './phone';
-import { fail } from './rpc';
+import { fail, rpc } from './rpc';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
 type Res = { data: any; error: { code?: string; message?: string } | null };
@@ -86,6 +86,24 @@ export async function leaderKindsReady(): Promise<boolean> {
 }
 
 // A Bangladeshi number written as 01XXXXXXXXX also works from Saudi Arabia when dialled as +8801XXXXXXXXX.
+// A group made by mistake (030): the server deletes it if nothing ever happened in it, otherwise closes it.
+export type RemoveResult = 'deleted' | 'closed' | 'already_closed' | 'not_found';
+export async function removeGroup(groupId: string): Promise<RemoveResult> {
+  try { return (await rpc<RemoveResult>('leader_remove_group', { p_group: groupId })) as RemoveResult; }
+  catch (e) { if (notReady(e)) throw fail('soon'); throw e; }
+}
+export async function reopenGroup(groupId: string): Promise<void> {
+  try { await rpc<string>('leader_reopen_group', { p_group: groupId }); }
+  catch (e) { if (notReady(e)) throw fail('soon'); throw e; }
+}
+const REMOVED: Record<string, string> = {
+  deleted: 'দলটি মুছে ফেলা হয়েছে।',
+  closed: 'দলে কেউ যোগ দিয়েছিলেন বা আমন্ত্রণ পেয়েছিলেন, তাই রেকর্ড রাখতে দলটি মোছা হয়নি, বন্ধ করা হয়েছে। নতুন কেউ আর যোগ দিতে পারবেন না। চাইলে পরে আবার চালু করতে পারবেন।',
+  already_closed: 'দলটি আগেই বন্ধ করা আছে।',
+  not_found: 'দলটি আর পাওয়া যায়নি।',
+};
+export const removeGroupText = (r: string): string => REMOVED[r] || 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
+
 export const telBd = (p: unknown): string => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^01\d{9}$/.test(d) ? `+88${d}` : d; };
 
 // ---------- Haji ----------
