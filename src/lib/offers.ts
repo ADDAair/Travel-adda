@@ -66,7 +66,7 @@ export async function myOffers(): Promise<Row[]> {
 const ROUTE_COLS = ['from_airport', 'arrive_at', 'first_city', 'makkah_nights', 'madinah_nights', 'return_from', 'return_to', 'airline'];
 const noRouteYet = (e: { message?: string } | null): boolean => !!e && ROUTE_COLS.some((c) => String(e.message || '').includes(`'${c}'`) || String(e.message || '').includes(`.${c}`) || String(e.message || '').includes(`"${c}"`));
 const withoutRoute = (o: Row): Row => Object.fromEntries(Object.entries(o).filter(([k]) => !ROUTE_COLS.includes(k)));
-export async function createOffer(o: Row): Promise<Row> {
+export async function createOffer(o: Row): Promise<Row | null> {
   let r = await supabase.from('offers').insert(o).select('id').single();
   // database step 020 (journey) not run yet: save without the journey rather than failing
   if (r.error && noRouteYet(r.error)) { o = withoutRoute(o); r = await supabase.from('offers').insert(o).select('id').single(); }

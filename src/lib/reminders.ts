@@ -13,7 +13,7 @@ const CHANNEL = 'prayer';
 const ALARM_CHANNEL = 'prayer-alarm';
 const ALARM_KEY = 'ta.prayerAlarm.v1';
 export const ALARM_SOUND = 'prayer_alarm.wav';
-const PRAYER_KEYS = ORDER.filter((o) => !o.notPrayer).map((o) => o.key);
+const PRAYER_KEYS: string[] = ORDER.filter((o) => !o.notPrayer).map((o) => o.key);
 
 export async function getAlarms(): Promise<Record<string, boolean>> {
   try { const v: Record<string, boolean> = JSON.parse((await AsyncStorage.getItem(ALARM_KEY)) || '{}'); return Object.fromEntries(Object.entries(v).filter(([k, on]) => PRAYER_KEYS.includes(k) && on)); }
