@@ -15,7 +15,7 @@ import type { Msg, Nav, Row } from './navTypes';
 import type { OwnPackage } from '../lib/types';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-const statusOf = (o: Row): string => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? String(reviewLabel(o)) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
+const statusOf = (o: OwnPackage): string => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? String(reviewLabel(o)) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
   : o.valid_until && o.valid_until < today() ? '⌛ অফারের শেষ তারিখ পার হয়েছে' : '✅ অনুমোদিত, হাজীরা দেখতে পাচ্ছেন');
 const dateIn = (iso: string | null | undefined): string => (iso ? toBn(String(iso).split('-').reverse().join('-')) : '');
 
@@ -41,7 +41,7 @@ export default function LeaderOffersScreen({ navigation, inTab }: { navigation: 
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const toggle = (o: Row) => confirm(o.active ? 'প্যাকেজটি লুকাবেন?' : 'প্যাকেজটি আবার দেখাবেন?', o.active ? 'হাজীরা আর এটি দেখতে পাবেন না।' : '', o.active ? 'হ্যাঁ, লুকান' : 'হ্যাঁ, দেখান', async () => {
+  const toggle = (o: OwnPackage) => confirm(o.active ? 'প্যাকেজটি লুকাবেন?' : 'প্যাকেজটি আবার দেখাবেন?', o.active ? 'হাজীরা আর এটি দেখতে পাবেন না।' : '', o.active ? 'হ্যাঁ, লুকান' : 'হ্যাঁ, দেখান', async () => {
     setBusy(true); setMsg(null);
     try { await setOfferActive(o.id, !o.active); await load(); setMsg({ kind: 'ok', text: o.active ? 'প্যাকেজ লুকানো হয়েছে।' : 'প্যাকেজ আবার দেখানো হচ্ছে।' }); }
     catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string } | null)?.code === '42501' ? 'একসাথে ২০টির বেশি প্যাকেজ দেখানো যায় না।' : errText(e) }); }
@@ -61,7 +61,7 @@ export default function LeaderOffersScreen({ navigation, inTab }: { navigation: 
     }} />;
   }
 
-  const actions = (o: Row) => {
+  const actions = (o: OwnPackage) => {
     const c = counts[o.id];
     return (
       <View style={st.cRow}>

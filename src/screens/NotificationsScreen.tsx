@@ -53,7 +53,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="Travel Adda-র নোটিশ ও আপনার চুক্তি, টাকা, দলের খবর এখানে আসবে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="নোটিফিকেশন আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {offline ? <Notice kind="warn" title="ইন্টারনেট নেই" text="ফোনে রাখা আগের নোটিফিকেশন দেখানো হচ্ছে।" /> : null}
-      {state === 'ok' && rows.length === 0 ? <Notice kind="info" title="এখনো কোনো নোটিফিকেশন নেই" text="Travel Adda কোনো নোটিশ দিলে বা আপনার চুক্তি, টাকা ও দলের কোনো খবর এলে এখানে দেখাবে।" /> : null}
+      {state === 'ok' && (rows || []).length === 0 ? <Notice kind="info" title="এখনো কোনো নোটিফিকেশন নেই" text="Travel Adda কোনো নোটিশ দিলে বা আপনার চুক্তি, টাকা ও দলের কোনো খবর এলে এখানে দেখাবে।" /> : null}
       {state === 'ok' && fresh.length ? (
         <View style={n.headRow}>
           <Text style={n.head}>নতুন ({toBn(fresh.length)})</Text>

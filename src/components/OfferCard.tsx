@@ -55,7 +55,7 @@ export function LeaderBox({ o, onProfile, onMore }: { o: Offer; onProfile?: () =
           <Text style={[st.small, { color: C.primary, fontWeight: '700' }]}>{ta ? LEADER_KINDS.travel_adda.badge : `✔️ ${o.agency_name || ''} (যাচাই করা এজেন্সি)`}</Text>
         </View>
       </View>
-      <Text style={[st.p, { marginTop: S.sm }]}>{stars(o.rating_avg)}{o.rating_count ? ` (${toBn(o.rating_count)} জন হাজীর রেটিং)` : ''}</Text>
+      <Text style={[st.p, { marginTop: S.sm }]}>{stars(Number(o.rating_avg || 0))}{o.rating_count ? ` (${toBn(o.rating_count)} জন হাজীর রেটিং)` : ''}</Text>
       <Text style={[st.p, { color: o.complaints_verified ? C.bad : C.ok }]}>{o.complaints_verified ? `⚠️ যাচাই হওয়া অভিযোগ: ${toBn(o.complaints_verified)}টি` : '✅ কোনো যাচাই হওয়া অভিযোগ নেই'}</Text>
       {o.member_since ? <Text style={st.small}>{yearsSince(o.member_since)}</Text> : null}
       {onProfile ? <Pressable onPress={onProfile} style={{ minHeight: TOUCH, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`${o.leader_name}-এর পুরো প্রোফাইল, রেটিং ও অভিযোগ দেখুন`}>
@@ -73,7 +73,7 @@ export function OfferSummary({ o, onOpen, note, noteColor }: { o: Offer; onOpen?
     <Pressable onPress={onOpen} style={({ pressed }) => [st.card, { opacity: pressed ? 0.85 : 1 }]} accessibilityRole="button" accessibilityLabel={label}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View style={{ flex: 1, paddingRight: S.sm }}>
-          <Text style={st.small}>{KIND[o.kind]?.icon} {KIND[o.kind]?.label} · নম্বর {refOf(o.id)}</Text>
+          <Text style={st.small}>{KIND[o.kind || '']?.icon} {KIND[o.kind || '']?.label} · নম্বর {refOf(o.id)}</Text>
           <Text style={st.gName}>{o.title}</Text>
         </View>
         <View style={{ backgroundColor: C.goldSoft, borderRadius: R.md, paddingHorizontal: S.sm, paddingVertical: 4 }}>
@@ -98,7 +98,7 @@ export function OfferCard({ o, children, onProfile, onMore }: { o: Offer; childr
   const Line = ({ l, v }: { l: string; v?: string | null }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p}>{v}</Text></View> : null);
   return (
     <View style={st.card}>
-      <Text style={st.small}>{KIND[o.kind]?.icon} {KIND[o.kind]?.label} · প্যাকেজ নম্বর {refOf(o.id)}</Text>
+      <Text style={st.small}>{KIND[o.kind || '']?.icon} {KIND[o.kind || '']?.label} · প্যাকেজ নম্বর {refOf(o.id)}</Text>
       <Text style={st.gName}>{o.title}</Text>
       <Text style={{ fontSize: 28, fontWeight: '800', color: C.primary, marginTop: S.xs }}>{fmtTaka(o.price_bdt)}</Text>
       <Text style={st.small}>জনপ্রতি মোট দাম</Text>

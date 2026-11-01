@@ -10,7 +10,7 @@ import type { AnyContract } from '../lib/types';
 
 // Full contract text, the same for haji and leader.
 export function ContractDetails({ c, who = 'haji' }: { c: AnyContract; who?: 'haji' | 'leader' }): JSX.Element {
-  const s = CONTRACT_STATUS[c.status] || { icon: '', label: c.status };
+  const s = CONTRACT_STATUS[c.status || ''] || { icon: '', label: c.status };
   const Line = ({ l, v }: { l: string; v?: string | null }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p} selectable>{v}</Text></View> : null);
   return (
     <View>

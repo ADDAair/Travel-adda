@@ -72,7 +72,7 @@ export function routeRow(r: RouteForm): Record<string, string | number | null | 
 export const leaderKey = (v: unknown): string => normalizeDigits(String(v || '')).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 export type OfferFilter = { q?: string; month?: string | null; airport?: string | null; maxPrice?: number | null };
-export function filterOffers(rows: Offer[] | null | undefined, f: OfferFilter = {}): Offer[] {
+export function filterOffers<T extends Offer>(rows: T[] | null | undefined, f: OfferFilter = {}): T[] {
   const q = String(f.q || '').trim();
   const k = leaderKey(q); const ql = q.toLowerCase();
   return (rows || []).filter((o) => {
