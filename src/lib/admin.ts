@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import { toBn } from './phone';
 import { rpc, fail } from './rpc';
 
-type Row = Record<string, unknown>;
+type Row = Record<string, any>;   // server rows (the database has no generated types yet)
 const list = async (fn: string, args?: Record<string, unknown>): Promise<Row[]> => (await rpc<Row[]>(fn, args)) || [];
 
 export const PERMS: ReadonlyArray<{ id: string; label: string }> = [
