@@ -12,7 +12,7 @@ const STEPS = [
 ];
 
 type DocRow = { id: string; doc_type: string; expires_on?: string | null };
-export async function scheduleDocReminders(rows: DocRow[] | null | undefined, { ask = false }: { ask?: boolean } = {}): Promise<{ ok: boolean; reason?: string; count?: number }> {
+export async function scheduleDocReminders(rows: (DocRow | Record<string, any>)[] | null | undefined, { ask = false }: { ask?: boolean } = {}): Promise<{ ok: boolean; reason?: string; count?: number }> {
   if (!notifySupported) return { ok: false, reason: 'unsupported' };
   try {
     let p = await Notifications.getPermissionsAsync();

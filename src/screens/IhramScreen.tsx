@@ -79,9 +79,9 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
 
 function Mikat() {
   const [route, setRoute] = useState('makkah');
-  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
+  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (v && MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
   const choose = (id: string) => { setRoute(id); AsyncStorage.setItem(ROUTE_KEY, id).catch(() => {}); };
-  const r = MIKAT_ROUTES.find((x) => x.id === route);
+  const r = MIKAT_ROUTES.find((x) => x.id === route) || MIKAT_ROUTES[0];
   const [showAll, setShowAll] = useState(false);
   return (
     <>
@@ -186,8 +186,8 @@ function Steps({ onTalbiyah, onRules }: { onTalbiyah: () => void; onRules: () =>
 }
 
 function Talbiyah() {
-  const niyyah = findDua('niyyah');
-  const talbiyah = findDua('talbiyah');
+  const niyyah: any = findDua('niyyah');      // both are part of the app's own dua list
+  const talbiyah: any = findDua('talbiyah');
   const [speaking, setSpeaking] = useState(false);
   const [msg, setMsg] = useState('');
   const alive = useRef(true);
@@ -206,14 +206,14 @@ function Talbiyah() {
       setSpeaking(true);
       Speech.speak(talbiyah.parts.map((p) => p.bn).join(' '), {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
-        onDone: () => alive.current && setSpeaking(false),
-        onStopped: () => alive.current && setSpeaking(false),
+        onDone: () => { if (alive.current) setSpeaking(false); },
+        onStopped: () => { if (alive.current) setSpeaking(false); },
         onError: () => { if (alive.current) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); } },
       });
     } catch (e) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); }
   };
 
-  const Block = ({ label, p }: { label: string; p: any }) => (
+  const Block = ({ label, p }: { label?: string; p: any }) => (
     <View style={st.duaCard}>
       {label ? <Text style={st.partL}>{label}</Text> : null}
       <Text style={st.ar} accessibilityLanguage="ar">{p.ar}</Text>
@@ -275,7 +275,7 @@ function Common() {
       {COMMON.map((x, i) => (
         <View key={i} style={[st.rule, { borderLeftColor: C.warn }]}>
           <Text style={st.ruleT}>⚠️ {x.text}</Text>
-          {x.image ? <Illustration img={IMAGES[x.image]} /> : null}
+          {x.image ? <Illustration img={(IMAGES as Record<string, any>)[x.image]} /> : null}
           <Text style={st.ruleS}>📚 {x.source}</Text>
         </View>
       ))}

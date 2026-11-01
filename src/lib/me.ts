@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 export type Me = { full_name?: string; haji_code?: string; phone?: string; role?: string; status?: string; account_type?: string;
   phone_verified?: boolean; email?: string | null; email_verified?: boolean; verified?: boolean; offline?: boolean };
 export const PROFILE_CACHE = 'ta.profileCache.v1';
-export const MeCtx = createContext<{ me: Me | null; refreshMe: () => void }>({ me: null, refreshMe: () => {} });
+export const MeCtx = createContext<{ me: Me | null; refreshMe: () => Promise<Me | null> }>({ me: null, refreshMe: async () => null });
 export const useMe = () => useContext(MeCtx);
 
 // Column sets from newest to oldest database step, so the app keeps working before every SQL file is run.

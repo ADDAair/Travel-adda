@@ -173,7 +173,7 @@ function LostCard({ info, me, onClose }: { info: Record<string, any>; me: any; o
     setTtsErr(''); setSpeaking(true);
     Speech.speak(AR, {
       language: 'ar-SA', rate: 0.85,
-      onDone: () => alive.current && setSpeaking(false), onStopped: () => alive.current && setSpeaking(false),
+      onDone: () => { if (alive.current) setSpeaking(false); }, onStopped: () => { if (alive.current) setSpeaking(false); },
       onError: () => { if (alive.current) { setSpeaking(false); setTtsErr('আরবিতে শোনানো যায়নি। কার্ডটি দেখান।'); } },
     });
   };

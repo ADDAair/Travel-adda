@@ -5,6 +5,7 @@ export type Nav = {
   navigate: (route: string, params?: object) => void;
   addListener?: (event: string, cb: () => void) => () => void;
   goBack?: () => void;
+  setOptions?: (o: object) => void;
   setParams?: (params: object) => void;
 };
 export type Route<P extends object = Record<string, any>> = { params?: P };

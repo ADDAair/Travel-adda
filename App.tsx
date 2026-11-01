@@ -67,12 +67,12 @@ import FundScreen from './src/screens/FundScreen';
 import { updateGate, APP_VERSION } from './src/lib/appVersion';
 
 const Tab = createBottomTabNavigator();
-const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
+const ICON: Record<string, string> = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
 
 function DuaFab({ pending }: { pending: boolean }) {
   const scale = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    let loop;
+    let loop: Animated.CompositeAnimation | undefined;
     let cancelled = false;
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (cancelled || !pending || reduce) return;
@@ -128,7 +128,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {   // b
       {state.routes.map((r: any, i: any) => {
         if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
-        const label = T.tabs[r.name];
+        const label = (T.tabs as Record<string, string>)[r.name];
         const go = () => {
           const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
           if (e.defaultPrevented) return;
@@ -246,7 +246,7 @@ export default function App() {
     if (!session) { setGate(null); return; }
     loadVideoLinks();
     loadContentOverrides({ guide: GUIDES, dua: DUAS });
-    supabase.from('app_settings').select('key,value').then((r) => { if (!r.error) setGate(r.data || []); }).catch(() => {});
+    Promise.resolve(supabase.from('app_settings').select('key,value')).then((r) => { if (!r.error) setGate(r.data || []); }).catch(() => {});
   }, [session]);
 
   // Prayer reminders cover the next 7 days; re-make them whenever the app is opened.
@@ -263,7 +263,7 @@ export default function App() {
     if (pendingOpen && navReady && navRef.isReady()) {
       setPendingOpen(false);
       try { Notifications.clearLastNotificationResponseAsync?.()?.catch?.(() => {}); } catch (e) { /* older versions */ }
-      navRef.navigate('Notifications');
+      (navRef.navigate as (name: string) => void)('Notifications');
     }
   }, [pendingOpen, navReady]);
   useEffect(() => {

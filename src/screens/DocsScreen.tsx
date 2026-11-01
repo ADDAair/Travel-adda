@@ -107,7 +107,8 @@ function DocsInner({ navigation }: { navigation: Nav }) {
   };
   const askDelete = (row: Row) => {
     const title = `${typeOf(row.doc_type).label} মুছে ফেলবেন?`;
-    if (Platform.OS === 'web') { if (global.confirm && global.confirm(title)) doDelete(row); return; }   // web preview (tests) only
+    const g = globalThis as unknown as { confirm?: (t: string) => boolean };
+    if (Platform.OS === 'web') { if (g.confirm && g.confirm(title)) doDelete(row); return; }   // web preview (tests) only
     Alert.alert(title, 'এটা আর ফেরানো যাবে না।', [
       { text: 'না, রাখুন', style: 'cancel' },
       { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => doDelete(row) },
@@ -228,7 +229,7 @@ function Expiry({ row, onSaved }: { row: Row; onSaved: (nr: Row, note: string) =
   else if (left !== null && row.doc_type === 'passport' && left < 183) warn = <Notice kind="warn" title="পাসপোর্টের মেয়াদ ৬ মাসের কম" text="সৌদি ভিসার জন্য সাধারণত পাসপোর্টের মেয়াদ অন্তত ৬ মাস থাকতে হয়। আগেই নবায়ন করুন।" />;
   return (
     <View style={st.exp}>
-      {row.expires_on ? <Text style={st.rowW}>⏳ মেয়াদ শেষ: {ymdToInput(row.expires_on)}{left >= 0 ? ` (আর ${toBn(left)} দিন)` : ''}</Text> : <Text style={st.rowW}>মেয়াদের তারিখ লিখলে শেষ হওয়ার আগে ফোনে মনে করিয়ে দেবে।</Text>}
+      {row.expires_on ? <Text style={st.rowW}>⏳ মেয়াদ শেষ: {ymdToInput(row.expires_on)}{left !== null && left >= 0 ? ` (আর ${toBn(left)} দিন)` : ''}</Text> : <Text style={st.rowW}>মেয়াদের তারিখ লিখলে শেষ হওয়ার আগে ফোনে মনে করিয়ে দেবে।</Text>}
       {warn}
       {edit ? (
         <>
@@ -296,7 +297,7 @@ export function DocCamera({ onCancel, onUse }: { onCancel: () => void; onUse: (u
   );
 }
 
-function Viewer({ row, onClose, onDelete }: { row: Row; onClose: () => void; onDelete: (row: Row) => void }) {
+function Viewer({ row, onClose, onDelete }: { row: Row; onClose: () => void; onDelete: () => void }) {
   const ins = useSafeAreaInsets();
   const [src, setSrc] = useState<any>(null);
   const [err, setErr] = useState('');

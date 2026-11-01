@@ -23,7 +23,7 @@ export default function OffersScreen({ navigation, route }: { navigation: Nav; r
   const leader = isLeaderAccount(me);
   useEffect(() => { navigation?.setOptions?.({ title: leader ? 'আমার প্যাকেজ' : 'অফার ও প্যাকেজ' }); }, [leader, navigation]);
   if (!leader) return <HajiOffers navigation={navigation} route={route} />;
-  if (me.role !== 'leader') return <PendingLeader navigation={navigation} />;
+  if (!me || me.role !== 'leader') return <PendingLeader navigation={navigation} />;
   return <LeaderOffersScreen navigation={navigation} inTab />;
 }
 
@@ -136,9 +136,9 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
       setBusy(o.id); setMsg(null);
       try { await requestCallback(o.id); setMsg({ kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। Travel Adda টিম আপনাকে ফোন করবে।' }); await load(kind); }
       catch (e) {
-        const m = String(e?.message || '');
-        if (e?.code === '23505') setMsg({ kind: 'info', text: 'এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' });
-        else if (e?.code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।' });
+        const m = String((e as any)?.message || '');
+        if ((e as any)?.code === '23505') setMsg({ kind: 'info', text: 'এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' });
+        else if ((e as any)?.code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।' });
         else setMsg({ kind: 'bad', text: errText(e) });
       } finally { setBusy(null); }
     });
@@ -165,8 +165,8 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
         <Pressable onPress={() => setOpenId(null)} style={st.back} accessibilityRole="button" accessibilityLabel="সব প্যাকেজের তালিকায় ফিরে যান"><Text style={st.backT}>‹ সব প্যাকেজ</Text></Pressable>
         {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
         <OfferCard o={open}
-          onProfile={open.leader_id ? () => navigation.navigate('Leaders', { id: open.leader_id }) : null}
-          onMore={open.leader_code ? () => { setQ(open.leader_code); setMonth(null); setAirport(null); setMaxPrice(null); setOpenId(null); } : null}>
+          onProfile={open.leader_id ? () => navigation.navigate('Leaders', { id: open.leader_id }) : undefined}
+          onMore={open.leader_code ? () => { setQ(open.leader_code); setMonth(null); setAirport(null); setMaxPrice(null); setOpenId(null); } : undefined}>
           <View style={[st.cRow, { paddingTop: S.sm }]}>
             <Text style={st.lbl}>আগ্রহী হলে</Text>
             {help && help.phone ? (

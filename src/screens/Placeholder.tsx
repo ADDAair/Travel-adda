@@ -89,9 +89,9 @@ export function Account({ navigation }: { navigation: Nav }) {
     try {
       await deleteMyAccount(delPw);   // on success the app returns to the login screen by itself
     } catch (e) {
-      const m = String((e && e.message) || '').toLowerCase();
-      setDelErr(e && e.code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
-        : e && e.code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
+      const m = String((e && (e as any).message) || '').toLowerCase();
+      setDelErr(e && (e as any).code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
+        : e && (e as any).code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
         : m.includes('password needed') ? 'নিরাপত্তার জন্য পাসওয়ার্ড আবার লিখে চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
         : m.includes('network') || m.includes('fetch') ? 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট মুছে ফেলা হয়নি।'
         : 'এখন অ্যাকাউন্ট মুছে ফেলা যায়নি। একটু পরে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট আগের মতোই আছে।');
@@ -138,7 +138,7 @@ export function Account({ navigation }: { navigation: Nav }) {
       <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />
       {isLeaderAccount(me) ? (
-        <Button title={me.role === 'leader' ? 'লিডার প্যানেল' : 'লিডার নিবন্ধনের অবস্থা'} icon="🧭" kind="secondary" onPress={() => navigation.navigate(me.role === 'leader' ? 'Leader' : 'LeaderApply')} style={{ marginBottom: S.md }} />
+        <Button title={me?.role === 'leader' ? 'লিডার প্যানেল' : 'লিডার নিবন্ধনের অবস্থা'} icon="🧭" kind="secondary" onPress={() => navigation.navigate(me?.role === 'leader' ? 'Leader' : 'LeaderApply')} style={{ marginBottom: S.md }} />
       ) : (
         <Button title="লিডার ও চুক্তি" icon="🤝" kind="secondary" onPress={() => navigation.navigate('MyLeader')} a11yHint="লিডার খুঁজুন, রেফারেল কোড, চুক্তি, দলের ঘোষণা" style={{ marginBottom: S.md }} />
       )}

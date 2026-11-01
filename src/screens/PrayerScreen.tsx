@@ -11,7 +11,7 @@ import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, di
 import { SALAH } from '../content/salah';
 import type { Nav } from './navTypes';
 
-const GPS_ERR = {
+const GPS_ERR: Record<string, string> = {
   denied: 'অবস্থানের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
   blocked: 'অবস্থানের অনুমতি বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের "Location" চালু করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
   off: 'ফোনের লোকেশন (GPS) বন্ধ। ওপর থেকে নিচে টেনে "Location" চালু করে আবার চাপুন।',
@@ -68,7 +68,7 @@ function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onCho
   const useGps = async () => {
     if (busy) return;
     setBusy(true); setErr('');
-    const r = await getGpsLocation();
+    const r: any = await getGpsLocation();   // { lat, lng } or { error }
     setBusy(false);
     if (r.error) { setErr(r.error); return; }
     onChoose({ kind: 'gps', lat: r.lat, lng: r.lng, label: nearLabel(r.lat, r.lng), at: Date.now() });
@@ -189,7 +189,7 @@ function Times({ loc, now, navigation }: { loc: any; now: number; navigation: Na
   );
 }
 
-const REM_ERR = {
+const REM_ERR: Record<string, string> = {
   unsupported: 'এই ফোনে রিমাইন্ডার চালু করা যায় না।',
   denied: 'নোটিফিকেশনের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন।',
   blocked: 'নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।',
@@ -206,7 +206,7 @@ function Reminders({ loc }: { loc: any }) {
     setBusy(true); setErr('');
     const r = await enableReminders(loc);
     setBusy(false);
-    if (r.ok) setOn(true); else setErr(r.error);
+    if (r.ok) setOn(true); else setErr(r.error || 'failed');
   };
   const turnOff = async () => { if (busy) return; setBusy(true); await disableReminders(); setBusy(false); setOn(false); };
   return (
@@ -261,7 +261,7 @@ function Qibla({ loc }: { loc: any }) {
   const wasAligned = useRef(false);
 
   useEffect(() => {
-    let stop = null; let alive = true;
+    let stop: (() => void) | null = null; let alive = true;
     // raw compass readings jump by several degrees: show a smoothed heading (the short way round 0°)
     watchHeading((v) => { if (alive) { setH((p: any) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
       if (!alive) { if (s) s(); return; }
@@ -291,7 +291,7 @@ function Qibla({ loc }: { loc: any }) {
       {state === 'on' && h ? (
         <>
           <View style={st.dialWrap} accessible accessibilityLiveRegion="polite"
-            accessibilityLabel={aligned ? 'আপনি এখন কিবলামুখী' : `${turn.side === 'right' ? 'ডান' : 'বাঁ'} দিকে ${turn.deg} ডিগ্রি ঘুরুন`}>
+            accessibilityLabel={aligned ? 'আপনি এখন কিবলামুখী' : `${turn?.side === 'right' ? 'ডান' : 'বাঁ'} দিকে ${turn?.deg ?? 0} ডিগ্রি ঘুরুন`}>
             <Text style={st.pointer} importantForAccessibility="no">▲</Text>
             <View style={[st.dial, aligned && st.dialOk, { transform: [{ rotate: `${-h.heading}deg` }] }]}>
               {[['উ', 0], ['পূ', 90], ['দ', 180], ['প', 270]].map(([l, a]) => (
@@ -306,7 +306,7 @@ function Qibla({ loc }: { loc: any }) {
             </View>
           </View>
           {aligned ? <Notice kind="ok" title="আপনি এখন কিবলামুখী" text="ফোনের ওপরের দিক যেদিকে, সেদিকে মুখ করে দাঁড়ান।" />
-            : <Text style={st.turn}>{turn.side === 'right' ? '↻ ডান দিকে' : '↺ বাঁ দিকে'} আরও {toBn(turn.deg)}° ঘুরুন</Text>}
+            : <Text style={st.turn}>{turn?.side === 'right' ? '↻ ডান দিকে' : '↺ বাঁ দিকে'} আরও {toBn(turn?.deg ?? 0)}° ঘুরুন</Text>}
           {compassWeak(h.accuracy, Platform.OS) ? <Notice kind="warn" title="কম্পাস ঠিকমতো কাজ করছে না" text="ফোনটা বাতাসে ইংরেজি 8-এর মতো করে কয়েকবার ঘুরান, তারপর আবার দেখুন।" /> : null}
           <Text style={st.small}>ফোনটা টেবিলের মতো সমান করে ধরুন। লোহা, গাড়ি বা চুম্বক থেকে দূরে থাকুন। 🕋 চিহ্ন ওপরের ▲ বরাবর এলে আপনি কিবলামুখী।</Text>
         </>

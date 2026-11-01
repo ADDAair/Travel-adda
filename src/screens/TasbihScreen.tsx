@@ -19,7 +19,7 @@ const PRESETS = [
   { id: 'durood', label: 'দরুদ', ar: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', pron: 'আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ', bn: 'হে আল্লাহ, মুহাম্মাদ (সা.)-এর ওপর রহমত বর্ষণ করুন', target: 100 },
   { id: 'free', label: 'নিজের মতো গোনা', ar: '', pron: 'যেকোনো জিকির', bn: 'যত খুশি গুনুন', target: 0 },
 ];
-const P = (id: string) => PRESETS.find((p) => p.id === id);
+const P = (id: string): any => PRESETS.find((p) => p.id === id) || PRESETS[0];   // a preset or a single phrase
 
 export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const [sel, setSel] = useState('after');

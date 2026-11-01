@@ -37,7 +37,7 @@ const TOOLS = [
   { route: 'Calendar', icon: '📅', title: 'ইসলামি দিনপঞ্জি' },
 ];
 
-const UPCOMING = [
+const UPCOMING: [string, string, string][] = [
 ];
 
 export default function HomeScreen({ navigation }: { navigation: Nav }) {
@@ -84,9 +84,9 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   useEffect(() => {
     const refresh = () => { setNow(Date.now()); loadSavedLocation().then(setPloc); };
     refresh();
-    const unsub = navigation.addListener('focus', refresh);
+    const unsub = navigation.addListener?.('focus', refresh);
     const t = setInterval(() => setNow(Date.now()), 30000);
-    return () => { unsub(); clearInterval(t); };
+    return () => { unsub?.(); clearInterval(t); };
   }, [navigation]);
   let next = null;
   if (ploc) { try { const pl = dayPlan(ploc, now); next = { ...pl, t: fmtTime(pl.nextAt, pl.tz, pl.next.key), nm: pl.nextAt === pl.times.dhuhr ? prayerName(pl.next, pl.today) : pl.next.name }; } catch (e) { next = null; } }

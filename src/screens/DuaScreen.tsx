@@ -122,7 +122,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
         </View>
       ) : null}
       {cat === 'fav' && !q.trim() && list.length === 0 ? <Notice kind="info" title="এখনো কোনো প্রিয় দোয়া নেই" text="যেকোনো দোয়া খুলে ওপরের ⭐ বাটন চাপুন, সেটা এখানে চলে আসবে।" /> : null}
-      {list.map((d, i) => (
+      {list.map((d: any, i: number) => (
         <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
           accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.when}`} accessibilityHint="দোয়াটি খুলবে">
           <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
@@ -171,8 +171,8 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; 
       setSpeaking(true);
       Speech.speak(text, {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
-        onDone: () => alive.current && setSpeaking(false),
-        onStopped: () => alive.current && setSpeaking(false),
+        onDone: () => { if (alive.current) setSpeaking(false); },
+        onStopped: () => { if (alive.current) setSpeaking(false); },
         onError: () => { if (alive.current) { setSpeaking(false); setTtsMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); } },
       });
     } catch (e) {
