@@ -1,18 +1,18 @@
 // The second lock for admin & staff (2FA). Shown before the admin menu until this session typed a valid
 // 6-digit code from an authenticator app. The database refuses all admin work without it (023_admin_mfa.sql).
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { st } from './GroupScreen';
-import { mfaStep, startEnroll, verifyCode, mfaErrorText, secretGroups } from '../lib/mfa';
+import { mfaStep, startEnroll, verifyCode, mfaErrorText, secretGroups, type Enrollment } from '../lib/mfa';
 
 const PLAY = 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2';
 
-export default function AdminMfa({ onDone, again = false }) {
-  const [step, setStep] = useState('load'); // load | enroll | verify | err
-  const [factor, setFactor] = useState(null);
-  const [setup, setSetup] = useState(null); // { factorId, secret, uri } while setting up
+export default function AdminMfa({ onDone, again = false }: { onDone: () => void; again?: boolean }): JSX.Element {
+  const [step, setStep] = useState<'load' | 'enroll' | 'verify' | 'err'>('load');
+  const [factor, setFactor] = useState<string | null>(null);
+  const [setup, setSetup] = useState<Enrollment | null>(null); // { factorId, secret, uri } while setting up
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -23,25 +23,27 @@ export default function AdminMfa({ onDone, again = false }) {
     try {
       const r = await mfaStep({ again });
       if (r.step === 'ok') { onDone(); return; }
-      setFactor(r.factorId || null); setStep(r.step);
-    } catch (e) { setMsg(mfaErrorText(e)); setStep('err'); }
+      setFactor(r.step === 'verify' ? r.factorId : null); setStep(r.step);
+    } catch (e) { setMsg(mfaErrorText(e as { code?: string })); setStep('err'); }
   }, [onDone, again]);
   useEffect(() => { load(); }, [load]);
 
   const begin = async () => {
     if (busy) return;
     setBusy(true); setMsg('');
-    try { setSetup(await startEnroll()); } catch (e) { setMsg(mfaErrorText(e)); }
+    try { setSetup(await startEnroll()); } catch (e) { setMsg(mfaErrorText(e as { code?: string })); }
     setBusy(false);
   };
   const openApp = async () => {
+    if (!setup) return;
     try { await Linking.openURL(setup.uri); setAppMissing(false); } catch { setAppMissing(true); }
   };
   const submit = async () => {
     if (busy) return;
     const id = setup ? setup.factorId : factor;
+    if (!id) return;
     setBusy(true); setMsg('');
-    try { await verifyCode(id, code); setCode(''); onDone(); } catch (e) { setMsg(mfaErrorText(e)); }
+    try { await verifyCode(id, code); setCode(''); onDone(); } catch (e) { setMsg(mfaErrorText(e as { code?: string })); }
     setBusy(false);
   };
 

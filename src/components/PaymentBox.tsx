@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, Modal } from 'react-native';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
+import { View, Text, Pressable, Modal, type ViewStyle } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S, R, TOUCH } from '../theme';
@@ -7,18 +7,23 @@ import { Button, Field, Notice } from './ui';
 import { normalizeDigits } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { parseDate, todayYMD, ymdToInput } from '../lib/dates';
-import { PAY_METHODS, PAY_STATUS, methodLabel, payInfo, myPayments, contractMoney, submitPayment } from '../lib/payments';
+import { PAY_METHODS, PAY_STATUS, methodLabel, payInfo, myPayments, contractMoney, submitPayment,
+  type ContractMoney, type MyPayment, type PayInfo, type PayMethod } from '../lib/payments';
 import { DocCamera } from '../screens/DocsScreen';
 import { st, confirm, errText, fmtDay, fmtTaka } from '../screens/GroupScreen';
 
 // Haji: pay Travel Adda (never the leader directly), record the payment with a receipt, and follow its status.
-export default function PaymentBox({ contract }) {
-  const [money, setMoney] = useState(null);
-  const [rows, setRows] = useState([]);
-  const [info, setInfo] = useState(null);
-  const [state, setState] = useState('load');   // load | ok | soon | err
+type Contract = { id: string };
+type Msg = { kind: 'ok' | 'bad'; text: string } | null;
+type File = { uri: string; kind: 'image' | 'pdf'; name: string };
+
+export default function PaymentBox({ contract }: { contract: Contract }): JSX.Element | null {
+  const [money, setMoney] = useState<ContractMoney | null>(null);
+  const [rows, setRows] = useState<MyPayment[]>([]);
+  const [info, setInfo] = useState<PayInfo | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
 
   const load = useCallback(async () => {
     payInfo().then(setInfo).catch(() => setInfo(null));
@@ -64,18 +69,18 @@ export default function PaymentBox({ contract }) {
   );
 }
 
-const Line = ({ l, v, strong }) => (
+const Line = ({ l, v, strong }: { l: string; v: string; strong?: boolean }) => (
   <View style={p.line}><Text style={st.p}>{l}</Text><Text style={[st.p, strong && { fontWeight: '700' }]}>{v}</Text></View>
 );
 
-function PayForm({ contract, onClose, onSaved }) {
+function PayForm({ contract, onClose, onSaved }: { contract: Contract; onClose: () => void; onSaved: () => void }): JSX.Element {
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('bkash');
+  const [method, setMethod] = useState<PayMethod>('bkash');
   const [ref, setRef] = useState('');
   const [day, setDay] = useState(ymdToInput(todayYMD()));
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [cam, setCam] = useState(false);
-  const [err, setErr] = useState({});
+  const [err, setErr] = useState<Partial<Record<'amount' | 'ref' | 'day', string>>>({});
   const [fail, setFail] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -91,7 +96,7 @@ function PayForm({ contract, onClose, onSaved }) {
   };
   const save = () => {
     if (busy) return;
-    const e = {};
+    const e: Partial<Record<'amount' | 'ref' | 'day', string>> = {};
     const amt = Number(normalizeDigits(amount).replace(/[,\s]/g, ''));
     const paidOn = parseDate(day, 2020);
     if (!Number.isFinite(amt) || amt <= 0 || amt >= 1e8) e.amount = 'কত টাকা পাঠিয়েছেন, শুধু সংখ্যায় লিখুন।';
@@ -101,8 +106,9 @@ function PayForm({ contract, onClose, onSaved }) {
     if (Object.keys(e).length) return;
     confirm(`${fmtTaka(amt)} জমার তথ্য পাঠাবেন?`, 'Travel Adda অ্যাকাউন্টের সাথে মিলিয়ে নিশ্চিত করবে। ভুল তথ্য দেবেন না।', 'হ্যাঁ, পাঠান', async () => {
       setBusy(true);
-      try { await submitPayment({ contractId: contract.id, amount: amt, method, ref, paidOn, file }); onSaved(); }
-      catch (x) {
+      try { await submitPayment({ contractId: contract.id, amount: amt, method, ref, paidOn: paidOn as string, file }); onSaved(); }
+      catch (err0) {
+        const x = err0 as { code?: string; message?: string } | null;
         const m = String(x?.message || '');
         setFail(x?.code === 'too-big' ? 'রসিদের ফাইল ৫ এমবির বেশি বড়।'
           : x?.code === '23505' ? 'এই লেনদেন নম্বর আগেই জমা দেওয়া হয়েছে।'
@@ -116,7 +122,7 @@ function PayForm({ contract, onClose, onSaved }) {
   if (cam) {
     return (
       <Modal visible animationType="slide" onRequestClose={() => setCam(false)}>
-        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri) => { setCam(false); setFile({ uri, kind: 'image', name: 'ক্যামেরার ছবি' }); }} /></SafeAreaProvider>
+        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri: string) => { setCam(false); setFile({ uri, kind: 'image', name: 'ক্যামেরার ছবি' }); }} /></SafeAreaProvider>
       </Modal>
     );
   }
@@ -153,7 +159,7 @@ function PayForm({ contract, onClose, onSaved }) {
   );
 }
 
-const p = {
+const p: Record<string, ViewStyle> = {
   sum: { backgroundColor: C.okSoft, borderRadius: R.md, padding: S.sm, marginBottom: S.sm },
   line: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', paddingVertical: 2 },
   info: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: S.sm, marginBottom: S.sm },

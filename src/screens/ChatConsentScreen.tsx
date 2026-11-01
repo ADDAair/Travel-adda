@@ -1,28 +1,31 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
-import { myChatConsents, respondConsent, revokeConsent } from '../lib/chatConsent';
+import { myChatConsents, respondConsent, revokeConsent, type MyConsent } from '../lib/chatConsent';
 import { st, fmtDay, confirm } from './GroupScreen';
 
 // Haji: Travel Adda asks to read the questions & answers with a leader, to settle a dispute.
 // Nobody reads anything unless the haji agrees here; the permission ends after 7 days or when taken back.
-export default function ChatConsentScreen({ navigation }) {
-  const [rows, setRows] = useState(undefined);
+type Nav = { navigate: (r: string) => void; addListener?: (e: string, f: () => void) => () => void };
+type Msg = { kind: 'ok' | 'bad'; text: string } | null;
+
+export default function ChatConsentScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [rows, setRows] = useState<MyConsent[] | undefined>(undefined);
   const [err, setErr] = useState(false);
-  const [busy, setBusy] = useState(null);
-  const [msg, setMsg] = useState(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {
     setErr(false);
     try { setRows(await myChatConsents()); } catch (e) { setRows([]); setErr(true); }
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
-  const act = async (k, fn, okText) => {
+  const act = async (k: MyConsent, fn: () => Promise<unknown>, okText: string) => {
     if (busy) return;
     setBusy(k.id); setMsg(null);
     try { await fn(); setMsg({ kind: 'ok', text: okText }); await load(); }
-    catch (e) { setMsg({ kind: 'bad', text: e.code === 'not_found' ? 'এই অনুরোধটি আর নেই।' : 'কাজটি হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।' }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'not_found' ? 'এই অনুরোধটি আর নেই।' : 'কাজটি হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।' }); }
     setBusy(null);
   };
 
