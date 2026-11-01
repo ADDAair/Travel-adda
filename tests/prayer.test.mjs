@@ -1,4 +1,4 @@
-// Cross-checks src/lib/prayer.js against the independent "adhan" library (installed only in CI).
+// Cross-checks src/lib/prayer.ts against the independent "adhan" library (installed only in CI).
 // Usage: node tests/prayer.test.mjs <path-to-node_modules-containing-adhan>
 import fs from 'fs';
 import os from 'os';
@@ -8,9 +8,10 @@ import { pathToFileURL } from 'url';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pt-'));
-fs.writeFileSync(path.join(tmp, 'phone.mjs'), fs.readFileSync(path.join(root, 'src/lib/phone.js'), 'utf8'));
-fs.writeFileSync(path.join(tmp, 'prayer.mjs'), fs.readFileSync(path.join(root, 'src/lib/prayer.js'), 'utf8').replace("from './phone'", "from './phone.mjs'"));
-const P = await import(pathToFileURL(path.join(tmp, 'prayer.mjs')).href);
+// .mts: Node strips the TypeScript types itself (no build step)
+fs.writeFileSync(path.join(tmp, 'phone.mts'), fs.readFileSync(path.join(root, 'src/lib/phone.ts'), 'utf8'));
+fs.writeFileSync(path.join(tmp, 'prayer.mts'), fs.readFileSync(path.join(root, 'src/lib/prayer.ts'), 'utf8').replace("from './phone'", "from './phone.mts'"));
+const P = await import(pathToFileURL(path.join(tmp, 'prayer.mts')).href);
 const adhan = createRequire(path.join(process.argv[2] || '.', 'x.js'))('adhan');
 
 const cities = {

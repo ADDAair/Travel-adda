@@ -23,6 +23,22 @@ test('step 2 and 3 files are TypeScript (and the old JavaScript copy is gone)', 
     assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
   }
 });
+// Step 4 (Nov 2026): every remaining file in src/lib — the whole app logic is now TypeScript.
+const STEP4 = ['idle', 'prefs', 'phone', 'appVersion', 'dates', 'notify', 'videoLinks', 'keyboard', 'supabase', 'docReminders', 'me',
+  'contractPdf', 'avatar', 'leaderKinds', 'location', 'upazilas', 'notifications', 'contentEdit', 'offerRoute', 'push', 'offers',
+  'reminders', 'docs', 'prayer'].map((f) => `src/lib/${f}`);
+test('step 4: all of src/lib is TypeScript (no JavaScript left there)', async () => {
+  for (const f of STEP4) {
+    assert.ok(existsSync(new URL(`${f}.ts`, root)), `${f}.ts missing`);
+    assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
+  }
+  const { readdirSync } = await import('node:fs');
+  assert.deepEqual(readdirSync(new URL('src/lib/', root)).filter((f) => f.endsWith('.js')), []);
+});
+test('step 4: the prayer-time cross-check reads the TypeScript files', () => {
+  const s = readFileSync(new URL('tests/prayer.test.mjs', root), 'utf8');
+  assert.ok(s.includes('src/lib/prayer.ts') && s.includes('src/lib/phone.ts'));
+});
 test('strict type checking is on and runs in CI', () => {
   const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
   assert.equal(ts.compilerOptions.strict, true);

@@ -1,7 +1,7 @@
 // Upazilas of each district (Bengali), for the leader's work area. 495 upazilas.
 // Source: github.com/nuhil/bangladesh-geocode (MIT licence, (c) 2014 Nuhil Mehdy) + শায়েস্তাগঞ্জ (Habiganj, 2017).
 // "সদর" first, then the rest in Bengali order. The picker also lets a leader type a name that is missing here.
-export const UPAZILAS = {
+export const UPAZILAS: Record<string, string[]> = {
   "ঢাকা": ["কেরাণীগঞ্জ","দোহার","ধামরাই","নবাবগঞ্জ","সাভার"],
   "গাজীপুর": ["গাজীপুর সদর","কাপাসিয়া","কালিয়াকৈর","কালীগঞ্জ","শ্রীপুর"],
   "নারায়ণগঞ্জ": ["নারায়নগঞ্জ সদর","আড়াইহাজার","বন্দর","রূপগঞ্জ","সোনারগাঁ"],
@@ -68,4 +68,4 @@ export const UPAZILAS = {
   "নেত্রকোনা": ["নেত্রকোনা সদর","আটপাড়া","কলমাকান্দা","কেন্দুয়া","খালিয়াজুরী","দুর্গাপুর","পূর্বধলা","বারহাট্টা","মদন","মোহনগঞ্জ"],
 };
 
-export const upazilasOf = (district) => UPAZILAS[district] || [];
+export const upazilasOf = (district: string): string[] => UPAZILAS[district] || [];

@@ -3,7 +3,8 @@
 //  * travel_adda  – works directly with Travel Adda: no office or licence; a picture of the national ID (NID) instead
 // Both may give a profession (Imam, Muazzin, Madrasa teacher ...) and must give their work area.
 
-export const LEADER_KINDS = {
+export type LeaderKind = { icon: string; title: string; what: string; badge?: string };
+export const LEADER_KINDS: Record<string, LeaderKind> = {
   agency: { icon: '🏢', title: 'আমার নিজের এজেন্সি আছে', what: 'হজ/ওমরাহ এজেন্সির নাম, লাইসেন্স নম্বর ও লাইসেন্সের ছবি দিতে হবে।' },
   travel_adda: { icon: '🤝', title: 'আমি Travel Adda-র সাথে সরাসরি কাজ করব', what: 'অফিস বা লাইসেন্স লাগবে না। জাতীয় পরিচয়পত্রের (NID) ছবি দিতে হবে।', badge: '✅ Travel Adda-র নিজস্ব লিডার' },
 };
@@ -14,13 +15,16 @@ export const PROFESSIONS = [
 ];
 
 // "Travel Adda" in any spelling: only Travel Adda's own leaders may show it (the database blocks it too).
-export const isReservedAgencyName = (name) => /travel[\s\-_.]*adda|ট্রাভেল[\s\-_.]*আড্ডা/i.test(String(name || ''));
+export const isReservedAgencyName = (name: unknown): boolean => /travel[\s\-_.]*adda|ট্রাভেল[\s\-_.]*আড্ডা/i.test(String(name || ''));
 
-const clean = (s) => String(s || '').trim();
+const clean = (s: unknown): string => String(s || '').trim();
 
 // Returns { field: 'Bengali message' } for every problem; {} when the form can be sent.
-export function validateApplication({ kind, agency, umrah, hajj, area = {}, file, agreed, termsExist }) {
-  const e = {};
+export type WorkArea = { district?: string | null; upazila?: string | null; union?: string | null };
+export type ApplicationForm = { kind: string; agency?: string; umrah?: string; hajj?: string; area?: WorkArea; file?: unknown;
+  agreed?: boolean; termsExist?: boolean; profession?: string | null; docPath?: string | null };
+export function validateApplication({ kind, agency, umrah, hajj, area = {}, file, agreed, termsExist }: ApplicationForm): Record<string, string> {
+  const e: Record<string, string> = {};
   if (!LEADER_KINDS[kind]) { e.kind = 'আপনি কোন ধরনের লিডার, সেটি বাছুন।'; return e; }
   if (kind === 'agency') {
     if (clean(agency).length < 2) e.agency = 'এজেন্সির নাম লিখুন।';
@@ -38,7 +42,7 @@ export function validateApplication({ kind, agency, umrah, hajj, area = {}, file
 }
 
 // The row for leader_applications. A Travel Adda leader sends no office/licence data at all.
-export function applicationRow({ kind, agency, umrah, hajj, area = {}, profession, docPath }) {
+export function applicationRow({ kind, agency, umrah, hajj, area = {}, profession, docPath }: ApplicationForm): Record<string, string | null> {
   const common = {
     profession: clean(profession) || null,
     district: area.district || null,

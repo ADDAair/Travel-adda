@@ -3,8 +3,10 @@ import { createContext, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
+export type Me = { full_name?: string; haji_code?: string; phone?: string; role?: string; status?: string; account_type?: string;
+  phone_verified?: boolean; email?: string | null; email_verified?: boolean; verified?: boolean; offline?: boolean };
 export const PROFILE_CACHE = 'ta.profileCache.v1';
-export const MeCtx = createContext({ me: null, refreshMe: () => {} });
+export const MeCtx = createContext<{ me: Me | null; refreshMe: () => void }>({ me: null, refreshMe: () => {} });
 export const useMe = () => useContext(MeCtx);
 
 // Column sets from newest to oldest database step, so the app keeps working before every SQL file is run.
@@ -17,19 +19,20 @@ const COLS = [
 
 // The choice made at sign-up ("I am a haji / a group leader") is also kept with the login itself, so a leader
 // account still opens the leader screens even before the database step that stores it (007) has been run.
-async function signupType() {
+async function signupType(): Promise<'leader' | 'haji'> {
   try { const { data } = await supabase.auth.getSession(); return data?.session?.user?.user_metadata?.account_type === 'leader' ? 'leader' : 'haji'; }
   catch (e) { return 'haji'; }
 }
 
-export async function loadMe() {
-  let cached = null;
+type R = { data?: Me | null; error?: { code?: string; message?: string } | null };
+export async function loadMe(): Promise<Me | null> {
+  let cached: Me | null = null;
   const signedUpAs = await signupType();
   try { cached = JSON.parse((await AsyncStorage.getItem(PROFILE_CACHE)) || 'null'); } catch (e) { cached = null; }
   for (const cols of COLS) {
-    const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 8000));
+    const timeout = new Promise<R>((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 8000));
     // eslint-disable-next-line no-await-in-loop
-    const r = await Promise.race([supabase.from('profiles').select(cols).single(), timeout]);
+    const r: R = await Promise.race([supabase.from('profiles').select(cols).single() as PromiseLike<R>, timeout]);
     if (!r.error && r.data) {
       const me = { ...r.data, account_type: r.data.account_type || signedUpAs, offline: false };
       AsyncStorage.setItem(PROFILE_CACHE, JSON.stringify(me)).catch(() => {});
@@ -41,6 +44,6 @@ export async function loadMe() {
   return cached ? { ...cached, account_type: cached.account_type || signedUpAs, offline: true } : null;
 }
 
-export const isLeaderAccount = (me) => !!me && (me.account_type === 'leader' || me.role === 'leader');
-export const isApprovedLeader = (me) => !!me && me.role === 'leader' && me.status === 'active';
-export const isStaff = (me) => !!me && (me.role === 'admin' || me.role === 'staff');
+export const isLeaderAccount = (me: Me | null | undefined): boolean => !!me && (me.account_type === 'leader' || me.role === 'leader');
+export const isApprovedLeader = (me: Me | null | undefined): boolean => !!me && me.role === 'leader' && me.status === 'active';
+export const isStaff = (me: Me | null | undefined): boolean => !!me && (me.role === 'admin' || me.role === 'staff');

@@ -7,13 +7,14 @@ import { supabase } from './supabase';
 import { toBn } from './phone';
 
 const SKIP = new Set(['id', 'icon', 'type', 'kind', 'cat', 'to', 'route', 'screen', 'url', 'link']);
-const KEY = { title: 'শিরোনাম', what: 'ছোট বিবরণ', text: 'লেখা', tip: 'টিপস', bn: 'বাংলা অর্থ', ar: 'আরবি', pron: 'উচ্চারণ',
+type Obj = Record<string, any>;   // a guide or dua item (any shape)
+const KEY: Record<string, string> = { title: 'শিরোনাম', what: 'ছোট বিবরণ', text: 'লেখা', tip: 'টিপস', bn: 'বাংলা অর্থ', ar: 'আরবি', pron: 'উচ্চারণ',
   when: 'কখন পড়বেন', source: 'সূত্র', note: 'নোট', label: 'নাম', a11y: 'পড়ে শোনানোর লেখা' };
-const LIST = { blocks: 'অংশ', steps: 'ধাপ', parts: 'ভাগ', items: 'লাইন', rows: 'সারি' };
-const own = (o, k) => o !== null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
+const LIST: Record<string, string> = { blocks: 'অংশ', steps: 'ধাপ', parts: 'ভাগ', items: 'লাইন', rows: 'সারি' };
+const own = (o: unknown, k: string): o is Obj => o !== null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
 
-function label(path) {
-  const seg = path.split('.'); const out = [];
+function label(path: string): string {
+  const seg = path.split('.'); const out: string[] = [];
   for (let i = 0; i < seg.length; i += 1) {
     const s = seg[i]; const n = seg[i + 1];
     if (LIST[s] && /^\d+$/.test(n || '')) { out.push(`${LIST[s]} ${toBn(Number(n) + 1)}`); i += 1; }
@@ -24,31 +25,33 @@ function label(path) {
 }
 
 // Every editable text of one guide or dua, in reading order.
-export function textFields(item) {
-  const out = [];
-  const walk = (v, path) => {
+export type TextField = { path: string; label: string; value: string };
+export function textFields(item: unknown): TextField[] {
+  const out: TextField[] = [];
+  const walk = (v: unknown, path: string): void => {
     if (typeof v === 'string') { if (path) out.push({ path, label: label(path), value: v }); return; }
     if (Array.isArray(v)) { v.forEach((x, i) => walk(x, path ? `${path}.${i}` : String(i))); return; }
-    if (v && typeof v === 'object') Object.keys(v).forEach((k) => { if (!SKIP.has(k)) walk(v[k], path ? `${path}.${k}` : k); });
+    if (v && typeof v === 'object') Object.keys(v).forEach((k) => { if (!SKIP.has(k)) walk((v as Obj)[k], path ? `${path}.${k}` : k); });
   };
   walk(item, '');
   return out;
 }
 
-const ORIG = new Map();   // "kind/item/path" -> the app's own text
+const ORIG = new Map<string, string>();   // "kind/item/path" -> the app's own text
 
-function locate(item, path) {
+function locate(item: Obj, path: unknown): { o: Obj; last: string } | null {
   const seg = String(path || '').split('.');
   if (!seg.length || seg.some((s) => !/^[A-Za-z0-9_]+$/.test(s) || SKIP.has(s))) return null;
-  let o = item;
-  for (let i = 0; i < seg.length - 1; i += 1) { if (!own(o, seg[i])) return null; o = o[seg[i]]; }
+  let o: unknown = item;
+  for (let i = 0; i < seg.length - 1; i += 1) { if (!own(o, seg[i])) return null; o = (o as Obj)[seg[i]]; }
   const last = seg[seg.length - 1];
   if (!own(o, last) || typeof o[last] !== 'string') return null;
   return { o, last };
 }
 
 // Puts the corrections of one kind ('guide' | 'dua') into the list, after first restoring the app's own text.
-export function applyOverrides(list, rows, kind) {
+export type Override = { kind: string; item_id: string; path: string; body: string | null };
+export function applyOverrides(list: Obj[] | null | undefined, rows: Override[] | null | undefined, kind: string): void {
   for (const [k, v] of [...ORIG]) {
     if (!k.startsWith(`${kind}/`)) continue;
     const [, id, ...p] = k.split('/');
@@ -63,14 +66,14 @@ export function applyOverrides(list, rows, kind) {
     if (!at) return;
     const k = `${kind}/${r.item_id}/${r.path}`;
     if (!ORIG.has(k)) ORIG.set(k, at.o[at.last]);
-    at.o[at.last] = r.body;
+    at.o[at.last] = r.body as string;
   });
 }
 
 const CACHE = 'ta.content.v1';
 // Called once at app start: cached corrections first (offline), then fresh ones from the server.
-export async function loadContentOverrides(lists) {
-  const put = (rows) => Object.entries(lists).forEach(([kind, list]) => applyOverrides(list, rows, kind));
+export async function loadContentOverrides(lists: Record<string, Obj[]>): Promise<void> {
+  const put = (rows: Override[]) => Object.entries(lists).forEach(([kind, list]) => applyOverrides(list, rows, kind));
   try { const c = JSON.parse((await AsyncStorage.getItem(CACHE)) || 'null'); if (Array.isArray(c)) put(c); } catch (e) { /* no cache */ }
   try {
     const r = await supabase.from('content_overrides').select('kind,item_id,path,body');
@@ -80,13 +83,13 @@ export async function loadContentOverrides(lists) {
   } catch (e) { /* keep */ }
 }
 
-export async function listOverrides() {
+export async function listOverrides(): Promise<(Override & { updated_at: string })[]> {
   const r = await supabase.from('content_overrides').select('kind,item_id,path,body,updated_at');
   if (r.error) throw r.error;
   return r.data || [];
 }
 
-export async function setContent(kind, item, path, body) {
+export async function setContent(kind: string, item: string, path: string, body: string | null | undefined): Promise<unknown> {
   const b = body == null ? null : String(body).trim();
   if (b !== null && !b) throw Object.assign(new Error('empty'), { code: 'empty' });
   const r = await supabase.rpc('admin_set_content', { p_kind: kind, p_item: item, p_path: path, p_body: b });
@@ -95,4 +98,4 @@ export async function setContent(kind, item, path, body) {
 }
 
 // The app's own text for a place (for "আগের লেখা" in the editor).
-export const originalText = (kind, item, path) => ORIG.get(`${kind}/${item}/${path}`);
+export const originalText = (kind: string, item: string, path: string): string | undefined => ORIG.get(`${kind}/${item}/${path}`);

@@ -1,6 +1,10 @@
 // Package journey (supabase/020_offer_route.sql), leader search and filters on the Offers page. No network here.
 import { toBn, normalizeDigits } from './phone';
 
+type Offer = Record<string, any>;   // an offer row from the server
+export type RouteForm = { from?: string; arrive?: string; first?: string; mk?: unknown; md?: unknown; back?: string; to?: string; airline?: string | null };
+export type RouteStep = { icon: string; title: string; text: string; when?: string };
+
 export const AIRPORTS_BD = [
   { id: 'DAC', label: 'ঢাকা', full: 'হযরত শাহজালাল আন্তর্জাতিক বিমানবন্দর, ঢাকা' },
   { id: 'CGP', label: 'চট্টগ্রাম', full: 'শাহ আমানত আন্তর্জাতিক বিমানবন্দর, চট্টগ্রাম' },
@@ -14,60 +18,61 @@ export const CITIES = [{ id: 'makkah', label: 'মক্কা', icon: '🕋' },
 export const PRICE_LIMITS = [150000, 200000, 300000];
 const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 
-const name = (list, id) => (list.find((a) => a.id === id) || {}).label || '';
-const nights = (n) => `${toBn(n)} রাত`;
-export const hasRoute = (o) => !!(o && o.from_airport && o.makkah_nights != null);
+const name = (list: readonly { id: string; label: string }[], id: string): string => (list.find((a) => a.id === id) || { label: '' }).label || '';
+const nights = (n: number): string => `${toBn(n)} রাত`;
+export const hasRoute = (o: Offer | null | undefined): boolean => !!(o && o.from_airport && o.makkah_nights != null);
 
-function cityOrder(o) {
+function cityOrder(o: Offer): { c: string; n: number }[] {
   const order = o.first_city === 'madinah' ? ['madinah', 'makkah'] : ['makkah', 'madinah'];
   return order.map((c) => ({ c, n: c === 'makkah' ? o.makkah_nights : o.madinah_nights })).filter((x) => x.n > 0);
 }
 
 // Steps in travel order: fly out, each holy city with its nights, fly home.
-export function routeSteps(o) {
+export function routeSteps(o: Offer): RouteStep[] | null {
   if (!hasRoute(o)) return null;
-  const out = [{ icon: '🛫', title: 'যাত্রা শুরু', text: `${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, when: o.depart_on }];
+  const out: RouteStep[] = [{ icon: '🛫', title: 'যাত্রা শুরু', text: `${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, when: o.depart_on }];
   cityOrder(o).forEach(({ c, n }) => {
     const city = CITIES.find((x) => x.id === c);
-    out.push({ icon: city.icon, title: city.label, text: `${nights(n)} থাকা` });
+    if (city) out.push({ icon: city.icon, title: city.label, text: `${nights(n)} থাকা` });
   });
   out.push({ icon: '🛬', title: 'দেশে ফেরা', text: `${name(AIRPORTS_SA, o.return_from)} থেকে ${name(AIRPORTS_BD, o.return_to)}`, when: o.return_on });
   return out;
 }
 
-export function routeShort(o) {
+export function routeShort(o: Offer): string {
   if (!hasRoute(o)) return 'যাত্রাপথ উল্লেখ নেই';
   const mid = cityOrder(o).map(({ c, n }) => `${name(CITIES, c)} ${nights(n)}`);
   return [name(AIRPORTS_BD, o.from_airport), ...mid, name(AIRPORTS_BD, o.return_to)].join(' → ');
 }
 
-const int = (v) => { const t = normalizeDigits(String(v ?? '')).trim(); return t === '' ? null : /^\d+$/.test(t) ? Number(t) : NaN; };
+const int = (v: unknown): number | null => { const t = normalizeDigits(String(v ?? '')).trim(); return t === '' ? null : /^\d+$/.test(t) ? Number(t) : NaN; };
 
 // Form check. r = { from, arrive, first, mk, md, back, to }; days = whole trip length in days.
-export function checkRoute(r, days) {
-  const e = {};
+export function checkRoute(r: RouteForm, days: number): Record<string, string> {
+  const e: Record<string, string> = {};
   if (!r.from) e.from = 'কোন বিমানবন্দর থেকে যাত্রা শুরু, বাছাই করুন।';
   if (!r.arrive) e.arrive = 'সৌদিতে কোথায় নামবেন, বাছাই করুন।';
   if (!r.first) e.first = 'আগে মক্কা না মদিনা, বাছাই করুন।';
   if (!r.back) e.back = 'সৌদির কোন বিমানবন্দর থেকে ফিরবেন, বাছাই করুন।';
   if (!r.to) e.to = 'দেশের কোন বিমানবন্দরে ফিরবেন, বাছাই করুন।';
   const mk = int(r.mk); const md = int(r.md) ?? 0;
-  if (!Number.isInteger(mk) || mk < 1 || mk > 60) e.mk = 'মক্কায় কত রাত থাকবেন, সংখ্যায় লিখুন (কমপক্ষে ১)।';
+  if (mk === null || !Number.isInteger(mk) || mk < 1 || mk > 60) e.mk = 'মক্কায় কত রাত থাকবেন, সংখ্যায় লিখুন (কমপক্ষে ১)।';
   if (!Number.isInteger(md) || md < 0 || md > 60) e.md = 'মদিনায় কত রাত থাকবেন, সংখ্যায় লিখুন (না থাকলে ০)।';
-  else if (!e.mk && days > 1 && mk + md > days - 1) e.md = `মক্কা ও মদিনা মিলিয়ে সর্বোচ্চ ${toBn(days - 1)} রাত হতে পারে (সফর ${toBn(days)} দিনের)।`;
+  else if (!e.mk && mk !== null && days > 1 && mk + md > days - 1) e.md = `মক্কা ও মদিনা মিলিয়ে সর্বোচ্চ ${toBn(days - 1)} রাত হতে পারে (সফর ${toBn(days)} দিনের)।`;
   return e;
 }
 
-export function routeRow(r) {
+export function routeRow(r: RouteForm): Record<string, string | number | null | undefined> {
   const a = String(r.airline || '').trim();
   return { from_airport: r.from, arrive_at: r.arrive, first_city: r.first, makkah_nights: int(r.mk), madinah_nights: int(r.md) ?? 0,
     return_from: r.back, return_to: r.to, airline: a || null };
 }
 
 // "TL-00004", "tl০০০০৪", "TL 4"-like input → comparable key
-export const leaderKey = (v) => normalizeDigits(String(v || '')).toUpperCase().replace(/[^A-Z0-9]/g, '');
+export const leaderKey = (v: unknown): string => normalizeDigits(String(v || '')).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-export function filterOffers(rows, f = {}) {
+export type OfferFilter = { q?: string; month?: string | null; airport?: string | null; maxPrice?: number | null };
+export function filterOffers(rows: Offer[] | null | undefined, f: OfferFilter = {}): Offer[] {
   const q = String(f.q || '').trim();
   const k = leaderKey(q); const ql = q.toLowerCase();
   return (rows || []).filter((o) => {
@@ -85,18 +90,18 @@ export function filterOffers(rows, f = {}) {
 
 // Every month from this month for a year (so hajis can check any month, even an empty one), plus any later month
 // that has a package. Each label says how many packages leave that month.
-export function monthOptions(rows, today) {
+export function monthOptions(rows: Offer[] | null | undefined, today?: string | null): { id: string; label: string }[] {
   const t = String(today || new Date().toISOString()).slice(0, 7);
   let y = Number(t.slice(0, 4)); let mo = Number(t.slice(5, 7));
-  const ids = new Set();
+  const ids = new Set<string>();
   for (let i = 0; i < 12; i += 1) { ids.add(`${y}-${String(mo).padStart(2, '0')}`); mo += 1; if (mo > 12) { mo = 1; y += 1; } }
-  const count = {};
+  const count: Record<string, number> = {};
   (rows || []).forEach((o) => { const m = String(o.depart_on || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(m)) { count[m] = (count[m] || 0) + 1; if (m >= t) ids.add(m); } });
   return [...ids].sort().map((id) => ({ id, label: `${BN_MONTH[Number(id.slice(5)) - 1]} ${toBn(id.slice(0, 4))} (${toBn(count[id] || 0)}টি)` }));
 }
 
 // A price the haji types: "১,৮০,০০০", "180000", "২.৫ লাখ", "2 lakh". null when empty, NaN when not a price.
-export function parsePrice(v) {
+export function parsePrice(v: unknown): number | null {
   const t = normalizeDigits(String(v ?? '')).replace(/[,\s]/g, '').toLowerCase();
   if (!t) return null;
   const m = t.match(/^(\d+(?:\.\d+)?)(লাখ|লক্ষ|lakh|lac)?(টাকা|tk)?$/);
@@ -106,5 +111,5 @@ export function parsePrice(v) {
 }
 
 // Hajj happens once a year, so the month choice is only for umrah.
-export const monthFilterFor = (kind) => kind === 'umrah';
-export const monthButtonText = (month, options) => `📅 ${month ? ((options || []).find((x) => x.id === month) || { label: month }).label : 'সব মাস'}`;
+export const monthFilterFor = (kind: string): boolean => kind === 'umrah';
+export const monthButtonText = (month: string | null | undefined, options: { id: string; label: string }[] | null | undefined): string => `📅 ${month ? ((options || []).find((x) => x.id === month) || { label: month }).label : 'সব মাস'}`;

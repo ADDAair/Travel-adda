@@ -11,9 +11,9 @@ import app from '../../app.json';
 const KEY = 'ta.push.v1';            // 'on' | 'off' (this phone's choice); missing = not asked yet
 const TOKEN = 'ta.pushToken.v1';
 export const pushSupported = Platform.OS === 'android' || Platform.OS === 'ios';
-const projectId = app?.expo?.extra?.eas?.projectId;
+const projectId: string | undefined = (app as { expo?: { extra?: { eas?: { projectId?: string } } } })?.expo?.extra?.eas?.projectId;
 
-async function channels() {
+async function channels(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('notices', {
     name: 'Travel Adda নোটিফিকেশন', importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 250, 150, 250],
@@ -23,7 +23,7 @@ async function channels() {
   });
 }
 
-async function register() {
+async function register(): Promise<string> {
   const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
   const token = data;
   const { data: r, error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: Platform.OS });
@@ -35,9 +35,10 @@ async function register() {
 
 // What the screen should show: 'on' | 'off' | 'unset' (never asked) | 'denied' (blocked in phone settings)
 // | 'unavailable' (this build / phone cannot receive push) | 'soon' (database step 011 not run yet)
-export async function pushState() {
+export type PushState = 'on' | 'off' | 'unset' | 'denied' | 'unavailable' | 'soon' | 'error';
+export async function pushState(): Promise<PushState> {
   if (!pushSupported) return 'unavailable';
-  let pref = null;
+  let pref: string | null = null;
   try { pref = await AsyncStorage.getItem(KEY); } catch (e) { pref = null; }
   try {
     const { data, error } = await supabase.rpc('my_push_count');
@@ -52,7 +53,7 @@ export async function pushState() {
 }
 
 // Turn on: asks the phone for permission (Android 13+ shows its own question), then registers this phone.
-export async function enablePush() {
+export async function enablePush(): Promise<PushState> {
   if (!pushSupported) return 'unavailable';
   try {
     await channels();
@@ -66,7 +67,7 @@ export async function enablePush() {
     return 'on';
   } catch (e) {
     if (notReady(e)) return 'soon';
-    const m = String(e?.message || e);
+    const m = String((e as { message?: string })?.message || e);
     // No Firebase setup in this build (or no Google services on the phone): push cannot work here.
     if (/firebase|FCM|google-services|FirebaseApp|SERVICE_NOT_AVAILABLE|projectId/i.test(m)) {
       await AsyncStorage.setItem(KEY, 'off').catch(() => {});   // the Home card stops asking; the 🔔 page can try again in a later version
@@ -76,7 +77,7 @@ export async function enablePush() {
   }
 }
 
-export async function disablePush() {
+export async function disablePush(): Promise<PushState> {
   try {
     const t = await AsyncStorage.getItem(TOKEN);
     if (t) { const { error } = await supabase.rpc('unregister_push_token', { p_token: t }); if (error && !notReady(error)) throw error; }
@@ -85,12 +86,12 @@ export async function disablePush() {
   } catch (e) { return 'error'; }
 }
 
-export async function notNow() { try { await AsyncStorage.setItem(KEY, 'off'); } catch (e) { /* ignore */ } }
+export async function notNow(): Promise<void> { try { await AsyncStorage.setItem(KEY, 'off'); } catch (e) { /* ignore */ } }
 
 // Called when the app opens / after login: keeps the server copy fresh (tokens can change). Silent.
 // At most once a day (with 1 lakh people, re-registering at every app open would be pure extra load).
 const SYNCED = 'ta.pushSynced.v1';
-export async function syncPush() {
+export async function syncPush(): Promise<void> {
   if (!pushSupported) return;
   try {
     if ((await AsyncStorage.getItem(KEY)) !== 'on') return;
@@ -104,10 +105,10 @@ export async function syncPush() {
   } catch (e) { /* next time */ }
 }
 // This phone's saved choice only (no server call): 'on' | 'off' | null (never asked).
-export async function pushPref() { try { return await AsyncStorage.getItem(KEY); } catch (e) { return null; } }
+export async function pushPref(): Promise<string | null> { try { return await AsyncStorage.getItem(KEY); } catch (e) { return null; } }
 
 // Before logout: this phone must stop getting this account's notices. Keeps the phone's on/off choice.
-export async function pushLogout() {
+export async function pushLogout(): Promise<void> {
   try {
     const t = await AsyncStorage.getItem(TOKEN);
     if (t) await Promise.race([supabase.rpc('unregister_push_token', { p_token: t }), new Promise((r) => setTimeout(r, 4000))]);
@@ -118,4 +119,4 @@ export async function pushLogout() {
 export const openPhoneSettings = () => Linking.openSettings().catch(() => {});
 
 // Is this tap on a Travel Adda push (not a prayer / document reminder)?
-export const isPushTap = (resp) => resp?.notification?.request?.content?.data?.route === 'Notifications';
+export const isPushTap = (resp: Notifications.NotificationResponse | null | undefined): boolean => resp?.notification?.request?.content?.data?.route === 'Notifications';

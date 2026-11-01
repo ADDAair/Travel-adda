@@ -7,6 +7,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as IM from 'expo-image-manipulator';
 import { supabase } from './supabase';
 
+type Row = Record<string, any>;   // a user_documents row
+const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
+// expo-image-manipulator changed its API between SDKs; both the new and the old one are tried below.
+const Im = IM as unknown as Record<string, any>;
+
 export const DOC_TYPES = [
   { id: 'passport', icon: '🛂', label: 'পাসপোর্ট' },
   { id: 'visa', icon: '📄', label: 'ভিসা' },
@@ -14,61 +19,62 @@ export const DOC_TYPES = [
   { id: 'hotel_voucher', icon: '🏨', label: 'হোটেল ভাউচার' },
   { id: 'other', icon: '📎', label: 'অন্যান্য (টিকার সনদ ইত্যাদি)' },
 ];
-export const typeOf = (id) => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
+export const typeOf = (id: string): { id: string; icon: string; label: string } => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const LOCAL = Platform.OS === 'web' ? null : `${FileSystem.documentDirectory}docs/`;
-const cacheKey = (uid) => `ta.docsCache.v1.${uid}`;
-const isPdf = (path) => /\.pdf$/i.test(path);
-export const docIsPdf = (row) => isPdf(row.file_path);
+const cacheKey = (uid: string): string => `ta.docsCache.v1.${uid}`;
+const isPdf = (path: string): boolean => /\.pdf$/i.test(path);
+export const docIsPdf = (row: Row): boolean => isPdf(row.file_path);
 
-export async function uid() {
+export async function uid(): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const id = data && data.session && data.session.user ? data.session.user.id : null;
-  if (!id) { const e = new Error('no session'); e.code = 'no-session'; throw e; }
+  if (!id) throw coded('no session', 'no-session');
   return id;
 }
 
-export function randomId() {
-  const b = global.crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+export function randomId(): string {
+  const c = (globalThis as unknown as { crypto: { getRandomValues: (a: Uint8Array) => Uint8Array } }).crypto;
+  const b = c.getRandomValues(new Uint8Array(16));
+  return Array.from(b, (x: number) => x.toString(16).padStart(2, '0')).join('');
 }
 
 // Photos are made smaller (long side 1800 px, JPEG) so they upload fast on weak mobile data and stay under 5 MB.
-export async function shrink(uri) {
+export async function shrink(uri: string): Promise<string> {
   try {
-    if (IM.ImageManipulator && IM.ImageManipulator.manipulate) {
-      const ctx = IM.ImageManipulator.manipulate(uri);
+    if (Im.ImageManipulator && Im.ImageManipulator.manipulate) {
+      const ctx = Im.ImageManipulator.manipulate(uri);
       ctx.resize({ width: 1800 });
       const img = await ctx.renderAsync();
-      const out = await img.saveAsync({ compress: 0.7, format: IM.SaveFormat.JPEG });
+      const out = await img.saveAsync({ compress: 0.7, format: Im.SaveFormat.JPEG });
       return out.uri;
     }
-    if (IM.manipulateAsync) {
-      const out = await IM.manipulateAsync(uri, [{ resize: { width: 1800 } }], { compress: 0.7, format: IM.SaveFormat.JPEG });
+    if (Im.manipulateAsync) {
+      const out = await Im.manipulateAsync(uri, [{ resize: { width: 1800 } }], { compress: 0.7, format: Im.SaveFormat.JPEG });
       return out.uri;
     }
   } catch (e) { /* fall back to the original picture; the size check below still protects the upload */ }
   return uri;
 }
 
-async function ensureLocalDir() {
+async function ensureLocalDir(): Promise<void> {
   if (!LOCAL) return;
   const info = await FileSystem.getInfoAsync(LOCAL);
   if (!info.exists) await FileSystem.makeDirectoryAsync(LOCAL, { intermediates: true });
 }
-const localPath = (row) => (LOCAL ? `${LOCAL}${row.file_path.split('/').pop()}` : null);
+const localPath = (row: Row): string | null => (LOCAL ? `${LOCAL}${row.file_path.split('/').pop()}` : null);
 
 /**
  * Upload one document. file = { uri, kind: 'image' | 'pdf' }. Resolves with the new row only after BOTH the file
  * and the database row are saved; if the row fails, the uploaded file is removed again so nothing is left half-done.
  */
-export async function uploadDoc(type, file) {
+export async function uploadDoc(type: string, file: { uri: string; kind: 'image' | 'pdf' }): Promise<Row> {
   const me = await uid();
   const pdf = file.kind === 'pdf';
   const src = pdf ? file.uri : await shrink(file.uri);
   const buf = await (await fetch(src)).arrayBuffer();
-  if (buf.byteLength > MAX_BYTES) { const e = new Error('too big'); e.code = 'too-big'; throw e; }
+  if (buf.byteLength > MAX_BYTES) throw coded('too big', 'too-big');
   const path = `${me}/${randomId()}.${pdf ? 'pdf' : 'jpg'}`;
   const up = await supabase.storage.from('documents').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg', upsert: false });
   if (up.error) throw up.error;
@@ -78,17 +84,18 @@ export async function uploadDoc(type, file) {
     throw ins.error;
   }
   if (!pdf && LOCAL) {
-    try { await ensureLocalDir(); await FileSystem.copyAsync({ from: src, to: localPath(ins.data) }); } catch (e) { /* online viewing still works */ }
+    try { await ensureLocalDir(); await FileSystem.copyAsync({ from: src, to: localPath(ins.data) as string }); } catch (e) { /* online viewing still works */ }
   }
   return ins.data;
 }
 
 // Returns { rows, offline }. When the internet is not available, the last list saved on this phone is shown.
-export async function listDocs() {
+type ListResult = { data?: Row[] | null; error?: { code?: string; message?: string } | null };
+export async function listDocs(): Promise<{ rows: Row[]; offline: boolean }> {
   const me = await uid();
   try {
-    const timeout = new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 10000));
-    const q = (cols) => Promise.race([supabase.from('user_documents').select(cols).order('created_at', { ascending: false }), timeout]);
+    const timeout = new Promise<ListResult>((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 10000));
+    const q = (cols: string): Promise<ListResult> => Promise.race([supabase.from('user_documents').select(cols).order('created_at', { ascending: false }) as PromiseLike<ListResult>, timeout]);
     let r = await q('id,doc_type,file_path,created_at,expires_on');
     if (r.error && (r.error.code === '42703' || /expires_on/.test(r.error.message || ''))) r = await q('id,doc_type,file_path,created_at');   // database step 006 not run yet
     if (r.error) throw r.error;
@@ -107,13 +114,13 @@ export async function listDocs() {
  * Where to show a document from: { uri, local } or throws (e.code 'offline' when there is no internet and no copy).
  * Photos opened once are saved in the app's private folder for next time.
  */
-export async function openDoc(row) {
+export async function openDoc(row: Row): Promise<{ uri: string; local: boolean }> {
   const lp = localPath(row);
   if (lp) {
     try { const info = await FileSystem.getInfoAsync(lp); if (info.exists) return { uri: lp, local: true }; } catch (e) { /* download below */ }
   }
   const { data, error } = await supabase.storage.from('documents').createSignedUrl(row.file_path, 300);
-  if (error || !data || !data.signedUrl) { const e = new Error('offline'); e.code = 'offline'; throw e; }
+  if (error || !data || !data.signedUrl) throw coded('offline', 'offline');
   if (lp && !isPdf(row.file_path)) {
     try { await ensureLocalDir(); const d = await FileSystem.downloadAsync(data.signedUrl, lp); if (d && d.status === 200) return { uri: lp, local: true }; } catch (e) { /* show online */ }
   }
@@ -121,25 +128,25 @@ export async function openDoc(row) {
 }
 
 // Saves (or clears, with null) the expiry date of a passport / visa. Throws if the server did not confirm.
-export async function setDocExpiry(row, ymd) {
+export async function setDocExpiry(row: Row, ymd: string | null | undefined): Promise<Row> {
   const r = await supabase.from('user_documents').update({ expires_on: ymd || null }).eq('id', row.id).select('id,doc_type,file_path,created_at,expires_on');
   if (r.error) throw r.error;
-  if (!r.data || !r.data.length) { const e = new Error('not saved'); e.code = 'not-saved'; throw e; }
+  if (!r.data || !r.data.length) throw coded('not saved', 'not-saved');
   return r.data[0];
 }
 
 // Deletes the row and the file (and this phone's copy). Throws if the server did not confirm.
-export async function deleteDoc(row) {
+export async function deleteDoc(row: Row): Promise<void> {
   const del = await supabase.from('user_documents').delete().eq('id', row.id).select('id');
   if (del.error) throw del.error;
-  if (!del.data || del.data.length === 0) { const e = new Error('not deleted'); e.code = 'not-deleted'; throw e; }
+  if (!del.data || del.data.length === 0) throw coded('not deleted', 'not-deleted');
   await supabase.storage.from('documents').remove([row.file_path]).catch(() => {});
   const lp = localPath(row);
   if (lp) await FileSystem.deleteAsync(lp, { idempotent: true }).catch(() => {});
 }
 
 // On logout / account deletion: remove every document copy and the cached list from this phone.
-export async function clearLocalDocs() {
+export async function clearLocalDocs(): Promise<void> {
   if (LOCAL) await FileSystem.deleteAsync(LOCAL, { idempotent: true }).catch(() => {});
   try {
     const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('ta.docsCache.'));

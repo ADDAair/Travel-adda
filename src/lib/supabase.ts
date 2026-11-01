@@ -9,26 +9,26 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
 // Session is stored encrypted: the AES key lives in the device's secure keystore,
 // the (large) encrypted session lives in AsyncStorage.
 class LargeSecureStore {
-  async _encrypt(key, value) {
-    const k = crypto.getRandomValues(new Uint8Array(32));
+  async _encrypt(key: string, value: string): Promise<string> {
+    const k = (globalThis as unknown as { crypto: { getRandomValues: (a: Uint8Array) => Uint8Array } }).crypto.getRandomValues(new Uint8Array(32));
     const cipher = new aesjs.ModeOfOperation.ctr(k, new aesjs.Counter(1));
     const enc = cipher.encrypt(aesjs.utils.utf8.toBytes(value));
     await SecureStore.setItemAsync(key, aesjs.utils.hex.fromBytes(k));
     return aesjs.utils.hex.fromBytes(enc);
   }
-  async _decrypt(key, value) {
+  async _decrypt(key: string, value: string): Promise<string | null> {
     const kHex = await SecureStore.getItemAsync(key);
     if (!kHex) return null;
     const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(kHex), new aesjs.Counter(1));
     return aesjs.utils.utf8.fromBytes(cipher.decrypt(aesjs.utils.hex.toBytes(value)));
   }
-  async getItem(key) {
+  async getItem(key: string): Promise<string | null> {
     const enc = await AsyncStorage.getItem(key);
     if (!enc) return null;
     try { return await this._decrypt(key, enc); } catch (e) { return null; }
   }
-  async setItem(key, value) { await AsyncStorage.setItem(key, await this._encrypt(key, value)); }
-  async removeItem(key) { await AsyncStorage.removeItem(key); await SecureStore.deleteItemAsync(key); }
+  async setItem(key: string, value: string): Promise<void> { await AsyncStorage.setItem(key, await this._encrypt(key, value)); }
+  async removeItem(key: string): Promise<void> { await AsyncStorage.removeItem(key); await SecureStore.deleteItemAsync(key); }
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
