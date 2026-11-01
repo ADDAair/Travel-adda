@@ -40,7 +40,7 @@ const TABS = [
   ['👤', 'আমার তথ্য', 'আপনার ছবি, হাজী আইডি, পরিচিতি আবার দেখা, লগআউট'],
 ];
 
-export default function Onboarding({ onDone }) {
+export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [i, setI] = useState(0);
   const ins = useSafeAreaInsets();
   const sl = SLIDES[i];

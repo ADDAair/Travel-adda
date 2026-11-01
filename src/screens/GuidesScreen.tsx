@@ -8,11 +8,13 @@ import { StepCard, DuaInline } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { GUIDES } from '../content/guides';
 import { CONTENT_REVIEWED } from '../content/ihram';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Nav } from './navTypes';
 
 // "More guides": a short list; each guide is one page built from simple blocks.
-export default function GuidesScreen({ navigation }) {
+export default function GuidesScreen({ navigation }: { navigation: Nav }) {
   const [open, setOpen] = useState(null);
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
   useEffect(() => {
     if (!open) return undefined;

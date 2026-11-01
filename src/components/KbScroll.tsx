@@ -20,7 +20,7 @@ const KbScroll = forwardRef<ScrollRef, ScrollViewProps>(function KbScroll({ onSc
     if (!sv || !input || !kbTop.current || !input.measureInWindow || !sv.measureInWindow) return;
     sv.measureInWindow((vx, vy, vw, vh) => {
       if (!vw || !vh) return;                                      // this page is not on screen (another tab)
-      input.measureInWindow((fx, fy, fw, fh) => {
+      input.measureInWindow?.((fx, fy, fw, fh) => {
         if (!fh || fy < vy - 1) return;                            // the field is not inside this page
         const d = scrollToShow({ fieldTop: fy, fieldBottom: fy + fh, keyboardTop: kbTop.current, viewTop: vy });
         if (d > 0) ref.current?.scrollTo({ y: y.current + d, animated: true });

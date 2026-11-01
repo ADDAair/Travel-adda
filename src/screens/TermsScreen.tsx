@@ -5,17 +5,18 @@ import { Button, Notice, Segmented } from '../components/ui';
 import { getTerms, agreeTerms, myTermsStatus } from '../lib/market';
 import { useMe, isLeaderAccount } from '../lib/me';
 import { st, fmtDay, errText } from './GroupScreen';
+import type { Msg, Nav } from './navTypes';
 
 // Terms & conditions written by the admin (can change any time without a new app version).
 // Two texts: for hajis and for leaders. Opens on the one for this account; the other can be read too.
-export default function TermsScreen({ navigation }) {
+export default function TermsScreen({ navigation }: { navigation: Nav }) {
   const { me } = useMe();
   const mine = isLeaderAccount(me) ? 'leader' : 'haji';
   const [kind, setKind] = useState(mine);
   const [t, setT] = useState(undefined);            // undefined = loading, null = none written
   const [status, setStatus] = useState(null);       // { haji: { at, current }, leader: {...} }
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { setKind(mine); }, [mine]);
 
   const load = useCallback(async () => {

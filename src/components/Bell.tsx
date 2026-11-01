@@ -5,7 +5,7 @@ import { toBn } from '../lib/phone';
 import { useUnread } from '../lib/notifications';
 
 // Bell in the top bar of every page, with the number of unread notices (a number AND a word for screen readers).
-export default function Bell({ onPress }) {
+export default function Bell({ onPress }: { onPress: () => void }) {
   const { unread, ready } = useUnread();
   if (!ready) return null;          // database step not run yet: no bell rather than a bell that does nothing
   const label = unread > 0 ? `নোটিফিকেশন, ${toBn(unread)}টি নতুন` : 'নোটিফিকেশন, নতুন কিছু নেই';

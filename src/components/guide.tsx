@@ -1,5 +1,5 @@
 // Building blocks shared by the Ihram, Umrah and Hajj guides.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { View, Text, Image, Pressable, StyleSheet, Alert, Vibration } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
@@ -7,8 +7,11 @@ import { Button, Notice } from './ui';
 import { toBn } from '../lib/phone';
 import { findDua } from '../content/duas';
 
+export type Img = { src: number | { uri: string }; ratio: number; caption: string };
+export type Step = { title: string; text?: string; tip?: string; source?: string; images?: string[]; duas?: string[]; [k: string]: unknown };
+
 // A drawing with a caption that says in words what is right (✅) or wrong (❌), so meaning never depends on colour.
-export function Illustration({ img }) {
+export function Illustration({ img }: { img?: Img | null }) {
   const [w, setW] = useState(0);
   if (!img) return null;
   // Height is computed from the measured width, so the picture never leaves an empty gap on any phone.
@@ -21,7 +24,7 @@ export function Illustration({ img }) {
 }
 
 // A dua that opens in place when tapped, so the reader never loses their step.
-export function DuaInline({ id }) {
+export function DuaInline({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   const d = findDua(id);
   if (!d) return null;
@@ -35,7 +38,7 @@ export function DuaInline({ id }) {
       </Pressable>
       {open ? (
         <View style={g.duaBody}>
-          {d.parts.map((p, i) => (
+          {(d.parts as { label?: string; ar: string; pron: string; bn: string }[]).map((p, i) => (
             <View key={i} style={i > 0 ? { marginTop: S.md } : null}>
               {p.label ? <Text style={g.partL}>{p.label}</Text> : null}
               <Text style={g.ar} accessibilityLanguage="ar">{p.ar}</Text>
@@ -54,7 +57,7 @@ export function DuaInline({ id }) {
 }
 
 // One step of a guide: heading, plain text, tip, drawings, related duas and the source.
-export function StepCard({ step, images, children }) {
+export function StepCard({ step, images, children }: { step: Step; images?: Record<string, Img>; children?: ReactNode }) {
   return (
     <View style={g.card}>
       <Text style={g.stepH} accessibilityRole="header">{step.title}</Text>
@@ -69,12 +72,12 @@ export function StepCard({ step, images, children }) {
 }
 
 // Big counter for tawaf / sa'i rounds. Saved on the phone, so it survives closing the app.
-export function RoundCounter({ storageKey, total = 7, title, labelFor }) {
+export function RoundCounter({ storageKey, total = 7, title, labelFor }: { storageKey: string; total?: number; title: string; labelFor?: (i: number) => string }) {
   const [n, setN] = useState(0);
   useEffect(() => {
     AsyncStorage.getItem(storageKey).then((v) => { const x = Number(v); if (x >= 0 && x <= total) setN(x); }).catch(() => {});
   }, [storageKey, total]);
-  const save = (x) => { setN(x); AsyncStorage.setItem(storageKey, String(x)).catch(() => {}); };
+  const save = (x: number) => { setN(x); AsyncStorage.setItem(storageKey, String(x)).catch(() => {}); };
   const add = () => { if (n >= total) return; Vibration.vibrate(40); save(n + 1); };
   const sub = () => { if (n > 0) save(n - 1); };
   const reset = () => Alert.alert('গণনা আবার শূন্য থেকে শুরু করবেন?', 'এটা নতুন তাওয়াফ বা সাঈ শুরুর সময় করুন।', [
@@ -110,7 +113,7 @@ export function RoundCounter({ storageKey, total = 7, title, labelFor }) {
 }
 
 // Question-and-answer block used for "what if" lists.
-export function QA({ q, a, source, icon = '❓' }) {
+export function QA({ q, a, source, icon = '❓' }: { q: string; a: string; source?: string; icon?: string }) {
   return (
     <View style={g.qa}>
       <Text style={g.qaQ}>{icon} {q}</Text>

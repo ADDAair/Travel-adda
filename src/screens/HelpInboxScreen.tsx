@@ -9,9 +9,10 @@ import { useMe } from '../lib/me';
 import { helpInbox, helpThread, replyHelp, setThreadStatus, myKhademGroups, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
+import type { Msg, Nav, Route } from './navTypes';
 
 // Leader or khadem: the hajis' questions of a group. Waiting questions first. Opens one conversation to answer.
-export default function HelpInboxScreen({ navigation, route }) {
+export default function HelpInboxScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const { me } = useMe();
   const [groups, setGroups] = useState(undefined);       // [{ id, name, role }]
   const [gid, setGid] = useState(route?.params?.groupId || null);
@@ -21,7 +22,7 @@ export default function HelpInboxScreen({ navigation, route }) {
   const [msgs, setMsgs] = useState([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { if (route?.params?.groupId) { setGid(route.params.groupId); setThread(null); } }, [route?.params?.groupId]);
 
   const loadGroups = useCallback(async () => {

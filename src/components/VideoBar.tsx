@@ -6,13 +6,13 @@ import { useVideoTopics } from '../lib/videoLinks';
 
 // A slim bar at the top of every page: "▶️ ভিডিও দেখুন". Until the video exists it says "শীঘ্রই আসছে" and,
 // when pressed, tells which video is coming — it never pretends to play.
-export default function VideoBar({ route }) {
+export default function VideoBar({ route }: { route: string }) {
   const topics = useVideoTopics();
   const v = videoFor(route, topics);
   const [info, setInfo] = useState(false);
   useEffect(() => { setInfo(false); }, [route]);
   const press = () => {
-    if (v.ready) Linking.openURL(v.url).catch(() => setInfo(true));
+    if (v.ready && v.url) Linking.openURL(v.url).catch(() => setInfo(true));
     else setInfo((x) => !x);
   };
   return (

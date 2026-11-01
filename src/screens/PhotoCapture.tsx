@@ -13,14 +13,14 @@ const P = T.photo;
 // onDone()   : called only after the photo is really saved.
 // onSkip()   : optional "later" button (used right after sign-up so nobody is locked out by a broken camera).
 // onCancel() : optional close button (used when changing the photo later from the account page).
-export default function PhotoCapture({ onDone, onSkip, onCancel }) {
+export default function PhotoCapture({ onDone, onSkip, onCancel }: { onDone: () => void; onSkip?: () => void; onCancel?: () => void }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
-  const camRef = useRef(null);
+  const camRef = useRef<{ takePictureAsync: (o: { quality: number }) => Promise<{ uri: string } | undefined> } | null>(null);
   const [ready, setReady] = useState(false);
   const [taking, setTaking] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [uri, setUri] = useState(null);
+  const [uri, setUri] = useState<string | null>(null);
   const [err, setErr] = useState('');
 
   async function snap() {
@@ -43,7 +43,8 @@ export default function PhotoCapture({ onDone, onSkip, onCancel }) {
     try {
       await uploadAvatar(uri);
       onDone();
-    } catch (e) {
+    } catch (err) {
+      const e = err as { code?: string; message?: string } | null;
       const m = String((e && e.message) || '').toLowerCase();
       if (e && e.code === 'too-big') setErr(P.errBig);
       else if (m.includes('network') || m.includes('fetch') || m.includes('failed')) setErr(P.errNet);

@@ -16,6 +16,7 @@ import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
 import { myKhademGroups, myKhademInvites } from '../lib/help';
+import type { Nav } from './navTypes';
 
 // Working features. Every card opens something that really works (no fake buttons).
 const READY = [
@@ -39,7 +40,7 @@ const TOOLS = [
 const UPCOMING = [
 ];
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
   const { me, refreshMe } = useMe();
   const leaderAcc = isLeaderAccount(me);

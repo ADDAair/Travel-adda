@@ -7,25 +7,27 @@ import { StepCard, RoundCounter } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { UMRAH_STEPS, COUNTERS } from '../content/umrah';
 import { IMAGES, CONTENT_REVIEWED } from '../content/ihram';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Nav } from './navTypes';
 
 const STEP_KEY = 'ta.umrahStep.v1';
 
 // Umrah, one step per page, so it can be followed live inside the Haram. The current step is remembered.
-export default function UmrahScreen({ navigation }) {
+export default function UmrahScreen({ navigation }: { navigation: Nav }) {
   const [i, setI] = useState(0);
   const [showAll, setShowAll] = useState(false);
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
   useEffect(() => {
     AsyncStorage.getItem(STEP_KEY).then((v) => { const n = Number(v); if (n >= 0 && n < UMRAH_STEPS.length) setI(n); }).catch(() => {});
   }, []);
-  const go = (n) => {
+  const go = (n: number) => {
     setI(n); setShowAll(false);
     AsyncStorage.setItem(STEP_KEY, String(n)).catch(() => {});
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false }));
   };
   const s = UMRAH_STEPS[i];
   const last = i === UMRAH_STEPS.length - 1;
-  const counter = s.counter ? COUNTERS[s.counter] : null;
+  const counter = s.counter ? (COUNTERS as Record<string, (typeof COUNTERS)[keyof typeof COUNTERS]>)[s.counter] : null;
 
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>

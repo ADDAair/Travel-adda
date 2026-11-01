@@ -3,9 +3,10 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { toBn } from '../lib/phone';
 import { KIND_ICON, listNotifications, useUnread } from '../lib/notifications';
+import type { Nav } from '../screens/navTypes';
 
 // Bar on Home with the newest unread notice (an important one from Travel Adda first). Tapping opens the box.
-export default function NoticeBar({ navigation }) {
+export default function NoticeBar({ navigation }: { navigation: Nav }) {
   const { unread, ready } = useUnread();
   const [top, setTop] = useState(null);
   const load = useCallback(async () => {

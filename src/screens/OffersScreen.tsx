@@ -13,11 +13,12 @@ import { OfferCard, OfferSummary } from '../components/OfferCard';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 import FundCard from '../components/FundCard';
+import type { Msg, Nav, Route } from './navTypes';
 
 export { OfferCard };
 
 // The "অফার" tab: hajis browse packages; a leader account manages its own packages here.
-export default function OffersScreen({ navigation, route }) {
+export default function OffersScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const { me } = useMe();
   const leader = isLeaderAccount(me);
   useEffect(() => { navigation?.setOptions?.({ title: leader ? 'আমার প্যাকেজ' : 'অফার ও প্যাকেজ' }); }, [leader, navigation]);
@@ -27,7 +28,7 @@ export default function OffersScreen({ navigation, route }) {
 }
 
 // Leader account not approved yet: packages can be added after the admin's approval.
-function PendingLeader({ navigation }) {
+function PendingLeader({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       <Text style={st.title} accessibilityRole="header">🎁 আমার প্যাকেজ</Text>
@@ -92,14 +93,14 @@ function MonthDropdown({ options, value, onChange }) {
   );
 }
 
-function HajiOffers({ navigation, route }) {
+function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [kind, setKind] = useState('umrah');
   const [rows, setRows] = useState(null);
   const [state, setState] = useState('load');
   const [help, setHelp] = useState(null);
   const [mine, setMine] = useState({});
   const [busy, setBusy] = useState(null);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [q, setQ] = useState(route?.params?.leader || '');
   const [month, setMonth] = useState(null);
   const [airport, setAirport] = useState(null);

@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { PRIVACY, PRIVACY_UPDATED, PRIVACY_CONTACT } from '../content/privacy';
+import type { Nav } from './navTypes';
 
-export default function PrivacyScreen({ navigation }) {
+export default function PrivacyScreen({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       <Pressable onPress={() => navigation.navigate('Account')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার তথ্য পাতায় ফিরে যান">

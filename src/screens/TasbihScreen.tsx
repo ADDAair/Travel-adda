@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
+import type { Nav } from './navTypes';
 
 const KEY = 'ta.tasbih.v1';
 // "after" = after-prayer tasbih: 33 + 33 + 34, moves to the next phrase by itself.
@@ -20,7 +21,7 @@ const PRESETS = [
 ];
 const P = (id) => PRESETS.find((p) => p.id === id);
 
-export default function TasbihScreen({ navigation }) {
+export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const [sel, setSel] = useState('after');
   const [state, setState] = useState({});          // { presetId: { n, step } }
   useEffect(() => {

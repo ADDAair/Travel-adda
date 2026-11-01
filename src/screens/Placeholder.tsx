@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
+import type { Nav } from './navTypes';
 
 // Honest placeholder for features that are not built yet.
 export function Soon({ title, icon, what, route, navigation }) {
@@ -37,7 +38,7 @@ export function Soon({ title, icon, what, route, navigation }) {
   );
 }
 
-export function Account({ navigation }) {
+export function Account({ navigation }: { navigation: Nav }) {
   const { replay } = useTutorial();
   const { me } = useMe();
   const [p, setP] = useState(null);

@@ -11,14 +11,16 @@ import {
   IMAGES, COMMON, SPECIAL,
 } from '../content/ihram';
 import { StepCard, QA, Illustration } from '../components/guide';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Nav } from './navTypes';
 
 const CHECK_KEY = 'ta.ihramChecklist.v1';
 const ROUTE_KEY = 'ta.ihramRoute.v1';
 
 // Mikat & Ihram guide: a short list of sections; each section is one simple page.
-export default function IhramScreen({ navigation }) {
+export default function IhramScreen({ navigation }: { navigation: Nav }) {
   const [open, setOpen] = useState(null);
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
 
   const go = useCallback((id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); }, []);
 

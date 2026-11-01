@@ -11,6 +11,8 @@ import { DOC_TYPES, typeOf, uploadDoc, listDocs, openDoc, deleteDoc, docIsPdf, s
 import { scheduleDocReminders } from '../lib/docReminders';
 import { lockWanted, unlock } from '../lib/applock';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Msg, Nav } from './navTypes';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 const fmtDay = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
@@ -43,7 +45,7 @@ export default function DocsScreen(props) {
   );
 }
 
-function DocsInner({ navigation }) {
+function DocsInner({ navigation }: { navigation: Nav }) {
   const [rows, setRows] = useState(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');
@@ -52,9 +54,9 @@ function DocsInner({ navigation }) {
   const [cam, setCam] = useState(false);
   const [pending, setPending] = useState(null);    // picked file kept for retry
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);            // { kind, text }
+  const [msg, setMsg] = useState<Msg>(null);            // { kind, text }
   const [viewing, setViewing] = useState(null);    // row
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
 
   const load = useCallback(async () => {
     setLoadErr('');

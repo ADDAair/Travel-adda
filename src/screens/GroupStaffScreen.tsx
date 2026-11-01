@@ -8,11 +8,12 @@ import { mySentInvites, cancelInvite } from '../lib/help';
 import { groupKhadems, addKhadem, removeKhadem, khademResultText, faqList, saveFaq, deleteFaq, helpErrorText } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
+import type { Msg, Nav, Route } from './navTypes';
 
 const confirm = (title, text, yes, fn) => Alert.alert(title, text, [{ text: 'না', style: 'cancel' }, { text: yes, style: 'destructive', onPress: fn }]);
 
 // Leader: one group's khadems (helpers in Makkah/Madinah) and its ready answers (FAQ) for the help chat.
-export default function GroupStaffScreen({ navigation, route }) {
+export default function GroupStaffScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const gid = route?.params?.groupId;
   const gname = route?.params?.groupName || '';
   const [tab, setTab] = useState(route?.params?.tab === 'faq' ? 'faq' : 'khadem');
@@ -22,7 +23,7 @@ export default function GroupStaffScreen({ navigation, route }) {
   const [ident, setIdent] = useState('');
   const [edit, setEdit] = useState(null);                 // null | { id?, q, a }
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [sent, setSent] = useState([]);
 
   const load = useCallback(async () => {

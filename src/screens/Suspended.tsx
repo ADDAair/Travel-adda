@@ -11,7 +11,7 @@ import { st } from './GroupScreen';
 // Shown instead of the app when the admin has suspended this account.
 export default function Suspended() {
   const ins = useSafeAreaInsets();
-  const [help, setHelp] = useState(null);
+  const [help, setHelp] = useState<{ phone: string } | null>(null);
   useEffect(() => { getHelpline().then(setHelp).catch(() => {}); }, []);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.xl }]}>

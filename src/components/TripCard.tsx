@@ -8,13 +8,14 @@ import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import { myContracts, cachedContractLeader } from '../lib/market';
 import { supabase } from '../lib/supabase';
 import { contractMoney } from '../lib/payments';
+import type { Nav } from '../screens/navTypes';
 
 const TRIP_KEY = 'ta.trip.v1';
 const MONEY_KEY = 'ta.tripMoney.v1';
 const docsKey = (id) => `ta.docsCache.v1.${id}`;
 
 // Haji's trip at a glance: days to departure, active contract, documents. Works offline from what the phone kept.
-export default function TripCard({ navigation }) {
+export default function TripCard({ navigation }: { navigation: Nav }) {
   const [c, setC] = useState(null);            // active contract (cached)
   const [own, setOwn] = useState(null);        // date typed by the haji when there is no contract
   const [docs, setDocs] = useState(null);      // { count, passport }

@@ -7,14 +7,15 @@ import { notReady } from '../lib/groups';
 import { KIND_ICON, listNotifications, markRead, hideNotification, markAllRead } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import PushCard from '../components/PushCard';
+import type { Msg, Nav } from './navTypes';
 
 // Notification box: everything Travel Adda or the app told this person, newest first.
-export default function NotificationsScreen({ navigation }) {
+export default function NotificationsScreen({ navigation }: { navigation: Nav }) {
   const [rows, setRows] = useState(null);
   const [state, setState] = useState('load');   // load | ok | soon | err
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
 
   const load = useCallback(async () => {
     try { const r = await listNotifications(); setRows(r.rows); setOffline(r.offline); setState('ok'); }

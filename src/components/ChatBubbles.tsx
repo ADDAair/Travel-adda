@@ -6,7 +6,7 @@ import { roleLabel } from '../lib/help';
 
 const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 // "২৪ অক্টোবর, ১০:০৫" (24-hour clock: no AM/PM confusion)
-export function fmtWhen(iso) {
+export function fmtWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const hh = String(d.getHours()).padStart(2, '0'); const mm = String(d.getMinutes()).padStart(2, '0');
@@ -15,7 +15,7 @@ export function fmtWhen(iso) {
 
 // One conversation. "mineSide" = messages written by the person looking at the screen sit on the right.
 // Who wrote each message is said in words with an icon (never colour only).
-export default function ChatBubbles({ rows, viewer }) {
+export default function ChatBubbles({ rows, viewer }: { rows: Record<string, any>[]; viewer: string }) {
   return (
     <View>
       {(rows || []).map((m) => {

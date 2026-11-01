@@ -5,7 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
-import WorkAreaFields, { areaText } from '../components/WorkAreaFields';
+import WorkAreaFields, { areaText, type Area } from '../components/WorkAreaFields';
 import DistrictPicker from '../components/DistrictPicker';
 import { applyLeader, myApplication, notReady, leaderKindsReady } from '../lib/groups';
 import { LEADER_KINDS, PROFESSIONS, validateApplication } from '../lib/leaderKinds';
@@ -31,7 +31,7 @@ export default function LeaderApplyScreen({ navigation }: { navigation: Nav }): 
   const [kindsOk, setKindsOk] = useState(true);       // false = database step 017 not run yet
   const [profession, setProfession] = useState('');
   const [f, setF] = useState({ agency: '', umrah: '', hajj: '' });
-  const [area, setArea] = useState({ district: '', upazila: '', union: '' });
+  const [area, setArea] = useState<Area>({ district: '', upazila: '', union: '' });
   const [file, setFile] = useState<PickedFile | null>(null);
   const [cam, setCam] = useState(false);
   const [busy, setBusy] = useState(false);

@@ -6,9 +6,10 @@ import { notReady, telBd } from '../lib/groups';
 import { myKhademGroups, khademMembers, faqList, myKhademInvites, khademRespond } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
+import type { Msg, Nav } from './navTypes';
 
 // Khadem: the groups I serve. For each: questions waiting, the hajis (phone after their contract), the ready answers.
-export default function KhademHomeScreen({ navigation }) {
+export default function KhademHomeScreen({ navigation }: { navigation: Nav }) {
   const [groups, setGroups] = useState(undefined);
   const [state, setState] = useState('load');
   const [open, setOpen] = useState(null);                 // group id shown in detail
@@ -16,7 +17,7 @@ export default function KhademHomeScreen({ navigation }) {
   const [faq, setFaq] = useState([]);
   const [invites, setInvites] = useState([]);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
 
   const load = useCallback(async () => {
     try { setInvites(await myKhademInvites()); } catch (e) { setInvites([]); }   // before step 021: none

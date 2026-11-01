@@ -15,6 +15,7 @@ import { logSos, sosLocationWanted, setSosLocationWanted } from '../lib/sos';
 
 const KEY = 'ta.emergency.v1';
 import { EMERGENCY_FIELDS, LOST_CARD_ROWS, EMERGENCY_MAIN, EMERGENCY_MORE } from '../content/emergency';
+import type { Nav } from './navTypes';
 
 const PROFILE_CACHE = 'ta.profileCache.v1';
 
@@ -37,7 +38,7 @@ const callSos = (x) => { call(x.n); logSos(x); };
 const cleanPhone = (v) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
 const phoneOk = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
-export default function EmergencyScreen({ navigation }) {
+export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
   const [info, setInfo] = useState({});
   const [draft, setDraft] = useState({});
   const [editing, setEditing] = useState(false);

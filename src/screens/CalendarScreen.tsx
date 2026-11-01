@@ -4,6 +4,7 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { hijri, fmtDate } from '../lib/prayer';
+import type { Nav } from './navTypes';
 
 // Islamic dates with an authentic basis. Dates come from the tabular Hijri calendar; the real day depends on the
 // moon sighting and can differ by a day (and between Saudi Arabia and Bangladesh).
@@ -23,14 +24,16 @@ const EVENTS = [
 const HM = ['মুহাররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি', 'জমাদিউল আউয়াল', 'জমাদিউস সানি', 'রজব', 'শাবান', 'রমজান', 'শাওয়াল', 'জিলকদ', 'জিলহজ'];
 const DAY = 86400000;
 
-export default function CalendarScreen({ navigation }) {
+export default function CalendarScreen({ navigation }: { navigation: Nav }) {
   const data = useMemo(() => {
     const now = new Date();
     const base = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-    const g = (k) => { const t = new Date(base + k * DAY); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }; };
+    const g = (k: number) => { const t = new Date(base + k * DAY); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }; };
     const todayG = g(0);
     const todayH = hijri(todayG.y, todayG.m, todayG.d);
-    const found = []; let bid = null; let monthEnd = null;
+    type G = { y: number; m: number; d: number };
+    const found: { ev: (typeof EVENTS)[number]; k: number; gd: G; h: G }[] = [];
+    let bid: { k: number; gd: G } | null = null; let monthEnd: { k: number; gd: G; h: G } | null = null;
     for (let k = 0; k <= 400; k++) {
       const gd = g(k); const h = hijri(gd.y, gd.m, gd.d);
       const ev = EVENTS.find((e) => e.m === h.m && e.d === h.d);
@@ -41,7 +44,7 @@ export default function CalendarScreen({ navigation }) {
     return { todayG, todayH, found, bid, monthEnd };
   }, []);
   const { todayG, todayH, found, bid, monthEnd } = data;
-  const left = (k) => (k === 0 ? 'আজ' : k === 1 ? 'আগামীকাল' : `আর ${toBn(k)} দিন`);
+  const left = (k: number): string => (k === 0 ? 'আজ' : k === 1 ? 'আগামীকাল' : `আর ${toBn(k)} দিন`);
   const hajj = found.find((f) => f.ev.m === 12 && f.ev.d === 8);
 
   return (

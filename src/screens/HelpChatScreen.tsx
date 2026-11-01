@@ -8,10 +8,12 @@ import { myGroups, notReady, telBd } from '../lib/groups';
 import { myHelpMessages, faqList, groupKhadems, sendHelp, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Msg, Nav, Route } from './navTypes';
 
 // Haji: a private conversation with the group's leader and khadems. Ready answers are shown first.
 // Other hajis never see it. New answers are fetched every 15 seconds while this page is open.
-export default function HelpChatScreen({ navigation, route }) {
+export default function HelpChatScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [groups, setGroups] = useState(undefined);
   const [gid, setGid] = useState(route?.params?.groupId || null);
   const [state, setState] = useState('load');        // load | ok | soon | err
@@ -21,8 +23,8 @@ export default function HelpChatScreen({ navigation, route }) {
   const [openQ, setOpenQ] = useState(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const scroller = useRef(null);
+  const [msg, setMsg] = useState<Msg>(null);
+  const scroller = useRef<ScrollRef | null>(null);
   useEffect(() => { if (route?.params?.groupId) setGid(route.params.groupId); }, [route?.params?.groupId]);
 
   const loadGroups = useCallback(async () => {

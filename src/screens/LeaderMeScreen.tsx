@@ -3,7 +3,7 @@ import { Text, Pressable, ActivityIndicator } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
-import WorkAreaFields from '../components/WorkAreaFields';
+import WorkAreaFields, { type Area } from '../components/WorkAreaFields';
 import DistrictPicker from '../components/DistrictPicker';
 import { LEADER_KINDS, PROFESSIONS } from '../lib/leaderKinds';
 import { starText } from '../components/market';
@@ -16,7 +16,7 @@ import type { Nav, Row, Msg } from './navTypes';
 // Leader: how hajis see me in the directory; I can change my work area and a short introduction (licences only via admin).
 export default function LeaderMeScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [p, setP] = useState<Row | null | undefined>(undefined);
-  const [area, setArea] = useState({ district: '', upazila: '', union: '' });
+  const [area, setArea] = useState<Area>({ district: '', upazila: '', union: '' });
   const [bio, setBio] = useState('');
   const [profession, setProfession] = useState('');
   const [busy, setBusy] = useState(false);

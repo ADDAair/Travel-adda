@@ -6,12 +6,14 @@ import { StepCard } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { HAJJ_DAYS } from '../content/hajj';
 import { IMAGES, CONTENT_REVIEWED } from '../content/ihram';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Nav } from './navTypes';
 
 // Hajj guide: one page per day, opened from a short list.
-export default function HajjScreen({ navigation }) {
-  const [open, setOpen] = useState(null);
-  const scrollRef = useRef(null);
-  const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
+export default function HajjScreen({ navigation }: { navigation: Nav }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
+  const go = (id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
 
   useEffect(() => {
     if (!open) return undefined;

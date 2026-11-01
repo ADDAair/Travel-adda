@@ -9,6 +9,7 @@ import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeadin
 import { smoothHeading, qiblaTurn, compassWeak } from '../lib/qibla';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
 import { SALAH } from '../content/salah';
+import type { Nav } from './navTypes';
 
 const GPS_ERR = {
   denied: 'অবস্থানের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
@@ -17,7 +18,7 @@ const GPS_ERR = {
   nofix: 'অবস্থান পাওয়া যায়নি। খোলা জায়গায় গিয়ে আবার চেষ্টা করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
 };
 
-export default function PrayerScreen({ navigation }) {
+export default function PrayerScreen({ navigation }: { navigation: Nav }) {
   const [loc, setLoc] = useState(undefined);       // undefined = loading, null = not chosen yet
   const [picking, setPicking] = useState(false);
   const [mode, setMode] = useState('times');

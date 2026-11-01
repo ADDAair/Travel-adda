@@ -7,12 +7,14 @@ import { toBn } from '../lib/phone';
 import { Block } from './GuidesScreen';
 import { SALAH, SALAH_GROUPS, KIND, DAILY_FARD } from '../content/salah';
 import { CONTENT_REVIEWED } from '../content/ihram';
+import type { ScrollRef } from '../components/KbScroll';
+import type { Nav, Route } from './navTypes';
 
 // "নামাজের রাকাত ও নিয়ম". Can be opened at one section from other screens: navigate('Salah', { section: 'jumuah', t: Date.now() }).
-export default function SalahScreen({ navigation, route }) {
+export default function SalahScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [open, setOpen] = useState(null);
   const [from, setFrom] = useState(null);         // screen to return to when opened from elsewhere
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
 
   useEffect(() => {
