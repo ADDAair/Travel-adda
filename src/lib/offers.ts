@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
 import { rows } from './rpc';
-import type { OwnPackage, ReviewPackage } from './types';
+import type { AnyPackage, OwnPackage } from './types';
 import { notReady } from './groups';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
@@ -117,18 +117,18 @@ export async function myInterestCounts(): Promise<Record<string, Row>> {
 export const adminInterests = async (): Promise<Row[]> => check(await supabase.rpc('admin_list_interests')) || [];
 export const markInterest = async (id: string, note?: string | null) => check(await supabase.rpc('admin_mark_interest', { p_id: id, p_note: note || null }));
 export const hideOffer = async (id: string, hide: boolean) => check(await supabase.rpc('admin_hide_offer', { p_offer: id, p_hide: hide }));
-export async function adminOffersReview(): Promise<(ReviewPackage | OwnPackage)[]> {
+export async function adminOffersReview(): Promise<AnyPackage[]> {
   const r = await supabase.rpc('admin_offers_review');
   if (r.error && notReady(r.error)) return adminOffers();      // step 019 not run yet
-  return check(r) || [];
+  return (check(r) || []) as AnyPackage[];
 }
 export async function reviewOffer(id: string, decision: string, note?: string | null) {
   const n = String(note || '').trim();
   if (decision === 'reject' && n.length < 2) throw coded('reason needed', 'reason');
   return check(await supabase.rpc('admin_review_offer', { p_offer: id, p_decision: decision, p_note: n || null }));
 }
-export async function adminOffers(): Promise<OwnPackage[]> {   // only some columns are read
-  return check(await supabase.from('offers').select('id,kind,title,price_bdt,depart_on,return_on,active,hidden_by_admin,created_at').order('created_at', { ascending: false }).limit(200)) || [];
+export async function adminOffers(): Promise<AnyPackage[]> {   // only some columns are read
+  return (check(await supabase.from('offers').select('id,kind,title,price_bdt,depart_on,return_on,active,hidden_by_admin,created_at').order('created_at', { ascending: false }).limit(200)) || []) as AnyPackage[];
 }
 // true once step 019 (admin check of packages) has been run on the server
 export async function offerReviewReady(): Promise<boolean> {
