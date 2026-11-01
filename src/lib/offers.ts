@@ -117,7 +117,7 @@ export async function myInterestCounts(): Promise<Record<string, Row>> {
 export const adminInterests = async (): Promise<Row[]> => check(await supabase.rpc('admin_list_interests')) || [];
 export const markInterest = async (id: string, note?: string | null) => check(await supabase.rpc('admin_mark_interest', { p_id: id, p_note: note || null }));
 export const hideOffer = async (id: string, hide: boolean) => check(await supabase.rpc('admin_hide_offer', { p_offer: id, p_hide: hide }));
-export async function adminOffersReview(): Promise<(ReviewPackage | Row)[]> {
+export async function adminOffersReview(): Promise<(ReviewPackage | OwnPackage)[]> {
   const r = await supabase.rpc('admin_offers_review');
   if (r.error && notReady(r.error)) return adminOffers();      // step 019 not run yet
   return check(r) || [];
@@ -127,7 +127,7 @@ export async function reviewOffer(id: string, decision: string, note?: string | 
   if (decision === 'reject' && n.length < 2) throw coded('reason needed', 'reason');
   return check(await supabase.rpc('admin_review_offer', { p_offer: id, p_decision: decision, p_note: n || null }));
 }
-export async function adminOffers(): Promise<Row[]> {
+export async function adminOffers(): Promise<OwnPackage[]> {   // only some columns are read
   return check(await supabase.from('offers').select('id,kind,title,price_bdt,depart_on,return_on,active,hidden_by_admin,created_at').order('created_at', { ascending: false }).limit(200)) || [];
 }
 // true once step 019 (admin check of packages) has been run on the server

@@ -84,7 +84,7 @@ export function OfferSummary({ o, onOpen, note, noteColor }: { o: Offer; onOpen?
       <Text style={st.p}>📅 {fmtDay(o.depart_on)} → {fmtDay(o.return_on)}</Text>
       <Text style={st.p}>✈️ {routeShort(o)}</Text>
       {o.makkah_distance_m != null ? <Text style={st.p}>🏨 {dist(o.makkah_distance_m, 'মক্কায় হারাম')}</Text> : null}
-      {o.leader_name ? <Text style={[st.p, { marginTop: S.xs }]}>🧭 {o.leader_name} · {o.leader_code} · {o.rating_avg > 0 ? `⭐ ${toBn(Number(o.rating_avg).toFixed(1))}` : 'নতুন'}{o.leader_kind === 'travel_adda' ? ' · ✅ Travel Adda' : ''}</Text> : null}
+      {o.leader_name ? <Text style={[st.p, { marginTop: S.xs }]}>🧭 {o.leader_name} · {o.leader_code} · {Number(o.rating_avg || 0) > 0 ? `⭐ ${toBn(Number(o.rating_avg).toFixed(1))}` : 'নতুন'}{o.leader_kind === 'travel_adda' ? ' · ✅ Travel Adda' : ''}</Text> : null}
       {note ? <Text style={[st.small, { fontWeight: '700', color: noteColor || C.ok }]}>{note}</Text> : null}
       <Text style={[st.p, { color: C.primary, fontWeight: '700', marginTop: S.xs }]}>বিস্তারিত দেখুন ›</Text>
     </Pressable>
