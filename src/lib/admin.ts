@@ -51,7 +51,7 @@ export const stats = () => rpc<Record<string, number | string> | null>('admin_st
 
 // Spreadsheet (CSV that Excel opens, Bengali-safe) shared with the phone's own menu. Returns the row count.
 export async function exportCsv(kind: string): Promise<number> {
-  const rows = await list('admin_export', { p_kind: kind });
+  const rows = (await list('admin_export', { p_kind: kind })) as unknown as Record<string, unknown>[];   // one object per spreadsheet row
   const cols = rows.length ? Object.keys(rows[0]) : [];
   const cell = (v: unknown): string => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   const csv = '﻿' + [cols.join(','), ...rows.map((r) => cols.map((c) => cell(r[c])).join(','))].join('\n');
