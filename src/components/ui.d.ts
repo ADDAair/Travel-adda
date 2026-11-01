@@ -7,5 +7,5 @@ export function Button(p: { title: string; onPress?: () => void; kind?: ButtonKi
   icon?: string; a11yHint?: string; style?: StyleProp<ViewStyle> }): JSX.Element;
 export function Field(p: TextInputProps & { label: string; hint?: string; error?: string; right?: ReactNode; inputRef?: RefObject<ComponentRef<typeof TextInput> | null> }): JSX.Element;
 export function Notice(p: { kind?: 'ok' | 'warn' | 'bad' | 'info'; title: string; text?: string; children?: ReactNode }): JSX.Element;
-export function Segmented<T extends string>(p: { options: { id: T; label: string; icon?: string }[]; value: T; onChange: (v: T) => void; disabled?: boolean }): JSX.Element;
+export function Segmented<T extends string>(p: { options: { id: T; label: string; icon?: string; a11y?: string }[]; value: T; onChange: (v: T) => void; disabled?: boolean }): JSX.Element;
 export function Card(p: { children?: ReactNode; style?: StyleProp<ViewStyle>; [k: string]: unknown }): JSX.Element;

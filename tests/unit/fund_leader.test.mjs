@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { helpErrorText, fundTabs } from '../../src/lib/fund.ts';
 
 test('the leader\'s offers page shows the fund card too', () => {
-  const s = readFileSync(new URL('../../src/screens/LeaderOffersScreen.js', import.meta.url), 'utf8');
+  const s = readFileSync(new URL('../../src/screens/LeaderOffersScreen.tsx', import.meta.url), 'utf8');
   assert.ok(s.includes("import FundCard from '../components/FundCard'") && s.includes('<FundCard'));
 });
 

@@ -13,7 +13,7 @@ import { DocCamera } from '../screens/DocsScreen';
 import { st, confirm, errText, fmtDay, fmtTaka } from '../screens/GroupScreen';
 
 // Haji: pay Travel Adda (never the leader directly), record the payment with a receipt, and follow its status.
-type Contract = { id: string };
+type Contract = Record<string, any>;   // a contracts row (needs its id)
 type Msg = { kind: 'ok' | 'bad'; text: string } | null;
 type File = { uri: string; kind: 'image' | 'pdf'; name: string };
 
