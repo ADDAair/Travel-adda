@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import { toBn } from './phone';
 
 const SKIP = new Set(['id', 'icon', 'type', 'kind', 'cat', 'to', 'route', 'screen', 'url', 'link']);
-type Obj = Record<string, any>;   // a guide or dua item (any shape)
+type Obj = Record<string, unknown>;   // a guide or dua item (any shape; only its text is touched)
 const KEY: Record<string, string> = { title: 'শিরোনাম', what: 'ছোট বিবরণ', text: 'লেখা', tip: 'টিপস', bn: 'বাংলা অর্থ', ar: 'আরবি', pron: 'উচ্চারণ',
   when: 'কখন পড়বেন', source: 'সূত্র', note: 'নোট', label: 'নাম', a11y: 'পড়ে শোনানোর লেখা' };
 const LIST: Record<string, string> = { blocks: 'অংশ', steps: 'ধাপ', parts: 'ভাগ', items: 'লাইন', rows: 'সারি' };
@@ -51,7 +51,7 @@ function locate(item: Obj, path: unknown): { o: Obj; last: string } | null {
 
 // Puts the corrections of one kind ('guide' | 'dua') into the list, after first restoring the app's own text.
 export type Override = { kind: string; item_id: string; path: string; body: string | null };
-export function applyOverrides(list: Obj[] | null | undefined, rows: Override[] | null | undefined, kind: string): void {
+export function applyOverrides(list: readonly Obj[] | null | undefined, rows: Override[] | null | undefined, kind: string): void {
   for (const [k, v] of [...ORIG]) {
     if (!k.startsWith(`${kind}/`)) continue;
     const [, id, ...p] = k.split('/');
@@ -65,14 +65,14 @@ export function applyOverrides(list: Obj[] | null | undefined, rows: Override[] 
     const at = item && locate(item, r.path);
     if (!at) return;
     const k = `${kind}/${r.item_id}/${r.path}`;
-    if (!ORIG.has(k)) ORIG.set(k, at.o[at.last]);
+    if (!ORIG.has(k)) ORIG.set(k, at.o[at.last] as string);   // locate() checked it is text
     at.o[at.last] = r.body as string;
   });
 }
 
 const CACHE = 'ta.content.v1';
 // Called once at app start: cached corrections first (offline), then fresh ones from the server.
-export async function loadContentOverrides(lists: Record<string, Obj[]>): Promise<void> {
+export async function loadContentOverrides(lists: Record<string, readonly Obj[]>): Promise<void> {
   const put = (rows: Override[]) => Object.entries(lists).forEach(([kind, list]) => applyOverrides(list, rows, kind));
   try { const c = JSON.parse((await AsyncStorage.getItem(CACHE)) || 'null'); if (Array.isArray(c)) put(c); } catch (e) { /* no cache */ }
   try {

@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button, Notice } from './ui';
-import { pushSupported, pushState, pushPref, enablePush, disablePush, notNow, openPhoneSettings } from '../lib/push';
+import { pushSupported, pushState, pushPref, enablePush, disablePush, notNow, openPhoneSettings, type PushState } from '../lib/push';
 import type { Msg } from '../screens/navTypes';
 
 // Turning on phone alerts (push). mode 'home': asks once, disappears after a choice.
 // mode 'settings' (🔔 page): always shows the current state and the one action that fits it.
-export default function PushCard({ mode = 'settings' }) {
-  const [st, setSt] = useState<any>(null);
+export default function PushCard({ mode = 'settings' }: { mode?: 'home' | 'settings' }) {
+  const [st, setSt] = useState<PushState | 'decided' | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {

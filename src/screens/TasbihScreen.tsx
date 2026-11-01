@@ -8,7 +8,10 @@ import type { Nav } from './navTypes';
 
 const KEY = 'ta.tasbih.v1';
 // "after" = after-prayer tasbih: 33 + 33 + 34, moves to the next phrase by itself.
-const PRESETS = [
+// A preset is either one phrase (with a target count) or a sequence of phrases (steps).
+type Preset = { id: string; label: string; ar?: string; pron?: string; bn?: string; target?: number; steps?: string[]; source?: string };
+type Count = { n: number; step: number };
+const PRESETS: Preset[] = [
   { id: 'after', label: 'নামাজের পরের তাসবিহ', steps: ['subhan', 'hamd', 'akbar'], source: 'মুসলিম ৫৯৬' },
   { id: 'subhan', label: 'সুবহানাল্লাহ', ar: 'سُبْحَانَ اللَّهِ', pron: 'সুবহানাল্লাহ', bn: 'আল্লাহ পবিত্র', target: 33 },
   { id: 'hamd', label: 'আলহামদুলিল্লাহ', ar: 'الْحَمْدُ لِلَّهِ', pron: 'আলহামদুলিল্লাহ', bn: 'সব প্রশংসা আল্লাহর', target: 33 },
@@ -19,20 +22,20 @@ const PRESETS = [
   { id: 'durood', label: 'দরুদ', ar: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', pron: 'আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ', bn: 'হে আল্লাহ, মুহাম্মাদ (সা.)-এর ওপর রহমত বর্ষণ করুন', target: 100 },
   { id: 'free', label: 'নিজের মতো গোনা', ar: '', pron: 'যেকোনো জিকির', bn: 'যত খুশি গুনুন', target: 0 },
 ];
-const P = (id: string): any => PRESETS.find((p) => p.id === id) || PRESETS[0];   // a preset or a single phrase
+const P = (id: string): Preset => PRESETS.find((p) => p.id === id) || PRESETS[0];   // a preset or a single phrase
 
 export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const [sel, setSel] = useState('after');
-  const [state, setState] = useState<Record<string, any>>({});          // { presetId: { n, step } }
+  const [state, setState] = useState<Record<string, Count>>({});          // { presetId: { n, step } }
   useEffect(() => {
     AsyncStorage.getItem(KEY).then((v) => { try { const o = JSON.parse(v || '{}'); if (o && typeof o === 'object') { setState(o.counts || {}); if (o.sel && P(o.sel)) setSel(o.sel); } } catch (e) { /* start fresh */ } }).catch(() => {});
   }, []);
-  const save = (counts: Record<string, any>, s: string = sel) => { setState(counts); AsyncStorage.setItem(KEY, JSON.stringify({ counts, sel: s })).catch(() => {}); };
+  const save = (counts: Record<string, Count>, s: string = sel) => { setState(counts); AsyncStorage.setItem(KEY, JSON.stringify({ counts, sel: s })).catch(() => {}); };
 
   const preset = P(sel);
   const cur = state[sel] || { n: 0, step: 0 };
   const phrase = preset.steps ? P(preset.steps[cur.step] || preset.steps[preset.steps.length - 1]) : preset;
-  const target = phrase.target;
+  const target = phrase.target || 0;
   const allDone = preset.steps ? cur.step >= preset.steps.length : target > 0 && cur.n >= target;
 
   const tap = () => {

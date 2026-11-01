@@ -276,7 +276,7 @@ function Common() {
       {COMMON.map((x, i) => (
         <View key={i} style={[st.rule, { borderLeftColor: C.warn }]}>
           <Text style={st.ruleT}>⚠️ {x.text}</Text>
-          {x.image ? <Illustration img={(IMAGES as Record<string, any>)[x.image]} /> : null}
+          {x.image ? <Illustration img={IMAGES[x.image]} /> : null}
           <Text style={st.ruleS}>📚 {x.source}</Text>
         </View>
       ))}

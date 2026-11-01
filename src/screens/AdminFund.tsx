@@ -13,7 +13,8 @@ import { methodLabel } from '../lib/payments';
 import { setSetting } from '../lib/offers';
 import { supabase } from '../lib/supabase';
 
-type Row = Record<string, any>;
+import type { Res, Item } from '../lib/types';
+type Setting = { key: string; value: string | null };
 type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;
 const taka = (n: unknown): string => `${toBn(Math.round(Number(n || 0)).toLocaleString('en-IN'))} টাকা`;
 const errOf = (e: unknown): string => ((e as { code?: string })?.code === 'reason' ? 'কারণ অন্তত ৫ অক্ষরে লিখুন।' : helpErrorText(e));
@@ -53,7 +54,7 @@ export default function FundTab({ perms }: { perms: string[] }) {
 
 function Apps() {
   const [status, setStatus] = useState('pending');
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof helpApplications> | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -102,7 +103,7 @@ function Apps() {
 }
 
 function Gifts() {
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof fundDonations> | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -137,7 +138,7 @@ function Gifts() {
 
 function Spend() {
   const [bal, setBal] = useState<number | null>(null);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof helpApplications> | null>(null);
   const [pick, setPick] = useState('');
   const [f, setF] = useState({ amount: '', purpose: '', ref: '' });
   const [busy, setBusy] = useState(false);
@@ -184,14 +185,14 @@ function Spend() {
 function Access({ isAdmin }: { isAdmin: boolean }) {
   const [mode, setMode] = useState<DonateMode | null>(null);
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof donorAccess> | null>(null);
   const [searched, setSearched] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const loadMode = useCallback(() => {
-    supabase.from('app_settings').select('key,value').eq('key', 'fund_donate_mode').then((r: { data: Row[] | null }) => {
+    supabase.from('app_settings').select('key,value').eq('key', 'fund_donate_mode').then((r: { data: Setting[] | null }) => {
       const v = (r.data || [])[0]?.value;
-      setMode(DONATE_MODES.some((m) => m.key === v) ? v : 'approved');
+      setMode(DONATE_MODES.find((m) => m.key === v)?.key || 'approved');
     }, () => setMode('approved'));
   }, []);
   const load = useCallback(async (query: string) => {
@@ -209,14 +210,14 @@ function Access({ isAdmin }: { isAdmin: boolean }) {
       finally { setBusy(null); }
     });
   };
-  const setOne = async (r: Row, status: 'allowed' | 'blocked' | null, ok: string) => {
+  const setOne = async (r: Item<typeof donorAccess>, status: 'allowed' | 'blocked' | null, ok: string) => {
     if (busy) return;
     setBusy(r.user_id); setMsg(null);
     try { await setDonorAccess(r.user_id, status); setMsg({ kind: 'ok', text: `${r.full_name}: ${ok}` }); await load(searched); }
     catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }
     finally { setBusy(null); }
   };
-  const block = (r: Row) => confirm(`${r.full_name}-এর দান বন্ধ করবেন?`, '"সবার জন্য খোলা" থাকলেও এই আইডি দান করতে পারবে না।', 'হ্যাঁ, বন্ধ করুন',
+  const block = (r: Item<typeof donorAccess>) => confirm(`${r.full_name}-এর দান বন্ধ করবেন?`, '"সবার জন্য খোলা" থাকলেও এই আইডি দান করতে পারবে না।', 'হ্যাঁ, বন্ধ করুন',
     () => setOne(r, 'blocked', 'দান বন্ধ করা হয়েছে।'));
   return (
     <>
@@ -273,7 +274,7 @@ function Account() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => {
-    supabase.from('app_settings').select('key,value').in('key', ['fund_bkash', 'fund_bank']).then((r: { data: Row[] | null }) => {
+    supabase.from('app_settings').select('key,value').in('key', ['fund_bkash', 'fund_bank']).then((r: { data: Setting[] | null }) => {
       const m: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
       setV({ bkash: m.fund_bkash || '', bank: m.fund_bank || '' });
     }, () => setV({ bkash: '', bank: '' }));

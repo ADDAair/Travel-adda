@@ -6,15 +6,17 @@ import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { GUIDES } from '../content/guides';
 import { DUAS } from '../content/duas';
+import type { Dua, Guide } from '../content/types';
 import { textFields, applyOverrides, listOverrides, setContent, originalText, type TextField, type Override } from '../lib/contentEdit';
 import { notReady } from '../lib/groups';
 import { st, errText, confirm } from './GroupScreen';
 import type { Msg } from './navTypes';
 
-type Item = Record<string, any> & { id: string; title: string; icon?: string };
+type Item = Guide | Dua;   // what the editor shows: id, title and (guides only) an icon
 type Kind = 'guide' | 'dua';
+const iconOf = (x: Item): string => ('icon' in x && x.icon ? `${x.icon} ` : '');
 
-const LISTS: Record<Kind, Item[]> = { guide: GUIDES as unknown as Item[], dua: DUAS as unknown as Item[] };
+const LISTS: Record<Kind, readonly Item[]> = { guide: GUIDES, dua: DUAS };
 
 export default function ContentTab(): JSX.Element {
   const [kind, setKind] = useState<Kind>('guide');
@@ -35,7 +37,7 @@ export default function ContentTab(): JSX.Element {
   if (cur) return (
     <>
       <Button title="তালিকায় ফিরে যান" icon="‹" kind="secondary" onPress={() => setItem(null)} style={{ marginBottom: S.md }} />
-      <Text style={st.gName}>{cur.icon ? `${cur.icon} ` : ''}{cur.title}</Text>
+      <Text style={st.gName}>{iconOf(cur)}{cur.title}</Text>
       <Notice kind="warn" title="ধর্মীয় লেখা বদলানোর আগে আলিমের সাথে মিলিয়ে নিন" text="সংরক্ষণ করলে সবার ফোনে পরের বার অ্যাপ খোলার সময় নতুন লেখা দেখাবে।" />
       {textFields(cur).map((f) => <FieldEditor key={`${kind}/${cur.id}/${f.path}`} kind={kind} item={cur.id} f={f}
         overridden={(rows || []).some((r) => r.kind === kind && r.item_id === cur.id && r.path === f.path)} onSaved={refresh} />)}
@@ -51,7 +53,7 @@ export default function ContentTab(): JSX.Element {
       {list.map((x) => (
         <Pressable key={x.id} onPress={() => setItem(x.id)} style={st.card} accessibilityRole="button"
           accessibilityLabel={`${x.title}${changed(x.id) ? `, ${changed(x.id)}টি লেখা বদলানো` : ''}। খুলতে চাপুন`}>
-          <Text style={st.val}>{x.icon ? `${x.icon} ` : ''}{x.title}</Text>
+          <Text style={st.val}>{iconOf(x)}{x.title}</Text>
           {changed(x.id) ? <Text style={[st.small, { color: C.warn, fontWeight: '700' }]}>✏️ বদলানো লেখা আছে</Text> : null}
         </Pressable>
       ))}

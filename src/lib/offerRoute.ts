@@ -1,7 +1,12 @@
 // Package journey (supabase/020_offer_route.sql), leader search and filters on the Offers page. No network here.
 import { toBn, normalizeDigits } from './phone';
 
-type Offer = Record<string, any>;   // an offer row from the server
+// The package fields this file reads (a haji's list row, a leader's own row or an admin row all have them).
+type Offer = {
+  from_airport?: string | null; arrive_at?: string | null; first_city?: string | null; makkah_nights?: number | null; madinah_nights?: number | null;
+  return_from?: string | null; return_to?: string | null; airline?: string | null; depart_on?: string | null; return_on?: string | null;
+  price_bdt?: number | null; title?: string | null; leader_name?: string | null; leader_code?: string | null; agency_name?: string | null;
+};
 export type RouteForm = { from?: string; arrive?: string; first?: string; mk?: unknown; md?: unknown; back?: string; to?: string; airline?: string | null };
 export type RouteStep = { icon: string; title: string; text: string; when?: string };
 
@@ -18,13 +23,13 @@ export const CITIES = [{ id: 'makkah', label: 'মক্কা', icon: '🕋' },
 export const PRICE_LIMITS = [150000, 200000, 300000];
 const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 
-const name = (list: readonly { id: string; label: string }[], id: string): string => (list.find((a) => a.id === id) || { label: '' }).label || '';
+const name = (list: readonly { id: string; label: string }[], id: string | null | undefined): string => (list.find((a) => a.id === id) || { label: '' }).label || '';
 const nights = (n: number): string => `${toBn(n)} রাত`;
 export const hasRoute = (o: Offer | null | undefined): boolean => !!(o && o.from_airport && o.makkah_nights != null);
 
 function cityOrder(o: Offer): { c: string; n: number }[] {
   const order = o.first_city === 'madinah' ? ['madinah', 'makkah'] : ['makkah', 'madinah'];
-  return order.map((c) => ({ c, n: c === 'makkah' ? o.makkah_nights : o.madinah_nights })).filter((x) => x.n > 0);
+  return order.map((c) => ({ c, n: Number((c === 'makkah' ? o.makkah_nights : o.madinah_nights) || 0) })).filter((x) => x.n > 0);
 }
 
 // Steps in travel order: fly out, each holy city with its nights, fly home.
@@ -35,7 +40,7 @@ export function routeSteps(o: Offer): RouteStep[] | null {
     const city = CITIES.find((x) => x.id === c);
     if (city) out.push({ icon: city.icon, title: city.label, text: `${nights(n)} থাকা` });
   });
-  out.push({ icon: '🛬', title: 'দেশে ফেরা', text: `${name(AIRPORTS_SA, o.return_from)} থেকে ${name(AIRPORTS_BD, o.return_to)}`, when: o.return_on });
+  out.push({ icon: '🛬', title: 'দেশে ফেরা', text: `${name(AIRPORTS_SA, o.return_from)} থেকে ${name(AIRPORTS_BD, o.return_to)}`, when: o.return_on || undefined });
   return out;
 }
 

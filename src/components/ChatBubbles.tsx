@@ -15,12 +15,14 @@ export function fmtWhen(iso: string): string {
 
 // One conversation. "mineSide" = messages written by the person looking at the screen sit on the right.
 // Who wrote each message is said in words with an icon (never colour only).
-export default function ChatBubbles({ rows, viewer }: { rows: Record<string, any>[]; viewer: string }) {
+// One message as both the haji's and the staff's message lists give it.
+export type ChatMsg = { id: string; body: string; created_at: string; mine?: boolean | null; sender_role?: string | null; sender_name?: string | null };
+export default function ChatBubbles({ rows, viewer }: { rows: readonly ChatMsg[]; viewer: string }) {
   return (
     <View>
       {(rows || []).map((m) => {
         const right = m.mine;
-        const who = viewer === 'haji' ? roleLabel(m.sender_role, m.mine) : (m.mine ? '✍️ আপনি' : roleLabel(m.sender_role));
+        const who = viewer === 'haji' ? roleLabel(m.sender_role || '', !!m.mine) : (m.mine ? '✍️ আপনি' : roleLabel(m.sender_role || ''));
         const name = m.mine || !m.sender_name ? '' : ` · ${m.sender_name}`;
         return (
           <View key={m.id} style={[b.row, right ? b.right : b.left]}

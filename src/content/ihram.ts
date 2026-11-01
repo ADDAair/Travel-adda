@@ -3,6 +3,8 @@
 // Rulings follow what is commonly taught to Bangladeshi pilgrims (Hanafi practice); where scholars differ,
 // the text tells the pilgrim to ask their group leader or an alim instead of giving a penalty ruling.
 
+import type { Img } from '../components/guide';
+
 export const CONTENT_REVIEWED = false;
 
 export const SECTIONS = [
@@ -176,7 +178,7 @@ export const MISTAKES = [
 ];
 
 // ---------- Illustrations (faceless drawings; tools/art/art.js) ----------
-export const IMAGES = {
+export const IMAGES: Record<string, Img> = {
   man: { src: require('../../assets/ihram/ihram-man.png'), ratio: 1, caption: '✅ পুরুষ: একটি চাদর কোমরে, একটি গায়ে। মাথা খোলা। দুই কাঁধ ঢাকা।' },
   idtiba: { src: require('../../assets/ihram/ihram-idtiba.png'), ratio: 1, caption: '✅ শুধু তাওয়াফের সময় (ইযতিবা): চাদর ডান বগলের নিচ দিয়ে বাম কাঁধে, ডান কাঁধ খোলা। নামাজে ও অন্য সময় দুই কাঁধ ঢাকা।' },
   sandal: { src: require('../../assets/ihram/ihram-sandal.png'), ratio: 620 / 460, caption: '✅ বাঁয়ে: পায়ের ওপরের মাঝের হাড় খোলা থাকে এমন স্যান্ডেল। ❌ ডানে: পুরো পা ঢাকা জুতা পুরুষের জন্য নিষেধ।' },

@@ -13,7 +13,6 @@ import { PAY_METHODS, PAY_STATUS } from '../lib/payments';
 import DistrictPicker from '../components/DistrictPicker';
 import { useMe } from '../lib/me';
 
-type Row = Record<string, any>;
 type Nav = { navigate: (r: string, p?: object) => void };
 type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;
 const taka = (n: number): string => `${toBn(Math.round(n).toLocaleString('en-IN'))} টাকা`;

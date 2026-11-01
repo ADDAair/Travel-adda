@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
-import { getTerms, agreeTerms, myTermsStatus } from '../lib/market';
+import { getTerms, agreeTerms, myTermsStatus, type TermsText } from '../lib/market';
+import type { Res } from '../lib/types';
 import { useMe, isLeaderAccount } from '../lib/me';
 import { st, fmtDay, errText } from './GroupScreen';
 import type { Msg, Nav } from './navTypes';
@@ -12,16 +13,16 @@ import type { Msg, Nav } from './navTypes';
 export default function TermsScreen({ navigation }: { navigation: Nav }) {
   const { me } = useMe();
   const mine = isLeaderAccount(me) ? 'leader' : 'haji';
-  const [kind, setKind] = useState(mine);
-  const [t, setT] = useState<any>(undefined);            // undefined = loading, null = none written
-  const [status, setStatus] = useState<any>(null);       // { haji: { at, current }, leader: {...} }
+  const [kind, setKind] = useState<'haji' | 'leader'>(mine);
+  const [t, setT] = useState<TermsText | null | undefined>(undefined);            // undefined = loading, null = none written
+  const [status, setStatus] = useState<Res<typeof myTermsStatus>>(null);       // { haji: { at, current }, leader: {...} }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { setKind(mine); }, [mine]);
 
   const load = useCallback(async () => {
     setT(undefined); setMsg(null);
-    getTerms(kind as 'haji' | 'leader').then(setT).catch(() => setT(null));
+    getTerms(kind).then(setT).catch(() => setT(null));
     myTermsStatus().then(setStatus).catch(() => setStatus(null));
   }, [kind]);
   useEffect(() => { load(); }, [load]);

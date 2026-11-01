@@ -8,7 +8,9 @@ import { mySentInvites, cancelInvite } from '../lib/help';
 import { groupKhadems, addKhadem, removeKhadem, khademResultText, faqList, saveFaq, deleteFaq, helpErrorText } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
-import type { Msg, Nav, Route, Row } from './navTypes';
+import type { Msg, Nav, Route } from './navTypes';
+import type { Res, Item } from '../lib/types';
+import { errInfo } from '../lib/errors';
 
 const confirm = (title: string, text: string, yes: string, fn: () => void) => Alert.alert(title, text, [{ text: 'না', style: 'cancel' }, { text: yes, style: 'destructive', onPress: fn }]);
 
@@ -18,13 +20,13 @@ export default function GroupStaffScreen({ navigation, route }: { navigation: Na
   const gname = route?.params?.groupName || '';
   const [tab, setTab] = useState(route?.params?.tab === 'faq' ? 'faq' : 'khadem');
   const [state, setState] = useState('load');
-  const [khadems, setKhadems] = useState<any[]>([]);
-  const [faq, setFaq] = useState<any[]>([]);
+  const [khadems, setKhadems] = useState<Res<typeof groupKhadems>>([]);
+  const [faq, setFaq] = useState<Res<typeof faqList>>([]);
   const [ident, setIdent] = useState('');
-  const [edit, setEdit] = useState<any>(null);                 // null | { id?, q, a }
+  const [edit, setEdit] = useState<{ id?: string; q: string; a: string } | null>(null);                 // null | { id?, q, a }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const [sent, setSent] = useState<any[]>([]);
+  const [sent, setSent] = useState<Res<typeof mySentInvites>>([]);
 
   const load = useCallback(async () => {
     if (!gid) return;
@@ -41,14 +43,15 @@ export default function GroupStaffScreen({ navigation, route }: { navigation: Na
     setMsg({ kind: r === 'ok' || r === 'sent' ? 'ok' : r === 'already' ? 'info' : 'warn', text: khademResultText(r) });
     if (r === 'ok' || r === 'sent') { setIdent(''); await load(); await loadSent(); }
   });
-  const remove = (k: Row) => confirm(`${k.full_name}-কে খাদেম থেকে সরাবেন?`, 'সাথে সাথে তিনি এই দলের হাজী ও প্রশ্ন আর দেখতে পারবেন না।', 'হ্যাঁ, সরান',
+  const remove = (k: Item<typeof groupKhadems>) => confirm(`${k.full_name}-কে খাদেম থেকে সরাবেন?`, 'সাথে সাথে তিনি এই দলের হাজী ও প্রশ্ন আর দেখতে পারবেন না।', 'হ্যাঁ, সরান',
     () => run(async () => { await removeKhadem(gid, k.user_id); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); await load(); }));
   const save = () => run(async () => {
-    try { await saveFaq(gid, edit.id, edit.q, edit.a); }
-    catch (e: any) { if (e.code === 'short') { setMsg({ kind: 'bad', text: 'প্রশ্ন ও উত্তর দুটোই লিখুন।' }); return; } if (/faq limit/i.test(e.message || '')) { setMsg({ kind: 'bad', text: 'একটি দলে সর্বোচ্চ ৩০টি তৈরি উত্তর রাখা যায়।' }); return; } throw e; }
+    if (!edit) return;
+    try { await saveFaq(gid, edit.id || null, edit.q, edit.a); }
+    catch (e) { const { code, message } = errInfo(e); if (code === 'short') { setMsg({ kind: 'bad', text: 'প্রশ্ন ও উত্তর দুটোই লিখুন।' }); return; } if (/faq limit/i.test(message)) { setMsg({ kind: 'bad', text: 'একটি দলে সর্বোচ্চ ৩০টি তৈরি উত্তর রাখা যায়।' }); return; } throw e; }
     setEdit(null); setMsg({ kind: 'ok', text: 'সংরক্ষণ হয়েছে। হাজীরা প্রশ্ন করার আগে এটি দেখবেন।' }); await load();
   });
-  const del = (f: Row) => confirm('এই তৈরি উত্তরটি মুছবেন?', f.question, 'হ্যাঁ, মুছুন', () => run(async () => { await deleteFaq(f.id); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }));
+  const del = (f: Item<typeof faqList>) => confirm('এই তৈরি উত্তরটি মুছবেন?', f.question, 'হ্যাঁ, মুছুন', () => run(async () => { await deleteFaq(f.id); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }));
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">

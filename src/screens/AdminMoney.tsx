@@ -8,7 +8,7 @@ import { PAY_STATUS, methodLabel, listPayments, reviewPayment, ledger, leaderRat
 import { setSetting } from '../lib/offers';
 import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+import type { Item } from '../lib/types';
 type Msg = { kind: 'ok' | 'bad'; text: string } | null;
 type Cb = { onDone: (t: string) => void; onFail: (t: string) => void };
 const num = (v: unknown): number | null => { const t = normalizeDigits(String(v || '')).replace(/[,\s]/g, ''); return t === '' ? null : Number(t); };
@@ -27,9 +27,9 @@ export default function MoneyTab({ owner }: { owner?: boolean }): JSX.Element {
   );
 }
 
-function useData(fn: () => Promise<Row[]>) {
+function useData<T>(fn: () => Promise<T[]>) {
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<T[]>([]);
   const load = useCallback(async () => {
     try { setRows(await fn()); setState('ok'); } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, [fn]);
@@ -69,7 +69,7 @@ function Pending() {
   );
 }
 
-function PayCard({ r, onDone, onFail }: { r: Row } & Cb) {
+function PayCard({ r, onDone, onFail }: { r: Item<typeof listPayments> } & Cb) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const decide = (ok: boolean) => {
@@ -122,7 +122,7 @@ function Ledger() {
   );
 }
 
-function LedgerCard({ r, onDone, onFail }: { r: Row } & Cb) {
+function LedgerCard({ r, onDone, onFail }: { r: Item<typeof ledger> } & Cb) {
   const [open, setOpen] = useState(false);
   const [comm, setComm] = useState(r.commission_fixed != null ? String(r.commission_fixed) : '');
   const [payee, setPayee] = useState<'leader' | 'haji'>('leader');
@@ -201,7 +201,7 @@ function Rates() {
     </>
   );
 }
-function RateRow({ r, onDone, onFail }: { r: Row } & Cb) {
+function RateRow({ r, onDone, onFail }: { r: Item<typeof leaderRates> } & Cb) {
   const [pct, setPct] = useState(String(r.commission_pct));
   const [note, setNote] = useState(r.note || '');
   const [busy, setBusy] = useState(false);
