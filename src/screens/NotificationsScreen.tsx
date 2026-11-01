@@ -7,7 +7,7 @@ import { notReady } from '../lib/groups';
 import { KIND_ICON, listNotifications, markRead, hideNotification, markAllRead } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import PushCard from '../components/PushCard';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
 import type { NotificationRow } from '../lib/types';
 
 // Notification box: everything Travel Adda or the app told this person, newest first.
@@ -69,7 +69,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
   );
 }
 
-function Item({ n: x, onOpen, onRemove }: { n: Row; onOpen: (n: NotificationRow) => void; onRemove: (n: NotificationRow) => void }) {
+function Item({ n: x, onOpen, onRemove }: { n: NotificationRow; onOpen: (n: NotificationRow) => void; onRemove: (n: NotificationRow) => void }) {
   const isNew = !x.is_read;
   return (
     <View style={[n.card, isNew && n.cardNew, x.important && isNew && n.cardImp]}>

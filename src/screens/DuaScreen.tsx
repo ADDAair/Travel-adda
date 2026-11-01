@@ -71,7 +71,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
     return (
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <View style={{ paddingHorizontal: S.md, paddingTop: S.md }}>{modeBar}</View>
-        <QuranList onOpen={(n: number, a?: number) => setSurah({ n, a })} />
+        <QuranList onOpen={(n: number, a?: number) => setSurah({ n, a: a || 1 })} />
       </View>
     );
   }

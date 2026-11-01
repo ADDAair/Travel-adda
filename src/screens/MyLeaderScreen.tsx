@@ -13,9 +13,9 @@ import { shareContractPdf } from '../lib/contractPdf';
 import PaymentBox from '../components/PaymentBox';
 import { myChatConsents, type MyConsent } from '../lib/chatConsent';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
 
-import type { MyContract } from '../lib/types';
+import type { MyContract, Res } from '../lib/types';
 
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
 type Box = { c: MyContract; busy: boolean; act: Act; setMsg: (m: Msg) => void };
@@ -25,8 +25,8 @@ const COMPLAINT_STATUS: Record<string, string> = { pending: '⏳ অ্যাড
 // Haji: my leader (referral), contracts to read and accept, cancel with a reason, PDF, rating and complaints.
 export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [rows, setRows] = useState<MyContract[] | null>(null);
-  const [ref, setRef] = useState<Row | null | undefined>(undefined);
-  const [complaints, setComplaints] = useState<Row[]>([]);
+  const [ref, setRef] = useState<Res<typeof myReferral> | undefined>(undefined);
+  const [complaints, setComplaints] = useState<Res<typeof myComplaints>>([]);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
@@ -218,7 +218,7 @@ function ComplaintBox({ c, setMsg }: { c: MyContract; setMsg: (m: Msg) => void }
   );
 }
 
-function ReferralCard({ r, busy, act, hasContract }: { r: Row | null | undefined; busy: boolean; act: Act; hasContract: boolean }): JSX.Element {
+function ReferralCard({ r, busy, act, hasContract }: { r: Res<typeof myReferral> | undefined; busy: boolean; act: Act; hasContract: boolean }): JSX.Element {
   const [code, setCode] = useState('');
   const [cancel, setCancel] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);

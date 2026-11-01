@@ -6,7 +6,8 @@ import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { audienceSize, sendNotification, listBroadcasts, withdrawBroadcast } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
-import type { Msg, Row } from './navTypes';
+import type { Msg } from './navTypes';
+import type { Res, Item } from '../lib/types';
 
 type Aud = 'all' | 'haji' | 'leader' | 'one';
 const AUD: Record<string, string> = { all: 'সবাই', haji: 'সব হাজী', leader: 'সব লিডার', one: 'একজন' };
@@ -22,7 +23,7 @@ export default function NotifyTab(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [err, setErr] = useState<Record<string, string>>({});
-  const [sent, setSent] = useState<Row[] | null>(null);
+  const [sent, setSent] = useState<Res<typeof listBroadcasts> | null>(null);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
 
   const loadSent = useCallback(async () => {
@@ -54,7 +55,7 @@ export default function NotifyTab(): JSX.Element {
       finally { setBusy(false); }
     });
   };
-  const withdraw = (b: Row) => confirm('নোটিফিকেশনটি তুলে নেবেন?', 'যাঁরা এখনো দেখেননি, তাঁরা আর দেখবেন না।', 'হ্যাঁ, তুলে নিন', async () => {
+  const withdraw = (b: Item<typeof listBroadcasts>) => confirm('নোটিফিকেশনটি তুলে নেবেন?', 'যাঁরা এখনো দেখেননি, তাঁরা আর দেখবেন না।', 'হ্যাঁ, তুলে নিন', async () => {
     try { await withdrawBroadcast(b.id); setMsg({ kind: 'ok', text: 'তুলে নেওয়া হয়েছে।' }); loadSent(); } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
   });
 

@@ -2,11 +2,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
-import { rows } from './rpc';
-import type { AnyPackage, OwnPackage, TableUpdate } from './types';
+import { rows as rowsOf, type RpcRow } from './rpc';
+import type { AnyPackage, OwnPackage, TableInsert, TableRow, TableUpdate } from './types';
 import { notReady } from './groups';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+type Interest = Pick<TableRow<'offer_interests'>, 'id' | 'offer_id' | 'status' | 'created_at'>;   // a haji's call-back request
+type Review = { review?: string | null; review_note?: string | null; hidden_by_admin?: boolean | null };
 const check = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.error; return r.data; };
 const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
 
@@ -26,15 +27,15 @@ export const cleanIncludes = (kind: string, ids: string[]): string[] => ids.filt
 export const KIND: Record<string, { icon: string; label: string }> = { hajj: { icon: '🕋', label: 'হজ' }, umrah: { icon: '🔄', label: 'ওমরাহ' } };
 // Short reference the haji can say on the phone, e.g. "প্যাকেজ নম্বর 3FA9C2".
 export const refOf = (id: unknown): string => String(id || '').replace(/-/g, '').slice(0, 6).toUpperCase();
-export const daysOf = (o: Row): number => Math.round((Date.parse(o.return_on) - Date.parse(o.depart_on)) / 86400000) + 1;
+export const daysOf = (o: { depart_on?: string | null; return_on?: string | null }): number => Math.round((Date.parse(o.return_on || '') - Date.parse(o.depart_on || '')) / 86400000) + 1;
 
 // ---------- Helpline (kept on the phone so the number works without internet) ----------
 const HELP_CACHE = 'ta.helpline.v1';
 export type Helpline = { phone: string; hours: string; otpLive: boolean };
 export async function getHelpline(): Promise<Helpline> {
   try {
-    const rows: Row[] = check(await supabase.from('app_settings').select('key,value')) || [];
-    const h: Record<string, string> = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const rows = check(await supabase.from('app_settings').select('key,value')) || [];
+    const h: Record<string, string> = Object.fromEntries(rows.map((r) => [r.key, r.value || '']));
     const v = { phone: h.helpline_phone || '', hours: h.helpline_hours || '', otpLive: h.otp_live === 'yes' };
     AsyncStorage.setItem(HELP_CACHE, JSON.stringify(v)).catch(() => {});
     return v;
@@ -47,16 +48,16 @@ export const setSetting = async (key: string, value: string | null) => check(awa
 export const cleanHelpline = (v: unknown): string => normalizeDigits(v).replace(/[^\d+]/g, '');
 
 // ---------- Haji ----------
-export const listOffers = (kind: string | null) => rows('list_offers', { p_kind: kind });   // typed by src/lib/dbTypes.ts
-export async function myInterests(): Promise<Record<string, Row>> {
-  const rows: Row[] = check(await supabase.from('offer_interests').select('id,offer_id,status,created_at').order('created_at', { ascending: false })) || [];
-  const m: Record<string, Row> = {};
-  rows.forEach((r) => { if (!m[r.offer_id] || r.status === 'new') m[r.offer_id] = r; });
+export const listOffers = (kind: string | null) => rowsOf('list_offers', { p_kind: kind });   // typed by src/lib/dbTypes.ts
+export async function myInterests(): Promise<Record<string, Interest>> {
+  const rows: Interest[] = check(await supabase.from('offer_interests').select('id,offer_id,status,created_at').order('created_at', { ascending: false })) || [];
+  const m: Record<string, Interest> = {};
+  rows.forEach((r) => { if (r.offer_id && (!m[r.offer_id] || r.status === 'new')) m[r.offer_id] = r; });
   return m;   // offer_id -> latest request (open one first)
 }
 export const requestCallback = async (offerId: string) => check(await supabase.from('offer_interests').insert({ offer_id: offerId }));
 export async function cancelCallback(id: string): Promise<void> {
-  const r: Row[] | null = check(await supabase.from('offer_interests').delete().eq('id', id).select('id'));
+  const r = check(await supabase.from('offer_interests').delete().eq('id', id).select('id'));
   if (!r || !r.length) throw coded('not deleted', 'not-deleted');
 }
 
@@ -68,8 +69,8 @@ export async function myOffers(): Promise<OwnPackage[]> {
 }
 const ROUTE_COLS = ['from_airport', 'arrive_at', 'first_city', 'makkah_nights', 'madinah_nights', 'return_from', 'return_to', 'airline'];
 const noRouteYet = (e: { message?: string } | null): boolean => !!e && ROUTE_COLS.some((c) => String(e.message || '').includes(`'${c}'`) || String(e.message || '').includes(`.${c}`) || String(e.message || '').includes(`"${c}"`));
-const withoutRoute = (o: Row): Row => Object.fromEntries(Object.entries(o).filter(([k]) => !ROUTE_COLS.includes(k)));
-export async function createOffer(o: Row): Promise<Row | null> {
+const withoutRoute = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([k]) => !ROUTE_COLS.includes(k))) as T;
+export async function createOffer(o: TableInsert<'offers'>): Promise<{ id: string } | null> {
   let r = await supabase.from('offers').insert(o).select('id').single();
   // database step 020 (journey) not run yet: save without the journey rather than failing
   if (r.error && noRouteYet(r.error)) { o = withoutRoute(o); r = await supabase.from('offers').insert(o).select('id').single(); }
@@ -78,9 +79,9 @@ export async function createOffer(o: Row): Promise<Row | null> {
   return check(r);
 }
 // Admin check of packages (supabase/019_offer_review.sql). Before 019 every package counts as approved.
-export const reviewOf = (o: Row | null | undefined): string => (o && o.review) || 'approved';
-export const canEditOffer = (o: Row | null | undefined): boolean => !!o && !o.hidden_by_admin && (reviewOf(o) === 'pending' || reviewOf(o) === 'rejected');
-export function reviewLabel(o: Row): string | null {
+export const reviewOf = (o: Review | null | undefined): string => (o && o.review) || 'approved';
+export const canEditOffer = (o: Review | null | undefined): boolean => !!o && !o.hidden_by_admin && (reviewOf(o) === 'pending' || reviewOf(o) === 'rejected');
+export function reviewLabel(o: Review): string | null {
   const r = reviewOf(o);
   if (r === 'pending') return '⏳ অনুমোদনের অপেক্ষায়: অ্যাডমিন দেখার পর হাজীরা দেখবেন';
   if (r === 'rejected') return `↩️ অ্যাডমিন ফেরত দিয়েছেন। কারণ: ${o.review_note || 'উল্লেখ নেই'}। ঠিক করে আবার জমা দিন।`;
@@ -88,11 +89,11 @@ export function reviewLabel(o: Row): string | null {
 }
 const EDITABLE = [...ROUTE_COLS, 'kind', 'title', 'price_bdt', 'depart_on', 'return_on', 'makkah_hotel', 'makkah_distance_m', 'madinah_hotel',
   'madinah_distance_m', 'room_share', 'includes', 'notes', 'valid_until'];
-export async function updateOffer(id: string, o: Row): Promise<void> {
-  const fields = Object.fromEntries(Object.entries(o).filter(([k]) => EDITABLE.includes(k)));
-  let x = await supabase.from('offers').update(fields as TableUpdate<'offers'>).eq('id', id).select('id');
-  if (x.error && noRouteYet(x.error)) x = await supabase.from('offers').update(withoutRoute(fields) as TableUpdate<'offers'>).eq('id', id).select('id');
-  const r: Row[] | null = check(x);
+export async function updateOffer(id: string, o: TableUpdate<'offers'>): Promise<void> {
+  const fields = Object.fromEntries(Object.entries(o).filter(([k]) => EDITABLE.includes(k))) as TableUpdate<'offers'>;
+  let x = await supabase.from('offers').update(fields).eq('id', id).select('id');
+  if (x.error && noRouteYet(x.error)) x = await supabase.from('offers').update(withoutRoute(fields)).eq('id', id).select('id');
+  const r = check(x);
   if (!r || !r.length) throw coded('not changed', 'not-changed');
 }
 export function offerErrorText(e: { message?: string; code?: string } | null | undefined): string | null {
@@ -106,16 +107,16 @@ export function offerErrorText(e: { message?: string; code?: string } | null | u
   return null;
 }
 export async function setOfferActive(id: string, active: boolean): Promise<void> {
-  const r: Row[] | null = check(await supabase.from('offers').update({ active }).eq('id', id).select('id'));
+  const r = check(await supabase.from('offers').update({ active }).eq('id', id).select('id'));
   if (!r || !r.length) throw coded('not changed', 'not-changed');
 }
-export async function myInterestCounts(): Promise<Record<string, Row>> {
-  const rows: Row[] = check(await supabase.rpc('my_offer_interest_counts')) || [];
+export async function myInterestCounts(): Promise<Record<string, RpcRow<'my_offer_interest_counts'>>> {
+  const rows = await rowsOf('my_offer_interest_counts');
   return Object.fromEntries(rows.map((r) => [r.offer_id, r]));
 }
 
 // ---------- Admin ----------
-export const adminInterests = async (): Promise<Row[]> => check(await supabase.rpc('admin_list_interests')) || [];
+export const adminInterests = () => rowsOf('admin_list_interests');
 export const markInterest = async (id: string, note?: string | null) => check(await supabase.rpc('admin_mark_interest', { p_id: id, p_note: note || null }));
 export const hideOffer = async (id: string, hide: boolean) => check(await supabase.rpc('admin_hide_offer', { p_offer: id, p_hide: hide }));
 export async function adminOffersReview(): Promise<AnyPackage[]> {

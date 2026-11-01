@@ -9,10 +9,15 @@ import { supabase } from './supabase';
 
 import type { TableRow } from './types';
 export type DocRow = Pick<TableRow<'user_documents'>, 'id' | 'doc_type' | 'file_path' | 'created_at'> & { expires_on?: string | null };
-type Row = DocRow;   // a user_documents row
 const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
 // expo-image-manipulator changed its API between SDKs; both the new and the old one are tried below.
-const Im = IM as unknown as Record<string, any>;
+type Saved = { uri: string };
+type Manip = {
+  ImageManipulator?: { manipulate?: (uri: string) => { resize: (s: { width: number }) => void; renderAsync: () => Promise<{ saveAsync: (o: { compress: number; format: unknown }) => Promise<Saved> }> } };
+  manipulateAsync?: (uri: string, a: { resize: { width: number } }[], o: { compress: number; format: unknown }) => Promise<Saved>;
+  SaveFormat: { JPEG: unknown };
+};
+const Im = IM as unknown as Manip;
 
 export const DOC_TYPES = [
   { id: 'passport', icon: '🛂', label: 'পাসপোর্ট' },
@@ -27,7 +32,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const LOCAL = Platform.OS === 'web' ? null : `${FileSystem.documentDirectory}docs/`;
 const cacheKey = (uid: string): string => `ta.docsCache.v1.${uid}`;
 const isPdf = (path: string): boolean => /\.pdf$/i.test(path);
-export const docIsPdf = (row: Row): boolean => isPdf(row.file_path);
+export const docIsPdf = (row: DocRow): boolean => isPdf(row.file_path);
 
 export async function uid(): Promise<string> {
   const { data } = await supabase.auth.getSession();
@@ -65,13 +70,13 @@ async function ensureLocalDir(): Promise<void> {
   const info = await FileSystem.getInfoAsync(LOCAL);
   if (!info.exists) await FileSystem.makeDirectoryAsync(LOCAL, { intermediates: true });
 }
-const localPath = (row: Row): string | null => (LOCAL ? `${LOCAL}${row.file_path.split('/').pop()}` : null);
+const localPath = (row: DocRow): string | null => (LOCAL ? `${LOCAL}${row.file_path.split('/').pop()}` : null);
 
 /**
  * Upload one document. file = { uri, kind: 'image' | 'pdf' }. Resolves with the new row only after BOTH the file
  * and the database row are saved; if the row fails, the uploaded file is removed again so nothing is left half-done.
  */
-export async function uploadDoc(type: string, file: { uri: string; kind: 'image' | 'pdf' }): Promise<Row> {
+export async function uploadDoc(type: string, file: { uri: string; kind: 'image' | 'pdf' }): Promise<DocRow> {
   const me = await uid();
   const pdf = file.kind === 'pdf';
   const src = pdf ? file.uri : await shrink(file.uri);
@@ -92,8 +97,8 @@ export async function uploadDoc(type: string, file: { uri: string; kind: 'image'
 }
 
 // Returns { rows, offline }. When the internet is not available, the last list saved on this phone is shown.
-type ListResult = { data?: Row[] | null; error?: { code?: string; message?: string } | null };
-export async function listDocs(): Promise<{ rows: Row[]; offline: boolean }> {
+type ListResult = { data?: DocRow[] | null; error?: { code?: string; message?: string } | null };
+export async function listDocs(): Promise<{ rows: DocRow[]; offline: boolean }> {
   const me = await uid();
   try {
     const timeout = new Promise<ListResult>((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 10000));
@@ -116,7 +121,7 @@ export async function listDocs(): Promise<{ rows: Row[]; offline: boolean }> {
  * Where to show a document from: { uri, local } or throws (e.code 'offline' when there is no internet and no copy).
  * Photos opened once are saved in the app's private folder for next time.
  */
-export async function openDoc(row: Row): Promise<{ uri: string; local: boolean }> {
+export async function openDoc(row: DocRow): Promise<{ uri: string; local: boolean }> {
   const lp = localPath(row);
   if (lp) {
     try { const info = await FileSystem.getInfoAsync(lp); if (info.exists) return { uri: lp, local: true }; } catch (e) { /* download below */ }
@@ -130,7 +135,7 @@ export async function openDoc(row: Row): Promise<{ uri: string; local: boolean }
 }
 
 // Saves (or clears, with null) the expiry date of a passport / visa. Throws if the server did not confirm.
-export async function setDocExpiry(row: Row, ymd: string | null | undefined): Promise<Row> {
+export async function setDocExpiry(row: DocRow, ymd: string | null | undefined): Promise<DocRow> {
   const r = await supabase.from('user_documents').update({ expires_on: ymd || null }).eq('id', row.id).select('id,doc_type,file_path,created_at,expires_on');
   if (r.error) throw r.error;
   if (!r.data || !r.data.length) throw coded('not saved', 'not-saved');
@@ -138,7 +143,7 @@ export async function setDocExpiry(row: Row, ymd: string | null | undefined): Pr
 }
 
 // Deletes the row and the file (and this phone's copy). Throws if the server did not confirm.
-export async function deleteDoc(row: Row): Promise<void> {
+export async function deleteDoc(row: DocRow): Promise<void> {
   const del = await supabase.from('user_documents').delete().eq('id', row.id).select('id');
   if (del.error) throw del.error;
   if (!del.data || del.data.length === 0) throw coded('not deleted', 'not-deleted');

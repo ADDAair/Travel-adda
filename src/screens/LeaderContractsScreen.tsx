@@ -12,9 +12,9 @@ import { leaderContracts, sendContract, withdrawContract, cancelContract, comple
 import { shareContractPdf } from '../lib/contractPdf';
 import { contractMoney, type ContractMoney } from '../lib/payments';
 import { st, confirm, errText, fmtDay, fmtTaka } from './GroupScreen';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
 
-import type { LeaderContract as LeaderContractRow } from '../lib/types';
+import type { LeaderContract as LeaderContractRow, OwnPackage, Res } from '../lib/types';
 type M = NonNullable<Msg>;
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
 
@@ -32,7 +32,7 @@ const SEND_RESULT: Record<string, M> = {
 export default function LeaderContractsScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const [tab, setTab] = useState('contracts');
   const [rows, setRows] = useState<LeaderContractRow[]>([]);
-  const [refs, setRefs] = useState<Row[]>([]);
+  const [refs, setRefs] = useState<Res<typeof leaderReferralList>>([]);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -155,7 +155,7 @@ function LeaderMoney({ contractId }: { contractId: string }): JSX.Element | null
 function SendForm({ onDone }: { onDone: (m: Msg) => void }): JSX.Element {
   const [f, setF] = useState({ hajiCode: '', title: '', price: '', includes: '', excludes: '', from: '', to: '', refund: '', extra: '' });
   const [kind, setKind] = useState('umrah');
-  const [offers, setOffers] = useState<Row[]>([]);
+  const [offers, setOffers] = useState<OwnPackage[]>([]);
   const [offerId, setOfferId] = useState<string | null>(null);
   const [err, setErr] = useState<Record<string, string>>({});
   const [fail, setFail] = useState<Msg>(null);
@@ -164,7 +164,7 @@ function SendForm({ onDone }: { onDone: (m: Msg) => void }): JSX.Element {
   useEffect(() => { myOffers().then((r) => setOffers(r.filter((o) => o.active && !o.hidden_by_admin))).catch(() => {}); }, []);
   useEffect(() => { const sub = BackHandler.addEventListener('hardwareBackPress', () => { onDone(null); return true; }); return () => sub.remove(); }, [onDone]);
 
-  const fromOffer = (o: Row) => {
+  const fromOffer = (o: OwnPackage) => {
     setOfferId(o.id); setKind(o.kind);
     const inc = INCLUDES.filter((x) => (o.includes || []).includes(x.id)).map((x) => x.label);
     const exc = INCLUDES.filter((x) => !(o.includes || []).includes(x.id)).map((x) => x.label);

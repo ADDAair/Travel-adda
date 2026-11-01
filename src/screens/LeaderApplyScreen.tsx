@@ -13,7 +13,8 @@ import { useMe } from '../lib/me';
 import { getTerms, agreeTerms, type TermsText } from '../lib/market';
 import { DocCamera } from './DocsScreen';
 import { st, errText, fmtDay } from './GroupScreen';
-import type { Msg, Nav, Row } from './navTypes';
+import type { Msg, Nav } from './navTypes';
+import type { Res } from '../lib/types';
 
 type Kind = 'agency' | 'travel_adda';
 type PickedFile = { uri: string; kind: 'image' | 'pdf'; name: string };
@@ -25,7 +26,7 @@ type PickedFile = { uri: string; kind: 'image' | 'pdf'; name: string };
 // The admin checks them by hand; until then the leader panel stays locked. (Haji accounts never see this.)
 export default function LeaderApplyScreen({ navigation }: { navigation: Nav }): JSX.Element {
   const { me, refreshMe } = useMe();
-  const [app, setApp] = useState<Row | null | undefined>(undefined);      // undefined = loading, null = none yet
+  const [app, setApp] = useState<Res<typeof myApplication> | undefined>(undefined);      // undefined = loading, null = none yet
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [kind, setKind] = useState<Kind | null>(null);           // 'agency' | 'travel_adda'
   const [kindsOk, setKindsOk] = useState(true);       // false = database step 017 not run yet

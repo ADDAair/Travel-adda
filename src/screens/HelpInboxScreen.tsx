@@ -60,7 +60,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
   }, [navigation, loadInbox, loadThread, loadGroups]);
 
   const reply = async () => {
-    if (busy) return;
+    if (busy || !thread) return;
     const bad = checkMessage(text);
     if (bad) { setMsg({ kind: 'bad', text: bad }); return; }
     setBusy(true); setMsg(null);
@@ -69,7 +69,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
     finally { setBusy(false); }
   };
   const toggleClosed = async () => {
-    if (busy) return;
+    if (busy || !thread) return;
     setBusy(true); setMsg(null);
     const next = thread.status === 'closed' ? 'open' : 'closed';
     try { await setThreadStatus(thread.thread_id, next); setThread({ ...thread, status: next }); setMsg({ kind: 'ok', text: next === 'closed' ? 'সমাধান হয়েছে হিসেবে রাখা হলো। হাজী আবার লিখলে নিজে থেকেই খুলে যাবে।' : 'আবার খোলা হলো।' }); loadInbox(true); }
@@ -104,7 +104,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
       {state === 'ok' && groups && groups.length === 0 ? <Notice kind="info" title="কোনো দল নেই" text="আপনি কোনো দলের লিডার বা খাদেম হলে এখানে হাজীদের প্রশ্ন দেখবেন।" /> : null}
       {state === 'ok' && g ? (
         <>
-          {groups.length > 1 ? groups.map((x) => (
+          {groups && groups.length > 1 ? groups.map((x) => (
             <Pressable key={x.id} onPress={() => setGid(x.id)} style={[st.card, { paddingVertical: S.sm, marginBottom: S.xs, borderWidth: x.id === gid ? 2 : 1, borderColor: x.id === gid ? C.primary : C.line }]}
               accessibilityRole="button" accessibilityState={{ selected: x.id === gid }} accessibilityLabel={`${x.name} দল, আপনি ${x.role === 'leader' ? 'লিডার' : 'খাদেম'}`}>
               <Text style={st.val}>{x.id === gid ? '✅ ' : ''}{x.name}</Text>

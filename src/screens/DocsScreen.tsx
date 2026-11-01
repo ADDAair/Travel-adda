@@ -13,7 +13,7 @@ import { lockWanted, unlock } from '../lib/applock';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Msg, Nav, Route } from './navTypes';
-import type { DocRow as Row } from '../lib/docs';
+import type { DocRow } from '../lib/docs';
 type Picked = { uri: string; kind: 'image' | 'pdf' };
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
@@ -49,7 +49,7 @@ export default function DocsScreen(props: { navigation: Nav; route?: Route }) {
 }
 
 function DocsInner({ navigation }: { navigation: Nav }) {
-  const [rows, setRows] = useState<Row[] | null>(null);          // null = loading
+  const [rows, setRows] = useState<DocRow[] | null>(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');
   const [step, setStep] = useState('list');        // list | type | source
@@ -58,7 +58,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
   const [pending, setPending] = useState<Picked | null>(null);    // picked file kept for retry
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);            // { kind, text }
-  const [viewing, setViewing] = useState<Row | null>(null);    // row
+  const [viewing, setViewing] = useState<DocRow | null>(null);    // row
   const scrollRef = useRef<ScrollRef | null>(null);
 
   const load = useCallback(async () => {
@@ -102,13 +102,13 @@ function DocsInner({ navigation }: { navigation: Nav }) {
     } catch (e) { setMsg({ kind: 'bad', text: 'ফাইল খোলা যায়নি। আবার চেষ্টা করুন।' }); }
   };
 
-  const doDelete = async (row: Row) => {
+  const doDelete = async (row: DocRow) => {
     setBusy(true); setMsg(null);
     try { await deleteDoc(row); setViewing(null); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }
     catch (e) { setMsg({ kind: 'bad', text: `মুছে ফেলা যায়নি। ${errText(e)}` }); }
     finally { setBusy(false); top(); }
   };
-  const askDelete = (row: Row) => {
+  const askDelete = (row: DocRow) => {
     const title = `${typeOf(row.doc_type).label} মুছে ফেলবেন?`;
     const g = globalThis as unknown as { confirm?: (t: string) => boolean };
     if (Platform.OS === 'web') { if (g.confirm && g.confirm(title)) doDelete(row); return; }   // web preview (tests) only
@@ -187,7 +187,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
                     <Text style={[st.rowBtnT, { color: C.bad }]}>মুছুন</Text>
                   </Pressable>
                 </View>
-                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr: Row, note: string) => { setRows((x) => (x || []).map((y) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
+                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr: DocRow, note: string) => { setRows((x) => (x || []).map((y) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
                 </React.Fragment>
               ))}
             </View>
@@ -207,7 +207,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
 }
 
 // Expiry date of a passport / visa, with a warning and phone reminders.
-function Expiry({ row, onSaved }: { row: Row; onSaved: (nr: Row, note: string) => void }) {
+function Expiry({ row, onSaved }: { row: DocRow; onSaved: (nr: DocRow, note: string) => void }) {
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState(ymdToInput(row.expires_on));
   const [err, setErr] = useState('');
@@ -300,7 +300,7 @@ export function DocCamera({ onCancel, onUse }: { onCancel: () => void; onUse: (u
   );
 }
 
-function Viewer({ row, onClose, onDelete }: { row: Row; onClose: () => void; onDelete: () => void }) {
+function Viewer({ row, onClose, onDelete }: { row: DocRow; onClose: () => void; onDelete: () => void }) {
   const ins = useSafeAreaInsets();
   const [src, setSrc] = useState<{ uri: string; local: boolean } | null>(null);
   const [err, setErr] = useState('');

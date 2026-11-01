@@ -32,7 +32,7 @@ export default function TripCard({ navigation }: { navigation: Nav }) {
       const id = data?.session?.user?.id;
       const rows: { doc_type: string; expires_on?: string | null }[] = id ? JSON.parse((await AsyncStorage.getItem(docsKey(id))) || '[]') : [];
       const pass = rows.find((r) => r.doc_type === 'passport' && r.expires_on);
-      setDocs({ count: rows.length, hasPassport: rows.some((r) => r.doc_type === 'passport'), hasVisa: rows.some((r) => r.doc_type === 'visa'), passLeft: pass ? daysUntil(pass.expires_on) : null });
+      setDocs({ count: rows.length, hasPassport: rows.some((r) => r.doc_type === 'passport'), hasVisa: rows.some((r) => r.doc_type === 'visa'), passLeft: pass && pass.expires_on ? daysUntil(pass.expires_on) : null });
     } catch (e) { setDocs(null); }
     try { setMoney(JSON.parse((await AsyncStorage.getItem(MONEY_KEY)) || 'null')); } catch (e) { setMoney(null); }
     myContracts().then(cachedContractLeader).then(async (x) => {

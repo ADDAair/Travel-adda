@@ -11,8 +11,8 @@ import { parseDate } from '../lib/dates';
 import { OfferCard, OfferSummary } from '../components/OfferCard';
 import FundCard from '../components/FundCard';
 import { AIRPORTS_BD, AIRPORTS_SA, CITIES, checkRoute, routeRow, hasRoute, type RouteForm } from '../lib/offerRoute';
-import type { Msg, Nav, Row } from './navTypes';
-import type { OwnPackage } from '../lib/types';
+import type { Msg, Nav } from './navTypes';
+import type { OwnPackage, Res } from '../lib/types';
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const statusOf = (o: OwnPackage): string => (o.hidden_by_admin ? '⛔ অ্যাডমিন লুকিয়ে রেখেছেন' : reviewLabel(o) ? String(reviewLabel(o)) : !o.active ? '🙈 আপনি লুকিয়ে রেখেছেন' : o.return_on < today() ? '⌛ তারিখ পার হয়ে গেছে'
@@ -23,7 +23,7 @@ const dateIn = (iso: string | null | undefined): string => (iso ? toBn(String(is
 // the leader can change it. After approval it cannot be changed (no bait-and-switch), only hidden.
 export default function LeaderOffersScreen({ navigation, inTab }: { navigation: Nav; inTab?: boolean }): JSX.Element {
   const [rows, setRows] = useState<OwnPackage[] | null>(null);
-  const [counts, setCounts] = useState<Record<string, Row>>({});
+  const [counts, setCounts] = useState<Res<typeof myInterestCounts>>({});
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState<'new' | OwnPackage | null>(null);              // null | 'new' | the package being changed
   const [reviewOn, setReviewOn] = useState(false);
@@ -135,7 +135,7 @@ function Choice({ label, options, value, onChange, error }: { label: string; opt
 }
 
 type OfferFields = { title: string; price: string; from: string; to: string; until?: string; mh: string; md: string; dh: string; dd: string; room: string; notes: string };
-function OfferForm({ onDone, initial, reviewOn }: { onDone: (saved: boolean) => void; initial: Row | null; reviewOn: boolean }): JSX.Element {
+function OfferForm({ onDone, initial, reviewOn }: { onDone: (saved: boolean) => void; initial: OwnPackage | null; reviewOn: boolean }): JSX.Element {
   const o = initial;
   const [kind, setKindRaw] = useState<string>(o ? o.kind : 'umrah');
   const [f, setF] = useState<OfferFields>(o ? {

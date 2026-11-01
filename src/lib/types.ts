@@ -44,3 +44,7 @@ export type UserDetail = {
   reports_against?: Opt<{ reason: string; details?: Opt<string>; status: string }[]>;
   groups?: Opt<Named[]>; leads_groups?: Opt<Named[]>; khadem_of?: Opt<Named[]>;
 };
+
+// What an async app function gives back, e.g. Res<typeof listLeaders>; Item<…> is one element of a list result.
+export type Res<F extends (...a: never[]) => unknown> = Awaited<ReturnType<F>>;
+export type Item<F extends (...a: never[]) => unknown> = NonNullable<Res<F>> extends readonly (infer T)[] ? T : never;

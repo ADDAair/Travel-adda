@@ -11,12 +11,12 @@ import { supabase } from '../lib/supabase';
 import { notReady } from '../lib/groups';
 import { leaderPublic } from '../lib/market';
 import { st, errText } from './GroupScreen';
-import type { Msg, Nav, Row } from './navTypes';
-import type { TableUpdate } from '../lib/types';
+import type { Msg, Nav } from './navTypes';
+import type { Res, TableUpdate } from '../lib/types';
 
 // Leader: how hajis see me in the directory; I can change my work area and a short introduction (licences only via admin).
 export default function LeaderMeScreen({ navigation }: { navigation: Nav }): JSX.Element {
-  const [p, setP] = useState<Row | null | undefined>(undefined);
+  const [p, setP] = useState<Res<typeof leaderPublic> | undefined>(undefined);
   const [area, setArea] = useState<Area>({ district: '', upazila: '', union: '' });
   const [bio, setBio] = useState('');
   const [profession, setProfession] = useState('');

@@ -15,7 +15,7 @@ import type { Msg, Nav, Route } from './navTypes';
 // Other hajis never see it. New answers are fetched every 15 seconds while this page is open.
 export default function HelpChatScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [groups, setGroups] = useState<Awaited<ReturnType<typeof myGroups>> | undefined>(undefined);
-  const [gid, setGid] = useState(route?.params?.groupId || null);
+  const [gid, setGid] = useState<string | null>(route?.params?.groupId || null);
   const [state, setState] = useState('load');        // load | ok | soon | err
   const [msgs, setMsgs] = useState<Awaited<ReturnType<typeof myHelpMessages>>>([]);
   const [faq, setFaq] = useState<Awaited<ReturnType<typeof faqList>>>([]);
@@ -85,7 +85,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
       ) : null}
       {state === 'ok' && g ? (
         <>
-          {groups.length > 1 ? (
+          {groups && groups.length > 1 ? (
             <View style={{ marginBottom: S.md }}>
               <Text style={st.lbl}>কোন দলের লিডারকে লিখবেন?</Text>
               {groups.map((x) => (

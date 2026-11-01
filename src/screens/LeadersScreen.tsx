@@ -13,7 +13,8 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { getHelpline } from '../lib/offers';
 import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall } from '../lib/market';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
-import type { Msg, Nav, Route, Row } from './navTypes';
+import type { Msg, Nav, Route } from './navTypes';
+import type { Res } from '../lib/types';
 import type { Helpline } from '../lib/offers';
 
 export function Avatar({ path, size = 64, name }: { path?: string | null; size?: number; name?: string }): JSX.Element {
@@ -27,7 +28,7 @@ export function Avatar({ path, size = 64, name }: { path?: string | null; size?:
 export default function LeadersScreen({ navigation, route }: { navigation: Nav; route?: Route<{ id?: string }> }): JSX.Element {
   const [district, setDistrict] = useState('');
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Res<typeof listLeaders> | null>(null);
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [open, setOpen] = useState<string | null>(route?.params?.id || null);
 
@@ -74,10 +75,10 @@ export default function LeadersScreen({ navigation, route }: { navigation: Nav; 
 }
 
 function LeaderProfile({ id, onBack, navigation }: { id: string; onBack: () => void; navigation: Nav }): JSX.Element {
-  const [l, setL] = useState<Row | null | undefined>(undefined);
-  const [reviews, setReviews] = useState<Row[]>([]);
+  const [l, setL] = useState<Res<typeof leaderPublic> | undefined>(undefined);
+  const [reviews, setReviews] = useState<Res<typeof leaderReviews>>([]);
   const [help, setHelp] = useState<Helpline | null>(null);
-  const [req, setReq] = useState<Row | null>(null);
+  const [req, setReq] = useState<Res<typeof myLeaderCallRequest> | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {

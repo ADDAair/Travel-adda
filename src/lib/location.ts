@@ -7,7 +7,7 @@ import { distanceKm } from './prayer';
 const KEY = 'ta.prayerLoc.v1';
 
 // kind: 'gps' | 'city'; label: friendly name shown on the prayer page; at: when it was chosen.
-export type Place = { lat: number; lng: number; name?: string; label?: string; kind?: string; at?: number; deviceTz?: number | null };
+export type Place = { lat: number; lng: number; name?: string; label?: string; kind?: string; at?: number; cityId?: string; deviceTz?: number | null };
 export async function loadSavedLocation(): Promise<Place | null> {
   try {
     const v = JSON.parse((await AsyncStorage.getItem(KEY)) || 'null');
