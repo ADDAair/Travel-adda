@@ -7,7 +7,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as IM from 'expo-image-manipulator';
 import { supabase } from './supabase';
 
-type Row = Record<string, any>;   // a user_documents row
+import type { TableRow } from './types';
+export type DocRow = Pick<TableRow<'user_documents'>, 'id' | 'doc_type' | 'file_path' | 'created_at'> & { expires_on?: string | null };
+type Row = DocRow;   // a user_documents row
 const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
 // expo-image-manipulator changed its API between SDKs; both the new and the old one are tried below.
 const Im = IM as unknown as Record<string, any>;

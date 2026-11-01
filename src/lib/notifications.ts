@@ -9,8 +9,8 @@ import { notReady } from './groups';
 import { rpc as call, rows as typedRows } from './rpc';
 import type { NotificationRow } from './types';
 
-type Row = Record<string, any>;   // server rows
-const rpc = <T = any>(fn: string, args?: Record<string, unknown>) => call<T>(fn, args);
+type Row = Pick<NotificationRow, 'id' | 'source' | 'is_read'>;   // what marking needs
+const rpc = <T = unknown>(fn: string, args?: Record<string, unknown>) => call<T>(fn, args);
 const CACHE = 'ta.notifs.v1';
 
 export const KIND_ICON: Record<string, string> = { info: 'ℹ️', contract: '📜', payment: '💳', leader: '🧭', complaint: '🚩', group: '👥', admin: '📣' };
@@ -87,5 +87,5 @@ export const audienceSize = (aud: string) => rpc('admin_audience_size', { p_audi
 export const sendNotification = (aud: string, title: string, body?: string | null, target?: string | null, important?: boolean) => rpc('admin_send_notification', {
   p_audience: aud, p_title: title, p_body: body || null, p_target: target || null, p_important: !!important,
 });
-export const listBroadcasts = async (): Promise<Row[]> => (await rpc<Row[]>('admin_list_broadcasts')) || [];
+export const listBroadcasts = () => typedRows('admin_list_broadcasts');
 export const withdrawBroadcast = (id: string) => rpc('admin_withdraw_broadcast', { p_id: id });

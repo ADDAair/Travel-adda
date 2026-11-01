@@ -14,6 +14,7 @@ import { APP_VERSION } from '../lib/appVersion';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
 import { requestChatConsent, adminChatConsents, viewHelpChat, requestResultText, consentStatusText, type AdminConsent, type ChatLine } from '../lib/chatConsent';
 import type { Msg, Row as Rec } from './navTypes';
+import type { ContractDetail, UserDetail } from '../lib/types';
 
 type Coded = { code?: string; message?: string } | null;
 
@@ -66,7 +67,7 @@ export function ContractsTab(): JSX.Element {
 }
 
 function ContractPage({ id, onBack }: { id: string; onBack: () => void }): JSX.Element {
-  const [d, setD] = useState<Rec | null>(null);
+  const [d, setD] = useState<ContractDetail | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -101,20 +102,20 @@ function ContractPage({ id, onBack }: { id: string; onBack: () => void }): JSX.E
           <View style={st.card}>
             <Text style={st.h}>💳 টাকা জমা</Text>
             {(d.payments || []).length === 0 ? <Text style={st.p}>কোনো টাকা জমা নেই।</Text> : null}
-            {(d.payments || []).map((p: Rec, i: number) => <Text key={i} style={st.p}>{fmtTaka(p.amount)} · {p.method} · {p.txn_ref} · {PSTATUS[p.status] || p.status}{p.admin_note ? ` · নোট: ${p.admin_note}` : ''}</Text>)}
+            {(d.payments || []).map((p, i) => <Text key={i} style={st.p}>{fmtTaka(p.amount)} · {p.method} · {p.txn_ref} · {PSTATUS[p.status] || p.status}{p.admin_note ? ` · নোট: ${p.admin_note}` : ''}</Text>)}
             <Text style={[st.h, { marginTop: S.sm }]}>↗️ দেওয়া টাকা (লিডার / ফেরত)</Text>
             {(d.payouts || []).length === 0 ? <Text style={st.p}>এখনো কিছু দেওয়া হয়নি।</Text> : null}
-            {(d.payouts || []).map((p: Rec, i: number) => <Text key={i} style={st.p}>{p.payee === 'haji' ? '↩️ হাজীকে ফেরত' : '🧭 লিডারকে'} · {fmtTaka(p.amount)} · {p.txn_ref}{p.note ? ` · ${p.note}` : ''}</Text>)}
+            {(d.payouts || []).map((p, i) => <Text key={i} style={st.p}>{p.payee === 'haji' ? '↩️ হাজীকে ফেরত' : '🧭 লিডারকে'} · {fmtTaka(p.amount)} · {p.txn_ref}{p.note ? ` · ${p.note}` : ''}</Text>)}
           </View>
           <View style={st.card}>
             <Text style={st.h}>🚩 অভিযোগ ও রেটিং</Text>
             {(d.complaints || []).length === 0 ? <Text style={st.p}>কোনো অভিযোগ নেই।</Text> : null}
-            {(d.complaints || []).map((m: Rec, i: number) => <Text key={i} style={st.p}>[{m.status === 'pending' ? 'যাচাই বাকি' : m.status === 'verified' ? 'যাচাই হয়েছে' : 'বাতিল'}] {m.body}</Text>)}
+            {(d.complaints || []).map((m, i) => <Text key={i} style={st.p}>[{m.status === 'pending' ? 'যাচাই বাকি' : m.status === 'verified' ? 'যাচাই হয়েছে' : 'বাতিল'}] {m.body}</Text>)}
             {d.rating ? <Text style={st.p}>⭐ {toBn(d.rating.stars)}{d.rating.comment ? ` · "${d.rating.comment}"` : ''}{d.rating.hidden ? ' (লুকানো)' : ''}</Text> : null}
           </View>
           <View style={st.card}>
             <Text style={st.h}>📝 অ্যাডমিনের নোট</Text>
-            {(d.notes || []).map((n: Rec, i: number) => <Text key={i} style={st.p}>{fmtDay(n.created_at)} · {n.author || 'অ্যাডমিন'}: {n.note}</Text>)}
+            {(d.notes || []).map((n, i) => <Text key={i} style={st.p}>{fmtDay(n.created_at)} · {n.author || 'অ্যাডমিন'}: {n.note}</Text>)}
             <Field label="নতুন নোট" hint="যেমন: দুই পক্ষের সাথে কথা হয়েছে, লিডার হোটেল বদলাবেন" value={note} onChangeText={setNote} multiline maxLength={1000} editable={!busy} />
             <Button title="নোট রাখুন" icon="📝" onPress={save} loading={busy} />
           </View>
@@ -170,7 +171,7 @@ function ChatConsentBox({ contractId }: { contractId: string }): JSX.Element {
       {chat && active ? (
         <View style={{ marginTop: S.md }}>
           {chat.length === 0 ? <Text style={st.p}>এই লিডারের দলে হাজীর কোনো প্রশ্ন-উত্তর নেই।</Text> : null}
-          {chat.map((m: Rec, i: number) => (
+          {chat.map((m, i) => (
             <Text key={i} style={[st.p, { marginBottom: S.sm }]} selectable>
               <Text style={{ fontWeight: '700' }}>{ROLE[m.sender_role] || m.sender_role} {m.sender_name}</Text> · {fmtWhen(m.created_at)}{'\n'}{m.body}
             </Text>
@@ -183,7 +184,7 @@ function ChatConsentBox({ contractId }: { contractId: string }): JSX.Element {
 
 // ---------- 2) One user, everything ----------
 export function UserPage({ id, onBack }: { id: string; onBack: () => void }): JSX.Element {
-  const [d, setD] = useState<Rec | null>(null);
+  const [d, setD] = useState<UserDetail | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -197,10 +198,10 @@ export function UserPage({ id, onBack }: { id: string; onBack: () => void }): JS
       catch (e) { setMsg({ kind: 'bad', text: errMsg(e) }); }
       finally { setBusy(false); }
     });
-  const List = ({ title, items, render }: { title: string; items?: Rec[] | null; render: (x: Rec) => string }) => (
+  const List = <T,>({ title, items, render }: { title: string; items?: T[] | null; render: (x: T) => string }) => (
     <View style={st.card}>
       <Text style={st.h}>{title}: {toBn((items || []).length)}টি</Text>
-      {(items || []).map((x, i: number) => <Text key={i} style={st.p}>{render(x)}</Text>)}
+      {(items || []).map((x: T, i: number) => <Text key={i} style={st.p}>{render(x)}</Text>)}
     </View>
   );
   return (

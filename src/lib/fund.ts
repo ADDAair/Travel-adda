@@ -5,9 +5,9 @@ import { supabase } from './supabase';
 import { notReady } from './groups';
 import { parsePrice } from './offerRoute';
 import { normalizePhone, isValidBdPhone, normalizeDigits, toBn } from './phone';
-import { rpc, fail, rows } from './rpc';
+import { rpc, fail, rows, firstRow } from './rpc';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+import type { RpcRow } from './dbTypes';
 const num = (v: unknown): number => Number(v || 0);
 
 export type FundPerson = { kind: 'umrah' | 'hajj'; age: number; district: string; status?: string; name: string | null; since?: string };
@@ -17,10 +17,13 @@ export type FundSummary = { collected: number; spent: number; balance: number; d
 
 export async function fundSummary(): Promise<FundSummary | null> {
   try {
-    const s = (await rpc<Row>('fund_summary')) || {};
+    // fund_summary answers one JSON object (supabase/027_help_fund.sql)
+    type Raw = { collected?: number; spent?: number; balance?: number; donors?: number; travelled?: number; waiting?: FundPerson[];
+      recent?: { amount: number; name: string | null; at: string }[]; spends?: (FundPerson & { amount: number; purpose: string; at: string })[] };
+    const s = ((await rpc<Raw>('fund_summary')) || {}) as Raw;
     return { collected: num(s.collected), spent: num(s.spent), balance: num(s.balance), donors: num(s.donors), travelled: num(s.travelled),
-      waiting: s.waiting || [], recent: (s.recent || []).map((r: Row) => ({ ...r, amount: num(r.amount) })),
-      spends: (s.spends || []).map((r: Row) => ({ ...r, amount: num(r.amount) })) };
+      waiting: s.waiting || [], recent: (s.recent || []).map((r) => ({ ...r, amount: num(r.amount) })),
+      spends: (s.spends || []).map((r) => ({ ...r, amount: num(r.amount) })) };
   } catch (e) { if (notReady(e)) return null; throw e; }
 }
 
@@ -55,8 +58,8 @@ export type DonateMode = 'approved' | 'open' | 'closed';
 export type DonateAccess = { mode: DonateMode; status: 'none' | 'requested' | 'allowed' | 'blocked'; can: boolean };
 export async function donateAccess(): Promise<DonateAccess> {
   try {
-    const a = (await rpc<Row>('my_donate_access')) || {};
-    return { mode: a.mode, status: a.status || 'none', can: a.can === true };
+    const a = ((await rpc<Partial<DonateAccess>>('my_donate_access')) || {}) as Partial<DonateAccess>;
+    return { mode: a.mode || 'approved', status: a.status || 'none', can: a.can === true };
   } catch (e) {
     if (notReady(e)) return { mode: 'open', status: 'none', can: true };   // step 028 not run yet: giving works as before
     throw e;
@@ -85,8 +88,8 @@ const REQ: Record<string, string> = {
   limit: 'আজ আর অনুরোধ পাঠানো যাবে না। কাল আবার চেষ্টা করুন।',
 };
 export const requestAccessText = (code: string | null): string => REQ[code || ''] || 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
-export const myDonations = async (): Promise<Row[]> => (await rpc<Row[]>('my_donations')) || [];
-export const myConfirmedTotal = (rows: Row[]): number => rows.filter((r) => r.status === 'confirmed').reduce((s, r) => s + num(r.amount), 0);
+export const myDonations = () => rows('my_donations');
+export const myConfirmedTotal = (rows: { status: string; amount: unknown }[]): number => rows.filter((r) => r.status === 'confirmed').reduce((s, r) => s + num(r.amount), 0);
 
 // ---------- applicant ----------
 export type HelpForm = { kind: string; age: unknown; district: string; profession: string; reason: string; wentBefore: boolean;
@@ -105,8 +108,8 @@ export async function applyHelp(f: HelpForm): Promise<string | null> {
   return rpc<string>('apply_help', { p_kind: f.kind, p_age: age, p_district: f.district.trim(), p_profession: f.profession.trim(), p_reason: reason,
     p_went_before: !!f.wentBefore, p_ref_name: f.refName.trim(), p_ref_phone: phone, p_show_name: !!f.showName });
 }
-export async function myHelpApplication(): Promise<Row | null> {
-  try { const r = await rpc<Row[]>('my_help_application'); return r && r[0] ? r[0] : null; } catch (e) { if (notReady(e)) return null; throw e; }
+export async function myHelpApplication(): Promise<RpcRow<'my_help_application'> | null> {
+  try { return await firstRow('my_help_application'); } catch (e) { if (notReady(e)) return null; throw e; }
 }
 export async function withdrawHelp(): Promise<void> {
   if ((await rpc<string>('withdraw_help')) !== 'ok') throw fail('not_found');
@@ -187,7 +190,7 @@ export async function setDonateMode(mode: string): Promise<string | null> {
   if (!DONATE_MODES.some((m) => m.key === mode)) throw fail('mode');
   return rpc<string>('admin_set_setting', { p_key: 'fund_donate_mode', p_value: mode });
 }
-export async function donorAccess(query: string): Promise<Row[]> {
+export async function donorAccess(query: string): Promise<RpcRow<'admin_donor_access'>[]> {
   const q = String(query || '').replace(/[০-৯]/g, (d) => String('০১২৩৪৫৬৭৮৯'.indexOf(d))).trim();   // Bengali digits → English
   if (q && q.length < 3 && !/^\d+$/.test(q)) throw fail('short');                                     // "12" = ID TA-00012
   return list('admin_donor_access', { p_query: q || null });
@@ -204,7 +207,7 @@ export const accessStatusText = (s: string): string => ACCESS[s] || s;
 export async function fundPayInfo(): Promise<{ bank: string; bkash: string }> {
   const r = await supabase.from('app_settings').select('key,value').in('key', ['fund_bank', 'fund_bkash', 'pay_bank', 'pay_bkash']);
   if (r.error) throw r.error;
-  const m: Record<string, string> = Object.fromEntries(((r.data || []) as Row[]).map((x) => [x.key, x.value]));
+  const m: Record<string, string> = Object.fromEntries((r.data || []).map((x) => [x.key, x.value]));
   return { bank: m.fund_bank || m.pay_bank || '', bkash: m.fund_bkash || m.pay_bkash || '' };
 }
 

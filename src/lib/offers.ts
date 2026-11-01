@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
 import { rows } from './rpc';
-import type { AnyPackage, OwnPackage } from './types';
+import type { AnyPackage, OwnPackage, TableUpdate } from './types';
 import { notReady } from './groups';
 
 type Row = Record<string, any>;   // server rows (the database has no generated types yet)
@@ -63,6 +63,7 @@ export async function cancelCallback(id: string): Promise<void> {
 // ---------- Leader ----------
 export async function myOffers(): Promise<OwnPackage[]> {
   const me = (await supabase.auth.getSession()).data?.session?.user?.id;
+  if (!me) return [];
   return check(await supabase.from('offers').select('*').eq('leader_id', me).order('created_at', { ascending: false })) || [];
 }
 const ROUTE_COLS = ['from_airport', 'arrive_at', 'first_city', 'makkah_nights', 'madinah_nights', 'return_from', 'return_to', 'airline'];
@@ -89,8 +90,8 @@ const EDITABLE = [...ROUTE_COLS, 'kind', 'title', 'price_bdt', 'depart_on', 'ret
   'madinah_distance_m', 'room_share', 'includes', 'notes', 'valid_until'];
 export async function updateOffer(id: string, o: Row): Promise<void> {
   const fields = Object.fromEntries(Object.entries(o).filter(([k]) => EDITABLE.includes(k)));
-  let x = await supabase.from('offers').update(fields).eq('id', id).select('id');
-  if (x.error && noRouteYet(x.error)) x = await supabase.from('offers').update(withoutRoute(fields)).eq('id', id).select('id');
+  let x = await supabase.from('offers').update(fields as TableUpdate<'offers'>).eq('id', id).select('id');
+  if (x.error && noRouteYet(x.error)) x = await supabase.from('offers').update(withoutRoute(fields) as TableUpdate<'offers'>).eq('id', id).select('id');
   const r: Row[] | null = check(x);
   if (!r || !r.length) throw coded('not changed', 'not-changed');
 }

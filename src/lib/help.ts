@@ -4,7 +4,6 @@ import { normalizeDigits, toBn } from './phone';
 
 import { rpc, fail as err, rows } from './rpc';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 export const MAX_MESSAGE = 1000;
 
@@ -23,8 +22,8 @@ export function roleLabel(role: string, mine = false): string {
 }
 
 // Waiting questions (last message from the haji, still open) first; inside each part newest first.
-export function sortInbox(rows: Row[] | null | undefined): Row[] {
-  const rank = (r: Row): number => (r.status === 'closed' ? 2 : r.last_from_haji ? 0 : 1);
+export function sortInbox<T extends { status: string; last_from_haji?: boolean | null }>(rows: T[] | null | undefined): T[] {
+  const rank = (r: T): number => (r.status === 'closed' ? 2 : r.last_from_haji ? 0 : 1);
   return [...(rows || [])].sort((a, b) => rank(a) - rank(b) || Date.parse(b.last_at) - Date.parse(a.last_at));
 }
 

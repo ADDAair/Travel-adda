@@ -15,3 +15,32 @@ export type ReviewPackage = RpcRow<'admin_offers_review'>;    // a package in th
 export type AnyPackage = Loose<PackageRow & OwnPackage & ReviewPackage> & { id: string };
 
 export type NotificationRow = RpcRow<'my_notifications'>;
+
+// Changes sent to a table (only known columns are allowed).
+import type { Database } from './dbTypes';
+export type TableUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
+export type TableInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
+export type TableRow<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
+
+// Admin detail pages (server functions that answer one JSON object; shapes from supabase/022_admin_tools.sql).
+type Opt<T> = T | null | undefined;
+export type ContractDetail = {
+  contract_no: string; status: string; title: string; price_bdt: number; includes: string; excludes?: Opt<string>;
+  refund_policy?: Opt<string>; extra_terms?: Opt<string>; cancel_reason?: Opt<string>; travel_from?: Opt<string>; travel_to?: Opt<string>;
+  haji_name: string; haji_code: string; leader_name: string; leader_code: string; agency_name?: Opt<string>;
+  payments?: Opt<{ amount: number; method: string; txn_ref: string; status: string; admin_note?: Opt<string> }[]>;
+  payouts?: Opt<{ payee: 'leader' | 'haji'; amount: number; txn_ref: string; note?: Opt<string> }[]>;
+  complaints?: Opt<{ status: string; body: string }[]>;
+  rating?: Opt<{ stars: number; comment?: Opt<string>; hidden?: Opt<boolean> }>;
+  notes?: Opt<{ created_at: string; author?: Opt<string>; note: string }[]>;
+};
+type Named = { name: string; status?: Opt<string>; active?: Opt<boolean> };
+export type UserDetail = {
+  full_name: string; code: string; account_type: string; status: string; phone?: Opt<string>; email?: Opt<string>; verified?: Opt<boolean>; created_at: string;
+  leader?: Opt<{ agency?: Opt<string>; district?: Opt<string>; listed: boolean }>;
+  contracts?: Opt<{ contract_no: string; status: string; title: string; price_bdt: number; as: 'haji' | 'leader'; other: string }[]>;
+  payments?: Opt<{ amount: number; txn_ref: string; status: string }[]>;
+  complaints_by?: Opt<{ status: string; body: string }[]>; complaints_against?: Opt<{ status: string; body: string }[]>;
+  reports_against?: Opt<{ reason: string; details?: Opt<string>; status: string }[]>;
+  groups?: Opt<Named[]>; leads_groups?: Opt<Named[]>; khadem_of?: Opt<Named[]>;
+};

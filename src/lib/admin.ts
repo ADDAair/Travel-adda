@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import { toBn } from './phone';
 import { rpc, fail, rows } from './rpc';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+import type { ContractDetail, UserDetail } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 
 export const PERMS: ReadonlyArray<{ id: string; label: string }> = [
@@ -66,9 +66,9 @@ export async function exportCsv(kind: string): Promise<number> {
 const need5 = (t: unknown): string => { const v = String(t || '').trim(); if (v.length < 5) throw fail('short'); return v; };
 const q = (v: unknown): string | null => (String(v || '').trim() || null);
 export const findContracts = (query: unknown) => list('admin_find_contracts', { p_query: String(query || '').trim() });
-export const contractDetail = (id: string) => rpc<Row>('admin_contract_detail', { p_id: id });
+export const contractDetail = (id: string) => rpc<ContractDetail>('admin_contract_detail', { p_id: id });
 export const addContractNote = async (id: string, note: unknown) => rpc<string>('admin_add_contract_note', { p_id: id, p_note: need5(note) });
-export const userDetail = (id: string) => rpc<Row>('admin_user_detail', { p_user: id });
+export const userDetail = (id: string) => rpc<UserDetail>('admin_user_detail', { p_user: id });
 export const adminCounts = async (): Promise<Record<string, number>> => (await rpc<Record<string, number>>('admin_counts')) || {};
 export const listRatings = (query: unknown) => list('admin_list_ratings', { p_query: q(query) });
 export const hideRating = async (contractId: string, hide: boolean, reason: unknown) => rpc('admin_hide_rating', { p_contract: contractId, p_hide: !!hide, p_reason: need5(reason) });

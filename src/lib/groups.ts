@@ -7,8 +7,13 @@ import { uid, randomId, shrink } from './docs';
 import { normalizePhone } from './phone';
 import { fail, rpc } from './rpc';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
-type Res = { data: any; error: { code?: string; message?: string } | null };
+import type { RpcRow } from './dbTypes';
+import type { Loose, TableRow, TableInsert } from './types';
+type Res = { data: unknown; error: { code?: string; message?: string } | null };
+export type Profile = Loose<TableRow<'profiles'>> & { verified?: boolean | null };
+export type Application = Loose<TableRow<'leader_applications'>>;
+export type Announcement = Pick<TableRow<'group_announcements'>, 'id' | 'group_id' | 'body' | 'created_at'>;
+export type LeaderGroup = Pick<TableRow<'groups'>, 'id' | 'name' | 'season' | 'join_code' | 'active' | 'created_at'>;
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -19,9 +24,9 @@ export const notReady = (e: unknown): boolean => {
   const m = String(x.message || '').toLowerCase();
   return code === 'PGRST202' || code === 'PGRST205' || code === '42P01' || code === '42883' || m.includes('could not find the function') || m.includes('does not exist');
 };
-const check = (r: Res): any => { if (r.error) throw r.error; return r.data; };
+const check = <T>(r: { data: T; error: { code?: string; message?: string } | null }): T => { if (r.error) throw r.error; return r.data; };
 
-export async function myProfile(): Promise<Row> {
+export async function myProfile(): Promise<Profile> {
   const v = await supabase.from('profiles').select('full_name,haji_code,phone,role,status,phone_verified,verified').single();
   if (!v.error) return v.data;                                                   // step 016: verified = phone OR e-mail
   const r = await supabase.from('profiles').select('full_name,haji_code,phone,role,status,phone_verified').single();
@@ -33,7 +38,7 @@ export async function myProfile(): Promise<Row> {
 }
 
 // ---------- Leader application ----------
-export async function myApplication(): Promise<Row | null> {
+export async function myApplication(): Promise<Application | null> {
   let r: Res = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,leader_kind,profession,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   if (r.error && (r.error.code === '42703' || /leader_kind|profession/i.test(r.error.message || ''))) r = await supabase.from('leader_applications').select('id,agency_name,license_no,umrah_license,hajj_license,district,upazila,union_name,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   if (r.error && (r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {   // step 014 not run yet
@@ -42,14 +47,14 @@ export async function myApplication(): Promise<Row | null> {
   if (r.error && (r.error.code === '42703' || /column/i.test(r.error.message || ''))) {
     r = await supabase.from('leader_applications').select('id,agency_name,license_no,status,admin_note,created_at').order('created_at', { ascending: false }).limit(1);
   }
-  const rows = check(r);
+  const rows = check(r) as Application[] | null;
   return rows && rows[0] ? rows[0] : null;
 }
 
 // kind 'agency' | 'travel_adda' (step 017); the row itself is built by applicationRow() in leaderKinds.js.
 export type LeaderFile = { uri: string; kind: 'image' | 'pdf' };
 export async function applyLeader({ kind = 'agency', agency, umrah, hajj, area = {}, profession, file }:
-  { kind?: string; agency?: string; umrah?: string; hajj?: string; area?: Record<string, unknown>; profession?: string | null; file?: LeaderFile | null }): Promise<Row> {
+  { kind?: string; agency?: string; umrah?: string; hajj?: string; area?: Record<string, unknown>; profession?: string | null; file?: LeaderFile | null }): Promise<{ id: string }> {
   const me = await uid();
   let path: string | null = null;
   if (file) {
@@ -61,8 +66,8 @@ export async function applyLeader({ kind = 'agency', agency, umrah, hajj, area =
     const up = await supabase.storage.from('leader-docs').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg' });
     if (up.error) throw up.error;
   }
-  const row: Row = applicationRow({ kind, agency, umrah, hajj, area, profession, docPath: path });
-  let ins: Res = await supabase.from('leader_applications').insert(row).select('id').single();
+  const row = applicationRow({ kind, agency, umrah, hajj, area, profession, docPath: path });
+  let ins: Res = await supabase.from('leader_applications').insert(row as TableInsert<'leader_applications'>).select('id').single();
   const missing = ins.error && (ins.error.code === 'PGRST204' || ins.error.code === '42703') && /leader_kind|profession/i.test(ins.error.message || '');
   if (missing && kind === 'travel_adda') {          // step 017 not run yet: a Travel Adda leader cannot be recorded correctly
     if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
@@ -70,13 +75,13 @@ export async function applyLeader({ kind = 'agency', agency, umrah, hajj, area =
   }
   if (missing) {                                     // step 017 not run yet: an agency application still works without the new fields
     const { leader_kind: _k, profession: _p, ...old } = row;
-    ins = await supabase.from('leader_applications').insert(old).select('id').single();
+    ins = await supabase.from('leader_applications').insert(old as TableInsert<'leader_applications'>).select('id').single();
   }
   if (ins.error) {
     if (path) await supabase.storage.from('leader-docs').remove([path]).catch(() => {});
     throw ins.error;
   }
-  return ins.data;
+  return ins.data as { id: string };
 }
 
 // Is step 017 (leader kinds + profession) live? Lets the form say "coming soon" instead of failing.
@@ -109,8 +114,8 @@ export const telBd = (p: unknown): string => { const d = String(p || '').replace
 // ---------- Haji ----------
 // The leader of the first active group is also kept on this phone, so the Emergency page can call them offline.
 const LEADER_CACHE = 'ta.groupLeader.v1';
-export async function myGroups(): Promise<Row[]> {
-  const rows: Row[] = check(await supabase.rpc('my_groups')) || [];
+export async function myGroups(): Promise<RpcRow<'my_groups'>[]> {
+  const rows = check(await supabase.rpc('my_groups')) || [];
   const g = rows.find((r) => r.status === 'active');
   try {
     if (g) await AsyncStorage.setItem(LEADER_CACHE, JSON.stringify({ name: g.leader_name, phone: g.leader_phone }));
@@ -125,12 +130,12 @@ export const joinGroup = async (code: unknown) => check(await supabase.rpc('join
 export const respondInvite = async (groupId: string, accept: boolean) => check(await supabase.rpc('respond_invite', { p_group: groupId, p_accept: accept }));
 export const leaveGroup = async (groupId: string) => check(await supabase.rpc('leave_group', { p_group: groupId }));
 
-export async function groupContracts(groupId: string): Promise<Row[]> {
+export async function groupContracts(groupId: string): Promise<TableRow<'contracts'>[]> {
   return check(await supabase.from('contracts').select('*').eq('group_id', groupId).order('created_at', { ascending: false })) || [];
 }
 export async function myAcceptances(): Promise<Record<string, string>> {
   const me = await uid();
-  const rows: Row[] = check(await supabase.from('contract_acceptances').select('contract_id,accepted_at').eq('user_id', me)) || [];
+  const rows = check(await supabase.from('contract_acceptances').select('contract_id,accepted_at').eq('user_id', me)) || [];
   return Object.fromEntries(rows.map((r) => [r.contract_id, r.accepted_at]));
 }
 export async function acceptContract(contractId: string): Promise<void> {
@@ -140,44 +145,44 @@ export async function acceptContract(contractId: string): Promise<void> {
 // ---------- Announcements (leader -> whole group) ----------
 // The last list is kept on the phone so announcements can be read inside the Haram without internet.
 const ANN_CACHE = 'ta.announce.v1';
-export async function groupAnnouncements(groupIds: string[]): Promise<{ rows: Row[]; offline: boolean }> {
+export async function groupAnnouncements(groupIds: string[]): Promise<{ rows: Announcement[]; offline: boolean }> {
   if (!groupIds.length) return { rows: [], offline: false };
   try {
-    const rows: Row[] = check(await supabase.from('group_announcements').select('id,group_id,body,created_at').in('group_id', groupIds).order('created_at', { ascending: false }).limit(60)) || [];
+    const rows = check(await supabase.from('group_announcements').select('id,group_id,body,created_at').in('group_id', groupIds).order('created_at', { ascending: false }).limit(60)) || [];
     AsyncStorage.setItem(ANN_CACHE, JSON.stringify(rows)).catch(() => {});
     return { rows, offline: false };
   } catch (e) {
     if (notReady(e)) throw e;
-    try { const c: unknown = JSON.parse((await AsyncStorage.getItem(ANN_CACHE)) || 'null'); if (Array.isArray(c)) return { rows: (c as Row[]).filter((r) => groupIds.includes(r.group_id)), offline: true }; } catch (x) { /* none */ }
+    try { const c: unknown = JSON.parse((await AsyncStorage.getItem(ANN_CACHE)) || 'null'); if (Array.isArray(c)) return { rows: (c as Announcement[]).filter((r) => groupIds.includes(r.group_id)), offline: true }; } catch (x) { /* none */ }
     throw e;
   }
 }
 export const postAnnouncement = async (groupId: string, body: string) => check(await supabase.from('group_announcements').insert({ group_id: groupId, body: body.trim() }));
 export async function deleteAnnouncement(id: string): Promise<void> {
-  const r: Row[] | null = check(await supabase.from('group_announcements').delete().eq('id', id).select('id'));
+  const r = check(await supabase.from('group_announcements').delete().eq('id', id).select('id'));
   if (!r || !r.length) throw fail('not-deleted');
 }
 
 // ---------- Leader ----------
-export async function leaderGroups(): Promise<Row[]> {
+export async function leaderGroups(): Promise<LeaderGroup[]> {
   return check(await supabase.from('groups').select('id,name,season,join_code,active,created_at').order('created_at', { ascending: false })) || [];
 }
-export async function createGroup(name: string, season: string): Promise<Row> {
+export async function createGroup(name: string, season: string): Promise<LeaderGroup> {
   return check(await supabase.from('groups').insert({ name: name.trim(), season: season.trim() || null }).select('id,name,season,join_code,active,created_at').single());
 }
 export const inviteByPhone = async (groupId: string, phone: string) => check(await supabase.rpc('invite_by_phone', { p_group: groupId, p_phone: normalizePhone(phone) }));
-export const groupMembers = async (groupId: string): Promise<Row[]> => check(await supabase.rpc('group_members_for_leader', { p_group: groupId })) || [];
+export const groupMembers = async (groupId: string): Promise<RpcRow<'group_members_for_leader'>[]> => check(await supabase.rpc('group_members_for_leader', { p_group: groupId })) || [];
 export const removeMember = async (groupId: string, userId: string) => check(await supabase.rpc('remove_member', { p_group: groupId, p_user: userId }));
-export async function createContract(c: Row): Promise<Row> {
+export async function createContract(c: TableInsert<'contracts'>): Promise<TableRow<'contracts'>> {
   return check(await supabase.from('contracts').insert(c).select('*').single());
 }
-export async function acceptancesFor(contractIds: string[]): Promise<Row[]> {
+export async function acceptancesFor(contractIds: string[]): Promise<Pick<TableRow<'contract_acceptances'>, 'contract_id' | 'user_id' | 'accepted_at'>[]> {
   if (!contractIds.length) return [];
   return check(await supabase.from('contract_acceptances').select('contract_id,user_id,accepted_at').in('contract_id', contractIds)) || [];
 }
 
 // ---------- Admin ----------
-export const adminApplications = async (): Promise<Row[]> => check(await supabase.rpc('admin_list_applications')) || [];
+export const adminApplications = async (): Promise<RpcRow<'admin_list_applications'>[]> => check(await supabase.rpc('admin_list_applications')) || [];
 export const reviewApplication = async (id: string, approve: boolean, note?: string | null) => check(await supabase.rpc('review_leader_application', { p_app: id, p_approve: approve, p_note: note || null }));
 export async function leaderDocUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('leader-docs').createSignedUrl(path, 300);

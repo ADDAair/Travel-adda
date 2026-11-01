@@ -6,7 +6,7 @@ import { uid, randomId, shrink } from './docs';
 import { notReady } from './groups';
 import { rpc, check, rows, firstRow } from './rpc';
 
-type Row = Record<string, any>;   // server rows (the database has no generated types yet)
+
 import type { MyContract } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 const first = firstRow;
@@ -42,8 +42,8 @@ export const CONTRACT_STATUS: Record<string, { icon: string; label: string }> = 
 export const listLeaders = (district?: string | null, search?: string | null) => list('list_leaders', { p_district: district || null, p_search: search || null });
 export const leaderPublic = (id: string) => first('leader_public', { p_leader: id });
 export const leaderReviews = (id: string) => list('leader_reviews', { p_leader: id });
-export async function myLeaderCallRequest(leaderId: string): Promise<Row | null> {
-  const rows: Row[] = check(await supabase.from('offer_interests').select('id,status,created_at').eq('leader_id', leaderId).is('offer_id', null).order('created_at', { ascending: false }).limit(1)) || [];
+export async function myLeaderCallRequest(leaderId: string): Promise<{ id: string; status: string; created_at: string } | null> {
+  const rows = check(await supabase.from('offer_interests').select('id,status,created_at').eq('leader_id', leaderId).is('offer_id', null).order('created_at', { ascending: false }).limit(1)) || [];
   return rows[0] || null;
 }
 export const requestLeaderCall = async (leaderId: string) => check(await supabase.from('offer_interests').insert({ leader_id: leaderId }));
@@ -133,7 +133,7 @@ export async function fileComplaint(contractId: string, body: string, files: Evi
 
 // ---------- Report & block ----------
 export async function isBlocked(otherId: string): Promise<boolean> {
-  const rows: Row[] = check(await supabase.from('user_blocks').select('blocked').eq('blocked', otherId)) || [];
+  const rows = check(await supabase.from('user_blocks').select('blocked').eq('blocked', otherId)) || [];
   return rows.length > 0;
 }
 export const block = async (otherId: string) => check(await supabase.from('user_blocks').insert({ blocked: otherId }));
@@ -160,7 +160,7 @@ export async function myTermsStatus(): Promise<Record<string, { at: string; curr
   const { data, error } = await supabase.rpc('my_terms');
   if (error) { if (notReady(error)) return null; throw error; }
   const out: Record<string, { at: string; current: boolean }> = {};
-  ((data || []) as Row[]).forEach((r) => { out[r.key === 'terms_leader' ? 'leader' : 'haji'] = { at: r.agreed_at, current: !!r.current_version }; });
+  (data || []).forEach((r) => { out[r.key === 'terms_leader' ? 'leader' : 'haji'] = { at: r.agreed_at, current: !!r.current_version }; });
   return out;
 }
 // The sign-up agreement is sent once the new account can talk to the server (right after the first login).
