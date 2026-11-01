@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, BackHandler } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,14 +12,16 @@ import { otp, otpText } from '../lib/otp';
 import { st } from './GroupScreen';
 
 // "Forgot password": a code by SMS (to the number) or by e-mail (to a verified e-mail), then a new password.
-export default function ForgotPassword({ initialPhone = '', onClose }) {
+type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;
+
+export default function ForgotPassword({ initialPhone = '', onClose }: { initialPhone?: string; onClose: () => void }): JSX.Element {
   const ins = useSafeAreaInsets();
   const [phone, setPhone] = useState(initialPhone);
-  const [step, setStep] = useState('phone');      // phone | code | done
+  const [step, setStep] = useState<'phone' | 'code' | 'done'>('phone');      // phone | code | done
   const [code, setCode] = useState('');
   const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [wait, setWait] = useState(0);
   useEffect(() => { if (wait <= 0) return undefined; const t = setTimeout(() => setWait((w) => w - 1), 1000); return () => clearTimeout(t); }, [wait]);
   useEffect(() => { const sub = BackHandler.addEventListener('hardwareBackPress', () => { if (!busy) onClose(); return true; }); return () => sub.remove(); }, [busy, onClose]);
@@ -53,7 +55,7 @@ export default function ForgotPassword({ initialPhone = '', onClose }) {
     if (!r.ok) { setBusy(false); setMsg({ kind: 'bad', text: otpText(r) }); return; }   // what was typed stays
     setStep('done');
     // Sign in with the new password right away; if that fails the person can still log in normally.
-    const li = await loginEmailFor(p).then((id) => supabase.auth.signInWithPassword({ email: id, password: pw })).catch(() => ({ error: true }));
+    const li: { error: unknown } = await loginEmailFor(p).then((id) => supabase.auth.signInWithPassword({ email: id, password: pw })).catch(() => ({ error: true }));
     setBusy(false);
     setMsg(li.error ? { kind: 'ok', text: 'নতুন পাসওয়ার্ড সেট হয়েছে। এখন লগইন করুন।' } : { kind: 'ok', text: 'নতুন পাসওয়ার্ড সেট হয়েছে।' });
   };

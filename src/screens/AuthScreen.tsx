@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState, type JSX } from 'react';
+import { View, Text, StyleSheet, Pressable, type ScrollView as RNScrollView, type TextInput } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
@@ -11,14 +11,17 @@ import { normalizePhone, isValidBdPhone, toBn } from '../lib/phone';
 import { loginEmailFor, newLoginEmail, looksLikeEmail, normalizeEmail, isValidEmail, emailTypoFix, PENDING_EMAIL } from '../lib/login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeyboardHeight } from '../lib/keyboard';
-import { passwordStrength, STRENGTH_LABEL } from '../lib/password';
+import { passwordStrength, STRENGTH_LABEL, type Strength } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
-import { rememberReferral, getTerms, rememberTermsAgreement } from '../lib/market';
+import { rememberReferral, getTerms, rememberTermsAgreement, type TermsText } from '../lib/market';
 import { Modal } from 'react-native';
 
 const A = T.auth;
 
-export default function AuthScreen() {
+type Errs = Partial<Record<'name' | 'phone' | 'email' | 'pw' | 'ref' | 'agree', string>>;
+type AccType = 'haji' | 'leader' | null;
+
+export default function AuthScreen(): JSX.Element {
   const ins = useSafeAreaInsets();
   const [reg, setReg] = useState(false);
   const [name, setName] = useState('');
@@ -27,12 +30,12 @@ export default function AuthScreen() {
   const [pw, setPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [errs, setErrs] = useState({});
+  const [errs, setErrs] = useState<Errs>({});
   const [formErr, setFormErr] = useState('');
   const [forgot, setForgot] = useState(false);
-  const [accType, setAccType] = useState(null);      // 'haji' | 'leader' (only when opening a new account)
+  const [accType, setAccType] = useState<AccType>(null);      // 'haji' | 'leader' (only when opening a new account)
   const [refCode, setRefCode] = useState('');
-  const [allTerms, setAllTerms] = useState({});      // { haji, leader }: each { body } when written
+  const [allTerms, setAllTerms] = useState<{ haji?: TermsText | null; leader?: TermsText | null }>({});      // { haji, leader }: each { body } when written
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [waitUntil, setWaitUntil] = useState(0);     // after "server busy": the button waits a minute (protects the server when many log in at once)
@@ -46,9 +49,9 @@ export default function AuthScreen() {
   const terms = accType === 'leader' ? allTerms.leader : allTerms.haji;      // the terms for the account type being opened
   const termsName = accType === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
   useEffect(() => { setAgree(false); }, [accType]);                       // a different type means different terms: tick again
-  const phoneRef = useRef(null);
-  const pwRef = useRef(null);
-  const scrollRef = useRef(null);
+  const phoneRef = useRef<TextInput | null>(null);
+  const pwRef = useRef<TextInput | null>(null);
+  const scrollRef = useRef<RNScrollView | null>(null);
   const kb = useKeyboardHeight();
   const strength = passwordStrength(pw, normalizePhone(phone));
 
@@ -58,10 +61,10 @@ export default function AuthScreen() {
   }, [kb]);
   const keepVisible = () => { if (kb > 0) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60); };
 
-  function switchMode(r) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); if (!r) setAccType(null); }
+  function switchMode(r: boolean) { if (busy) return; setReg(r); setErrs({}); setFormErr(''); if (!r) setAccType(null); }
 
-  function validate() {
-    const e = {};
+  function validate(): boolean {
+    const e: Errs = {};
     if (reg && name.trim().length < 2) e.name = A.errName;
     if (!reg && looksLikeEmail(phone)) { if (!isValidEmail(normalizeEmail(phone))) e.phone = A.errEmail; }
     else if (!isValidBdPhone(normalizePhone(phone))) e.phone = reg ? A.errPhone : A.errIdent;
@@ -83,12 +86,13 @@ export default function AuthScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
-      let loginId;
+      let loginId: string;
       try { loginId = reg ? await newLoginEmail(normalizePhone(phone)) : await loginEmailFor(phone); }
-      catch (x) {
+      catch (err) {
+        const x = err as { code?: string } | null;
         if (x && x.code === 'email-soon') { setFormErr(A.errEmailSoon); return; }
         if (x && x.code === 'bad-ident') { setErrs({ phone: A.errIdent }); return; }
-        throw x;
+        throw err;
       }
       const res = reg
         ? await (async () => {
@@ -131,7 +135,7 @@ export default function AuthScreen() {
 
         <Segmented
           value={reg ? 'reg' : 'login'}
-          onChange={(id) => switchMode(id === 'reg')}
+          onChange={(id: string) => switchMode(id === 'reg')}
           disabled={busy}
           options={[{ id: 'login', label: A.loginTab }, { id: 'reg', label: A.registerTab }]}
         />
@@ -187,7 +191,7 @@ export default function AuthScreen() {
         {reg && pw.length > 0 ? <StrengthMeter s={strength} /> : null}
 
         {reg && accType === 'haji' ? (
-          <Field label="লিডারের রেফারেল কোড (থাকলে)" hint="যেমন: TL-00012" value={refCode} onChangeText={(v) => setRefCode(v.toUpperCase())} error={errs.ref}
+          <Field label="লিডারের রেফারেল কোড (থাকলে)" hint="যেমন: TL-00012" value={refCode} onChangeText={(v: string) => setRefCode(v.toUpperCase())} error={errs.ref}
             maxLength={12} autoCapitalize="characters" autoCorrect={false} onFocus={keepVisible} />
         ) : null}
         {reg && accType === 'leader' ? <Notice kind="info" title="অ্যাকাউন্ট খোলার পর শেষ ধাপ" text="এজেন্সির নাম, ওমরাহ ও হজ লাইসেন্স নম্বর এবং লাইসেন্সের ছবি দিতে হবে। অ্যাডমিন যাচাই করে অনুমোদন দিলে লিডার প্যানেল চালু হবে।" /> : null}
@@ -224,13 +228,13 @@ export default function AuthScreen() {
   );
 }
 
-function StrengthMeter({ s }) {
+function StrengthMeter({ s }: { s: Strength }): JSX.Element {
   const col = [C.bad, C.warn, C.ok][s.level];
   const tip = s.tooEasy ? 'এটা সহজে অনুমান করা যায় (যেমন 12345678 বা নিজের মোবাইল নম্বর)।'
     : s.level === 0 ? 'আরও অক্ষর লিখুন।'
     : s.level === 1 ? 'চলবে। আরও নিরাপদ করতে ১২ অক্ষর বা কোনো চিহ্ন (! @ #) যোগ করুন।'
     : 'খুব ভালো পাসওয়ার্ড।';
-  const Row = ({ ok, text }) => <Text style={st.chk}>{ok ? '✅' : '⬜'} {text}</Text>;
+  const Row = ({ ok, text }: { ok: boolean; text: string }) => <Text style={st.chk}>{ok ? '✅' : '⬜'} {text}</Text>;
   return (
     <View style={st.meter} accessible accessibilityLiveRegion="polite" accessibilityLabel={`পাসওয়ার্ডের শক্তি: ${STRENGTH_LABEL[s.level]}। ${tip}`}>
       <View style={st.meterTop}>

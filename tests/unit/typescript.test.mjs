@@ -39,6 +39,16 @@ test('step 4: the prayer-time cross-check reads the TypeScript files', () => {
   const s = readFileSync(new URL('tests/prayer.test.mjs', root), 'utf8');
   assert.ok(s.includes('src/lib/prayer.ts') && s.includes('src/lib/phone.ts'));
 });
+// Step 5 (Nov 2026): screens, money and security first — login, password reset, phone check, admin 2FA, chat consent,
+// payments box and the admin money page.
+const STEP5 = ['src/screens/AuthScreen', 'src/screens/ForgotPassword', 'src/screens/VerifyPhoneScreen', 'src/screens/AdminMfa',
+  'src/screens/ChatConsentScreen', 'src/components/PaymentBox', 'src/screens/AdminMoney'];
+test('step 5: money and security screens are TypeScript (.tsx)', () => {
+  for (const f of STEP5) {
+    assert.ok(existsSync(new URL(`${f}.tsx`, root)), `${f}.tsx missing`);
+    assert.ok(!existsSync(new URL(`${f}.js`, root)), `${f}.js must be removed`);
+  }
+});
 test('strict type checking is on and runs in CI', () => {
   const ts = JSON.parse(readFileSync(new URL('tsconfig.json', root), 'utf8'));
   assert.equal(ts.compilerOptions.strict, true);

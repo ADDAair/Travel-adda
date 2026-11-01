@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { Text, Pressable, ActivityIndicator, View } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,35 +13,42 @@ import { st } from './GroupScreen';
 
 // Verify the account with a code: by SMS to the mobile number OR by e-mail. Either one makes the account "verified".
 // A verified e-mail can also be used to log in and to reset the password.
-export default function VerifyPhoneScreen({ navigation, route }) {
+type Profile = { phone: string; phone_verified?: boolean; email?: string | null; email_verified?: boolean };
+type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string; fix?: string } | null;
+type Tab = 'phone' | 'email';
+type Props = { navigation: { navigate: (r: string) => void; addListener?: (e: string, f: () => void) => () => void }; route?: { params?: { channel?: string } } };
+
+export default function VerifyPhoneScreen({ navigation, route }: Props): JSX.Element {
   const { refreshMe } = useMe();
-  const [me, setMe] = useState(null);
-  const [state, setState] = useState('load');            // load | ok | err
-  const [tab, setTab] = useState(route?.params?.channel === 'email' ? 'email' : 'phone');
-  const [step, setStep] = useState('ask');               // ask | code   (for the open tab)
+  const [me, setMe] = useState<Profile | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'err'>('load');            // load | ok | err
+  const [tab, setTab] = useState<Tab>(route?.params?.channel === 'email' ? 'email' : 'phone');
+  const [step, setStep] = useState<'ask' | 'code'>('ask');               // ask | code   (for the open tab)
   const [emailOk, setEmailOk] = useState(true);          // false = database step for e-mail not run yet
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   const [wait, setWait] = useState(0);
   useEffect(() => { if (wait <= 0) return undefined; const t = setTimeout(() => setWait((w) => w - 1), 1000); return () => clearTimeout(t); }, [wait]);
 
   const load = useCallback(async () => {
     setMsg(null);
-    let r = await supabase.from('profiles').select('phone,phone_verified,email,email_verified').single();
+    type R = { data: Profile | null; error: { code?: string; message?: string } | null };
+    let r: R = await supabase.from('profiles').select('phone,phone_verified,email,email_verified').single();
     let ok = true;
     if (r.error && (r.error.code === '42703' || /column/i.test(r.error.message || ''))) { ok = false; r = await supabase.from('profiles').select('phone,phone_verified').single(); }
-    if (r.error) { setState('err'); return; }
-    setEmailOk(ok); setMe(r.data); setState('ok'); setStep('ask'); setCode('');
+    if (r.error || !r.data) { setState('err'); return; }
+    const d = r.data;
+    setEmailOk(ok); setMe(d); setState('ok'); setStep('ask'); setCode('');
     const pending = await AsyncStorage.getItem(PENDING_EMAIL).catch(() => null);
-    setEmail((x) => x || pending || r.data.email || '');
-    if (pending && ok && !(r.data.email === pending && r.data.email_verified)) setTab('email');
+    setEmail((x) => x || pending || d.email || '');
+    if (pending && ok && !(d.email === pending && d.email_verified)) setTab('email');
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
   useEffect(() => { if (route?.params?.channel === 'email') setTab('email'); }, [route?.params?.channel]);
-  const switchTab = (t) => { if (busy) return; setTab(t); setStep('ask'); setCode(''); setMsg(null); setWait(0); };
+  const switchTab = (t: Tab) => { if (busy) return; setTab(t); setStep('ask'); setCode(''); setMsg(null); setWait(0); };
   const e = normalizeEmail(email);
 
   const send = async () => {
@@ -57,7 +64,7 @@ export default function VerifyPhoneScreen({ navigation, route }) {
       setStep('code'); setWait(60);
       setMsg({ kind: 'info', text: tab === 'email'
         ? `${e} ঠিকানায় ৬ সংখ্যার কোড পাঠানো হয়েছে, ৫ মিনিট কাজ করবে। ইনবক্সে না পেলে Spam ফোল্ডার দেখুন।`
-        : `${toBn(me.phone)} নম্বরে ৬ সংখ্যার কোড পাঠানো হয়েছে। কোড ৫ মিনিট কাজ করবে।` });
+        : `${toBn(me ? me.phone : '')} নম্বরে ৬ সংখ্যার কোড পাঠানো হয়েছে। কোড ৫ মিনিট কাজ করবে।` });
       return;
     }
     setMsg({ kind: r.error === 'not_ready' ? 'info' : 'bad', text: otpText(r) });
@@ -88,7 +95,7 @@ export default function VerifyPhoneScreen({ navigation, route }) {
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' ? (
         <>
-          {verified ? (
+          {me && verified ? (
             <Notice kind="ok" title="✔️ আপনার অ্যাকাউন্ট যাচাই করা"
               text={[me.phone_verified ? `মোবাইল নম্বর ${toBn(me.phone)} যাচাই করা।` : null, me.email_verified && me.email ? `ইমেইল ${me.email} যাচাই করা, এটি দিয়েও লগইন করা যায়।` : null].filter(Boolean).join('\n')} />
           ) : (
@@ -98,12 +105,12 @@ export default function VerifyPhoneScreen({ navigation, route }) {
           <View style={{ height: S.md }} />
           {msg ? (
             <Notice kind={msg.kind} title={msg.text}>
-              {msg.fix ? <Button title={`হ্যাঁ, ${msg.fix} করুন`} icon="✏️" kind="secondary" onPress={() => { setEmail(msg.fix); setMsg(null); }} style={{ marginTop: S.sm }} /> : null}
+              {msg.fix ? <Button title={`হ্যাঁ, ${msg.fix} করুন`} icon="✏️" kind="secondary" onPress={() => { setEmail(msg.fix || ''); setMsg(null); }} style={{ marginTop: S.sm }} /> : null}
             </Notice>
           ) : null}
 
-          {tab === 'phone' && phoneDone ? <Notice kind="ok" title={`✔️ ${toBn(me.phone)} নম্বরটি যাচাই করা`} text="লিডার এই নম্বরে আমন্ত্রণ পাঠালে আপনিই পাবেন।" /> : null}
-          {tab === 'phone' && !phoneDone ? (
+          {me && tab === 'phone' && phoneDone ? <Notice kind="ok" title={`✔️ ${toBn(me.phone)} নম্বরটি যাচাই করা`} text="লিডার এই নম্বরে আমন্ত্রণ পাঠালে আপনিই পাবেন।" /> : null}
+          {me && tab === 'phone' && !phoneDone ? (
             <>
               <Text style={st.val}>নম্বর: {toBn(me.phone)}</Text>
               <Text style={[st.small, { marginBottom: S.sm }]}>এই নম্বরে এসএমএসে ৬ সংখ্যার কোড যাবে।</Text>
@@ -112,10 +119,10 @@ export default function VerifyPhoneScreen({ navigation, route }) {
           ) : null}
 
           {tab === 'email' && !emailOk ? <Notice kind="info" title="শীঘ্রই আসছে" text="ইমেইল দিয়ে যাচাই ও লগইনের সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে। এখন মোবাইল নম্বর দিয়ে যাচাই করুন।" /> : null}
-          {tab === 'email' && emailOk ? (
+          {me && tab === 'email' && emailOk ? (
             <>
               {me.email_verified && me.email ? <Text style={[st.small, { marginBottom: S.sm }]}>বর্তমান যাচাই করা ইমেইল: {me.email}। অন্য ইমেইল দিতে চাইলে নিচে লিখে কোড চান।</Text> : null}
-              <Field label="ইমেইল" hint="যেমন: name@gmail.com" value={email} onChangeText={(v) => { setEmail(v); if (step === 'code') { setStep('ask'); setCode(''); } }}
+              <Field label="ইমেইল" hint="যেমন: name@gmail.com" value={email} onChangeText={(v: string) => { setEmail(v); if (step === 'code') { setStep('ask'); setCode(''); } }}
                 keyboardType="email-address" maxLength={254} autoCapitalize="none" autoCorrect={false} autoComplete="email" editable={!busy} />
               {step === 'ask' ? <Button title="ইমেইলে কোড পাঠান" icon="📧" onPress={send} loading={busy} disabled={wait > 0} /> : null}
             </>
