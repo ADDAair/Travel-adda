@@ -5,7 +5,7 @@ import { Button, Field, Notice } from './ui';
 import { toBn } from '../lib/phone';
 import { CONTRACT_STATUS, REPORT_REASONS, isBlocked, block, unblock, report } from '../lib/market';
 import { st, fmtDay, fmtTaka, confirm, errText } from '../screens/GroupScreen';
-import type { Row, Msg } from '../screens/navTypes';
+import type { Msg, Row } from '../screens/navTypes';
 
 // Full contract text, the same for haji and leader.
 export function ContractDetails({ c, who = 'haji' }: { c: Row; who?: 'haji' | 'leader' }): JSX.Element {

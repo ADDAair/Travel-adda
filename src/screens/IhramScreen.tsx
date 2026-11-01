@@ -22,7 +22,7 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
   const [open, setOpen] = useState<any>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
 
-  const go = useCallback((id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); }, []);
+  const go = useCallback((id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); }, []);
 
   // Android back: from a section go back to the list.
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
 function Mikat() {
   const [route, setRoute] = useState('makkah');
   useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
-  const choose = (id) => { setRoute(id); AsyncStorage.setItem(ROUTE_KEY, id).catch(() => {}); };
+  const choose = (id: string) => { setRoute(id); AsyncStorage.setItem(ROUTE_KEY, id).catch(() => {}); };
   const r = MIKAT_ROUTES.find((x) => x.id === route);
   const [showAll, setShowAll] = useState(false);
   return (
@@ -134,8 +134,8 @@ function Checklist() {
   useEffect(() => {
     AsyncStorage.getItem(CHECK_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) {} }).catch(() => {});
   }, []);
-  const save = (a) => { setDone(a); AsyncStorage.setItem(CHECK_KEY, JSON.stringify(a)).catch(() => {}); };
-  const toggle = (id) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
+  const save = (a: string[]) => { setDone(a); AsyncStorage.setItem(CHECK_KEY, JSON.stringify(a)).catch(() => {}); };
+  const toggle = (id: string) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
   const reset = () => Alert.alert('সব টিক মুছবেন?', 'চেকলিস্ট আবার শুরু থেকে হবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
     { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => save([]) },
@@ -166,7 +166,7 @@ function Checklist() {
   );
 }
 
-function Steps({ onTalbiyah, onRules }) {
+function Steps({ onTalbiyah, onRules }: { onTalbiyah: () => void; onRules: () => void }) {
   const [i, setI] = useState(0);
   const s = STEPS[i];
   const last = i === STEPS.length - 1;
@@ -213,7 +213,7 @@ function Talbiyah() {
     } catch (e) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); }
   };
 
-  const Block = ({ label, p }) => (
+  const Block = ({ label, p }: { label: string; p: any }) => (
     <View style={st.duaCard}>
       {label ? <Text style={st.partL}>{label}</Text> : null}
       <Text style={st.ar} accessibilityLanguage="ar">{p.ar}</Text>

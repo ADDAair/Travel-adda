@@ -32,11 +32,11 @@ const LOST_TIPS = [
   'দলের সাথে আগে থেকেই একটা দেখা করার জায়গা ঠিক করে রাখুন।',
 ];
 
-const call = (n) => Linking.openURL(`tel:${String(n).replace(/[^\d+]/g, '')}`).catch(() => {});
+const call = (n: string) => Linking.openURL(`tel:${String(n).replace(/[^\d+]/g, '')}`).catch(() => {});
 // Emergency numbers: open the dialer FIRST, then quietly tell Travel Adda (never delays the call).
-const callSos = (x) => { call(x.n); logSos(x); };
-const cleanPhone = (v) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
-const phoneOk = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
+const callSos = (x: { n: string; label: string }) => { call(x.n); logSos(x); };
+const cleanPhone = (v: string) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
+const phoneOk = (v: unknown) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
 export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
   const [info, setInfo] = useState<Record<string, any>>({});
@@ -158,7 +158,7 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
 const AR = 'أنا من حجاج بنغلاديش، وقد ضللت الطريق. أرجو مساعدتي في الوصول إلى فندقي أو الاتصال بقائد مجموعتي.';
 const EN = 'I am a pilgrim from Bangladesh and I am lost. Please help me reach my hotel or call my group leader.';
 
-function LostCard({ info, me, onClose }) {
+function LostCard({ info, me, onClose }: { info: Record<string, any>; me: any; onClose: () => void }) {
   const ins = useSafeAreaInsets();
   const [speaking, setSpeaking] = useState(false);
   const [ttsErr, setTtsErr] = useState('');
@@ -177,7 +177,7 @@ function LostCard({ info, me, onClose }) {
       onError: () => { if (alive.current) { setSpeaking(false); setTtsErr('আরবিতে শোনানো যায়নি। কার্ডটি দেখান।'); } },
     });
   };
-  const Row = ({ ar, en, v }) => (v ? (
+  const Row = ({ ar, en, v }: { ar: string; en: string; v?: string | null }) => (v ? (
     <View style={lc.row}>
       <Text style={lc.rowL}>{ar} / {en}</Text>
       <Text style={lc.rowV} selectable>{v}</Text>

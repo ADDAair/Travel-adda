@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { notReady } from '../lib/groups';
 import { leaderPublic } from '../lib/market';
 import { st, errText } from './GroupScreen';
-import type { Nav, Row, Msg } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 // Leader: how hajis see me in the directory; I can change my work area and a short introduction (licences only via admin).
 export default function LeaderMeScreen({ navigation }: { navigation: Nav }): JSX.Element {

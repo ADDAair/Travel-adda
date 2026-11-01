@@ -13,7 +13,7 @@ import { useMe } from '../lib/me';
 import { getTerms, agreeTerms, type TermsText } from '../lib/market';
 import { DocCamera } from './DocsScreen';
 import { st, errText, fmtDay } from './GroupScreen';
-import type { Nav, Row, Msg } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 type Kind = 'agency' | 'travel_adda';
 type PickedFile = { uri: string; kind: 'image' | 'pdf'; name: string };

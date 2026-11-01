@@ -16,14 +16,14 @@ const SIZES = [1, 1.2, 1.4, 1.6];
 // Tanzil puts "Bismillah" at the start of verse 1 of every surah except 1 and 9; we show it as a header instead.
 const MARKS = /[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/g;
 const BISM_BARE = 'بسم ٱلله ٱلرحمن ٱلرحيم';
-export function stripBismillah(text) {
+export function stripBismillah(text: string): string {
   const words = text.split(' ');
   if (words.length > 4 && words.slice(0, 4).join(' ').replace(MARKS, '') === BISM_BARE) return words.slice(4).join(' ');
   return text;
 }
-const typeBn = (t) => (t === 'Meccan' ? 'মাক্কী' : 'মাদানী');
+const typeBn = (t: string) => (t === 'Meccan' ? 'মাক্কী' : 'মাদানী');
 
-export function QuranList({ onOpen }) {
+export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void }) {
   const [q, setQ] = useState('');
   const [last, setLast] = useState<any>(null);
   useEffect(() => {
@@ -87,7 +87,7 @@ export function QuranList({ onOpen }) {
   );
 }
 
-export function QuranReader({ n, startAyah = 1, onBack }) {
+export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah?: number; onBack: () => void }) {
   const meta = META[n - 1];
   const [verses, setVerses] = useState<any>(null);
   const [err, setErr] = useState(false);
@@ -104,7 +104,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
     const t = setTimeout(() => {
       try {
         const raw = SURAH[n]();
-        const data = raw.map(([ar, bn, pr], i) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
+        const data = raw.map(([ar, bn, pr]: string[], i: number) => ({ a: i + 1, ar: i === 0 && n !== 1 && n !== 9 ? stripBismillah(ar) : ar, bn, pr: pr || '' }));
         if (alive) setVerses(data);
       } catch (e) { if (alive) setErr(true); }
     }, 30);
@@ -125,14 +125,14 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
     return undefined;
   }, [verses, startAyah]);
 
-  const onViewable = useRef(({ viewableItems }) => {
+  const onViewable = useRef(({ viewableItems }: { viewableItems: any[] }) => {
     const first = viewableItems && viewableItems[0];
     if (!first || !first.item) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => AsyncStorage.setItem(LAST_KEY, JSON.stringify({ n, a: first.item.a })).catch(() => {}), 600);
   }).current;
 
-  const changeSize = (d) => {
+  const changeSize = (d: number) => {
     const v = Math.min(SIZES.length - 1, Math.max(0, scaleIx + d));
     setScaleIx(v); AsyncStorage.setItem(SIZE_KEY, String(v)).catch(() => {});
   };
@@ -201,7 +201,7 @@ export function QuranReader({ n, startAyah = 1, onBack }) {
   );
 }
 
-function Toggle({ on, onPress, label }) {
+function Toggle({ on, onPress, label }: { on: boolean; onPress: () => void; label: string }) {
   return (
     <Pressable onPress={onPress} style={[st.toolBtn, { flex: 1 }, on && st.toolOn]} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label + ' দেখান'}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

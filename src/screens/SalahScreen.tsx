@@ -15,7 +15,7 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
   const [open, setOpen] = useState<any>(null);
   const [from, setFrom] = useState<any>(null);         // screen to return to when opened from elsewhere
   const scrollRef = useRef<ScrollRef | null>(null);
-  const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
+  const go = (id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
 
   useEffect(() => {
     const p = route && route.params;
@@ -44,7 +44,7 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
           <Text style={st.title} accessibilityRole="header">{sec.icon} {sec.title}</Text>
           {sec.blocks.map((b, i) => {
             if (b.type === 'rakat') return <Rakat key={i} rows={b.rows} />;
-            if (b.type === 'duas') return <View key={i} style={{ marginBottom: S.sm }}>{b.ids.map((id) => <DuaInline key={id} id={id} />)}</View>;
+            if (b.type === 'duas') return <View key={i} style={{ marginBottom: S.sm }}>{b.ids.map((id: any) => <DuaInline key={id} id={id} />)}</View>;
             if (b.type === 'kahf') return <Button key={i} title="সূরা কাহফ পড়ুন" icon="📖" kind="gold" onPress={() => navigation.navigate('Dua', { openSurah: 18, t: Date.now() })} style={{ marginTop: S.md }} />;
             return <Block key={i} b={b} />;
           })}
@@ -84,11 +84,11 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
 }
 
 // Table of rak'ahs: every row shows the number, the kind in words (never colour alone) and when.
-function Rakat({ rows }) {
-  const total = rows.reduce((a, r) => a + r.n, 0);
+function Rakat({ rows }: { rows: any[] }) {
+  const total = rows.reduce((a: any, r: any) => a + r.n, 0);
   return (
-    <View style={st.table} accessible accessibilityLabel={rows.map((r) => `${r.n} রাকাত ${KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`).join('। ')}>
-      {rows.map((r, i) => {
+    <View style={st.table} accessible accessibilityLabel={rows.map((r: any) => `${r.n} রাকাত ${KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`).join('। ')}>
+      {rows.map((r: any, i: any) => {
         const k = KIND[r.kind];
         return (
           <View key={i} style={[st.tRow, i > 0 && st.tLine]}>

@@ -189,7 +189,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
 }
 
 // Leader accounts: the panel when approved, otherwise where the application stands.
-function LeaderHomeCard({ me, navigation }) {
+function LeaderHomeCard({ me, navigation }: { me: any; navigation: Nav }) {
   const approved = me.role === 'leader';
   return (
     <Pressable onPress={() => navigation.navigate(approved ? 'Leader' : 'LeaderApply')} style={({ pressed }) => [st.ready, { borderWidth: 2, borderColor: C.gold }, pressed && { opacity: 0.9 }]}

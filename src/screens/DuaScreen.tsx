@@ -8,12 +8,13 @@ import { Button, Notice, Segmented } from '../components/ui';
 import { CATEGORIES, DUAS, CONTENT_REVIEWED, findDua } from '../content/duas';
 import { toBn } from '../lib/phone';
 import { QuranList, QuranReader } from './Quran';
+import type { Nav, Route } from './navTypes';
 
 const SIZE_KEY = 'ta.duaTextScale.v1';
 const FAV_KEY = 'ta.favDuas.v1';
 const SIZES = [1, 1.2, 1.4, 1.6];
 
-export default function DuaScreen({ route, navigation }) {
+export default function DuaScreen({ route, navigation }: { route?: Route; navigation: Nav }) {
   const [cat, setCat] = useState('namaz');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState<any>(null);
@@ -32,7 +33,7 @@ export default function DuaScreen({ route, navigation }) {
   // Favourite duas, kept on this phone.
   const [favs, setFavs] = useState<any[]>([]);
   useEffect(() => { AsyncStorage.getItem(FAV_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setFavs(a); } catch (e) { /* none */ } }).catch(() => {}); }, []);
-  const toggleFav = (id) => {
+  const toggleFav = (id: string) => {
     const next = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id];
     setFavs(next); AsyncStorage.setItem(FAV_KEY, JSON.stringify(next)).catch(() => {});
   };
@@ -69,7 +70,7 @@ export default function DuaScreen({ route, navigation }) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <View style={{ paddingHorizontal: S.md, paddingTop: S.md }}>{modeBar}</View>
-        <QuranList onOpen={(n, a) => setSurah({ n, a })} />
+        <QuranList onOpen={(n: number, a?: number) => setSurah({ n, a })} />
       </View>
     );
   }
@@ -138,7 +139,7 @@ export default function DuaScreen({ route, navigation }) {
   );
 }
 
-function DuaDetail({ dua, onBack, fav, onFav }) {
+function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; fav: boolean; onFav: () => void }) {
   const [scaleIx, setScaleIx] = useState(1);
   const [speaking, setSpeaking] = useState(false);
   const [ttsMsg, setTtsMsg] = useState('');
@@ -150,7 +151,7 @@ function DuaDetail({ dua, onBack, fav, onFav }) {
     return () => { alive.current = false; Speech.stop(); };
   }, []);
 
-  const changeSize = (d) => {
+  const changeSize = (d: number) => {
     const n = Math.min(SIZES.length - 1, Math.max(0, scaleIx + d));
     setScaleIx(n);
     AsyncStorage.setItem(SIZE_KEY, String(n)).catch(() => {});
@@ -166,7 +167,7 @@ function DuaDetail({ dua, onBack, fav, onFav }) {
         setTtsMsg('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।');
         return;
       }
-      const text = dua.parts.map((p) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
+      const text = dua.parts.map((p: any) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
       setSpeaking(true);
       Speech.speak(text, {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
@@ -208,7 +209,7 @@ function DuaDetail({ dua, onBack, fav, onFav }) {
         </Pressable>
       </View>
 
-      {dua.parts.map((p, i) => (
+      {dua.parts.map((p: any, i: any) => (
         <View key={i} style={st.card}>
           {p.label ? <Text style={st.partL}>{p.label}</Text> : null}
           <Text style={[st.ar, { fontSize: 28 * k, lineHeight: 28 * k * 1.9 }]} accessibilityLanguage="ar">{p.ar}</Text>

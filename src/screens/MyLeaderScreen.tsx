@@ -13,7 +13,7 @@ import { shareContractPdf } from '../lib/contractPdf';
 import PaymentBox from '../components/PaymentBox';
 import { myChatConsents, type MyConsent } from '../lib/chatConsent';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
-import type { Nav, Row, Msg } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;
 type Box = { c: Row; busy: boolean; act: Act; setMsg: (m: Msg) => void };

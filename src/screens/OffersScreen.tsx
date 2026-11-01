@@ -13,7 +13,7 @@ import { OfferCard, OfferSummary } from '../components/OfferCard';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 import FundCard from '../components/FundCard';
-import type { Msg, Nav, Route } from './navTypes';
+import type { Msg, Nav, Route, Row } from './navTypes';
 
 export { OfferCard };
 
@@ -39,12 +39,12 @@ function PendingLeader({ navigation }: { navigation: Nav }) {
 }
 
 // A row of choice pills (one may be chosen, tap again to clear). Words, not colour, say what is chosen.
-function Pills({ label, options, value, onChange }) {
+function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v: any) => void }) {
   return (
     <View style={{ marginBottom: S.sm }}>
       <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {options.map((o) => {
+        {options.map((o: any) => {
           const on = value === o.id;
           return (
             <Pressable key={String(o.id)} onPress={() => onChange(on ? null : o.id)} accessibilityRole="button" accessibilityState={{ selected: on }}
@@ -61,10 +61,10 @@ function Pills({ label, options, value, onChange }) {
 }
 
 // Umrah month: one button that says what is chosen ("সব মাস" at first); tapping it opens the list of months.
-function MonthDropdown({ options, value, onChange }) {
+function MonthDropdown({ options, value, onChange }: { options: { id: string; label: string }[]; value: string | null; onChange: (v: string | null) => void }) {
   const [open, setOpen] = useState(false);
-  const pick = (id) => { onChange(id); setOpen(false); };
-  const Item = ({ id, label }) => {
+  const pick = (id: string | null) => { onChange(id); setOpen(false); };
+  const Item = ({ id, label }: { id: string | null; label: string }) => {
     const on = value === id;
     return (
       <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${label}${on ? ', বাছাই করা' : ''}`}
@@ -85,7 +85,7 @@ function MonthDropdown({ options, value, onChange }) {
       {open ? (
         <View style={{ borderWidth: 2, borderTopWidth: 0, borderColor: C.primary, borderBottomLeftRadius: R.md, borderBottomRightRadius: R.md, overflow: 'hidden' }}>
           <Item id={null} label="সব মাস একসাথে" />
-          {options.map((o) => <Item key={o.id} id={o.id} label={o.label} />)}
+          {options.map((o: any) => <Item key={o.id} id={o.id} label={o.label} />)}
           <Text style={[st.small, { padding: S.sm }]}>বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।</Text>
         </View>
       ) : null}
@@ -107,13 +107,13 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [priceText, setPriceText] = useState('');      // typed by the haji, or filled by a quick button
   const typed = parsePrice(priceText);
   const maxPrice = Number.isFinite(typed) ? typed : null;
-  const setMaxPrice = (n) => setPriceText(n ? toBn(n) : '');
+  const setMaxPrice = (n: number | null) => setPriceText(n ? toBn(n) : '');
   const [showFilters, setShowFilters] = useState(false);
   const [openId, setOpenId] = useState<any>(null);             // package shown on its own page
   const scroller = React.useRef<any>(null);
   useEffect(() => { if (route?.params?.leader) { setQ(route.params.leader); setOpenId(null); } }, [route?.params?.leader]);
 
-  const load = useCallback(async (k) => {
+  const load = useCallback(async (k: string) => {
     setState((x) => (x === 'ok' ? 'ok' : 'load'));
     getHelpline().then(setHelp).catch(() => {});
     try {
@@ -129,7 +129,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     return () => sub.remove();
   }, [openId]);
 
-  const ask = (o) => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?',
+  const ask = (o: Row) => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?',
     'আপনার নাম ও মোবাইল নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে লিডারের সাথে কথা বলার ব্যবস্থা করবে।',
     'হ্যাঁ, পাঠান', async () => {
       if (busy) return;
@@ -142,7 +142,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
         else setMsg({ kind: 'bad', text: errText(e) });
       } finally { setBusy(null); }
     });
-  const cancel = (r) => confirm('অনুরোধটি বাতিল করবেন?', 'টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'হ্যাঁ, বাতিল', async () => {
+  const cancel = (r: Row) => confirm('অনুরোধটি বাতিল করবেন?', 'টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'হ্যাঁ, বাতিল', async () => {
     setBusy(r.offer_id); setMsg(null);
     try { await cancelCallback(r.id); setMsg({ kind: 'ok', text: 'অনুরোধ বাতিল করা হয়েছে।' }); await load(kind); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
@@ -156,7 +156,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const months = monthOptions(rows || []);
 
   // ---- one package on its own page ----
-  const open = openId && (rows || []).find((o) => o.id === openId);
+  const open = openId && (rows || []).find((o: any) => o.id === openId);
   if (open) {
     const r = mine[open.id];
     const req = r && r.status === 'new';

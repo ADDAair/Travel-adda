@@ -4,6 +4,7 @@ import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
 import { myChatConsents, respondConsent, revokeConsent, type MyConsent } from '../lib/chatConsent';
 import { st, fmtDay, confirm } from './GroupScreen';
+import type { Msg, Nav } from './navTypes';
 
 // Haji: Travel Adda asks to read the questions & answers with a leader, to settle a dispute.
 // Nobody reads anything unless the haji agrees here; the permission ends after 7 days or when taken back.

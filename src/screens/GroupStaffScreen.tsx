@@ -8,9 +8,9 @@ import { mySentInvites, cancelInvite } from '../lib/help';
 import { groupKhadems, addKhadem, removeKhadem, khademResultText, faqList, saveFaq, deleteFaq, helpErrorText } from '../lib/help';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
-import type { Msg, Nav, Route } from './navTypes';
+import type { Msg, Nav, Route, Row } from './navTypes';
 
-const confirm = (title, text, yes, fn) => Alert.alert(title, text, [{ text: 'না', style: 'cancel' }, { text: yes, style: 'destructive', onPress: fn }]);
+const confirm = (title: string, text: string, yes: string, fn: () => void) => Alert.alert(title, text, [{ text: 'না', style: 'cancel' }, { text: yes, style: 'destructive', onPress: fn }]);
 
 // Leader: one group's khadems (helpers in Makkah/Madinah) and its ready answers (FAQ) for the help chat.
 export default function GroupStaffScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
@@ -34,21 +34,21 @@ export default function GroupStaffScreen({ navigation, route }: { navigation: Na
   const loadSent = useCallback(async () => { if (!gid) return; try { setSent((await mySentInvites(gid)).filter((x) => x.kind === 'khadem')); } catch (e) { setSent([]); } }, [gid]);
   useEffect(() => { setMsg(null); setEdit(null); setState('load'); load(); loadSent(); }, [load, loadSent]);
 
-  const run = async (fn) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); } finally { setBusy(false); } };
+  const run = async (fn: () => Promise<unknown>) => { if (busy) return; setBusy(true); setMsg(null); try { await fn(); } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); } finally { setBusy(false); } };
   const add = () => run(async () => {
     if (ident.trim().length < 4) { setMsg({ kind: 'bad', text: 'খাদেমের আইডি (যেমন TA-00042) বা মোবাইল নম্বর লিখুন।' }); return; }
     const r = await addKhadem(gid, ident);
     setMsg({ kind: r === 'ok' || r === 'sent' ? 'ok' : r === 'already' ? 'info' : 'warn', text: khademResultText(r) });
     if (r === 'ok' || r === 'sent') { setIdent(''); await load(); await loadSent(); }
   });
-  const remove = (k) => confirm(`${k.full_name}-কে খাদেম থেকে সরাবেন?`, 'সাথে সাথে তিনি এই দলের হাজী ও প্রশ্ন আর দেখতে পারবেন না।', 'হ্যাঁ, সরান',
+  const remove = (k: Row) => confirm(`${k.full_name}-কে খাদেম থেকে সরাবেন?`, 'সাথে সাথে তিনি এই দলের হাজী ও প্রশ্ন আর দেখতে পারবেন না।', 'হ্যাঁ, সরান',
     () => run(async () => { await removeKhadem(gid, k.user_id); setMsg({ kind: 'ok', text: 'সরানো হয়েছে।' }); await load(); }));
   const save = () => run(async () => {
     try { await saveFaq(gid, edit.id, edit.q, edit.a); }
-    catch (e) { if (e.code === 'short') { setMsg({ kind: 'bad', text: 'প্রশ্ন ও উত্তর দুটোই লিখুন।' }); return; } if (/faq limit/i.test(e.message || '')) { setMsg({ kind: 'bad', text: 'একটি দলে সর্বোচ্চ ৩০টি তৈরি উত্তর রাখা যায়।' }); return; } throw e; }
+    catch (e: any) { if (e.code === 'short') { setMsg({ kind: 'bad', text: 'প্রশ্ন ও উত্তর দুটোই লিখুন।' }); return; } if (/faq limit/i.test(e.message || '')) { setMsg({ kind: 'bad', text: 'একটি দলে সর্বোচ্চ ৩০টি তৈরি উত্তর রাখা যায়।' }); return; } throw e; }
     setEdit(null); setMsg({ kind: 'ok', text: 'সংরক্ষণ হয়েছে। হাজীরা প্রশ্ন করার আগে এটি দেখবেন।' }); await load();
   });
-  const del = (f) => confirm('এই তৈরি উত্তরটি মুছবেন?', f.question, 'হ্যাঁ, মুছুন', () => run(async () => { await deleteFaq(f.id); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }));
+  const del = (f: Row) => confirm('এই তৈরি উত্তরটি মুছবেন?', f.question, 'হ্যাঁ, মুছুন', () => run(async () => { await deleteFaq(f.id); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }));
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">

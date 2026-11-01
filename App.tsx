@@ -69,7 +69,7 @@ import { updateGate, APP_VERSION } from './src/lib/appVersion';
 const Tab = createBottomTabNavigator();
 const ICON = { Home: '🏠', Map: '🆘', Dua: '🤲', Offers: '🎁', Account: '👤' };
 
-function DuaFab({ pending }) {
+function DuaFab({ pending }: { pending: boolean }) {
   const scale = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     let loop;
@@ -94,7 +94,7 @@ function DuaFab({ pending }) {
 // While the keyboard is open the app gets smaller by the keyboard's height, so the field being typed in and the
 // buttons below it can be scrolled into view (Android 15+ otherwise draws the keyboard on top of the app).
 // Shown when the admin set a minimum version newer than this app (security fixes etc.).
-function UpdateNeeded({ storeUrl, onSkip }) {
+function UpdateNeeded({ storeUrl, onSkip }: { storeUrl: string | null; onSkip?: (() => void) | null }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: S.lg, paddingTop: 64, justifyContent: 'center' }}>
       <Text style={{ fontSize: 56, textAlign: 'center' }} importantForAccessibility="no">⬆️</Text>
@@ -109,23 +109,23 @@ function UpdateNeeded({ storeUrl, onSkip }) {
   );
 }
 
-function KeyboardRoom({ children }) {
+function KeyboardRoom({ children }: { children: React.ReactNode }) {
   const kb = keyboardPad(useKeyboardHeight());
   const [h, setH] = useState({ full: 0, now: 0 });
-  const onLayout = (e) => { const v = e.nativeEvent.layout.height; setH((x) => ({ full: Math.max(x.full, v), now: v })); };   // portrait-only app: the tallest size is the full screen
+  const onLayout = (e: { nativeEvent: { layout: { height: number } } }) => { const v = e.nativeEvent.layout.height; setH((x) => ({ full: Math.max(x.full, v), now: v })); };   // portrait-only app: the tallest size is the full screen
   const pad = kb && !(h.full && h.now < h.full - kb / 2) ? kb : 0;   // 0 when the phone itself already made room
   return <KbCtx.Provider value={kb > 0}><View style={{ flex: 1, paddingBottom: pad }} onLayout={onLayout}>{children}</View></KbCtx.Provider>;
 }
 const KbCtx = React.createContext(false);
 
-function TabBar({ state, navigation }) {
+function TabBar({ state, navigation }: { state: any; navigation: any }) {   // bottom-tabs props
   const ins = useSafeAreaInsets();
   const { handsOnPending, completeHandsOn } = useTutorial();
   const kbOpen = React.useContext(KbCtx);
   if (kbOpen) return null;                   // no tab bar while typing: more room for the form
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
-      {state.routes.map((r, i) => {
+      {state.routes.map((r: any, i: any) => {
         if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
         const label = T.tabs[r.name];
@@ -163,7 +163,7 @@ function TabBar({ state, navigation }) {
   );
 }
 
-const soon = (title, icon, what) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
+const soon = (title: string, icon: string, what: string) => (props: any) => <Soon {...props} title={title} icon={icon} what={what} />;
 
 function Main() {
   return (

@@ -24,7 +24,7 @@ import { useTutorial } from '../tutorial';
 import type { Nav } from './navTypes';
 
 // Honest placeholder for features that are not built yet.
-export function Soon({ title, icon, what, route, navigation }) {
+export function Soon({ title, icon, what, route, navigation }: { title: string; icon: string; what: string; route?: any; navigation: Nav }) {
   const justTried = !!route?.params?.tutorialDone;
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
@@ -177,7 +177,7 @@ export function Account({ navigation }: { navigation: Nav }) {
 const SIZES = [{ k: 1, label: 'স্বাভাবিক' }, { k: 1.15, label: 'বড়' }, { k: 1.3, label: 'আরও বড়' }];
 function TextSize() {
   const [msg, setMsg] = useState('');
-  const choose = async (k) => {
+  const choose = async (k: number) => {
     if (k === TEXT_SCALE) return;
     try {
       await SecureStore.setItemAsync(TEXT_SCALE_KEY, String(k));

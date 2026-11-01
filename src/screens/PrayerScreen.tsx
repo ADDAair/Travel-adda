@@ -32,7 +32,7 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
     return () => sub.remove();
   }, [picking, loc]);
 
-  const choose = (l) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
+  const choose = (l: any) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
 
   if (loc === undefined) return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /></View>;
 
@@ -62,7 +62,7 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-function LocationPicker({ hasLoc, onChoose, onCancel }) {
+function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onChoose: (l: any) => void; onCancel: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const useGps = async () => {
@@ -104,7 +104,7 @@ function LocationPicker({ hasLoc, onChoose, onCancel }) {
   );
 }
 
-function Times({ loc, now, navigation }) {
+function Times({ loc, now, navigation }: { loc: any; now: number; navigation: Nav }) {
   let plan;
   try { plan = dayPlan(loc, now); } catch (e) { plan = null; }
   if (!plan) return <Notice kind="bad" title="সময় হিসাব করা যায়নি" text="জায়গা বদলে আবার চেষ্টা করুন।" />;
@@ -119,7 +119,7 @@ function Times({ loc, now, navigation }) {
   const alt = fmtTime(times.asrAlt, tz, 'asr');
   const friday = isFriday(today);
   const nextName = next.key === 'dhuhr' && nextAt === times.dhuhr ? prayerName(next, today) : next.name;
-  const openSalah = (section) => navigation.navigate('Salah', { section, from: 'Prayer', t: Date.now() });
+  const openSalah = (section: string) => navigation.navigate('Salah', { section, from: 'Prayer', t: Date.now() });
   const mk = makruhWindows(times);
   const mkNow = mk.find((w) => now >= w.from && now < w.to);
 
@@ -195,7 +195,7 @@ const REM_ERR = {
   blocked: 'নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।',
   failed: 'রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।',
 };
-function Reminders({ loc }) {
+function Reminders({ loc }: { loc: any }) {
   const [on, setOn] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -226,12 +226,12 @@ function Reminders({ loc }) {
 }
 
 // Per prayer: a loud alarm (long tone + vibration, "10 minutes later" button) instead of a short notification sound.
-function Alarms({ loc }) {
+function Alarms({ loc }: { loc: any }) {
   const [a, setA] = useState<any>(null);
   const [busy, setBusy] = useState<any>(null);
   useEffect(() => { getAlarms().then(setA); }, []);
   if (!a) return null;
-  const toggle = async (key) => {
+  const toggle = async (key: string) => {
     if (busy) return;
     setBusy(key);
     try { await setAlarm(key, !a[key]); setA(await getAlarms()); await refreshReminders(loc); } finally { setBusy(null); }
@@ -253,7 +253,7 @@ function Alarms({ loc }) {
   );
 }
 
-function Qibla({ loc }) {
+function Qibla({ loc }: { loc: any }) {
   const q = qiblaBearing(loc.lat, loc.lng);
   const km = distanceKm(loc.lat, loc.lng);
   const [h, setH] = useState<any>(null);          // { heading, accuracy } or null
@@ -263,7 +263,7 @@ function Qibla({ loc }) {
   useEffect(() => {
     let stop = null; let alive = true;
     // raw compass readings jump by several degrees: show a smoothed heading (the short way round 0°)
-    watchHeading((v) => { if (alive) { setH((p) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
+    watchHeading((v) => { if (alive) { setH((p: any) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
       if (!alive) { if (s) s(); return; }
       stop = s;
       if (!s) setState('none');

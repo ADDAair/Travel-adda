@@ -26,7 +26,7 @@ import { idleExpired } from '../lib/idle';
 import { filterOffers } from '../lib/offerRoute';
 import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview, reviewOffer, reviewOf, reviewLabel, getHelpline, setSetting, cleanHelpline } from '../lib/offers';
 import { OfferCard } from '../components/OfferCard';
-import type { Nav, Msg, Row } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 type Coded = { code?: string; message?: string } | null;
 type Cb = { onDone: (t: string) => void; onFail: (t: string) => void };

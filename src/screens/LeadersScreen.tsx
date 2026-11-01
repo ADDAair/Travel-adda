@@ -13,7 +13,7 @@ import { signedAvatarUrl } from '../lib/avatar';
 import { getHelpline } from '../lib/offers';
 import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall } from '../lib/market';
 import { st, confirm, errText, fmtDay } from './GroupScreen';
-import type { Nav, Row, Msg, Route } from './navTypes';
+import type { Msg, Nav, Route, Row } from './navTypes';
 import type { Helpline } from '../lib/offers';
 
 export function Avatar({ path, size = 64, name }: { path?: string | null; size?: number; name?: string }): JSX.Element {

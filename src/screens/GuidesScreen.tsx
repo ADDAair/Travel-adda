@@ -15,7 +15,7 @@ import type { Nav } from './navTypes';
 export default function GuidesScreen({ navigation }: { navigation: Nav }) {
   const [open, setOpen] = useState<any>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
-  const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
+  const go = (id: string) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
   useEffect(() => {
     if (!open) return undefined;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { setOpen(null); return true; });
@@ -59,7 +59,7 @@ export default function GuidesScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-export function Block({ b, navigation }) {
+export function Block({ b, navigation }: { b: any; navigation: Nav }) {
   if (b.type === 'link') return (
     <Notice kind="info" title={`${b.icon || ''} ${b.title}`} text={b.text}>
       {navigation ? <Button title={b.title} icon={b.icon} onPress={() => navigation.navigate(b.route)} style={{ marginTop: S.sm }} /> : null}
@@ -67,19 +67,19 @@ export function Block({ b, navigation }) {
   );
   if (b.type === 'notice') return <Notice kind={b.kind} title={b.title} text={b.text} />;
   if (b.type === 'source') return <Text style={st.src}>📚 সূত্র: {b.text}</Text>;
-  if (b.type === 'steps') return b.steps.map((s, k) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);
+  if (b.type === 'steps') return b.steps.map((s: any, k: any) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);
   if (b.type === 'phrases') return <Phrases items={b.items} />;
   if (b.type === 'checklist') return <Checklist storageKey={b.key} items={b.items} />;
   if (b.type === 'places') {
-    return b.groups.map((grp) => (
+    return b.groups.map((grp: any) => (
       <View key={grp.title}>
         <Text style={st.group}>{grp.title}</Text>
-        {grp.items.map((p) => (
+        {grp.items.map((p: any) => (
           <View key={p.name} style={st.card}>
             <Text style={st.placeN}>📍 {p.name}</Text>
             <Text style={st.p}>{p.what}</Text>
             {p.tip ? <Text style={st.tip}>💡 {p.tip}</Text> : null}
-            {(p.duas || []).map((id) => <DuaInline key={id} id={id} />)}
+            {(p.duas || []).map((id: any) => <DuaInline key={id} id={id} />)}
             {p.source ? <Text style={st.src}>📚 {p.source}</Text> : null}
           </View>
         ))}
@@ -89,12 +89,12 @@ export function Block({ b, navigation }) {
   return null;
 }
 
-function Phrases({ items }) {
+function Phrases({ items }: { items: any[] }) {
   const [playing, setPlaying] = useState<any>(null);
   const [msg, setMsg] = useState('');
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; Speech.stop(); }, []);
-  const speak = async (i, text) => {
+  const speak = async (i: number, text: string) => {
     if (playing === i) { Speech.stop(); setPlaying(null); return; }
     setMsg('');
     try {
@@ -115,7 +115,7 @@ function Phrases({ items }) {
   return (
     <>
       {msg ? <Notice kind="warn" title={msg} /> : null}
-      {items.map((x, i) => (
+      {items.map((x: any, i: any) => (
         <View key={x.bn} style={st.card}>
           <Text style={st.phBn}>{x.bn}</Text>
           <Text style={st.phAr} accessibilityLanguage="ar" selectable>{x.ar}</Text>
@@ -130,19 +130,19 @@ function Phrases({ items }) {
   );
 }
 
-function Checklist({ storageKey, items }) {
+function Checklist({ storageKey, items }: { storageKey: string; items: any[] }) {
   const [done, setDone] = useState<any[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(storageKey).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) { /* start empty */ } }).catch(() => {});
   }, [storageKey]);
-  const save = (a) => { setDone(a); AsyncStorage.setItem(storageKey, JSON.stringify(a)).catch(() => {}); };
-  const toggle = (id) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
+  const save = (a: string[]) => { setDone(a); AsyncStorage.setItem(storageKey, JSON.stringify(a)).catch(() => {}); };
+  const toggle = (id: string) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
   const reset = () => Alert.alert('সব টিক মুছবেন?', 'চেকলিস্ট আবার শুরু থেকে হবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
     { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => save([]) },
   ]);
-  const count = items.filter((c) => done.includes(c.id)).length;
-  const groups = [...new Set(items.map((x) => x.group))];
+  const count = items.filter((c: any) => done.includes(c.id)).length;
+  const groups = [...new Set(items.map((x: any) => x.group))];
   return (
     <>
       <Text style={st.p}>যা গুছিয়ে নিয়েছেন, তাতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।</Text>
@@ -150,7 +150,7 @@ function Checklist({ storageKey, items }) {
       {groups.map((grp) => (
         <View key={grp}>
           <Text style={st.group}>{grp}</Text>
-          {items.filter((x) => x.group === grp).map((c) => {
+          {items.filter((x: any) => x.group === grp).map((c: any) => {
             const on = done.includes(c.id);
             return (
               <Pressable key={c.id} onPress={() => toggle(c.id)} style={[st.check, on && st.checkOn]}

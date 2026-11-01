@@ -12,11 +12,11 @@ import { scheduleDocReminders } from '../lib/docReminders';
 import { lockWanted, unlock } from '../lib/applock';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import type { ScrollRef } from '../components/KbScroll';
-import type { Msg, Nav } from './navTypes';
+import type { Msg, Nav, Route, Row } from './navTypes';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-const fmtDay = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
-const errText = (e) => {
+const fmtDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
+const errText = (e: any) => {
   const m = String((e && e.message) || '').toLowerCase();
   if (e && e.code === 'too-big') return 'ফাইলটি ৫ MB-এর বেশি বড়। ছোট ফাইল বাছুন বা ক্যামেরায় ছবি তুলুন।';
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';
@@ -24,7 +24,7 @@ const errText = (e) => {
 };
 
 // Optional lock (set in "আমার তথ্য"): the phone's fingerprint / face / PIN must open this page each time.
-export default function DocsScreen(props) {
+export default function DocsScreen(props: { navigation: Nav; route?: Route }) {
   const { navigation } = props;
   const [lock, setLock] = useState('check');           // check | locked | open
   const tryOpen = useCallback(async () => { if (await unlock()) setLock('open'); else setLock('locked'); }, []);
@@ -61,7 +61,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
   const load = useCallback(async () => {
     setLoadErr('');
     try { const r = await listDocs(); setRows(r.rows); setOffline(r.offline); if (!r.offline) scheduleDocReminders(r.rows); }
-    catch (e) { setRows((x) => x || []); setLoadErr(errText(e)); }
+    catch (e) { setRows((x: any) => x || []); setLoadErr(errText(e)); }
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => navigation?.addListener?.('blur', () => { if (!busy) { setStep('list'); setMsg(null); } }), [navigation, busy]);
@@ -73,7 +73,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
 
   const top = () => requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: true }));
 
-  const upload = async (file) => {
+  const upload = async (file: { uri: string; kind: 'image' | 'pdf' }) => {
     if (busy || !type) return;
     setPending(file); setBusy(true); setMsg(null);
     try {
@@ -99,13 +99,13 @@ function DocsInner({ navigation }: { navigation: Nav }) {
     } catch (e) { setMsg({ kind: 'bad', text: 'ফাইল খোলা যায়নি। আবার চেষ্টা করুন।' }); }
   };
 
-  const doDelete = async (row) => {
+  const doDelete = async (row: Row) => {
     setBusy(true); setMsg(null);
     try { await deleteDoc(row); setViewing(null); setMsg({ kind: 'ok', text: 'মুছে ফেলা হয়েছে।' }); await load(); }
     catch (e) { setMsg({ kind: 'bad', text: `মুছে ফেলা যায়নি। ${errText(e)}` }); }
     finally { setBusy(false); top(); }
   };
-  const askDelete = (row) => {
+  const askDelete = (row: Row) => {
     const title = `${typeOf(row.doc_type).label} মুছে ফেলবেন?`;
     if (Platform.OS === 'web') { if (global.confirm && global.confirm(title)) doDelete(row); return; }   // web preview (tests) only
     Alert.alert(title, 'এটা আর ফেরানো যাবে না।', [
@@ -114,7 +114,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
     ]);
   };
 
-  const grouped = DOC_TYPES.map((t) => ({ t, items: (rows || []).filter((r) => r.doc_type === t.id) })).filter((g) => g.items.length);
+  const grouped = DOC_TYPES.map((t) => ({ t, items: (rows || []).filter((r: any) => r.doc_type === t.id) })).filter((g) => g.items.length);
 
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
@@ -169,7 +169,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
           {grouped.map((g) => (
             <View key={g.t.id}>
               <Text style={st.group}>{g.t.icon} {g.t.label}</Text>
-              {g.items.map((r, i) => (
+              {g.items.map((r: any, i: any) => (
                 <React.Fragment key={r.id}>
                 <View style={st.row}>
                   <View style={{ flex: 1 }}>
@@ -183,7 +183,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
                     <Text style={[st.rowBtnT, { color: C.bad }]}>মুছুন</Text>
                   </Pressable>
                 </View>
-                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr, note) => { setRows((x) => x.map((y) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
+                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr: Row, note: string) => { setRows((x: any) => x.map((y: any) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
                 </React.Fragment>
               ))}
             </View>
@@ -193,7 +193,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
       ) : null}
 
       <Modal visible={cam} animationType="slide" onRequestClose={() => setCam(false)}>
-        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri) => { setCam(false); upload({ uri, kind: 'image' }); }} /></SafeAreaProvider>
+        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri: string) => { setCam(false); upload({ uri, kind: 'image' }); }} /></SafeAreaProvider>
       </Modal>
       <Modal visible={!!viewing} animationType="fade" onRequestClose={() => setViewing(null)}>
         <SafeAreaProvider>{viewing ? <Viewer row={viewing} onClose={() => setViewing(null)} onDelete={() => askDelete(viewing)} /> : null}</SafeAreaProvider>
@@ -203,13 +203,13 @@ function DocsInner({ navigation }: { navigation: Nav }) {
 }
 
 // Expiry date of a passport / visa, with a warning and phone reminders.
-function Expiry({ row, onSaved }) {
+function Expiry({ row, onSaved }: { row: Row; onSaved: (nr: Row, note: string) => void }) {
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState(ymdToInput(row.expires_on));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const left = row.expires_on ? daysUntil(row.expires_on) : null;
-  const save = async (clear) => {
+  const save = async (clear?: boolean) => {
     if (busy) return;
     const ymd = clear ? null : parseDate(val, 2000);
     if (!clear && !ymd) { setErr('তারিখ এভাবে লিখুন: ২০-০৫-২০৩০'); return; }
@@ -246,7 +246,7 @@ function Expiry({ row, onSaved }) {
   );
 }
 
-export function DocCamera({ onCancel, onUse }) {
+export function DocCamera({ onCancel, onUse }: { onCancel: () => void; onUse: (uri: string) => void }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
   const camRef = useRef<any>(null);
@@ -296,7 +296,7 @@ export function DocCamera({ onCancel, onUse }) {
   );
 }
 
-function Viewer({ row, onClose, onDelete }) {
+function Viewer({ row, onClose, onDelete }: { row: Row; onClose: () => void; onDelete: (row: Row) => void }) {
   const ins = useSafeAreaInsets();
   const [src, setSrc] = useState<any>(null);
   const [err, setErr] = useState('');

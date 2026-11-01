@@ -12,7 +12,7 @@ import { leaderContracts, sendContract, withdrawContract, cancelContract, comple
 import { shareContractPdf } from '../lib/contractPdf';
 import { contractMoney, type ContractMoney } from '../lib/payments';
 import { st, confirm, errText, fmtDay, fmtTaka } from './GroupScreen';
-import type { Nav, Row, Msg } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 type M = NonNullable<Msg>;
 type Act = (fn: () => Promise<unknown>, ok: (r: unknown) => Msg) => Promise<void>;

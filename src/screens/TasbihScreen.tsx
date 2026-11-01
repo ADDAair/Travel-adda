@@ -19,7 +19,7 @@ const PRESETS = [
   { id: 'durood', label: 'দরুদ', ar: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', pron: 'আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ', bn: 'হে আল্লাহ, মুহাম্মাদ (সা.)-এর ওপর রহমত বর্ষণ করুন', target: 100 },
   { id: 'free', label: 'নিজের মতো গোনা', ar: '', pron: 'যেকোনো জিকির', bn: 'যত খুশি গুনুন', target: 0 },
 ];
-const P = (id) => PRESETS.find((p) => p.id === id);
+const P = (id: string) => PRESETS.find((p) => p.id === id);
 
 export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const [sel, setSel] = useState('after');
@@ -27,7 +27,7 @@ export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   useEffect(() => {
     AsyncStorage.getItem(KEY).then((v) => { try { const o = JSON.parse(v || '{}'); if (o && typeof o === 'object') { setState(o.counts || {}); if (o.sel && P(o.sel)) setSel(o.sel); } } catch (e) { /* start fresh */ } }).catch(() => {});
   }, []);
-  const save = (counts, s = sel) => { setState(counts); AsyncStorage.setItem(KEY, JSON.stringify({ counts, sel: s })).catch(() => {}); };
+  const save = (counts: Record<string, any>, s: string = sel) => { setState(counts); AsyncStorage.setItem(KEY, JSON.stringify({ counts, sel: s })).catch(() => {}); };
 
   const preset = P(sel);
   const cur = state[sel] || { n: 0, step: 0 };
@@ -52,7 +52,7 @@ export default function TasbihScreen({ navigation }: { navigation: Nav }) {
     if (Platform.OS === 'web') { doIt(); return; }
     Alert.alert('গণনা শূন্য করবেন?', '', [{ text: 'না', style: 'cancel' }, { text: 'হ্যাঁ, শূন্য করুন', style: 'destructive', onPress: doIt }]);
   };
-  const choose = (id) => { setSel(id); save(state, id); };
+  const choose = (id: string) => { setSel(id); save(state, id); };
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>

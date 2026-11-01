@@ -10,7 +10,7 @@ import { inviteResultText, mySentInvites, cancelInvite } from '../lib/help';
 import { removeGroup, reopenGroup, removeGroupText } from '../lib/groups';
 import { myProfile, leaderGroups, createGroup, inviteByPhone, groupMembers, removeMember, createContract, notReady, telBd, groupAnnouncements, postAnnouncement, deleteAnnouncement } from '../lib/groups';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
-import type { Nav, Row, Msg } from './navTypes';
+import type { Msg, Nav, Row } from './navTypes';
 
 const STATUS: Record<string, string> = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
 const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
