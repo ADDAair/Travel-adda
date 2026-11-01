@@ -67,19 +67,19 @@ export function Block({ b, navigation }: { b: any; navigation: Nav }) {
   );
   if (b.type === 'notice') return <Notice kind={b.kind} title={b.title} text={b.text} />;
   if (b.type === 'source') return <Text style={st.src}>📚 সূত্র: {b.text}</Text>;
-  if (b.type === 'steps') return b.steps.map((s: any, k: any) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);
+  if (b.type === 'steps') return b.steps.map((s, k) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);
   if (b.type === 'phrases') return <Phrases items={b.items} />;
   if (b.type === 'checklist') return <Checklist storageKey={b.key} items={b.items} />;
   if (b.type === 'places') {
-    return b.groups.map((grp: any) => (
+    return b.groups.map((grp) => (
       <View key={grp.title}>
         <Text style={st.group}>{grp.title}</Text>
-        {grp.items.map((p: any) => (
+        {grp.items.map((p) => (
           <View key={p.name} style={st.card}>
             <Text style={st.placeN}>📍 {p.name}</Text>
             <Text style={st.p}>{p.what}</Text>
             {p.tip ? <Text style={st.tip}>💡 {p.tip}</Text> : null}
-            {(p.duas || []).map((id: any) => <DuaInline key={id} id={id} />)}
+            {(p.duas || []).map((id) => <DuaInline key={id} id={id} />)}
             {p.source ? <Text style={st.src}>📚 {p.source}</Text> : null}
           </View>
         ))}
@@ -115,7 +115,7 @@ function Phrases({ items }: { items: any[] }) {
   return (
     <>
       {msg ? <Notice kind="warn" title={msg} /> : null}
-      {items.map((x: any, i: any) => (
+      {items.map((x, i) => (
         <View key={x.bn} style={st.card}>
           <Text style={st.phBn}>{x.bn}</Text>
           <Text style={st.phAr} accessibilityLanguage="ar" selectable>{x.ar}</Text>
@@ -141,8 +141,8 @@ function Checklist({ storageKey, items }: { storageKey: string; items: any[] }) 
     { text: 'না, থাকুক', style: 'cancel' },
     { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => save([]) },
   ]);
-  const count = items.filter((c: any) => done.includes(c.id)).length;
-  const groups = [...new Set(items.map((x: any) => x.group))];
+  const count = items.filter((c) => done.includes(c.id)).length;
+  const groups = [...new Set(items.map((x) => x.group))];
   return (
     <>
       <Text style={st.p}>যা গুছিয়ে নিয়েছেন, তাতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।</Text>
@@ -150,7 +150,7 @@ function Checklist({ storageKey, items }: { storageKey: string; items: any[] }) 
       {groups.map((grp) => (
         <View key={grp}>
           <Text style={st.group}>{grp}</Text>
-          {items.filter((x: any) => x.group === grp).map((c: any) => {
+          {items.filter((x) => x.group === grp).map((c) => {
             const on = done.includes(c.id);
             return (
               <Pressable key={c.id} onPress={() => toggle(c.id)} style={[st.check, on && st.checkOn]}

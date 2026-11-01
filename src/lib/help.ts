@@ -22,7 +22,7 @@ export function roleLabel(role: string, mine = false): string {
 }
 
 // Waiting questions (last message from the haji, still open) first; inside each part newest first.
-export function sortInbox<T extends { status: string; last_from_haji?: boolean | null }>(rows: T[] | null | undefined): T[] {
+export function sortInbox<T extends { status: string; last_from_haji?: boolean | null; last_at?: string | null }>(rows: T[] | null | undefined): T[] {
   const rank = (r: T): number => (r.status === 'closed' ? 2 : r.last_from_haji ? 0 : 1);
   return [...(rows || [])].sort((a, b) => rank(a) - rank(b) || Date.parse(b.last_at) - Date.parse(a.last_at));
 }

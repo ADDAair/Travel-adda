@@ -21,7 +21,7 @@ export default function KhademHomeScreen({ navigation }: { navigation: Nav }) {
 
   const load = useCallback(async () => {
     try { setInvites(await myKhademInvites()); } catch (e) { setInvites([]); }   // before step 021: none
-    try { const g = await myKhademGroups(); setGroups(g); setState('ok'); if (g.length === 1) setOpen((o: any) => o || g[0].group_id); }
+    try { const g = await myKhademGroups(); setGroups(g); setState('ok'); if (g.length === 1) setOpen((o) => o || g[0].group_id); }
     catch (e) { setGroups([]); setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
@@ -57,7 +57,7 @@ export default function KhademHomeScreen({ navigation }: { navigation: Nav }) {
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই আসছে" text="খাদেমের সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' && groups && groups.length === 0 && !invites.length ? <Notice kind="info" title="আপনি এখন কোনো দলের খাদেম নন" text="কোনো লিডার আপনাকে তাঁর দলের খাদেম করলে নোটিফিকেশন পাবেন, তখন এখানে দলটি দেখাবে।" /> : null}
-      {(groups || []).map((g: any) => (
+      {(groups || []).map((g) => (
         <View key={g.group_id} style={st.card}>
           <Pressable onPress={() => setOpen(open === g.group_id ? null : g.group_id)} accessibilityRole="button" accessibilityState={{ expanded: open === g.group_id }} accessibilityLabel={`${g.group_name} দল। লিডার ${g.leader_name}`} style={{ minHeight: 48 }}>
             <Text style={st.gName}>{open === g.group_id ? '▾' : '▸'} {g.group_name}</Text>
@@ -70,7 +70,7 @@ export default function KhademHomeScreen({ navigation }: { navigation: Nav }) {
               <Text style={[st.h, { marginTop: S.md }]}>👥 দলের হাজী</Text>
               {members === null ? <ActivityIndicator color={C.primary} /> : null}
               {members && members.length === 0 ? <Text style={st.p}>এখনো কেউ দলে নেই।</Text> : null}
-              {(members || []).map((m: any) => (
+              {(members || []).map((m) => (
                 <View key={m.user_id} style={{ borderTopWidth: 1, borderColor: C.line, paddingVertical: S.sm }}>
                   <Text style={st.val}>🕋 {m.full_name}</Text>
                   <Text style={st.small}>আইডি: {m.haji_code}{m.status === 'invited' ? ' · আমন্ত্রণ পাঠানো হয়েছে' : ''}</Text>

@@ -25,24 +25,24 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
 
   const open = async (n: Row) => {
-    setRows((x: any) => x.map((y: any) => (y.id === n.id ? { ...y, is_read: true } : y)));
+    setRows((x) => x.map((y) => (y.id === n.id ? { ...y, is_read: true } : y)));
     markRead(n).catch(() => {});
     if (n.route) navigation.navigate(n.route);
   };
   const remove = (n: Row) => confirm('নোটিফিকেশনটি মুছে ফেলবেন?', '', 'হ্যাঁ, মুছুন', async () => {
-    try { await hideNotification(n); setRows((x: any) => x.filter((y: any) => y.id !== n.id)); }
+    try { await hideNotification(n); setRows((x) => x.filter((y) => y.id !== n.id)); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
   });
   const readAll = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
-    try { await markAllRead(); setRows((x: any) => x.map((y: any) => ({ ...y, is_read: true }))); }
+    try { await markAllRead(); setRows((x) => x.map((y) => ({ ...y, is_read: true }))); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
 
-  const fresh = (rows || []).filter((n: any) => !n.is_read);
-  const old = (rows || []).filter((n: any) => n.is_read);
+  const fresh = (rows || []).filter((n) => !n.is_read);
+  const old = (rows || []).filter((n) => n.is_read);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}>
       <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান"><Text style={st.backT}>‹ হোম</Text></Pressable>
@@ -62,9 +62,9 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
           </Pressable>
         </View>
       ) : null}
-      {fresh.map((x: any) => <Item key={`${x.source}${x.id}`} n={x} onOpen={open} onRemove={remove} />)}
+      {fresh.map((x) => <Item key={`${x.source}${x.id}`} n={x} onOpen={open} onRemove={remove} />)}
       {state === 'ok' && old.length ? <Text style={[n.head, { marginTop: S.md }]}>আগের</Text> : null}
-      {old.map((x: any) => <Item key={`${x.source}${x.id}`} n={x} onOpen={open} onRemove={remove} />)}
+      {old.map((x) => <Item key={`${x.source}${x.id}`} n={x} onOpen={open} onRemove={remove} />)}
     </ScrollView>
   );
 }

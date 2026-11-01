@@ -12,13 +12,16 @@ import { scheduleDocReminders } from '../lib/docReminders';
 import { lockWanted, unlock } from '../lib/applock';
 import { parseDate, daysUntil, ymdToInput } from '../lib/dates';
 import type { ScrollRef } from '../components/KbScroll';
-import type { Msg, Nav, Route, Row } from './navTypes';
+import type { Msg, Nav, Route } from './navTypes';
+import type { DocRow as Row } from '../lib/docs';
+type Picked = { uri: string; kind: 'image' | 'pdf' };
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 const fmtDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
-const errText = (e: any) => {
-  const m = String((e && e.message) || '').toLowerCase();
-  if (e && e.code === 'too-big') return 'ফাইলটি ৫ MB-এর বেশি বড়। ছোট ফাইল বাছুন বা ক্যামেরায় ছবি তুলুন।';
+const errText = (err: unknown) => {
+  const e = (err || {}) as { message?: string; code?: string };
+  const m = String(e.message || '').toLowerCase();
+  if (e.code === 'too-big') return 'ফাইলটি ৫ MB-এর বেশি বড়। ছোট ফাইল বাছুন বা ক্যামেরায় ছবি তুলুন।';
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';
   return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
 };
@@ -46,22 +49,22 @@ export default function DocsScreen(props: { navigation: Nav; route?: Route }) {
 }
 
 function DocsInner({ navigation }: { navigation: Nav }) {
-  const [rows, setRows] = useState<any>(null);          // null = loading
+  const [rows, setRows] = useState<Row[] | null>(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');
   const [step, setStep] = useState('list');        // list | type | source
-  const [type, setType] = useState<any>(null);
+  const [type, setType] = useState<string | null>(null);
   const [cam, setCam] = useState(false);
-  const [pending, setPending] = useState<any>(null);    // picked file kept for retry
+  const [pending, setPending] = useState<Picked | null>(null);    // picked file kept for retry
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);            // { kind, text }
-  const [viewing, setViewing] = useState<any>(null);    // row
+  const [viewing, setViewing] = useState<Row | null>(null);    // row
   const scrollRef = useRef<ScrollRef | null>(null);
 
   const load = useCallback(async () => {
     setLoadErr('');
     try { const r = await listDocs(); setRows(r.rows); setOffline(r.offline); if (!r.offline) scheduleDocReminders(r.rows); }
-    catch (e) { setRows((x: any) => x || []); setLoadErr(errText(e)); }
+    catch (e) { setRows((x) => x || []); setLoadErr(errText(e)); }
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => navigation?.addListener?.('blur', () => { if (!busy) { setStep('list'); setMsg(null); } }), [navigation, busy]);
@@ -115,7 +118,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
     ]);
   };
 
-  const grouped = DOC_TYPES.map((t) => ({ t, items: (rows || []).filter((r: any) => r.doc_type === t.id) })).filter((g) => g.items.length);
+  const grouped = DOC_TYPES.map((t) => ({ t, items: (rows || []).filter((r) => r.doc_type === t.id) })).filter((g) => g.items.length);
 
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
@@ -170,7 +173,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
           {grouped.map((g) => (
             <View key={g.t.id}>
               <Text style={st.group}>{g.t.icon} {g.t.label}</Text>
-              {g.items.map((r: any, i: any) => (
+              {g.items.map((r, i) => (
                 <React.Fragment key={r.id}>
                 <View style={st.row}>
                   <View style={{ flex: 1 }}>
@@ -184,7 +187,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
                     <Text style={[st.rowBtnT, { color: C.bad }]}>মুছুন</Text>
                   </Pressable>
                 </View>
-                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr: Row, note: string) => { setRows((x: any) => x.map((y: any) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
+                {['passport', 'visa'].includes(r.doc_type) && 'expires_on' in r ? <Expiry row={r} onSaved={(nr: Row, note: string) => { setRows((x) => (x || []).map((y) => (y.id === nr.id ? nr : y))); setMsg({ kind: 'ok', text: note }); }} /> : null}
                 </React.Fragment>
               ))}
             </View>
@@ -250,10 +253,10 @@ function Expiry({ row, onSaved }: { row: Row; onSaved: (nr: Row, note: string) =
 export function DocCamera({ onCancel, onUse }: { onCancel: () => void; onUse: (uri: string) => void }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
-  const camRef = useRef<any>(null);
+  const camRef = useRef<CameraView | null>(null);
   const [ready, setReady] = useState(false);
   const [taking, setTaking] = useState(false);
-  const [uri, setUri] = useState<any>(null);
+  const [uri, setUri] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const snap = async () => {
     if (!ready || taking || !camRef.current) return;
@@ -299,7 +302,7 @@ export function DocCamera({ onCancel, onUse }: { onCancel: () => void; onUse: (u
 
 function Viewer({ row, onClose, onDelete }: { row: Row; onClose: () => void; onDelete: () => void }) {
   const ins = useSafeAreaInsets();
-  const [src, setSrc] = useState<any>(null);
+  const [src, setSrc] = useState<{ uri: string; local: boolean } | null>(null);
   const [err, setErr] = useState('');
   const pdf = docIsPdf(row);
   useEffect(() => {

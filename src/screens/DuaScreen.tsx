@@ -122,7 +122,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
         </View>
       ) : null}
       {cat === 'fav' && !q.trim() && list.length === 0 ? <Notice kind="info" title="এখনো কোনো প্রিয় দোয়া নেই" text="যেকোনো দোয়া খুলে ওপরের ⭐ বাটন চাপুন, সেটা এখানে চলে আসবে।" /> : null}
-      {list.map((d: any, i: number) => (
+      {list.map((d, i) => (
         <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
           accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.when}`} accessibilityHint="দোয়াটি খুলবে">
           <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
@@ -167,7 +167,7 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; 
         setTtsMsg('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।');
         return;
       }
-      const text = dua.parts.map((p: any) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
+      const text = dua.parts.map((p) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
       setSpeaking(true);
       Speech.speak(text, {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
@@ -209,7 +209,7 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: any; onBack: () => void; 
         </Pressable>
       </View>
 
-      {dua.parts.map((p: any, i: any) => (
+      {dua.parts.map((p, i) => (
         <View key={i} style={st.card}>
           {p.label ? <Text style={st.partL}>{p.label}</Text> : null}
           <Text style={[st.ar, { fontSize: 28 * k, lineHeight: 28 * k * 1.9 }]} accessibilityLanguage="ar">{p.ar}</Text>

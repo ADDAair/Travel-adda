@@ -31,7 +31,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
     try {
       const g = (await myGroups()).filter((x) => x.status === 'active');
       setGroups(g);
-      setGid((cur: any) => (cur && g.some((x) => x.group_id === cur) ? cur : g[0] ? g[0].group_id : null));
+      setGid((cur) => (cur && g.some((x) => x.group_id === cur) ? cur : g[0] ? g[0].group_id : null));
       if (!g.length) setState('ok');
     } catch (e) { setGroups([]); setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
@@ -70,7 +70,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
     finally { setBusy(false); }
   };
 
-  const g = (groups || []).find((x: any) => x.group_id === gid);
+  const g = (groups || []).find((x) => x.group_id === gid);
   return (
     <ScrollView ref={scroller} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <Pressable onPress={() => navigation.navigate('Group')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার দল পাতায় ফিরে যান"><Text style={st.backT}>‹ আমার দল</Text></Pressable>
@@ -88,7 +88,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
           {groups.length > 1 ? (
             <View style={{ marginBottom: S.md }}>
               <Text style={st.lbl}>কোন দলের লিডারকে লিখবেন?</Text>
-              {groups.map((x: any) => (
+              {groups.map((x) => (
                 <Pressable key={x.group_id} onPress={() => { setGid(x.group_id); setMsg(null); }} style={[st.card, { paddingVertical: S.sm, marginBottom: S.xs, borderWidth: x.group_id === gid ? 2 : 1, borderColor: x.group_id === gid ? C.primary : C.line }]}
                   accessibilityRole="button" accessibilityState={{ selected: x.group_id === gid }} accessibilityLabel={`${x.group_name} দল`}>
                   <Text style={st.val}>{x.group_id === gid ? '✅ ' : ''}{x.group_name}</Text>

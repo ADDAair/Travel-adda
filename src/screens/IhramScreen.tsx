@@ -204,7 +204,7 @@ function Talbiyah() {
         return;
       }
       setSpeaking(true);
-      Speech.speak(talbiyah.parts.map((p: any) => p.bn).join(' '), {
+      Speech.speak(talbiyah.parts.map((p) => p.bn).join(' '), {
         language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
         onDone: () => { if (alive.current) setSpeaking(false); },
         onStopped: () => { if (alive.current) setSpeaking(false); },
@@ -228,11 +228,11 @@ function Talbiyah() {
     <>
       <Text style={st.h3}>১. নিয়ত</Text>
       <Text style={st.p}>{niyyah.when}</Text>
-      {niyyah.parts.map((p: any) => <Block key={p.label} label={p.label} p={p} />)}
+      {niyyah.parts.map((p) => <Block key={p.label} label={p.label} p={p} />)}
       <Text style={st.source}>📚 সূত্র: {niyyah.source}</Text>
       <Text style={[st.h3, { marginTop: S.lg }]}>২. তালবিয়াহ</Text>
       <Text style={st.p}>{talbiyah.when}</Text>
-      {talbiyah.parts.map((p: any, k: number) => <Block key={k} p={p} />)}
+      {talbiyah.parts.map((p, k) => <Block key={k} p={p} />)}
       <Button title={speaking ? 'শোনা বন্ধ করুন' : 'তালবিয়াহর বাংলা অর্থ শুনুন'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak}
         a11yHint="ফোন বাংলায় তালবিয়াহর অর্থ পড়ে শোনাবে" />
       {msg ? <Notice kind="warn" title={msg} /> : null}

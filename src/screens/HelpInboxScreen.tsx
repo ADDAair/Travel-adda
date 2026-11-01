@@ -32,7 +32,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
       try { kh = (await myKhademGroups()).map((g) => ({ id: g.group_id, name: g.group_name, role: 'khadem', waiting: g.waiting })); } catch (e) { if (!notReady(e)) throw e; }
       const all = [...led, ...kh.filter((k) => !led.some((l) => l.id === k.id))];
       setGroups(all);
-      setGid((cur: any) => (cur && all.some((x) => x.id === cur) ? cur : all[0] ? all[0].id : null));
+      setGid((cur) => (cur && all.some((x) => x.id === cur) ? cur : all[0] ? all[0].id : null));
       if (!all.length) setState('ok');
     } catch (e) { setGroups([]); setState(notReady(e) ? 'soon' : 'err'); }
   }, [me]);
@@ -76,7 +76,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
     finally { setBusy(false); }
   };
 
-  const g = (groups || []).find((x: any) => x.id === gid);
+  const g = (groups || []).find((x) => x.id === gid);
   if (thread) {
     return (
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
@@ -92,7 +92,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
     );
   }
 
-  const waiting = (rows || []).filter((r: any) => r.status === 'open' && r.last_from_haji).length;
+  const waiting = (rows || []).filter((r) => r.status === 'open' && r.last_from_haji).length;
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <Pressable onPress={() => navigation.navigate(me && me.role === 'leader' ? 'Leader' : 'KhademHome')} style={st.back} accessibilityRole="button" accessibilityLabel="আগের পাতায় ফিরে যান"><Text style={st.backT}>‹ {me && me.role === 'leader' ? 'লিডার প্যানেল' : 'খাদেমের পাতা'}</Text></Pressable>
@@ -103,7 +103,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
       {state === 'ok' && groups && groups.length === 0 ? <Notice kind="info" title="কোনো দল নেই" text="আপনি কোনো দলের লিডার বা খাদেম হলে এখানে হাজীদের প্রশ্ন দেখবেন।" /> : null}
       {state === 'ok' && g ? (
         <>
-          {groups.length > 1 ? groups.map((x: any) => (
+          {groups.length > 1 ? groups.map((x) => (
             <Pressable key={x.id} onPress={() => setGid(x.id)} style={[st.card, { paddingVertical: S.sm, marginBottom: S.xs, borderWidth: x.id === gid ? 2 : 1, borderColor: x.id === gid ? C.primary : C.line }]}
               accessibilityRole="button" accessibilityState={{ selected: x.id === gid }} accessibilityLabel={`${x.name} দল, আপনি ${x.role === 'leader' ? 'লিডার' : 'খাদেম'}`}>
               <Text style={st.val}>{x.id === gid ? '✅ ' : ''}{x.name}</Text>
@@ -113,7 +113,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
           <Notice kind={waiting ? 'warn' : 'ok'} title={waiting ? `⏳ ${toBn(waiting)}টি প্রশ্নের উত্তর বাকি` : 'সব প্রশ্নের উত্তর দেওয়া হয়েছে'} />
           {rows === null ? <ActivityIndicator color={C.primary} /> : null}
           {rows && rows.length === 0 ? <Text style={st.p}>এখনো কোনো হাজী প্রশ্ন করেননি।</Text> : null}
-          {(rows || []).map((r: any) => (
+          {(rows || []).map((r) => (
             <Pressable key={r.thread_id} onPress={() => { setThread(r); setMsgs([]); setMsg(null); }} style={[st.card, r.status === 'open' && r.last_from_haji ? { borderWidth: 2, borderColor: C.warn } : null]}
               accessibilityRole="button" accessibilityLabel={`${r.haji_name}। ${r.status === 'closed' ? 'সমাধান হয়েছে' : r.last_from_haji ? 'উত্তর বাকি' : 'উত্তর দেওয়া হয়েছে'}। শেষ বার্তা: ${r.last_body}। খুলতে চাপুন`}>
               <Text style={st.val}>🕋 {r.haji_name}</Text>

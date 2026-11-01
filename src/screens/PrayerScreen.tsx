@@ -32,7 +32,7 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
     return () => sub.remove();
   }, [picking, loc]);
 
-  const choose = (l: any) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
+  const choose = (l) => { setLoc(l); saveLocation(l).then(() => refreshReminders(l)); setPicking(false); };
 
   if (loc === undefined) return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /></View>;
 
@@ -62,7 +62,7 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onChoose: (l: any) => void; onCancel: () => void }) {
+function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onChoose: (l) => void; onCancel: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const useGps = async () => {
@@ -263,7 +263,7 @@ function Qibla({ loc }: { loc: any }) {
   useEffect(() => {
     let stop: (() => void) | null = null; let alive = true;
     // raw compass readings jump by several degrees: show a smoothed heading (the short way round 0°)
-    watchHeading((v) => { if (alive) { setH((p: any) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
+    watchHeading((v) => { if (alive) { setH((p) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
       if (!alive) { if (s) s(); return; }
       stop = s;
       if (!s) setState('none');

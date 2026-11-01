@@ -125,7 +125,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {   // b
   if (kbOpen) return null;                   // no tab bar while typing: more room for the form
   return (
     <View style={[s.bar, { paddingBottom: Math.max(ins.bottom, 8) }]} accessibilityRole="tablist">
-      {state.routes.map((r: any, i: any) => {
+      {state.routes.map((r, i) => {
         if (!ICON[r.name]) return null;          // screens opened from inside the app (e.g. Ihram guide) have no tab button
         const on = state.index === i;
         const label = (T.tabs as Record<string, string>)[r.name];
@@ -163,7 +163,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {   // b
   );
 }
 
-const soon = (title: string, icon: string, what: string) => (props: any) => <Soon {...props} title={title} icon={icon} what={what} />;
+const soon = (title: string, icon: string, what: string) => (props) => <Soon {...props} title={title} icon={icon} what={what} />;
 
 function Main() {
   return (

@@ -32,9 +32,9 @@ export async function myProfile(): Promise<Profile> {
   const r = await supabase.from('profiles').select('full_name,haji_code,phone,role,status,phone_verified').single();
   if (!r.error) return { ...r.data, verified: r.data.phone_verified };
   if (r.error && (r.error.code === '42703' || /phone_verified/.test(r.error.message || ''))) {   // step 006 not run yet
-    return check(await supabase.from('profiles').select('full_name,haji_code,phone,role,status').single());
+    return check(await supabase.from('profiles').select('full_name,haji_code,phone,role,status').single()) as Profile;
   }
-  return check(r);
+  return check(r) as Profile;
 }
 
 // ---------- Leader application ----------
@@ -168,13 +168,13 @@ export async function leaderGroups(): Promise<LeaderGroup[]> {
   return check(await supabase.from('groups').select('id,name,season,join_code,active,created_at').order('created_at', { ascending: false })) || [];
 }
 export async function createGroup(name: string, season: string): Promise<LeaderGroup> {
-  return check(await supabase.from('groups').insert({ name: name.trim(), season: season.trim() || null }).select('id,name,season,join_code,active,created_at').single());
+  return check(await supabase.from('groups').insert({ name: name.trim(), season: season.trim() || null }).select('id,name,season,join_code,active,created_at').single()) as LeaderGroup;
 }
 export const inviteByPhone = async (groupId: string, phone: string) => check(await supabase.rpc('invite_by_phone', { p_group: groupId, p_phone: normalizePhone(phone) }));
 export const groupMembers = async (groupId: string): Promise<RpcRow<'group_members_for_leader'>[]> => check(await supabase.rpc('group_members_for_leader', { p_group: groupId })) || [];
 export const removeMember = async (groupId: string, userId: string) => check(await supabase.rpc('remove_member', { p_group: groupId, p_user: userId }));
 export async function createContract(c: TableInsert<'contracts'>): Promise<TableRow<'contracts'>> {
-  return check(await supabase.from('contracts').insert(c).select('*').single());
+  return check(await supabase.from('contracts').insert(c).select('*').single()) as TableRow<'contracts'>;
 }
 export async function acceptancesFor(contractIds: string[]): Promise<Pick<TableRow<'contract_acceptances'>, 'contract_id' | 'user_id' | 'accepted_at'>[]> {
   if (!contractIds.length) return [];

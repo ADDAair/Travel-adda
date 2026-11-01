@@ -40,12 +40,12 @@ function PendingLeader({ navigation }: { navigation: Nav }) {
 }
 
 // A row of choice pills (one may be chosen, tap again to clear). Words, not colour, say what is chosen.
-function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v: any) => void }) {
+function Pills({ label, options, value, onChange }: { label?: string; options: any[]; value: any; onChange: (v) => void }) {
   return (
     <View style={{ marginBottom: S.sm }}>
       <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {options.map((o: any) => {
+        {options.map((o) => {
           const on = value === o.id;
           return (
             <Pressable key={String(o.id)} onPress={() => onChange(on ? null : o.id)} accessibilityRole="button" accessibilityState={{ selected: on }}
@@ -86,7 +86,7 @@ function MonthDropdown({ options, value, onChange }: { options: { id: string; la
       {open ? (
         <View style={{ borderWidth: 2, borderTopWidth: 0, borderColor: C.primary, borderBottomLeftRadius: R.md, borderBottomRightRadius: R.md, overflow: 'hidden' }}>
           <Item id={null} label="সব মাস একসাথে" />
-          {options.map((o: any) => <Item key={o.id} id={o.id} label={o.label} />)}
+          {options.map((o) => <Item key={o.id} id={o.id} label={o.label} />)}
           <Text style={[st.small, { padding: S.sm }]}>বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।</Text>
         </View>
       ) : null}
@@ -157,7 +157,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const months = monthOptions(rows || []);
 
   // ---- one package on its own page ----
-  const open = openId && (rows || []).find((o: any) => o.id === openId);
+  const open = openId && (rows || []).find((o) => o.id === openId);
   if (open) {
     const r = mine[open.id];
     const req = r && r.status === 'new';
