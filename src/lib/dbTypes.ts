@@ -68,6 +68,7 @@ export interface Rpc {
   admin_spend_fund: { args: { p_app: string | null, p_amount: number | null, p_purpose: string | null, p_ref: string | null }; returns: string };
   admin_stats: { args: {  }; returns: Json };
   admin_terms_counts: { args: {  }; returns: { key: string; agreed: number }[] };
+  admin_user_counts: { args: {  }; returns: Json };
   admin_user_detail: { args: { p_user: string | null }; returns: Json };
   admin_view_help_chat: { args: { p_consent: string | null }; returns: { group_name: string; sender_role: string; sender_name: string; body: string; created_at: string }[] };
   admin_withdraw_broadcast: { args: { p_id: string | null }; returns: string };
@@ -346,6 +347,7 @@ export type Database = {
       admin_spend_fund: { Args: { p_app: string | null, p_amount: number | null, p_purpose: string | null, p_ref: string | null }; Returns: string };
       admin_stats: { Args: {  }; Returns: Json };
       admin_terms_counts: { Args: {  }; Returns: { key: string; agreed: number }[] };
+      admin_user_counts: { Args: {  }; Returns: Json };
       admin_user_detail: { Args: { p_user: string | null }; Returns: Json };
       admin_view_help_chat: { Args: { p_consent: string | null }; Returns: { group_name: string; sender_role: string; sender_name: string; body: string; created_at: string }[] };
       admin_withdraw_broadcast: { Args: { p_id: string | null }; Returns: string };

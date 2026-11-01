@@ -8,7 +8,7 @@ import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { supabase } from '../lib/supabase';
 import { adminApplications, reviewApplication, leaderDocUrl, notReady, telBd } from '../lib/groups';
-import { adminCounts, countBadge, myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, listStaff, setStaff, setText, termsCounts, stats, exportCsv } from '../lib/admin';
+import { adminCounts, countBadge, myPerms, PERMS, listComplaints, decideComplaint, evidenceUrl, listReports, handleReport, referralCancels, decideReferralCancel, findUsers, setUserStatus, userCounts, type UserCounts, listStaff, setStaff, setText, termsCounts, stats, exportCsv } from '../lib/admin';
 import { getTerms } from '../lib/market';
 import { signedAvatarUrl } from '../lib/avatar';
 import { Image } from 'react-native';
@@ -532,6 +532,31 @@ function ReportsTab({ canUsers }: { canUsers: boolean }): JSX.Element {
   );
 }
 
+// Short count at the top of ব্যবহারকারী: how many hajis registered, how many group leaders (031). Numbers only.
+const bnNum = (n: number): string => toBn(n.toLocaleString('en-IN'));
+function UserCountsCard(): JSX.Element | null {
+  const [c, setC] = useState<UserCounts | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { userCounts().then(setC).catch(() => setFailed(true)); }, []);
+  if (failed) return <Text style={st.small}>মোট সংখ্যা আনা যায়নি। পাতাটি আবার খুলুন।</Text>;
+  if (!c) return null;          // loading, or database step 031 not run yet
+  const label = `অ্যাপে মোট ${bnNum(c.hajis)} জন হাজী নিবন্ধন করেছেন, গ্রুপ লিডার ${bnNum(c.leaders)} জন`
+    + (c.leadersPending ? `, লিডার আবেদন অপেক্ষায় ${bnNum(c.leadersPending)}টি` : '');
+  return (
+    <View style={[st.card, { flexDirection: 'row', flexWrap: 'wrap', gap: S.md }]} accessible accessibilityLabel={label}>
+      <View style={{ flex: 1, minWidth: 120 }}>
+        <Text style={st.small}>🕋 নিবন্ধিত হাজী</Text>
+        <Text style={st.h}>{bnNum(c.hajis)} জন</Text>
+      </View>
+      <View style={{ flex: 1, minWidth: 120 }}>
+        <Text style={st.small}>🧭 গ্রুপ লিডার</Text>
+        <Text style={st.h}>{bnNum(c.leaders)} জন</Text>
+        {c.leadersPending ? <Text style={st.small}>⏳ আবেদন অপেক্ষায়: {bnNum(c.leadersPending)}টি</Text> : null}
+      </View>
+    </View>
+  );
+}
+
 function UsersTab(): JSX.Element {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Res<typeof findUsers> | null>(null);
@@ -559,6 +584,7 @@ function UsersTab(): JSX.Element {
   if (detail) return <UserPage id={detail} onBack={() => setDetail(null)} />;
   return (
     <>
+      <UserCountsCard />
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       <Field label="নাম, আইডি বা মোবাইল নম্বর" hint="যেমন: TL-00012 বা 01712" value={q} onChangeText={setQ} />
       <Button title="খুঁজুন" icon="🔎" onPress={search} loading={busy} />

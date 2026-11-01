@@ -5,7 +5,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
 import { toBn } from './phone';
-import { rpc, fail, rows } from './rpc';
+import { rpc, call, fail, rows } from './rpc';
+import { notReady } from './groups';
 
 import type { ContractDetail, UserDetail } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
@@ -88,4 +89,18 @@ export async function notifySegment(kind: string, value: string, title: unknown,
   const r = String(await rpc('admin_notify_segment', { p_kind: kind, p_value: value, p_title: t, p_body: q(body) }));
   if (r.startsWith('ok:')) return Number(r.slice(3)) || 0;
   throw fail(r);
+}
+
+// ---------- ব্যবহারকারী: how many hajis registered, how many group leaders (supabase/031_user_counts.sql) ----------
+export type UserCounts = { hajis: number; leaders: number; leadersPending: number };
+export async function userCounts(): Promise<UserCounts | null> {
+  try {
+    const d = await call('admin_user_counts');
+    const o = (d && typeof d === 'object' && !Array.isArray(d) ? d : {}) as Record<string, unknown>;
+    const n = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+    return { hajis: n(o.hajis), leaders: n(o.leaders), leadersPending: n(o.leaders_pending) };
+  } catch (e) {
+    if (notReady(e)) return null;    // step 031 not run yet: the card is simply not shown
+    throw e;
+  }
 }
