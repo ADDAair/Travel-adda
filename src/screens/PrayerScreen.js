@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking, ActivityIndicator, Vibration, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, ActivityIndicator, Vibration, BackHandler, Platform } from 'react-native';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
 import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders, getAlarms, setAlarm } from '../lib/reminders';
 import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading } from '../lib/location';
+import { smoothHeading, qiblaTurn, compassWeak } from '../lib/qibla';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
 import { SALAH } from '../content/salah';
 
@@ -260,7 +261,8 @@ function Qibla({ loc }) {
 
   useEffect(() => {
     let stop = null; let alive = true;
-    watchHeading((v) => { if (alive) { setH(v); setState('on'); } }).then((s) => {
+    // raw compass readings jump by several degrees: show a smoothed heading (the short way round 0°)
+    watchHeading((v) => { if (alive) { setH((p) => ({ heading: smoothHeading(p ? p.heading : null, v.heading), accuracy: v.accuracy })); setState('on'); } }).then((s) => {
       if (!alive) { if (s) s(); return; }
       stop = s;
       if (!s) setState('none');
@@ -269,8 +271,8 @@ function Qibla({ loc }) {
     return () => { alive = false; clearTimeout(t); if (stop) stop(); };
   }, []);
 
-  const diff = h ? ((q - h.heading + 540) % 360) - 180 : null;   // -180..180, + means turn right
-  const aligned = diff !== null && Math.abs(diff) <= 5;
+  const turn = h ? qiblaTurn(q, h.heading, wasAligned.current) : null;   // shortest way; "facing" on at 5°, off after 9°
+  const aligned = !!turn && turn.aligned;
   useEffect(() => {
     if (aligned && !wasAligned.current) Vibration.vibrate(80);
     wasAligned.current = aligned;
@@ -288,7 +290,7 @@ function Qibla({ loc }) {
       {state === 'on' && h ? (
         <>
           <View style={st.dialWrap} accessible accessibilityLiveRegion="polite"
-            accessibilityLabel={aligned ? 'আপনি এখন কিবলামুখী' : `${diff > 0 ? 'ডান' : 'বাঁ'} দিকে ${Math.round(Math.abs(diff))} ডিগ্রি ঘুরুন`}>
+            accessibilityLabel={aligned ? 'আপনি এখন কিবলামুখী' : `${turn.side === 'right' ? 'ডান' : 'বাঁ'} দিকে ${turn.deg} ডিগ্রি ঘুরুন`}>
             <Text style={st.pointer} importantForAccessibility="no">▲</Text>
             <View style={[st.dial, aligned && st.dialOk, { transform: [{ rotate: `${-h.heading}deg` }] }]}>
               {[['উ', 0], ['পূ', 90], ['দ', 180], ['প', 270]].map(([l, a]) => (
@@ -303,8 +305,8 @@ function Qibla({ loc }) {
             </View>
           </View>
           {aligned ? <Notice kind="ok" title="আপনি এখন কিবলামুখী" text="ফোনের ওপরের দিক যেদিকে, সেদিকে মুখ করে দাঁড়ান।" />
-            : <Text style={st.turn}>{diff > 0 ? '↻ ডান দিকে' : '↺ বাঁ দিকে'} আরও {toBn(Math.round(Math.abs(diff)))}° ঘুরুন</Text>}
-          {h.accuracy != null && h.accuracy < 2 ? <Notice kind="warn" title="কম্পাস ঠিকমতো কাজ করছে না" text="ফোনটা বাতাসে ইংরেজি 8-এর মতো করে কয়েকবার ঘুরান, তারপর আবার দেখুন।" /> : null}
+            : <Text style={st.turn}>{turn.side === 'right' ? '↻ ডান দিকে' : '↺ বাঁ দিকে'} আরও {toBn(turn.deg)}° ঘুরুন</Text>}
+          {compassWeak(h.accuracy, Platform.OS) ? <Notice kind="warn" title="কম্পাস ঠিকমতো কাজ করছে না" text="ফোনটা বাতাসে ইংরেজি 8-এর মতো করে কয়েকবার ঘুরান, তারপর আবার দেখুন।" /> : null}
           <Text style={st.small}>ফোনটা টেবিলের মতো সমান করে ধরুন। লোহা, গাড়ি বা চুম্বক থেকে দূরে থাকুন। 🕋 চিহ্ন ওপরের ▲ বরাবর এলে আপনি কিবলামুখী।</Text>
         </>
       ) : state === 'start' ? (
