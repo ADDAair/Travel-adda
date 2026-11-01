@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { C, F, S, R } from '../theme';
 import { Field } from './ui';
@@ -7,9 +7,10 @@ import { upazilasOf } from '../lib/upazilas';
 
 // A leader's WORK AREA (not the office address): district (list) > upazila (list of that district) > union (typed).
 // value = { district, upazila, union }; onChange gets the whole new value. Changing the district clears the upazila.
-export default function WorkAreaFields({ value, onChange, errors = {} }) {
-  const v = value || {};
-  const set = (k) => (x) => onChange({ ...v, [k]: x, ...(k === 'district' && x !== v.district ? { upazila: '' } : null) });
+export type Area = { district?: string; upazila?: string; union?: string };
+export default function WorkAreaFields({ value, onChange, errors = {} }: { value: Area | null | undefined; onChange: (a: Area) => void; errors?: Record<string, string | undefined> }): JSX.Element {
+  const v: Area = value || {};
+  const set = (k: keyof Area) => (x: string) => onChange({ ...v, [k]: x, ...(k === 'district' && x !== v.district ? { upazila: '' } : null) });
   return (
     <View style={w.box}>
       <Text style={w.h} accessibilityRole="header">📍 কাজের এলাকা</Text>
@@ -20,7 +21,7 @@ export default function WorkAreaFields({ value, onChange, errors = {} }) {
         value={v.upazila}
         onChange={set('upazila')}
         error={errors.upazila}
-        options={upazilasOf(v.district)}
+        options={upazilasOf(v.district || '')}
         placeholder="উপজেলা বাছুন"
         searchHint="যেমন: কোম্পানীগঞ্জ"
         noun="উপজেলা"
@@ -41,7 +42,7 @@ export default function WorkAreaFields({ value, onChange, errors = {} }) {
 }
 
 // "চরহাজারী, কোম্পানীগঞ্জ, নোয়াখালী" (whatever is filled in), for lists and cards.
-export const areaText = (x) => (x ? [x.union_name, x.upazila, x.district].map((s) => (s || '').trim()).filter(Boolean).join(', ') : '');
+export const areaText = (x: { union_name?: string | null; upazila?: string | null; district?: string | null } | null | undefined): string => (x ? [x.union_name, x.upazila, x.district].map((s) => (s || '').trim()).filter(Boolean).join(', ') : '');
 
 const w = StyleSheet.create({
   box: { backgroundColor: C.card, borderRadius: R.lg, borderWidth: 1, borderColor: C.line, padding: S.md, marginBottom: S.md },

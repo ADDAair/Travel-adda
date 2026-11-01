@@ -1,41 +1,43 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, type JSX, type ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, Alert, ActivityIndicator, BackHandler, Platform } from 'react-native';
 import ScrollView from '../components/KbScroll';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, notReady, telBd, groupAnnouncements } from '../lib/groups';
+import type { Nav, Row, Msg } from './navTypes';
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-export const fmtDay = (iso) => { if (!iso) return ''; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
-export const fmtWhen = (iso) => {
+export const fmtDay = (iso: string | number | Date | null | undefined): string => { if (!iso) return ''; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : `${toBn(d.getDate())} ${MONTHS[d.getMonth()]} ${toBn(d.getFullYear())}`; };
+export const fmtWhen = (iso: string | number | Date | null | undefined): string => {
+  if (iso == null) return '';
   const d = new Date(iso); if (Number.isNaN(d.getTime())) return '';
   const h = d.getHours(); const part = h < 4 ? 'রাত' : h < 6 ? 'ভোর' : h < 12 ? 'সকাল' : h < 15 ? 'দুপুর' : h < 18 ? 'বিকেল' : h < 20 ? 'সন্ধ্যা' : 'রাত';
   return `${fmtDay(iso)}, ${part} ${toBn(`${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`)}`;
 };
-export const fmtTaka = (n) => `${toBn(Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }))} টাকা`;
-export const errText = (e) => {
-  const m = String((e && e.message) || '').toLowerCase();
+export const fmtTaka = (n: unknown): string => `${toBn(Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }))} টাকা`;
+export const errText = (e: unknown): string => {
+  const m = String((e && (e as { message?: string }).message) || '').toLowerCase();
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';
   return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
 };
-export const confirm = (title, text, yes, onYes) => {
-  if (Platform.OS === 'web') { if (global.confirm && global.confirm(title)) onYes(); return; }   // web preview (tests) only
+export const confirm = (title: string, text: string, yes: string, onYes: () => void): void => {
+  const g = globalThis as unknown as { confirm?: (t: string) => boolean };
+  if (Platform.OS === 'web') { if (g.confirm && g.confirm(title)) onYes(); return; }   // web preview (tests) only
   Alert.alert(title, text, [{ text: 'না', style: 'cancel' }, { text: yes, style: 'destructive', onPress: onYes }]);
 };
-const call = (n) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
+const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
 
 // Haji side: my group(s), the leader, invitations, joining with a code, and the package terms to agree to.
-export default function GroupScreen({ navigation }) {
-  const [me, setMe] = useState(null);
-  const [rows, setRows] = useState(null);
-  const [app, setApp] = useState(null);
-  const [state, setState] = useState('load');      // load | ok | soon | err
+export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.Element {
+  const [me, setMe] = useState<Row | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [open, setOpen] = useState(null);           // group shown with its terms
-  const [ann, setAnn] = useState(null);             // { rows, offline } leader announcements
+  const [msg, setMsg] = useState<Msg>(null);
+  const [open, setOpen] = useState<Row | null>(null);           // group shown with its terms
+  const [ann, setAnn] = useState<{ rows: Row[]; offline: boolean } | null>(null);             // { rows, offline } leader announcements
 
   const load = useCallback(async () => {
     try {
@@ -53,7 +55,7 @@ export default function GroupScreen({ navigation }) {
     return () => sub.remove();
   }, [open]);
 
-  const run = async (fn, okText) => {
+  const run = async (fn: () => Promise<unknown>, okText?: (r: unknown) => string | Msg) => {
     if (busy) return;
     setBusy(true); setMsg(null);
     try { const r = await fn(); if (okText) { const t = okText(r); setMsg(typeof t === 'string' ? { kind: 'ok', text: t } : t); } await load(); }
@@ -124,7 +126,7 @@ export default function GroupScreen({ navigation }) {
 
           <View style={st.card}>
             <Text style={st.h}>🔑 কোড দিয়ে দলে যোগ দিন</Text>
-            <Field label="লিডারের দেওয়া কোড" hint="যেমন: AB12CD34" value={code} onChangeText={(v) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
+            <Field label="লিডারের দেওয়া কোড" hint="যেমন: AB12CD34" value={code} onChangeText={(v: string) => setCode(v.toUpperCase())} maxLength={12} autoCapitalize="characters" autoCorrect={false} />
             <Text style={st.small}>🔒 দলে যোগ দিলে লিডার আপনার নাম, আইডি ও ছবি দেখতে পাবেন। চুক্তি চালু হলে মোবাইল নম্বরও দেখবেন।</Text>
             <Button title="দলে যোগ দিন" icon="➕" onPress={join} loading={busy} />
           </View>
@@ -135,7 +137,7 @@ export default function GroupScreen({ navigation }) {
   );
 }
 
-function Announcements({ rows, offline }) {
+function Announcements({ rows, offline }: { rows: Row[] | null; offline?: boolean | null }): JSX.Element | null {
   const [all, setAll] = useState(false);
   if (!rows || rows.length === 0) return null;
   const list = all ? rows : rows.slice(0, 3);
@@ -158,9 +160,9 @@ function Announcements({ rows, offline }) {
   );
 }
 
-function GroupTerms({ group, onBack }) {
-  const [rows, setRows] = useState(null);
-  const [acc, setAcc] = useState({});
+function GroupTerms({ group, onBack }: { group: Row; onBack: () => void }): JSX.Element {
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [acc, setAcc] = useState<Record<string, string>>({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
@@ -169,7 +171,7 @@ function GroupTerms({ group, onBack }) {
     catch (e) { setErr(errText(e)); setRows((x) => x || []); }
   }, [group]);
   useEffect(() => { load(); }, [load]);
-  const agree = (c) => confirm('এই শর্তে সম্মতি দেবেন?', 'সম্মতি দেওয়ার পর আর ফেরানো যাবে না। আগে পুরোটা পড়ে নিন।', 'হ্যাঁ, আমি সম্মত', async () => {
+  const agree = (c: Row) => confirm('এই শর্তে সম্মতি দেবেন?', 'সম্মতি দেওয়ার পর আর ফেরানো যাবে না। আগে পুরোটা পড়ে নিন।', 'হ্যাঁ, আমি সম্মত', async () => {
     setBusy(true); setErr('');
     try { await acceptContract(c.id); await load(); } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   });
@@ -187,17 +189,17 @@ function GroupTerms({ group, onBack }) {
   );
 }
 
-export function ContractCard({ c, acceptedAt, onAgree, busy, footer }) {
-  const Row = ({ l, v }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p}>{v}</Text></View> : null);
+export function ContractCard({ c, acceptedAt, onAgree, busy, footer }: { c: Row; acceptedAt?: string | null; onAgree?: () => void; busy?: boolean; footer?: ReactNode }): JSX.Element {
+  const Line = ({ l, v }: { l: string; v?: string | null }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p}>{v}</Text></View> : null);
   return (
     <View style={st.card}>
       <Text style={st.gName}>{c.title}</Text>
       <Text style={st.small}>লিখেছেন লিডার, {fmtDay(c.created_at)}</Text>
-      <Row l="মোট দাম" v={fmtTaka(c.price_bdt)} />
-      <Row l="যা অন্তর্ভুক্ত" v={c.includes} />
-      <Row l="যা অন্তর্ভুক্ত নয়" v={c.excludes} />
-      <Row l="যাত্রার সময়" v={c.travel_from ? `${fmtDay(c.travel_from)}${c.travel_to ? ` থেকে ${fmtDay(c.travel_to)}` : ''}` : ''} />
-      <Row l="বাতিল ও টাকা ফেরতের নিয়ম" v={c.refund_policy} />
+      <Line l="মোট দাম" v={fmtTaka(c.price_bdt)} />
+      <Line l="যা অন্তর্ভুক্ত" v={c.includes} />
+      <Line l="যা অন্তর্ভুক্ত নয়" v={c.excludes} />
+      <Line l="যাত্রার সময়" v={c.travel_from ? `${fmtDay(c.travel_from)}${c.travel_to ? ` থেকে ${fmtDay(c.travel_to)}` : ''}` : ''} />
+      <Line l="বাতিল ও টাকা ফেরতের নিয়ম" v={c.refund_policy} />
       {onAgree ? (acceptedAt
         ? <Notice kind="ok" title={`আপনি সম্মতি দিয়েছেন: ${fmtDay(acceptedAt)}`} />
         : <Button title="আমি পড়েছি ও সম্মত" icon="✍️" onPress={onAgree} loading={busy} style={{ marginTop: S.sm }} />) : null}

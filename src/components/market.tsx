@@ -1,38 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice } from './ui';
 import { toBn } from '../lib/phone';
 import { CONTRACT_STATUS, REPORT_REASONS, isBlocked, block, unblock, report } from '../lib/market';
 import { st, fmtDay, fmtTaka, confirm, errText } from '../screens/GroupScreen';
+import type { Row, Msg } from '../screens/navTypes';
 
 // Full contract text, the same for haji and leader.
-export function ContractDetails({ c, who = 'haji' }) {
+export function ContractDetails({ c, who = 'haji' }: { c: Row; who?: 'haji' | 'leader' }): JSX.Element {
   const s = CONTRACT_STATUS[c.status] || { icon: '', label: c.status };
-  const Row = ({ l, v }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p} selectable>{v}</Text></View> : null);
+  const Line = ({ l, v }: { l: string; v?: string | null }) => (v ? <View style={st.cRow}><Text style={st.lbl}>{l}</Text><Text style={st.p} selectable>{v}</Text></View> : null);
   return (
     <View>
       <Text style={st.small}>চুক্তি নম্বর {c.contract_no} · {c.kind === 'hajj' ? '🕋 হজ' : '🔄 ওমরাহ'}</Text>
       <Text style={st.gName}>{c.title}</Text>
       <Text style={[st.val, { marginTop: S.xs }]}>{s.icon} {s.label}</Text>
-      {who === 'haji' ? <Row l="লিডার" v={`${c.leader_name || ''} (${c.leader_code || ''})${c.agency_name ? ` · ${c.agency_name}` : ''}`} />
-        : <Row l="হাজী" v={`${c.haji_name || ''} (${c.haji_code || ''})`} />}
-      <Row l="জনপ্রতি মোট দাম" v={fmtTaka(c.price_bdt)} />
-      <Row l="যাত্রা" v={c.travel_from ? `${fmtDay(c.travel_from)}${c.travel_to ? ` থেকে ${fmtDay(c.travel_to)}` : ''}` : ''} />
-      <Row l="যা অন্তর্ভুক্ত" v={c.includes} />
-      <Row l="যা অন্তর্ভুক্ত নয়" v={c.excludes} />
-      <Row l="বাতিল ও টাকা ফেরতের নিয়ম" v={c.refund_policy} />
-      <Row l="অন্যান্য শর্ত" v={c.extra_terms} />
-      <Row l="পাঠানো হয়েছে" v={fmtDay(c.created_at)} />
-      {c.status === 'accepted' || c.status === 'completed' || c.status === 'cancelled' ? <Row l="হাজী সম্মতি দিয়েছেন" v={fmtDay(c.responded_at)} /> : null}
-      {c.status === 'cancelled' ? <Row l={`বাতিল করেছেন ${c.cancelled_by_me ? 'আপনি' : (who === 'haji' ? 'লিডার' : 'হাজী')} (${fmtDay(c.cancelled_at)})`} v={`কারণ: ${c.cancel_reason || ''}`} /> : null}
-      {c.status === 'completed' ? <Row l="সম্পন্ন" v={fmtDay(c.completed_at)} /> : null}
+      {who === 'haji' ? <Line l="লিডার" v={`${c.leader_name || ''} (${c.leader_code || ''})${c.agency_name ? ` · ${c.agency_name}` : ''}`} />
+        : <Line l="হাজী" v={`${c.haji_name || ''} (${c.haji_code || ''})`} />}
+      <Line l="জনপ্রতি মোট দাম" v={fmtTaka(c.price_bdt)} />
+      <Line l="যাত্রা" v={c.travel_from ? `${fmtDay(c.travel_from)}${c.travel_to ? ` থেকে ${fmtDay(c.travel_to)}` : ''}` : ''} />
+      <Line l="যা অন্তর্ভুক্ত" v={c.includes} />
+      <Line l="যা অন্তর্ভুক্ত নয়" v={c.excludes} />
+      <Line l="বাতিল ও টাকা ফেরতের নিয়ম" v={c.refund_policy} />
+      <Line l="অন্যান্য শর্ত" v={c.extra_terms} />
+      <Line l="পাঠানো হয়েছে" v={fmtDay(c.created_at)} />
+      {c.status === 'accepted' || c.status === 'completed' || c.status === 'cancelled' ? <Line l="হাজী সম্মতি দিয়েছেন" v={fmtDay(c.responded_at)} /> : null}
+      {c.status === 'cancelled' ? <Line l={`বাতিল করেছেন ${c.cancelled_by_me ? 'আপনি' : (who === 'haji' ? 'লিডার' : 'হাজী')} (${fmtDay(c.cancelled_at)})`} v={`কারণ: ${c.cancel_reason || ''}`} /> : null}
+      {c.status === 'completed' ? <Line l="সম্পন্ন" v={fmtDay(c.completed_at)} /> : null}
     </View>
   );
 }
 
 // Asks for a written reason before a serious step (cancel a contract, cancel a referral...).
-export function ReasonBox({ title, hint, button, min = 10, onSubmit, onClose, busy }) {
+export function ReasonBox({ title, hint, button, min = 10, onSubmit, onClose, busy }: {
+  title: string; hint?: string; button: string; min?: number; onSubmit: (reason: string) => void; onClose: () => void; busy?: boolean;
+}): JSX.Element {
   const [text, setText] = useState('');
   const [err, setErr] = useState('');
   const go = () => {
@@ -51,7 +54,7 @@ export function ReasonBox({ title, hint, button, min = 10, onSubmit, onClose, bu
 
 // 1–5 stars as big buttons with words, so it never depends on colour or on reading small icons.
 const STAR_WORDS = ['', 'খুব খারাপ', 'খারাপ', 'চলনসই', 'ভালো', 'খুব ভালো'];
-export function Stars({ value, onChange }) {
+export function Stars({ value, onChange }: { value: number; onChange: (n: number) => void }): JSX.Element {
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.xs, marginBottom: S.sm }}>
       {[1, 2, 3, 4, 5].map((n) => (
@@ -65,16 +68,16 @@ export function Stars({ value, onChange }) {
     </View>
   );
 }
-export const starText = (avg, count) => (count ? `⭐ ${toBn(Number(avg).toFixed(1))} (${toBn(count)} জনের রেটিং)` : '⭐ এখনো রেটিং নেই');
+export const starText = (avg: unknown, count: unknown): string => (count ? `⭐ ${toBn(Number(avg).toFixed(1))} (${toBn(count)} জনের রেটিং)` : '⭐ এখনো রেটিং নেই');
 
 // Report someone to the admin, and/or block them. Used on a leader's profile and in the leader's haji lists.
-export function ReportBlock({ targetId, targetName }) {
-  const [blocked, setBlocked] = useState(null);
-  const [mode, setMode] = useState(null);     // null | 'report'
+export function ReportBlock({ targetId, targetName }: { targetId: string; targetName: string }): JSX.Element | null {
+  const [blocked, setBlocked] = useState<boolean | null>(null);
+  const [mode, setMode] = useState<'report' | null>(null);     // null | 'report'
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { isBlocked(targetId).then(setBlocked).catch(() => setBlocked(null)); }, [targetId]);
 
   const toggleBlock = () => confirm(blocked ? `${targetName}-কে আনব্লক করবেন?` : `${targetName}-কে ব্লক করবেন?`,
@@ -89,7 +92,7 @@ export function ReportBlock({ targetId, targetName }) {
     if (!reason) { setMsg({ kind: 'bad', text: 'একটি কারণ বাছুন।' }); return; }
     setBusy(true); setMsg(null);
     try { await report(targetId, reason, details); setMode(null); setReason(''); setDetails(''); setMsg({ kind: 'ok', text: 'রিপোর্ট পাঠানো হয়েছে। Travel Adda টিম দেখবে।' }); }
-    catch (e) { setMsg({ kind: 'bad', text: e?.code === '42501' ? 'আজ আর রিপোর্ট পাঠানো যাবে না। কাল আবার চেষ্টা করুন।' : errText(e) }); }
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string } | null)?.code === '42501' ? 'আজ আর রিপোর্ট পাঠানো যাবে না। কাল আবার চেষ্টা করুন।' : errText(e) }); }
     finally { setBusy(false); }
   };
   if (blocked === null && !msg) return null;     // the database step is not there yet: show nothing

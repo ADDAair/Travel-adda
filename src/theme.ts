@@ -24,7 +24,7 @@ export const TEXT_SCALE_KEY = 'ta_text_scale';
 let k = 1;
 try { const n = Number(SecureStore.getItem ? SecureStore.getItem(TEXT_SCALE_KEY) : NaN); if (n >= 1 && n <= 1.4) k = n; } catch (e) { k = 1; }
 export const TEXT_SCALE = k;
-const z = (n) => Math.round(n * k);
+const z = (n: number): number => Math.round(n * k);
 export const F = { small: z(16), body: z(18), large: z(20), title: z(24), hero: z(28) };   // font sizes
 export const S = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32 };                  // spacing
 export const R = { sm: 10, md: 14, lg: 20, pill: 999 };                       // corner radius

@@ -1,10 +1,13 @@
-import React from 'react';
-import { Pressable, Text, View, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { type ComponentRef, type JSX, type ReactNode, type RefObject } from 'react';
+import { Pressable, Text, View, TextInput, ActivityIndicator, StyleSheet, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { notifyFieldFocus } from '../lib/keyboard';
 import { C, F, S, R, TOUCH, BTN_H, shadow } from '../theme';
 
 // Big, clearly labelled button. kind: primary | secondary | gold | danger
-export function Button({ title, onPress, kind = 'primary', loading = false, disabled = false, icon, a11yHint, style }) {
+export type ButtonKind = 'primary' | 'secondary' | 'gold' | 'accent' | 'danger';
+export function Button({ title, onPress, kind = 'primary', loading = false, disabled = false, icon, a11yHint, style }: {
+  title: string; onPress?: () => void; kind?: ButtonKind | string; loading?: boolean; disabled?: boolean; icon?: string; a11yHint?: string; style?: StyleProp<ViewStyle>;
+}): JSX.Element {
   const k = BTN[kind] || BTN.primary;
   const off = disabled || loading;
   return (
@@ -21,7 +24,7 @@ export function Button({ title, onPress, kind = 'primary', loading = false, disa
     </Pressable>
   );
 }
-const BTN = {
+const BTN: Record<string, { bg: string; fg: string; border: string }> = {
   primary: { bg: C.primary, fg: C.onPrimary, border: C.primary },
   secondary: { bg: C.card, fg: C.primary, border: C.primary },
   gold: { bg: C.gold, fg: C.text, border: C.gold },
@@ -30,7 +33,8 @@ const BTN = {
 };
 
 // Text field with a visible label above (placeholders alone disappear while typing).
-export function Field({ label, hint, error, right, inputRef, ...input }) {
+export type FieldProps = TextInputProps & { label: string; hint?: string; error?: string; right?: ReactNode; inputRef?: RefObject<ComponentRef<typeof TextInput> | null> };
+export function Field({ label, hint, error, right, inputRef, ...input }: FieldProps): JSX.Element {
   return (
     <View style={{ marginBottom: S.md }}>
       <Text style={s.label} nativeID={label}>{label}</Text>
@@ -54,7 +58,8 @@ export function Field({ label, hint, error, right, inputRef, ...input }) {
 
 // Segmented choice (e.g. Login / New account). Selection is shown by border, background, colour AND a bar,
 // never by changing the font weight: on some Android phones the label disappears when its weight changes.
-export function Segmented({ options, value, onChange, disabled }) {
+export type SegOption<T extends string> = { id: T; label: string; icon?: string; a11y?: string };
+export function Segmented<T extends string>({ options, value, onChange, disabled }: { options: readonly SegOption<T>[]; value: T; onChange: (v: T) => void; disabled?: boolean }): JSX.Element {
   return (
     <View style={s.seg} accessibilityRole="tablist">
       {options.map((o) => {
@@ -74,11 +79,12 @@ export function Segmented({ options, value, onChange, disabled }) {
   );
 }
 
-export function Card({ children, style }) { return <View style={[s.card, style]}>{children}</View>; }
+export function Card({ children, style }: { children?: ReactNode; style?: StyleProp<ViewStyle> }): JSX.Element { return <View style={[s.card, style]}>{children}</View>; }
 
 // Message box: kind ok | warn | bad | info. Text is always shown, so meaning never depends on colour alone.
-export function Notice({ kind = 'info', title, text, children }) {
-  const m = { ok: [C.okSoft, C.ok, '✅'], warn: [C.warnSoft, C.warn, '⚠️'], bad: [C.badSoft, C.bad, '❌'], info: [C.primarySoft, C.primary, 'ℹ️'] }[kind];
+export type NoticeKind = 'ok' | 'warn' | 'bad' | 'info';
+export function Notice({ kind = 'info', title, text, children }: { kind?: NoticeKind; title: string; text?: string | null; children?: ReactNode }): JSX.Element {
+  const m = ({ ok: [C.okSoft, C.ok, '✅'], warn: [C.warnSoft, C.warn, '⚠️'], bad: [C.badSoft, C.bad, '❌'], info: [C.primarySoft, C.primary, 'ℹ️'] } as Record<NoticeKind, string[]>)[kind] || [C.primarySoft, C.primary, 'ℹ️'];
   return (
     <View style={[s.notice, { backgroundColor: m[0], borderColor: m[1] }]} accessibilityRole="alert">
       <Text style={s.noticeT}>{m[2]} {title}</Text>

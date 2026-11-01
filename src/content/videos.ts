@@ -1,6 +1,7 @@
 // Video guide for every page ("▶️ ভিডিও দেখুন"). Until a video is made, the button says "শীঘ্রই আসছে".
 // To add a video later: put its https link in `url` (only https links are played).
-export const VIDEO_TOPICS = {
+export type VideoTopic = { title: string; url: string | null };
+export const VIDEO_TOPICS: Record<string, VideoTopic> = {
   Home: { title: 'অ্যাপ কীভাবে ব্যবহার করবেন', url: null },
   Map: { title: 'জরুরি সাহায্য ও "পথ হারিয়েছি কার্ড"', url: null },
   Dua: { title: 'দোয়া খোঁজা ও শোনা', url: null },
@@ -36,16 +37,16 @@ export const VIDEO_TOPICS = {
   KhademHome: { title: 'খাদেমের কাজ', url: null },
 };
 
-const safe = (u) => typeof u === 'string' && /^https:\/\/[^\s]+$/i.test(u);
-export function videoFor(route, topics = VIDEO_TOPICS) {
+const safe = (u: unknown): u is string => typeof u === 'string' && /^https:\/\/[^\s]+$/i.test(u);
+export function videoFor(route: string, topics: Record<string, VideoTopic> = VIDEO_TOPICS): { title: string; url: string | null; ready: boolean; label: string } {
   const t = topics[route];
   const ready = !!(t && safe(t.url));
-  return { title: t ? t.title : 'এই পাতা', url: ready ? t.url : null, ready, label: ready ? '▶️ ভিডিও দেখুন' : '▶️ ভিডিও দেখুন (শীঘ্রই আসছে)' };
+  return { title: t ? t.title : 'এই পাতা', url: ready && t ? t.url : null, ready, label: ready ? '▶️ ভিডিও দেখুন' : '▶️ ভিডিও দেখুন (শীঘ্রই আসছে)' };
 }
 
 // Links set by the admin (table app_videos) over the built-in list. Only known pages and https links are used.
-export function mergeVideos(topics, rows) {
-  const out = { ...topics };
+export function mergeVideos(topics: Record<string, VideoTopic>, rows: { route: string; url: string }[] | null | undefined): Record<string, VideoTopic> {
+  const out: Record<string, VideoTopic> = { ...topics };
   (rows || []).forEach((r) => { if (out[r.route] && safe(r.url)) out[r.route] = { ...out[r.route], url: r.url }; });
   return out;
 }

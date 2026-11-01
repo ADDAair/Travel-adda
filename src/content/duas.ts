@@ -522,5 +522,5 @@ export const DUAS = [
   },
 ];
 
-export const duasByCat = (cat) => DUAS.filter((d) => d.cat === cat);
-export const findDua = (id) => DUAS.find((d) => d.id === id);
+export const duasByCat = (cat: string) => DUAS.filter((d) => d.cat === cat);
+export const findDua = (id: string) => DUAS.find((d) => d.id === id);

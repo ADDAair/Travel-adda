@@ -68,5 +68,5 @@ export const UMRAH_STEPS = [
 
 export const COUNTERS = {
   tawaf: { key: 'ta.count.tawaf.v1', title: 'তাওয়াফের চক্কর গণনা' },
-  sai: { key: 'ta.count.sai.v1', title: 'সাঈর চক্কর গণনা', labelFor: (i) => (i % 2 === 1 ? 'সাফা থেকে মারওয়া' : 'মারওয়া থেকে সাফা') },
+  sai: { key: 'ta.count.sai.v1', title: 'সাঈর চক্কর গণনা', labelFor: (i: number) => (i % 2 === 1 ? 'সাফা থেকে মারওয়া' : 'মারওয়া থেকে সাফা') },
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type JSX } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import ScrollView from './KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,14 +13,18 @@ export default function DistrictPicker({
   label = 'জেলা', value, onChange, allowAll = false, error,
   options = DISTRICTS, placeholder = 'জেলা বাছুন', searchHint = 'যেমন: সিলেট', noun = 'জেলা',
   allowOther = false, disabled = false, disabledText,
-}) {
+}: {
+  label?: string; value?: string | null; onChange: (v: string) => void; allowAll?: boolean; error?: string;
+  options?: readonly string[]; placeholder?: string; searchHint?: string; noun?: string;
+  allowOther?: boolean; disabled?: boolean; disabledText?: string;
+}): JSX.Element {
   const ins = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const typed = q.trim();
   const list = options.filter((d) => !typed || d.includes(typed));
   const exact = options.includes(typed);
-  const pick = (d) => { onChange(d); setOpen(false); setQ(''); };
+  const pick = (d: string) => { onChange(d); setOpen(false); setQ(''); };
   const shown = value || (allowAll ? 'সব জেলা' : disabled && disabledText ? disabledText : placeholder);
   return (
     <View style={{ marginBottom: S.md }}>
