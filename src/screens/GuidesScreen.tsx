@@ -13,7 +13,7 @@ import type { Nav } from './navTypes';
 
 // "More guides": a short list; each guide is one page built from simple blocks.
 export default function GuidesScreen({ navigation }: { navigation: Nav }) {
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState<any>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
   useEffect(() => {
@@ -90,7 +90,7 @@ export function Block({ b, navigation }) {
 }
 
 function Phrases({ items }) {
-  const [playing, setPlaying] = useState(null);
+  const [playing, setPlaying] = useState<any>(null);
   const [msg, setMsg] = useState('');
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; Speech.stop(); }, []);
@@ -131,7 +131,7 @@ function Phrases({ items }) {
 }
 
 function Checklist({ storageKey, items }) {
-  const [done, setDone] = useState([]);
+  const [done, setDone] = useState<any[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(storageKey).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) { /* start empty */ } }).catch(() => {});
   }, [storageKey]);

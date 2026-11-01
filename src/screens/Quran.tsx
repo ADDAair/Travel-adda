@@ -25,7 +25,7 @@ const typeBn = (t) => (t === 'Meccan' ? 'মাক্কী' : 'মাদান�
 
 export function QuranList({ onOpen }) {
   const [q, setQ] = useState('');
-  const [last, setLast] = useState(null);
+  const [last, setLast] = useState<any>(null);
   useEffect(() => {
     AsyncStorage.getItem(LAST_KEY).then((v) => { try { const o = JSON.parse(v); if (o && o.n) setLast(o); } catch (e) {} }).catch(() => {});
   }, []);
@@ -89,13 +89,13 @@ export function QuranList({ onOpen }) {
 
 export function QuranReader({ n, startAyah = 1, onBack }) {
   const meta = META[n - 1];
-  const [verses, setVerses] = useState(null);
+  const [verses, setVerses] = useState<any>(null);
   const [err, setErr] = useState(false);
   const [scaleIx, setScaleIx] = useState(1);
   const [showTr, setShowTr] = useState(true);
   const [showPr, setShowPr] = useState(true);
-  const listRef = useRef(null);
-  const saveTimer = useRef(null);
+  const listRef = useRef<any>(null);
+  const saveTimer = useRef<any>(null);
 
   useEffect(() => {
     let alive = true;

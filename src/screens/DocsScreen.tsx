@@ -46,16 +46,16 @@ export default function DocsScreen(props) {
 }
 
 function DocsInner({ navigation }: { navigation: Nav }) {
-  const [rows, setRows] = useState(null);          // null = loading
+  const [rows, setRows] = useState<any>(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');
   const [step, setStep] = useState('list');        // list | type | source
-  const [type, setType] = useState(null);
+  const [type, setType] = useState<any>(null);
   const [cam, setCam] = useState(false);
-  const [pending, setPending] = useState(null);    // picked file kept for retry
+  const [pending, setPending] = useState<any>(null);    // picked file kept for retry
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);            // { kind, text }
-  const [viewing, setViewing] = useState(null);    // row
+  const [viewing, setViewing] = useState<any>(null);    // row
   const scrollRef = useRef<ScrollRef | null>(null);
 
   const load = useCallback(async () => {
@@ -249,10 +249,10 @@ function Expiry({ row, onSaved }) {
 export function DocCamera({ onCancel, onUse }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
-  const camRef = useRef(null);
+  const camRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [taking, setTaking] = useState(false);
-  const [uri, setUri] = useState(null);
+  const [uri, setUri] = useState<any>(null);
   const [err, setErr] = useState('');
   const snap = async () => {
     if (!ready || taking || !camRef.current) return;
@@ -298,7 +298,7 @@ export function DocCamera({ onCancel, onUse }) {
 
 function Viewer({ row, onClose, onDelete }) {
   const ins = useSafeAreaInsets();
-  const [src, setSrc] = useState(null);
+  const [src, setSrc] = useState<any>(null);
   const [err, setErr] = useState('');
   const pdf = docIsPdf(row);
   useEffect(() => {

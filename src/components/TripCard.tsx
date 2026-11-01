@@ -16,10 +16,10 @@ const docsKey = (id) => `ta.docsCache.v1.${id}`;
 
 // Haji's trip at a glance: days to departure, active contract, documents. Works offline from what the phone kept.
 export default function TripCard({ navigation }: { navigation: Nav }) {
-  const [c, setC] = useState(null);            // active contract (cached)
-  const [own, setOwn] = useState(null);        // date typed by the haji when there is no contract
-  const [docs, setDocs] = useState(null);      // { count, passport }
-  const [money, setMoney] = useState(null);    // { paid_in, pending_in, still_to_pay } of the active contract
+  const [c, setC] = useState<any>(null);            // active contract (cached)
+  const [own, setOwn] = useState<any>(null);        // date typed by the haji when there is no contract
+  const [docs, setDocs] = useState<any>(null);      // { count, passport }
+  const [money, setMoney] = useState<any>(null);    // { paid_in, pending_in, still_to_pay } of the active contract
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState('');
   const [err, setErr] = useState('');

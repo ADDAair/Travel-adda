@@ -41,15 +41,15 @@ export function Soon({ title, icon, what, route, navigation }) {
 export function Account({ navigation }: { navigation: Nav }) {
   const { replay } = useTutorial();
   const { me } = useMe();
-  const [p, setP] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
+  const [p, setP] = useState<any>(null);
+  const [photoUrl, setPhotoUrl] = useState<any>(null);
   const [imgFail, setImgFail] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
   const [delPw, setDelPw] = useState('');
   const [lockOn, setLockOn] = useState(false);
-  const [lockMsg, setLockMsg] = useState(null);
+  const [lockMsg, setLockMsg] = useState<any>(null);
   useEffect(() => { lockWanted().then(setLockOn); }, []);
   const toggleLock = async () => {
     setLockMsg(null);

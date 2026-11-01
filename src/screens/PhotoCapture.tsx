@@ -16,7 +16,7 @@ const P = T.photo;
 export default function PhotoCapture({ onDone, onSkip, onCancel }: { onDone: () => void; onSkip?: () => void; onCancel?: () => void }) {
   const ins = useSafeAreaInsets();
   const [perm, requestPerm] = useCameraPermissions();
-  const camRef = useRef<{ takePictureAsync: (o: { quality: number }) => Promise<{ uri: string } | undefined> } | null>(null);
+  const camRef = useRef<any>(null);   // expo-camera view (takePictureAsync)
   const [ready, setReady] = useState(false);
   const [taking, setTaking] = useState(false);
   const [busy, setBusy] = useState(false);

@@ -8,7 +8,7 @@ import type { Msg } from '../screens/navTypes';
 // Turning on phone alerts (push). mode 'home': asks once, disappears after a choice.
 // mode 'settings' (🔔 page): always shows the current state and the one action that fits it.
 export default function PushCard({ mode = 'settings' }) {
-  const [st, setSt] = useState(null);
+  const [st, setSt] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const load = useCallback(async () => {

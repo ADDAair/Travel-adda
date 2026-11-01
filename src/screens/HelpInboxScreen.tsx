@@ -14,12 +14,12 @@ import type { Msg, Nav, Route } from './navTypes';
 // Leader or khadem: the hajis' questions of a group. Waiting questions first. Opens one conversation to answer.
 export default function HelpInboxScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const { me } = useMe();
-  const [groups, setGroups] = useState(undefined);       // [{ id, name, role }]
+  const [groups, setGroups] = useState<any>(undefined);       // [{ id, name, role }]
   const [gid, setGid] = useState(route?.params?.groupId || null);
-  const [rows, setRows] = useState(null);
+  const [rows, setRows] = useState<any>(null);
   const [state, setState] = useState('load');
-  const [thread, setThread] = useState(null);            // inbox row being answered
-  const [msgs, setMsgs] = useState([]);
+  const [thread, setThread] = useState<any>(null);            // inbox row being answered
+  const [msgs, setMsgs] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);

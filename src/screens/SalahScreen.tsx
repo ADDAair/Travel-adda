@@ -12,8 +12,8 @@ import type { Nav, Route } from './navTypes';
 
 // "নামাজের রাকাত ও নিয়ম". Can be opened at one section from other screens: navigate('Salah', { section: 'jumuah', t: Date.now() }).
 export default function SalahScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
-  const [open, setOpen] = useState(null);
-  const [from, setFrom] = useState(null);         // screen to return to when opened from elsewhere
+  const [open, setOpen] = useState<any>(null);
+  const [from, setFrom] = useState<any>(null);         // screen to return to when opened from elsewhere
   const scrollRef = useRef<ScrollRef | null>(null);
   const go = (id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); };
 

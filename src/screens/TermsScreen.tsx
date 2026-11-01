@@ -13,8 +13,8 @@ export default function TermsScreen({ navigation }: { navigation: Nav }) {
   const { me } = useMe();
   const mine = isLeaderAccount(me) ? 'leader' : 'haji';
   const [kind, setKind] = useState(mine);
-  const [t, setT] = useState(undefined);            // undefined = loading, null = none written
-  const [status, setStatus] = useState(null);       // { haji: { at, current }, leader: {...} }
+  const [t, setT] = useState<any>(undefined);            // undefined = loading, null = none written
+  const [status, setStatus] = useState<any>(null);       // { haji: { at, current }, leader: {...} }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { setKind(mine); }, [mine]);

@@ -49,7 +49,7 @@ export default function CalendarScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.goBack()} style={st.back} accessibilityRole="button" accessibilityLabel="ফিরে যান">
+      <Pressable onPress={() => navigation.goBack?.()} style={st.back} accessibilityRole="button" accessibilityLabel="ফিরে যান">
         <Text style={st.backT}>‹ ফিরে যান</Text>
       </Pressable>
       <Text style={st.title} accessibilityRole="header">📅 ইসলামি দিনপঞ্জি</Text>

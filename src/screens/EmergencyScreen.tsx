@@ -39,16 +39,16 @@ const cleanPhone = (v) => normalizeDigits(v).replace(/[^\d+ ]/g, '');
 const phoneOk = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 6 && d.length <= 15; };
 
 export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
-  const [info, setInfo] = useState({});
-  const [draft, setDraft] = useState({});
+  const [info, setInfo] = useState<Record<string, any>>({});
+  const [draft, setDraft] = useState<Record<string, any>>({});
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [lost, setLost] = useState(false);
-  const [me, setMe] = useState(null);
+  const [me, setMe] = useState<any>(null);
   const [showMore, setShowMore] = useState(false);
-  const [grp, setGrp] = useState(null);   // leader of my active contract (used when none is typed below)
-  const [help, setHelp] = useState(null); // Travel Adda helpline, when there is no contracted leader
+  const [grp, setGrp] = useState<any>(null);   // leader of my active contract (used when none is typed below)
+  const [help, setHelp] = useState<any>(null); // Travel Adda helpline, when there is no contracted leader
 
   useEffect(() => {
     const load = async () => {

@@ -16,9 +16,9 @@ const SIZES = [1, 1.2, 1.4, 1.6];
 export default function DuaScreen({ route, navigation }) {
   const [cat, setCat] = useState('namaz');
   const [q, setQ] = useState('');
-  const [openId, setOpenId] = useState(null);
+  const [openId, setOpenId] = useState<any>(null);
   const [mode, setMode] = useState('dua');          // 'dua' | 'quran'
-  const [surah, setSurah] = useState(null);         // { n, a } when a surah is open
+  const [surah, setSurah] = useState<any>(null);         // { n, a } when a surah is open
   const [dismissed, setDismissed] = useState(false);
   const justTried = !!route?.params?.tutorialDone && !dismissed;
   useEffect(() => { setDismissed(false); }, [route?.params?.tutorialDone]);
@@ -30,7 +30,7 @@ export default function DuaScreen({ route, navigation }) {
   }, [route?.params?.t]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Favourite duas, kept on this phone.
-  const [favs, setFavs] = useState([]);
+  const [favs, setFavs] = useState<any[]>([]);
   useEffect(() => { AsyncStorage.getItem(FAV_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setFavs(a); } catch (e) { /* none */ } }).catch(() => {}); }, []);
   const toggleFav = (id) => {
     const next = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id];

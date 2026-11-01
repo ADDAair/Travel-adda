@@ -214,11 +214,11 @@ function Main() {
 const navRef = createNavigationContainerRef();
 
 export default function App() {
-  const [session, setSession] = useState(undefined);
-  const [onboarded, setOnboarded] = useState(undefined);
+  const [session, setSession] = useState<any>(undefined);
+  const [onboarded, setOnboarded] = useState<any>(undefined);
   const [handsOnPending, setHandsOnPending] = useState(false);
-  const [photoGate, setPhotoGate] = useState(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
-  const [me, setMe] = useState(null);                      // profile: account type, role, status (offline copy if no internet)
+  const [photoGate, setPhotoGate] = useState<any>(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
+  const [me, setMe] = useState<any>(null);                      // profile: account type, role, status (offline copy if no internet)
   const userId = session ? session.user.id : null;
 
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function App() {
   }, [session]);
 
   // After login: video links set by the admin, and the forced-update check (supabase/022).
-  const [gate, setGate] = useState(null);
+  const [gate, setGate] = useState<any>(null);
   const [skipUpdate, setSkipUpdate] = useState(false);
   useEffect(() => {
     if (!session) { setGate(null); return; }

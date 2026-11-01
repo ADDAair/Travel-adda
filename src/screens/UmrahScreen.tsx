@@ -59,7 +59,7 @@ export default function UmrahScreen({ navigation }: { navigation: Nav }) {
       ) : null}
 
       <StepCard step={s} images={IMAGES}>
-        {counter ? <RoundCounter storageKey={counter.key} title={counter.title} labelFor={counter.labelFor} /> : null}
+        {counter ? <RoundCounter storageKey={counter.key} title={counter.title} labelFor={(counter as { labelFor?: (i: number) => string }).labelFor} /> : null}
         {s.link ? <Button title="মীকাত ও ইহরাম গাইড খুলুন" icon="🕋" kind="secondary" onPress={() => navigation.navigate(s.link)} style={{ marginTop: S.md }} /> : null}
       </StepCard>
 

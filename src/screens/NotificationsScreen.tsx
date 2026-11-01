@@ -11,7 +11,7 @@ import type { Msg, Nav } from './navTypes';
 
 // Notification box: everything Travel Adda or the app told this person, newest first.
 export default function NotificationsScreen({ navigation }: { navigation: Nav }) {
-  const [rows, setRows] = useState(null);
+  const [rows, setRows] = useState<any>(null);
   const [state, setState] = useState('load');   // load | ok | soon | err
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);

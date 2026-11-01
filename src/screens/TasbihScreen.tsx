@@ -23,7 +23,7 @@ const P = (id) => PRESETS.find((p) => p.id === id);
 
 export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const [sel, setSel] = useState('after');
-  const [state, setState] = useState({});          // { presetId: { n, step } }
+  const [state, setState] = useState<Record<string, any>>({});          // { presetId: { n, step } }
   useEffect(() => {
     AsyncStorage.getItem(KEY).then((v) => { try { const o = JSON.parse(v || '{}'); if (o && typeof o === 'object') { setState(o.counts || {}); if (o.sel && P(o.sel)) setSel(o.sel); } } catch (e) { /* start fresh */ } }).catch(() => {});
   }, []);
@@ -56,7 +56,7 @@ export default function TasbihScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.goBack()} style={st.back} accessibilityRole="button" accessibilityLabel="ফিরে যান">
+      <Pressable onPress={() => navigation.goBack?.()} style={st.back} accessibilityRole="button" accessibilityLabel="ফিরে যান">
         <Text style={st.backT}>‹ ফিরে যান</Text>
       </Pressable>
       <Text style={st.title} accessibilityRole="header">📿 তাসবিহ গণনা</Text>

@@ -18,13 +18,13 @@ export default function GroupStaffScreen({ navigation, route }: { navigation: Na
   const gname = route?.params?.groupName || '';
   const [tab, setTab] = useState(route?.params?.tab === 'faq' ? 'faq' : 'khadem');
   const [state, setState] = useState('load');
-  const [khadems, setKhadems] = useState([]);
-  const [faq, setFaq] = useState([]);
+  const [khadems, setKhadems] = useState<any[]>([]);
+  const [faq, setFaq] = useState<any[]>([]);
   const [ident, setIdent] = useState('');
-  const [edit, setEdit] = useState(null);                 // null | { id?, q, a }
+  const [edit, setEdit] = useState<any>(null);                 // null | { id?, q, a }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const [sent, setSent] = useState([]);
+  const [sent, setSent] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     if (!gid) return;

@@ -95,22 +95,22 @@ function MonthDropdown({ options, value, onChange }) {
 
 function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [kind, setKind] = useState('umrah');
-  const [rows, setRows] = useState(null);
+  const [rows, setRows] = useState<any>(null);
   const [state, setState] = useState('load');
-  const [help, setHelp] = useState(null);
-  const [mine, setMine] = useState({});
-  const [busy, setBusy] = useState(null);
+  const [help, setHelp] = useState<any>(null);
+  const [mine, setMine] = useState<Record<string, any>>({});
+  const [busy, setBusy] = useState<any>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [q, setQ] = useState(route?.params?.leader || '');
-  const [month, setMonth] = useState(null);
-  const [airport, setAirport] = useState(null);
+  const [month, setMonth] = useState<any>(null);
+  const [airport, setAirport] = useState<any>(null);
   const [priceText, setPriceText] = useState('');      // typed by the haji, or filled by a quick button
   const typed = parsePrice(priceText);
   const maxPrice = Number.isFinite(typed) ? typed : null;
   const setMaxPrice = (n) => setPriceText(n ? toBn(n) : '');
   const [showFilters, setShowFilters] = useState(false);
-  const [openId, setOpenId] = useState(null);             // package shown on its own page
-  const scroller = React.useRef(null);
+  const [openId, setOpenId] = useState<any>(null);             // package shown on its own page
+  const scroller = React.useRef<any>(null);
   useEffect(() => { if (route?.params?.leader) { setQ(route.params.leader); setOpenId(null); } }, [route?.params?.leader]);
 
   const load = useCallback(async (k) => {

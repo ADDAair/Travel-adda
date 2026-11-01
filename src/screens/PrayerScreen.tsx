@@ -19,7 +19,7 @@ const GPS_ERR = {
 };
 
 export default function PrayerScreen({ navigation }: { navigation: Nav }) {
-  const [loc, setLoc] = useState(undefined);       // undefined = loading, null = not chosen yet
+  const [loc, setLoc] = useState<any>(undefined);       // undefined = loading, null = not chosen yet
   const [picking, setPicking] = useState(false);
   const [mode, setMode] = useState('times');
   const [now, setNow] = useState(Date.now());
@@ -196,7 +196,7 @@ const REM_ERR = {
   failed: 'রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।',
 };
 function Reminders({ loc }) {
-  const [on, setOn] = useState(null);
+  const [on, setOn] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   useEffect(() => { remindersOn().then(setOn); }, []);
@@ -227,8 +227,8 @@ function Reminders({ loc }) {
 
 // Per prayer: a loud alarm (long tone + vibration, "10 minutes later" button) instead of a short notification sound.
 function Alarms({ loc }) {
-  const [a, setA] = useState(null);
-  const [busy, setBusy] = useState(null);
+  const [a, setA] = useState<any>(null);
+  const [busy, setBusy] = useState<any>(null);
   useEffect(() => { getAlarms().then(setA); }, []);
   if (!a) return null;
   const toggle = async (key) => {
@@ -256,7 +256,7 @@ function Alarms({ loc }) {
 function Qibla({ loc }) {
   const q = qiblaBearing(loc.lat, loc.lng);
   const km = distanceKm(loc.lat, loc.lng);
-  const [h, setH] = useState(null);          // { heading, accuracy } or null
+  const [h, setH] = useState<any>(null);          // { heading, accuracy } or null
   const [state, setState] = useState('start'); // start | on | none
   const wasAligned = useRef(false);
 

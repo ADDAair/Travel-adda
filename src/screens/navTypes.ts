@@ -4,6 +4,7 @@ export type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;
 export type Nav = {
   navigate: (route: string, params?: object) => void;
   addListener?: (event: string, cb: () => void) => () => void;
+  goBack?: () => void;
   setParams?: (params: object) => void;
 };
 export type Route<P extends object = Record<string, any>> = { params?: P };

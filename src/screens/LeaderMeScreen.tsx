@@ -38,7 +38,7 @@ export default function LeaderMeScreen({ navigation }: { navigation: Nav }): JSX
       const { data: s } = await supabase.auth.getSession();
       if (!s.session) throw new Error('no session');
       const uid = s.session.user.id;
-      const row: Record<string, string | null> = { district: area.district || null, upazila: area.upazila.trim() || null, bio: bio.trim() || null, union_name: area.union.trim() || null };
+      const row: Record<string, string | null> = { district: area.district || null, upazila: (area.upazila || '').trim() || null, bio: bio.trim() || null, union_name: (area.union || '').trim() || null };
       if (p && 'profession' in p) row.profession = profession.trim() || null;      // step 017
       let r = await supabase.from('leader_profiles').update(row).eq('user_id', uid).select('user_id');
       if (r.error && (r.error.code === 'PGRST204' || r.error.code === '42703' || /union_name/i.test(r.error.message || ''))) {

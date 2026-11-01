@@ -44,15 +44,15 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const { handsOnPending, skipHandsOn } = useTutorial();
   const { me, refreshMe } = useMe();
   const leaderAcc = isLeaderAccount(me);
-  const [refMsg, setRefMsg] = useState(null);
+  const [refMsg, setRefMsg] = useState<any>(null);
   // A referral code typed at sign-up is attached once the account exists.
   useEffect(() => { processPendingReferral().then((r) => { if (r) setRefMsg(r); }); processPendingTerms(); }, [me]);
-  const [p, setP] = useState(null);
+  const [p, setP] = useState<any>(null);
   const [state, setState] = useState('load');
   // An e-mail typed at sign-up waits here until it is verified with the code (then it can be used to log in).
-  const [pendingEmail, setPendingEmail] = useState(null);
+  const [pendingEmail, setPendingEmail] = useState<any>(null);
   // Khadem of some group? Then a card leads to the khadem page (questions waiting are counted).
-  const [khadem, setKhadem] = useState(null);
+  const [khadem, setKhadem] = useState<any>(null);
   useEffect(() => {
     const check = () => Promise.all([myKhademGroups(), myKhademInvites().catch(() => [])])
       .then(([g, iv]) => setKhadem(g.length || iv.length ? { n: g.length, waiting: g.reduce((s, x) => s + (x.waiting || 0), 0), invites: iv.length } : null)).catch(() => setKhadem(null));
@@ -79,7 +79,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const retry = useCallback(async () => { setState((x) => (x === 'err' && !p ? 'load' : x)); const m = await refreshMe(); if (!m) setState('err'); }, [refreshMe, p]);
 
   // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
-  const [ploc, setPloc] = useState(null);
+  const [ploc, setPloc] = useState<any>(null);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const refresh = () => { setNow(Date.now()); loadSavedLocation().then(setPloc); };

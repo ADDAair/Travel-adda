@@ -19,7 +19,7 @@ const ROUTE_KEY = 'ta.ihramRoute.v1';
 
 // Mikat & Ihram guide: a short list of sections; each section is one simple page.
 export default function IhramScreen({ navigation }: { navigation: Nav }) {
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState<any>(null);
   const scrollRef = useRef<ScrollRef | null>(null);
 
   const go = useCallback((id) => { setOpen(id); requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: false })); }, []);
@@ -130,7 +130,7 @@ function Mikat() {
 }
 
 function Checklist() {
-  const [done, setDone] = useState([]);
+  const [done, setDone] = useState<any[]>([]);
   useEffect(() => {
     AsyncStorage.getItem(CHECK_KEY).then((v) => { try { const a = JSON.parse(v || '[]'); if (Array.isArray(a)) setDone(a); } catch (e) {} }).catch(() => {});
   }, []);

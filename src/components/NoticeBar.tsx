@@ -8,7 +8,7 @@ import type { Nav } from '../screens/navTypes';
 // Bar on Home with the newest unread notice (an important one from Travel Adda first). Tapping opens the box.
 export default function NoticeBar({ navigation }: { navigation: Nav }) {
   const { unread, ready } = useUnread();
-  const [top, setTop] = useState(null);
+  const [top, setTop] = useState<any>(null);
   const load = useCallback(async () => {
     try {
       const { rows } = await listNotifications();
