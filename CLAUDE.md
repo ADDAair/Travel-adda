@@ -31,7 +31,7 @@ Priority order: clarity > ease > accessibility > reliability > speed > beauty > 
 - New work uses the latest stable versions/technology. Existing code is moved up step by step (one Expo SDK at a time,
   TypeScript file by file), never all at once: explain the reason, ask the owner (options + consequences), then do it,
   keeping every feature working (all tests + CI + APK + owner phone check after each step).
-- Status Oct 2026: app on Expo SDK 58 (RN 0.88, React 19.3, Hermes v1, R8 in release builds) — the latest. App logic (all of src/lib) is TypeScript since Nov 2026 (step 4); screens and components are still mostly JavaScript.
+- Status Oct 2026: app on Expo SDK 58 (RN 0.88, React 19.3, Hermes v1, R8 in release builds) — the latest. The whole app (App.tsx and all of src) is TypeScript since Nov 2026 (steps 1–8). Screen state that holds server rows is still loosely typed (any / Record<string, any>) until the database has generated types.
 
 ## Workflow
 - Push to main triggers .github/workflows/check.yml. Read failures via check-run annotations (logs API is blocked).
