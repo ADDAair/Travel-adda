@@ -40,7 +40,7 @@ t "ok" A "select public.admin_set_setting('haji_count_min', '')"
 t "" C "select public.haji_count_public()"
 # other settings still work (no regression)
 t "ok" A "select public.admin_set_setting('fund_donate_mode', 'open')"
-t "ok" A "select public.admin_set_setting('fund_donate_mode', 'approved')"
+t "ok" A "select public.admin_set_setting('fund_donate_mode', '')"   # back to the default (no row), so older steps re-run cleanly
 # ---------- (3) a leader's own numbers ----------
 G=00000000-0000-0000-0000-0000000000e1; G2=00000000-0000-0000-0000-0000000000e2; GD=00000000-0000-0000-0000-0000000000e3
 $Q "delete from public.groups where id in ('$G','$G2','$GD')" >/dev/null

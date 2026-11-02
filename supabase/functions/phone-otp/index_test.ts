@@ -281,3 +281,19 @@ Deno.test('a failed send (our side) does not use up the limits', async () => {
   w.d.sendEmail = (to, subject, text) => { w.mails.push({ to, subject, text }); return Promise.resolve(true); };
   assertEquals((await handle(w.d, { action: 'send_verify', channel: 'email', email: 'a@example.com' }, 'jwt-u1')).status, 200);
 });
+
+// App renamed to "আমি হাজী – Ami Haji" (Nov 2026): codes say the app's name; the company name is not used as the app's.
+Deno.test('code messages carry the new app name (e-mail sender, subject, text, SMS)', async () => {
+  const w = world();
+  await handle(w.d, { action: 'send_verify', channel: 'email', email: 'karim@example.com' }, 'jwt-u1');
+  assert(w.mails[0].subject.includes('আমি হাজী'), w.mails[0].subject);
+  assert(w.mails[0].text.includes('আমি হাজী') && w.mails[0].text.includes('Ami Haji'));
+  assert(!w.mails[0].subject.includes('Travel Adda') && !w.mails[0].text.includes('Travel Adda কোড'));
+  const w2 = world();
+  await handle(w2.d, { action: 'send_verify' }, 'jwt-u1');
+  assert(w2.sms[0].text.startsWith('Ami Haji code:'), w2.sms[0].text);
+  const calls: { init?: RequestInit }[] = [];
+  const f = ((_u: string, init?: RequestInit) => { calls.push({ init }); return Promise.resolve(new Response('{}', { status: 201 })); }) as typeof fetch;
+  await sendEmailVia('brevo', (k) => ({ EMAIL_API_KEY: 'K', EMAIL_FROM: 'amihaji.bd@gmail.com' } as Record<string, string>)[k], 'to@x.com', 'S', 'T', f);
+  assertEquals(JSON.parse(String(calls[0].init!.body)).sender.name, 'আমি হাজী');
+});

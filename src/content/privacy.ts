@@ -1,6 +1,6 @@
 // Privacy policy shown inside the app. Keep docs/privacy-policy-bn.md in step with this file.
-export const PRIVACY_UPDATED = '৩০ অক্টোবর ২০২৬';
-export const PRIVACY_CONTACT = 'traveladda.z@gmail.com';
+export const PRIVACY_UPDATED = '৩ নভেম্বর ২০২৬';
+export const PRIVACY_CONTACT = 'amihaji.bd@gmail.com';
 
 export const PRIVACY = [
   {

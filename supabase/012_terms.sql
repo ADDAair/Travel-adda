@@ -49,7 +49,7 @@ Travel Adda অ্যাপ ব্যবহার করার আগে এই 
 ৮. পরিবর্তন ও যোগাযোগ
 • প্রয়োজনে এই শর্তাবলি বদলানো হতে পারে। সর্বশেষটি সবসময় অ্যাপের "আমার তথ্য → শর্তাবলি"-তে থাকবে।
 • এই শর্তাবলি বাংলাদেশের আইন অনুযায়ী।
-• প্রশ্ন বা অভিযোগ: traveladda.z@gmail.com অথবা অ্যাপের হেল্পলাইন।$T$)
+• প্রশ্ন বা অভিযোগ: amihaji.bd@gmail.com অথবা অ্যাপের হেল্পলাইন।$T$)
 on conflict (key) do nothing;
 
 insert into public.app_texts (key, body) values ('terms_leader', $T$Travel Adda — গ্রুপ লিডারদের জন্য শর্তাবলি
@@ -91,7 +91,7 @@ insert into public.app_texts (key, body) values ('terms_leader', $T$Travel Adda 
 ৮. পরিবর্তন ও যোগাযোগ
 • প্রয়োজনে এই শর্তাবলি বদলানো হতে পারে। সর্বশেষটি সবসময় অ্যাপের "আমার তথ্য → শর্তাবলি"-তে থাকবে।
 • এই শর্তাবলি বাংলাদেশের আইন অনুযায়ী।
-• প্রশ্ন: traveladda.z@gmail.com অথবা অ্যাপের হেল্পলাইন।$T$)
+• প্রশ্ন: amihaji.bd@gmail.com অথবা অ্যাপের হেল্পলাইন।$T$)
 on conflict (key) do nothing;
 
 create or replace function public.admin_set_text(p_key text, p_body text)

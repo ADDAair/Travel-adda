@@ -1,4 +1,4 @@
-// Travel Adda – account verification and "forgot password" with a code by SMS or e-mail (Supabase Edge Function).
+// আমি হাজী – Ami Haji (run by Travel Adda) – account verification and "forgot password" with a code by SMS or e-mail (Supabase Edge Function).
 // One file on purpose: it can be pasted into Supabase Dashboard > Edge Functions as-is.
 //
 // Secrets to set in Supabase (Dashboard > Edge Functions > Secrets). Never put them in the app or in GitHub:
@@ -9,7 +9,7 @@
 //   OTP_DAILY_CAP  optional, most SMS per day for the whole app (default 300) – protects the SMS balance
 //   EMAIL_PROVIDER brevo
 //   EMAIL_API_KEY  the API key from Brevo (SMTP & API > API keys)
-//   EMAIL_FROM     the sender address verified in Brevo (e.g. traveladda2.0@gmail.com)
+//   EMAIL_FROM     the sender address verified in Brevo (e.g. amihaji.bd@gmail.com)
 //   EMAIL_DAILY_CAP optional, most e-mails per day for the whole app (default 250; Brevo free = 300/day)
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase automatically.
 //
@@ -95,9 +95,9 @@ async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSe
   if (mine && first && first.id !== myId) { await d.deleteOtp(myId); return fail(429, 'wait', { retry_in: Math.ceil(MIN_GAP / 1000) }); }
   if (realSend) {
     const sent = mail
-      ? await d.sendEmail(phone, `আপনার Travel Adda কোড: ${code}`,
-          `আপনার Travel Adda কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Travel Adda code: ${code} (valid 5 minutes). Do not share it.`)
-      : await d.sendSms(phone, `Travel Adda code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
+      ? await d.sendEmail(phone, `আপনার "আমি হাজী" কোড: ${code}`,
+          `আপনার "আমি হাজী" (Ami Haji) কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, "আমি হাজী" বা Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Ami Haji code: ${code} (valid 5 minutes). Do not share it.`)
+      : await d.sendSms(phone, `Ami Haji code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
     // A failure on OUR side (company down, wrong key) must not use up a signed-in person's limits: that code row is removed.
     // (Not for "forgot password": there the limits must behave the same whether or not the number/e-mail has an account.)
     if (!sent) { if (purpose === 'verify') await d.deleteOtp(myId); return fail(502, mail ? 'email_failed' : 'sms_failed'); }
@@ -222,7 +222,7 @@ export async function sendEmailVia(provider: string, env: (k: string) => string 
     if (provider === 'brevo') {
       const r = await fetcher('https://api.brevo.com/v3/smtp/email', {
         method: 'POST', headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ sender: { name: 'Travel Adda', email: from }, to: [{ email: to }], subject, textContent: text }),
+        body: JSON.stringify({ sender: { name: 'আমি হাজী', email: from }, to: [{ email: to }], subject, textContent: text }),
       });
       if (!r.ok) { const j = await r.json().catch(() => ({})); console.error('brevo refused', r.status, String((j as Record<string, unknown>).code ?? ''), String((j as Record<string, unknown>).message ?? '').split(key).join('***').slice(0, 200)); }
       return r.ok;
