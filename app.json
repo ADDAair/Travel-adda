@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Travel Adda",
+    "name": "আমি হাজী",
     "slug": "travel-adda",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "android": {
-      "package": "app.traveladda.hajumrah",
+      "package": "app.amihaji.hajumrah",
       "allowBackup": false,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
@@ -21,7 +21,7 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "app.traveladda.hajumrah"
+      "bundleIdentifier": "app.amihaji.hajumrah"
     },
     "plugins": [
       "expo-secure-store",

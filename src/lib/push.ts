@@ -16,7 +16,7 @@ const projectId: string | undefined = (app as { expo?: { extra?: { eas?: { proje
 async function channels(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('notices', {
-    name: 'Travel Adda নোটিফিকেশন', importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 250, 150, 250],
+    name: 'জরুরি নোটিশ ও খবর', importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 250, 150, 250],
   });
   await Notifications.setNotificationChannelAsync('important', {
     name: 'জরুরি নোটিশ', importance: Notifications.AndroidImportance.MAX, sound: 'default', vibrationPattern: [0, 400, 200, 400],

@@ -70,7 +70,7 @@ export default function PushCard({ mode = 'settings' }: { mode?: 'home' | 'setti
       {st === 'off' || st === 'unset' ? <Button title="ফোনে নোটিফিকেশন চালু করুন" icon="🔔" onPress={on} loading={busy} /> : null}
       {st === 'denied' ? (
         <>
-          <Text style={p.t}>ফোনের সেটিংসে Travel Adda-র নোটিফিকেশন বন্ধ করা আছে। সেটিংস খুলে "Notifications" বা "বিজ্ঞপ্তি" চালু করুন, তারপর এখানে ফিরে আসুন।</Text>
+          <Text style={p.t}>ফোনের সেটিংসে "আমি হাজী" অ্যাপের নোটিফিকেশন বন্ধ করা আছে। সেটিংস খুলে "Notifications" বা "বিজ্ঞপ্তি" চালু করুন, তারপর এখানে ফিরে আসুন।</Text>
           <Button title="ফোনের সেটিংস খুলুন" icon="⚙️" kind="secondary" onPress={openPhoneSettings} />
           <Button title="আবার দেখুন" icon="🔄" kind="secondary" onPress={on} loading={busy} style={{ marginTop: S.sm }} />
         </>

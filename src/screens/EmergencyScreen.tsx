@@ -250,7 +250,7 @@ function SosLocationToggle() {
     try {
       if (!on) {
         const p = await Location.requestForegroundPermissionsAsync();
-        if (!p || p.status !== 'granted') { setMsg('ফোন অবস্থান দেওয়ার অনুমতি দেয়নি। ফোনের সেটিংসে Travel Adda-কে অবস্থানের অনুমতি দিয়ে আবার চেষ্টা করুন।'); return; }
+        if (!p || p.status !== 'granted') { setMsg('ফোন অবস্থান দেওয়ার অনুমতি দেয়নি। ফোনের সেটিংসে "আমি হাজী" অ্যাপকে অবস্থানের অনুমতি দিয়ে আবার চেষ্টা করুন।'); return; }
       }
       await setSosLocationWanted(!on); setOn(!on);
     } catch (e) { setMsg('কাজটি হয়নি। আবার চেষ্টা করুন।'); }

@@ -11,8 +11,8 @@ const src = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), 'utf8');
 
 // ---------- 2: the line on Home ----------
 test('Home line: Bengali digits with thousands separator and a plus (it is a rounded number)', () => {
-  assert.equal(hajiCountText(12000), '১২,০০০+ হাজী Travel Adda ব্যবহার করছেন');
-  assert.equal(hajiCountText(1200), '১,২০০+ হাজী Travel Adda ব্যবহার করছেন');
+  assert.equal(hajiCountText(12000), '১২,০০০+ হাজী "আমি হাজী" অ্যাপ ব্যবহার করছেন');
+  assert.equal(hajiCountText(1200), '১,২০০+ হাজী "আমি হাজী" অ্যাপ ব্যবহার করছেন');
 });
 test('Home line: nothing for no number / zero', () => {
   assert.equal(hajiCountText(null), null);

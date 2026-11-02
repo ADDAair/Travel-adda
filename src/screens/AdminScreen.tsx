@@ -557,7 +557,7 @@ function UserCountsCard(): JSX.Element | null {
   );
 }
 
-// Admin only: show hajis "১২,০০০+ হাজী Travel Adda ব্যবহার করছেন" on Home once the total reaches a minimum (032).
+// Admin only: show hajis "১২,০০০+ হাজী 'আমি হাজী' অ্যাপ ব্যবহার করছেন" on Home once the total reaches a minimum (032).
 function HomeCountSetting(): JSX.Element {
   const [cur, setCur] = useState<string | null | undefined>(undefined);    // undefined = loading, '' = off
   const [v, setV] = useState('');

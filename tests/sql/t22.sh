@@ -68,7 +68,7 @@ t "1" C "select count(*) from public.list_leaders(null, null) where id='$B'"
 # ---------- 6) forced update ----------
 t "ok" A "select public.admin_set_setting('min_app_version', '0.2.0')"
 t fail A "select public.admin_set_setting('min_app_version', '1.x')"
-t "ok" A "select public.admin_set_setting('store_url', 'https://play.google.com/store/apps/details?id=app.traveladda.hajumrah')"
+t "ok" A "select public.admin_set_setting('store_url', 'https://play.google.com/store/apps/details?id=app.amihaji.hajumrah')"
 t fail A "select public.admin_set_setting('store_url', 'http://evil.example/app.apk')"
 t "0.2.0" C "select value from public.app_settings where key='min_app_version'"
 t fail C "select public.admin_set_setting('min_app_version', '9.9.9')"

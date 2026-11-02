@@ -83,7 +83,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const retry = useCallback(async () => { setState((x) => (x === 'err' && !p ? 'load' : x)); const m = await refreshMe(); if (!m) setState('err'); }, [refreshMe, p]);
 
   // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
-  // "১২,০০০+ হাজী Travel Adda ব্যবহার করছেন" — only after the admin turned it on and the total reached his minimum (032).
+  // "১২,০০০+ হাজী 'আমি হাজী' অ্যাপ ব্যবহার করছেন" — only after the admin turned it on and the total reached his minimum (032).
   const [countLine, setCountLine] = useState<string | null>(null);
   useEffect(() => {
     const get = () => { hajiCountPublic().then((n) => setCountLine(hajiCountText(n))); };

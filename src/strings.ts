@@ -1,6 +1,9 @@
 // All user-visible text in one place (Bengali first; other languages can be added later).
 export const T = {
-  appName: 'Travel Adda',
+  appName: 'আমি হাজী',                       // the app (owner renamed it in Nov 2026)
+  appNameFull: 'আমি হাজী – Ami Haji',
+  company: 'Travel Adda',                   // the licensed company that runs it (payments, helpline, notices)
+  byline: 'Travel Adda-র একটি সেবা',
   tagline: 'হজ ও ওমরাহর বিশ্বস্ত সঙ্গী',
   soon: 'শীঘ্রই আসছে',
   retry: 'আবার চেষ্টা করুন',

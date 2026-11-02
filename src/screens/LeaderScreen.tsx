@@ -173,7 +173,7 @@ function GroupAdmin({ g, onBack, navigation }: { g: LeaderGroup; onBack: (m?: Ms
   }, [g]);
   useEffect(() => { load(); }, [load]);
 
-  const share = () => Share.share({ message: `Travel Adda অ্যাপে আমাদের "${g.name}" দলে যোগ দিন।\nঅ্যাপের "আমার দল" পাতায় এই কোড লিখুন: ${g.join_code}` }).catch(() => {});
+  const share = () => Share.share({ message: `"আমি হাজী" অ্যাপে আমাদের "${g.name}" দলে যোগ দিন।\nঅ্যাপের "আমার দল" পাতায় এই কোড লিখুন: ${g.join_code}` }).catch(() => {});
   const invite = async () => {
     if (busy) return;
     const p = normalizePhone(phone);

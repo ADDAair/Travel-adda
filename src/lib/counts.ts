@@ -1,5 +1,5 @@
 // Totals for hajis and leaders (supabase/032_public_counts.sql, owner choice Nov 2026).
-//  - Hajis' Home: "১২,০০০+ হাজী Travel Adda ব্যবহার করছেন" — a ROUNDED total, only after the admin's minimum is reached.
+//  - Hajis' Home: "১২,০০০+ হাজী 'আমি হাজী' অ্যাপ ব্যবহার করছেন" — a ROUNDED total, only after the admin's minimum is reached.
 //  - Leader panel: the leader's own numbers (hajis in his groups, running contracts, call requests this month).
 // Neither is ever allowed to break a page: on any failure they are simply not shown.
 import { call } from './rpc';
@@ -15,7 +15,7 @@ export async function hajiCountPublic(): Promise<number | null> {
   } catch (e) { return null; }   // offline or step 032 not run: no line
 }
 export const hajiCountText = (n: number | null | undefined): string | null =>
-  (n ? `${bnCount(n)}+ হাজী Travel Adda ব্যবহার করছেন` : null);
+  (n ? `${bnCount(n)}+ হাজী "আমি হাজী" অ্যাপ ব্যবহার করছেন` : null);
 
 // Admin's minimum: '' turns the line off; null = not a sensible whole number (1 … 10 কোটি).
 export function cleanCountMin(v: unknown): string | null {

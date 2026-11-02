@@ -102,7 +102,7 @@ function UpdateNeeded({ storeUrl, onSkip }: { storeUrl: string | null; onSkip?: 
       <Text style={{ fontSize: 56, textAlign: 'center' }} importantForAccessibility="no">⬆️</Text>
       <Text style={{ fontSize: F.title, fontWeight: '700', color: C.primary, textAlign: 'center', marginVertical: S.md }} accessibilityRole="header">নতুন সংস্করণ নিন</Text>
       <Text style={{ fontSize: F.body, color: C.text, textAlign: 'center', lineHeight: F.body * 1.5, marginBottom: S.lg }}>
-        আপনার নিরাপত্তার জন্য Travel Adda-র নতুন সংস্করণ দরকার। আপনার তথ্য নিরাপদ আছে; নতুন সংস্করণ নিলে আগের মতোই সব পাবেন। (এই ফোনে আছে: {APP_VERSION})
+        আপনার নিরাপত্তার জন্য "আমি হাজী" অ্যাপের নতুন সংস্করণ দরকার। আপনার তথ্য নিরাপদ আছে; নতুন সংস্করণ নিলে আগের মতোই সব পাবেন। (এই ফোনে আছে: {APP_VERSION})
       </Text>
       {storeUrl ? <Button title="নতুন সংস্করণ নিন" icon="⬇️" onPress={() => Linking.openURL(storeUrl).catch(() => {})} />
         : <Text style={{ fontSize: F.body, color: C.muted, textAlign: 'center' }}>নতুন সংস্করণের জন্য Travel Adda হেল্পলাইনে যোগাযোগ করুন।</Text>}
@@ -310,7 +310,7 @@ export default function App() {
     },
   }), [handsOnPending]);
 
-  const splash = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>Travel Adda</Text><ActivityIndicator color={C.gold} size="large" /></View>;
+  const splash = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>{T.appName}</Text><Text style={s.splashBy}>{T.byline}</Text><ActivityIndicator color={C.gold} size="large" /></View>;
   const checkingPhoto = !!session && onboarded === true && photoGate === undefined;
   let body;
   if (session === undefined || onboarded === undefined || checkingPhoto) {
@@ -344,6 +344,7 @@ export default function App() {
 const s = StyleSheet.create({
   splash: { flex: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 16 },
   splashName: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
+  splashBy: { color: '#FFFFFF', fontSize: 16, marginBottom: 8, opacity: 0.9 },
   bar: { flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderColor: C.line, paddingTop: 8, alignItems: 'flex-end' },
   tab: { flex: 1, alignItems: 'center', minHeight: 64, justifyContent: 'flex-end', paddingHorizontal: 2 },
   pill: { minWidth: TOUCH + 8, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

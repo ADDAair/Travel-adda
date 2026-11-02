@@ -7,7 +7,7 @@ import { toBn } from '../lib/phone';
 
 // Keep this in step with what really works in the app (no promises for features that are not built yet).
 const SLIDES = [
-  { icon: '🕋', title: 'আস-সালামু আলাইকুম!', body: 'Travel Adda-তে আপনাকে স্বাগতম। হজ ও ওমরাহর সফরে এই অ্যাপ আপনার পাশে থাকবে।' },
+  { icon: '🕋', title: 'আস-সালামু আলাইকুম!', body: '"আমি হাজী" অ্যাপে আপনাকে স্বাগতম (Travel Adda-র একটি সেবা)। হজ ও ওমরাহর সফরে এই অ্যাপ আপনার পাশে থাকবে।' },
   {
     icon: '✅', title: 'এখনই যা ব্যবহার করতে পারবেন', list: [
       ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার জায়গা অনুযায়ী সময়, কম্পাসে কিবলা'],

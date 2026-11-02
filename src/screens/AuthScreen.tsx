@@ -132,6 +132,7 @@ export default function AuthScreen(): JSX.Element {
           <Logo size={72} />
           <Text style={st.appName} accessibilityRole="header">{T.appName}</Text>
           <Text style={st.tag}>{T.tagline}</Text>
+          <Text style={st.by}>{T.byline}</Text>
         </View>
 
         <Segmented
@@ -266,6 +267,7 @@ const st = StyleSheet.create({
   brand: { alignItems: 'center', marginBottom: S.lg, gap: 6 },
   logo: { fontSize: 56 },
   appName: { fontSize: F.hero, fontWeight: '700', color: C.primary },
+  by: { fontSize: F.small, color: C.muted, marginTop: 2 },
   tag: { fontSize: F.body, color: C.muted, marginTop: 2 },
   title: { fontSize: F.title, fontWeight: '700', color: C.text, marginBottom: S.md },
   eye: { minHeight: TOUCH, minWidth: 84, paddingLeft: S.sm, paddingRight: S.md, justifyContent: 'center', alignItems: 'flex-end', flexShrink: 0 },

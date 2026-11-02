@@ -107,7 +107,7 @@ async function schedule(loc: ReminderPlace | null | undefined): Promise<number> 
     const at = prayerTimes({ lat: loc.lat, lng: loc.lng, ...day }).isha + 45 * 60000;
     if (at > now) {
       await Notifications.scheduleNotificationAsync({
-        content: { title: '🔔 নামাজের রিমাইন্ডার চালু রাখতে অ্যাপটি একবার খুলুন', body: 'Travel Adda না খুললে কাল থেকে নামাজের রিমাইন্ডার আসবে না। খুললেই আবার ৭ দিনের জন্য চালু হবে।', sound: 'default' },
+        content: { title: '🔔 নামাজের রিমাইন্ডার চালু রাখতে অ্যাপটি একবার খুলুন', body: '"আমি হাজী" অ্যাপ না খুললে কাল থেকে নামাজের রিমাইন্ডার আসবে না। খুললেই আবার ৭ দিনের জন্য চালু হবে।', sound: 'default' },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at), channelId: CHANNEL },
       });
     }

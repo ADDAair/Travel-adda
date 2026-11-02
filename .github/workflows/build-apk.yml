@@ -15,7 +15,7 @@ jobs:
       - name: Firebase file for push (from secret; skipped if not set)
         env: { GSJ: '${{ secrets.GOOGLE_SERVICES_JSON }}' }
         run: |
-          if [ -n "$GSJ" ]; then printf '%s' "$GSJ" > google-services.json; node -e "const j=require('./google-services.json'); if(!j.client.some(c=>c.client_info.android_client_info.package_name==='app.traveladda.hajumrah')) { console.log('::error::google-services.json is for another package'); process.exit(1) } console.log('push: Firebase file ready')"; else echo "::warning::GOOGLE_SERVICES_JSON not set: APK built without push"; fi
+          if [ -n "$GSJ" ]; then printf '%s' "$GSJ" > google-services.json; node -e "const j=require('./google-services.json'); if(!j.client.some(c=>c.client_info.android_client_info.package_name==='app.amihaji.hajumrah')) { console.log('::warning title=PUSH OFF::google-services.json is for another package (app renamed to app.amihaji.hajumrah) - add the new package in Firebase and update the secret. This APK is built without push.'); require('fs').unlinkSync('./google-services.json'); process.exit(0) } console.log('push: Firebase file ready')"; else echo "::warning::GOOGLE_SERVICES_JSON not set: APK built without push"; fi
       - name: build
         run: |
           set +e

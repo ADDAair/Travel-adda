@@ -15,7 +15,7 @@
 
 ## ৩. অ্যান্ড্রয়েড অ্যাপ যোগ করা ও google-services.json
 1. প্রজেক্টের প্রথম পাতায় অ্যান্ড্রয়েড চিহ্নে (রোবট) চাপুন।
-2. **Android package name**-এ লিখুন ঠিক এভাবে: `app.traveladda.hajumrah`
+2. **Android package name**-এ লিখুন ঠিক এভাবে: `app.amihaji.hajumrah`
 3. **Register app** → **Download google-services.json**। বাকি ধাপগুলো (SDK যোগ করা) বাদ দিয়ে **Next → Continue to console**।
 4. এই ফাইল GitHub-এ গোপন ঘরে রাখুন:
    - github.com/ADDAair/Travel-adda → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
@@ -24,7 +24,7 @@
 
 ## ৪. Expo-কে পাঠানোর অনুমতি (FCM V1 key)
 1. Firebase-এ বাঁ দিকের ⚙️ → **Project settings** → **Service accounts** ট্যাব → **Generate new private key** → **Generate key**। একটা .json ফাইল নামবে (গোপন!)।
-2. **expo.dev**-এ traveladda অ্যাকাউন্টে ঢুকুন → প্রজেক্ট **travel-adda** → বাঁ দিকে **Credentials** → **Android** → `app.traveladda.hajumrah`।
+2. **expo.dev**-এ traveladda অ্যাকাউন্টে ঢুকুন → প্রজেক্ট **travel-adda** → বাঁ দিকে **Credentials** → **Android** → `app.amihaji.hajumrah`।
 3. **FCM V1 service account key** → **Add a service account key** → নামানো .json ফাইলটা আপলোড করুন → Save।
 4. আপলোড হলে ল্যাপটপ থেকে ওই ফাইল মুছে ফেলুন (Recycle Bin থেকেও)।
 
