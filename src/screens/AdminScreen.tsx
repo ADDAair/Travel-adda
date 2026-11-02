@@ -28,6 +28,7 @@ import { KIND, refOf, adminInterests, markInterest, hideOffer, adminOffersReview
 import { OfferCard } from '../components/OfferCard';
 import type { Msg, Nav } from './navTypes';
 import type { AnyPackage, Item, Res } from '../lib/types';
+import { cleanCountMin, bnCount } from '../lib/counts';
 
 type Evidence = { path: string; kind: string };   // a complaint's proof file (stored as JSON)
 
@@ -132,7 +133,7 @@ export default function AdminScreen({ navigation }: { navigation: Nav }): JSX.El
             : cur.id === 'calls' ? <CallsTab />
               : cur.id === 'complaints' ? <ComplaintsTab />
                 : cur.id === 'reports' ? <ReportsTab canUsers={has('users')} />
-                  : cur.id === 'users' ? <UsersTab />
+                  : cur.id === 'users' ? <UsersTab admin={has('admin')} />
                     : cur.id === 'money' ? <MoneyTab owner={has('admin')} />
                     : cur.id === 'notify' ? <><SegmentNotifyBox /><NotifyTab /></>
                     : cur.id === 'alerts' ? <MoneyAlertsTab />
@@ -533,31 +534,64 @@ function ReportsTab({ canUsers }: { canUsers: boolean }): JSX.Element {
 }
 
 // Short count at the top of ব্যবহারকারী: how many hajis registered, how many group leaders (031). Numbers only.
-const bnNum = (n: number): string => toBn(n.toLocaleString('en-IN'));
 function UserCountsCard(): JSX.Element | null {
   const [c, setC] = useState<UserCounts | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => { userCounts().then(setC).catch(() => setFailed(true)); }, []);
   if (failed) return <Text style={st.small}>মোট সংখ্যা আনা যায়নি। পাতাটি আবার খুলুন।</Text>;
   if (!c) return null;          // loading, or database step 031 not run yet
-  const label = `অ্যাপে মোট ${bnNum(c.hajis)} জন হাজী নিবন্ধন করেছেন, গ্রুপ লিডার ${bnNum(c.leaders)} জন`
-    + (c.leadersPending ? `, লিডার আবেদন অপেক্ষায় ${bnNum(c.leadersPending)}টি` : '');
+  const label = `অ্যাপে মোট ${bnCount(c.hajis)} জন হাজী নিবন্ধন করেছেন, গ্রুপ লিডার ${bnCount(c.leaders)} জন`
+    + (c.leadersPending ? `, লিডার আবেদন অপেক্ষায় ${bnCount(c.leadersPending)}টি` : '');
   return (
     <View style={[st.card, { flexDirection: 'row', flexWrap: 'wrap', gap: S.md }]} accessible accessibilityLabel={label}>
       <View style={{ flex: 1, minWidth: 120 }}>
         <Text style={st.small}>🕋 নিবন্ধিত হাজী</Text>
-        <Text style={st.h}>{bnNum(c.hajis)} জন</Text>
+        <Text style={st.h}>{bnCount(c.hajis)} জন</Text>
       </View>
       <View style={{ flex: 1, minWidth: 120 }}>
         <Text style={st.small}>🧭 গ্রুপ লিডার</Text>
-        <Text style={st.h}>{bnNum(c.leaders)} জন</Text>
-        {c.leadersPending ? <Text style={st.small}>⏳ আবেদন অপেক্ষায়: {bnNum(c.leadersPending)}টি</Text> : null}
+        <Text style={st.h}>{bnCount(c.leaders)} জন</Text>
+        {c.leadersPending ? <Text style={st.small}>⏳ আবেদন অপেক্ষায়: {bnCount(c.leadersPending)}টি</Text> : null}
       </View>
     </View>
   );
 }
 
-function UsersTab(): JSX.Element {
+// Admin only: show hajis "১২,০০০+ হাজী Travel Adda ব্যবহার করছেন" on Home once the total reaches a minimum (032).
+function HomeCountSetting(): JSX.Element {
+  const [cur, setCur] = useState<string | null | undefined>(undefined);    // undefined = loading, '' = off
+  const [v, setV] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  useEffect(() => {
+    supabase.from('app_settings').select('key,value').eq('key', 'haji_count_min')
+      .then((r) => { const x = (r.data || [])[0]?.value || ''; setCur(x); setV(x ? toBn(x) : ''); }, () => setCur(null));
+  }, []);
+  const save = (off: boolean) => {
+    const c = off ? '' : cleanCountMin(v);
+    if (c === null || (!off && c === '')) { setMsg({ kind: 'bad', text: 'সংখ্যায় লিখুন, যেমন: ১০০০০ (১ থেকে ১০ কোটির মধ্যে)।' }); return; }
+    confirm(off ? 'হাজীদের হোম থেকে মোট সংখ্যা সরাবেন?' : 'হাজীদের হোমে মোট সংখ্যা দেখাবেন?',
+      off ? 'হাজীরা আর এই লাইন দেখবেন না।' : `নিবন্ধিত হাজী ${bnCount(Number(c))} জন বা বেশি হলে সবার হোমে গোল করা সংখ্যা দেখাবে (যেমন "১২,০০০+")। ঠিক সংখ্যা কেউ দেখবেন না।`,
+      off ? 'হ্যাঁ, সরান' : 'হ্যাঁ, চালু করুন', async () => {
+        setBusy(true); setMsg(null);
+        try { await setSetting('haji_count_min', c); setCur(c); setMsg({ kind: 'ok', text: off ? 'বন্ধ করা হয়েছে।' : 'চালু হয়েছে। হাজীরা পরের বার হোম খুললে দেখবেন।' }); }
+        catch (e) { setMsg({ kind: 'bad', text: notReady(e) ? 'ডেটাবেস ধাপ ০৩২ এখনো চালানো হয়নি।' : errText(e) }); }   // the typed number stays
+        finally { setBusy(false); }
+      });
+  };
+  return (
+    <View style={st.card}>
+      <Text style={st.h}>🤝 হাজীদের হোমে মোট সংখ্যা</Text>
+      <Text style={st.small}>{cur === undefined ? 'দেখা হচ্ছে…' : cur === null ? 'অবস্থা আনা যায়নি।' : cur ? `চালু: হাজী ${bnCount(Number(cur))} জন বা বেশি হলে দেখায়` : 'বন্ধ: হাজীরা কোনো সংখ্যা দেখেন না'}</Text>
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      <Field label="কতজন হাজী হলে দেখাবে" hint="যেমন: ১০০০০" value={v} onChangeText={setV} keyboardType="number-pad" maxLength={12} editable={!busy} />
+      <Button title={cur ? 'নতুন সংখ্যা সংরক্ষণ করুন' : 'চালু করুন'} icon="✅" onPress={() => save(false)} loading={busy} disabled={busy} />
+      {cur ? <Button title="বন্ধ করুন" icon="🚫" kind="secondary" onPress={() => save(true)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
+    </View>
+  );
+}
+
+function UsersTab({ admin }: { admin: boolean }): JSX.Element {
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Res<typeof findUsers> | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -585,6 +619,7 @@ function UsersTab(): JSX.Element {
   return (
     <>
       <UserCountsCard />
+      {admin ? <HomeCountSetting /> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       <Field label="নাম, আইডি বা মোবাইল নম্বর" hint="যেমন: TL-00012 বা 01712" value={q} onChangeText={setQ} />
       <Button title="খুঁজুন" icon="🔎" onPress={search} loading={busy} />

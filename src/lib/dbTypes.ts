@@ -89,6 +89,7 @@ export interface Rpc {
   gen_join_code: { args: {  }; returns: string };
   group_khadems: { args: { p_group: string | null }; returns: { user_id: string; full_name: string; code: string; avatar_path: string; phone: string }[] };
   group_members_for_leader: { args: { p_group: string | null }; returns: { user_id: string; full_name: string; haji_code: string; phone: string; avatar_path: string; status: string; joined_at: string; phone_verified: boolean }[] };
+  haji_count_public: { args: {  }; returns: number };
   haji_respond_contract: { args: { p_id: string | null, p_accept: boolean | null }; returns: string };
   has_perm: { args: { p: string | null }; returns: boolean };
   help_inbox: { args: { p_group: string | null }; returns: { thread_id: string; haji_id: string; haji_name: string; haji_code: string; avatar_path: string; last_body: string; last_at: string; last_from_haji: boolean; status: string; msg_count: number }[] };
@@ -117,6 +118,7 @@ export interface Rpc {
   leader_faq_delete: { args: { p_id: string | null }; returns: string };
   leader_faq_save: { args: { p_group: string | null, p_id: string | null, p_q: string | null, p_a: string | null }; returns: string };
   leader_money: { args: {  }; returns: { contract_id: string; contract_no: string; haji_name: string; haji_code: string; kind: string; what: string; amount: number; at: string; ref: string }[] };
+  leader_my_stats: { args: {  }; returns: Json };
   leader_public: { args: { p_leader: string | null }; returns: { id: string; full_name: string; leader_code: string; agency_name: string; district: string; upazila: string; avatar_path: string; umrah_license: string; hajj_license: string; bio: string; rating_avg: number; rating_count: number; complaints_verified: number; member_since: string; blocked_by_me: boolean; i_have_contract: boolean; union_name: string; leader_kind: string; profession: string }[] };
   leader_referral_list: { args: {  }; returns: { haji_id: string; full_name: string; haji_code: string; status: string; created_at: string; cancel_requested: boolean }[] };
   leader_remove_group: { args: { p_group: string | null }; returns: string };
@@ -167,6 +169,7 @@ export interface Rpc {
   request_referral_cancel: { args: { p_reason: string | null }; returns: string };
   respond_invite: { args: { p_group: string | null, p_accept: boolean | null }; returns: string };
   review_leader_application: { args: { p_app: string | null, p_approve: boolean | null, p_note?: string | null }; returns: string };
+  round_count: { args: { n: number | null }; returns: number };
   set_referral: { args: { p_code: string | null }; returns: string };
   unregister_push_token: { args: { p_token: string | null }; returns: string };
   withdraw_help: { args: {  }; returns: string };
@@ -368,6 +371,7 @@ export type Database = {
       gen_join_code: { Args: {  }; Returns: string };
       group_khadems: { Args: { p_group: string | null }; Returns: { user_id: string; full_name: string; code: string; avatar_path: string; phone: string }[] };
       group_members_for_leader: { Args: { p_group: string | null }; Returns: { user_id: string; full_name: string; haji_code: string; phone: string; avatar_path: string; status: string; joined_at: string; phone_verified: boolean }[] };
+      haji_count_public: { Args: {  }; Returns: number };
       haji_respond_contract: { Args: { p_id: string | null, p_accept: boolean | null }; Returns: string };
       has_perm: { Args: { p: string | null }; Returns: boolean };
       help_inbox: { Args: { p_group: string | null }; Returns: { thread_id: string; haji_id: string; haji_name: string; haji_code: string; avatar_path: string; last_body: string; last_at: string; last_from_haji: boolean; status: string; msg_count: number }[] };
@@ -396,6 +400,7 @@ export type Database = {
       leader_faq_delete: { Args: { p_id: string | null }; Returns: string };
       leader_faq_save: { Args: { p_group: string | null, p_id: string | null, p_q: string | null, p_a: string | null }; Returns: string };
       leader_money: { Args: {  }; Returns: { contract_id: string; contract_no: string; haji_name: string; haji_code: string; kind: string; what: string; amount: number; at: string; ref: string }[] };
+      leader_my_stats: { Args: {  }; Returns: Json };
       leader_public: { Args: { p_leader: string | null }; Returns: { id: string; full_name: string; leader_code: string; agency_name: string; district: string; upazila: string; avatar_path: string; umrah_license: string; hajj_license: string; bio: string; rating_avg: number; rating_count: number; complaints_verified: number; member_since: string; blocked_by_me: boolean; i_have_contract: boolean; union_name: string; leader_kind: string; profession: string }[] };
       leader_referral_list: { Args: {  }; Returns: { haji_id: string; full_name: string; haji_code: string; status: string; created_at: string; cancel_requested: boolean }[] };
       leader_remove_group: { Args: { p_group: string | null }; Returns: string };
@@ -446,6 +451,7 @@ export type Database = {
       request_referral_cancel: { Args: { p_reason: string | null }; Returns: string };
       respond_invite: { Args: { p_group: string | null, p_accept: boolean | null }; Returns: string };
       review_leader_application: { Args: { p_app: string | null, p_approve: boolean | null, p_note?: string | null }; Returns: string };
+      round_count: { Args: { n: number | null }; Returns: number };
       set_referral: { Args: { p_code: string | null }; Returns: string };
       unregister_push_token: { Args: { p_token: string | null }; Returns: string };
       withdraw_help: { Args: {  }; Returns: string };

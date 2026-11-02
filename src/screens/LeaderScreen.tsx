@@ -13,6 +13,7 @@ import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import type { Msg, Nav } from './navTypes';
 import type { Announcement, LeaderGroup } from '../lib/groups';
 import type { Item } from '../lib/types';
+import { leaderMyStats, bnCount, type LeaderStats } from '../lib/counts';
 
 const STATUS: Record<string, string> = { active: '✅ দলে আছেন', invited: '📩 আমন্ত্রণ পাঠানো হয়েছে', left: '↩️ দল ছেড়েছেন', removed: '⛔ সরানো হয়েছে', declined: '✖️ আমন্ত্রণ নেননি' };
 const call = (n: string) => Linking.openURL(`tel:${telBd(n)}`).catch(() => {});
@@ -63,6 +64,7 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' ? (
         <>
+          <MyStatsCard />
           <Button title="চুক্তি ও রেফারেল হাজী" icon="📜" onPress={() => navigation.navigate('LeaderContracts')} a11yHint="হাজীর আইডিতে চুক্তি পাঠান, উত্তর দেখুন" style={{ marginBottom: S.sm }} />
           <Button title="আমার প্যাকেজ (অফার)" icon="🎁" kind="gold" onPress={() => navigation.navigate('LeaderOffers')} a11yHint="হাজীদের অফার পাতায় প্যাকেজ দিন" style={{ marginBottom: S.sm }} />
           <Button title="আমার লিডার প্রোফাইল" icon="👤" kind="secondary" onPress={() => navigation.navigate('LeaderMe')} a11yHint="হাজীরা তালিকায় আপনাকে কীভাবে দেখেন" style={{ marginBottom: S.md }} />
@@ -85,6 +87,29 @@ export default function LeaderScreen({ navigation }: { navigation: Nav }): JSX.E
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+// The leader's OWN numbers (032): hajis in his open groups, running contracts, call requests this month.
+function MyStatsCard(): JSX.Element | null {
+  const [s, setS] = useState<LeaderStats | null>(null);
+  useEffect(() => { leaderMyStats().then(setS); }, []);
+  if (!s) return null;           // loading, offline or step 032 not run: nothing rather than wrong numbers
+  const items = [
+    { icon: '🕋', label: 'আপনার দলে হাজী', v: `${bnCount(s.hajis)} জন` },
+    { icon: '📜', label: 'চালু চুক্তি', v: `${bnCount(s.contracts)}টি` },
+    { icon: '📞', label: 'এ মাসে ফোনের অনুরোধ', v: `${bnCount(s.callsMonth)}টি` },
+  ];
+  return (
+    <View style={[st.card, { flexDirection: 'row', flexWrap: 'wrap', gap: S.md }]} accessible
+      accessibilityLabel={`আপনার হিসাব: ${items.map((x) => `${x.label} ${x.v}`).join(', ')}`}>
+      {items.map((x) => (
+        <View key={x.label} style={{ flex: 1, minWidth: 110 }}>
+          <Text style={st.small}>{x.icon} {x.label}</Text>
+          <Text style={st.h}>{x.v}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 

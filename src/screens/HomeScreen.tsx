@@ -16,6 +16,7 @@ import TripCard from '../components/TripCard';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
 import { myKhademGroups, myKhademInvites } from '../lib/help';
+import { hajiCountPublic, hajiCountText } from '../lib/counts';
 import type { Nav } from './navTypes';
 import type { Res } from '../lib/types';
 
@@ -82,6 +83,13 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
   const retry = useCallback(async () => { setState((x) => (x === 'err' && !p ? 'load' : x)); const m = await refreshMe(); if (!m) setState('err'); }, [refreshMe, p]);
 
   // Next prayer at the top of Home, only when a place was already chosen (Home never asks for location itself).
+  // "১২,০০০+ হাজী Travel Adda ব্যবহার করছেন" — only after the admin turned it on and the total reached his minimum (032).
+  const [countLine, setCountLine] = useState<string | null>(null);
+  useEffect(() => {
+    const get = () => { hajiCountPublic().then((n) => setCountLine(hajiCountText(n))); };
+    get(); return navigation?.addListener?.('focus', get);
+  }, [navigation]);
+
   const [ploc, setPloc] = useState<Place | null>(null);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -105,6 +113,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
         {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
         {p ? <View style={st.idPill}><Text style={st.idT}>{leaderAcc ? 'লিডার আইডি' : 'হাজী আইডি'}: {toBn(p.haji_code)}</Text></View> : null}
       </View>
+      {!leaderAcc && countLine ? <Text style={st.count}>🤝 {countLine}</Text> : null}
       <NoticeBar navigation={navigation} />
       {state === 'err' ? (
         <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
@@ -211,6 +220,7 @@ const st = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: S.lg, backgroundColor: C.bg, gap: S.md },
   loadT: { fontSize: F.body, color: C.muted },
   wrap: { padding: S.md, paddingBottom: S.xl },
+  count: { color: C.muted, fontSize: F.body, textAlign: 'center', marginTop: -S.xs, marginBottom: S.md },
   hero: { backgroundColor: C.primary, borderRadius: R.lg, padding: S.lg, marginBottom: S.md },
   hi: { color: C.onPrimarySoft, fontSize: F.body },
   nm: { color: C.onPrimary, fontSize: F.hero, fontWeight: '700', marginVertical: 4, lineHeight: 38 },
