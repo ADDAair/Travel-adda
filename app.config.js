@@ -6,7 +6,7 @@ const fs = require('fs');
 
 module.exports = ({ config }) => {
   const hasFcm = fs.existsSync('google-services.json');
-  const plugins = [...(config.plugins || []), ['expo-notifications', { icon: './assets/notification-icon.png', color: '#001952' }]];
+  const plugins = [...(config.plugins || []), ['expo-notifications', { icon: './assets/notification-icon.png', color: '#0B5D4B' }]];
   return {
     ...config,
     plugins,

@@ -342,7 +342,7 @@ export default function App() {
 }
 
 const s = StyleSheet.create({
-  splash: { flex: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  splash: { flex: 1, backgroundColor: '#0B5D4B', alignItems: 'center', justifyContent: 'center', gap: 16 },
   splashName: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   splashBy: { color: '#FFFFFF', fontSize: 16, marginBottom: 8, opacity: 0.9 },
   bar: { flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderColor: C.line, paddingTop: 8, alignItems: 'flex-end' },
