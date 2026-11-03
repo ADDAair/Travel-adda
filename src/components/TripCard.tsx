@@ -96,7 +96,7 @@ const t = StyleSheet.create({
   card: { backgroundColor: C.card, borderRadius: R.lg, padding: S.md, marginBottom: S.md, borderWidth: 2, borderColor: C.primary, ...shadow },
   h: { fontSize: F.large, fontWeight: '700', color: C.primary },
   big: { fontSize: F.large, color: C.text, marginTop: S.xs, lineHeight: 30 },
-  num: { fontSize: F.hero, fontWeight: '800', color: C.accent },
+  num: { fontSize: F.hero, fontWeight: '800', color: C.primary },
   row: { minHeight: TOUCH, justifyContent: 'center', borderTopWidth: 1, borderColor: C.line, marginTop: S.xs },
   rowT: { fontSize: F.body, color: C.text, lineHeight: 26 },
 });

@@ -17,9 +17,9 @@ export function contractHtml(c: ContractRow): string {
   const price = `${toBn(Number(c.price_bdt).toLocaleString('en-IN', { maximumFractionDigits: 2 }))} টাকা`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     body{font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif;color:#111;padding:24px;font-size:14px;line-height:1.6}
-    h1{color:#001952;font-size:22px;margin:0} .sub{color:#555;margin:4px 0 16px} table{width:100%;border-collapse:collapse;margin:12px 0}
-    th{width:32%;text-align:left;vertical-align:top;background:#F3F5FA;padding:8px;border:1px solid #D6DCE8} td{padding:8px;border:1px solid #D6DCE8}
-    .st{display:inline-block;padding:4px 10px;border:2px solid #001952;border-radius:8px;font-weight:bold} .foot{margin-top:24px;color:#555;font-size:12px}
+    h1{color:#0B5D4B;font-size:22px;margin:0} .sub{color:#555;margin:4px 0 16px} table{width:100%;border-collapse:collapse;margin:12px 0}
+    th{width:32%;text-align:left;vertical-align:top;background:#F6F4EE;padding:8px;border:1px solid #D9DFD9} td{padding:8px;border:1px solid #D9DFD9}
+    .st{display:inline-block;padding:4px 10px;border:2px solid #0B5D4B;border-radius:8px;font-weight:bold} .foot{margin-top:24px;color:#555;font-size:12px}
   </style></head><body>
   <h1>Travel Adda – হজ/ওমরাহ চুক্তি</h1>
   <div class="sub">চুক্তি নম্বর: <b>${esc(c.contract_no)}</b> · অবস্থা: <span class="st">${esc(STATUS[c.status || ''] || c.status)}</span></div>

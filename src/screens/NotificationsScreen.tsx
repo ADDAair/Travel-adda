@@ -105,7 +105,7 @@ const n = StyleSheet.create({
   row: { flexDirection: 'row', padding: S.md, paddingBottom: S.xs, gap: S.sm },
   icon: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: S.xs, marginBottom: 2 },
-  newTag: { fontSize: F.small, color: C.accent, fontWeight: '800' },
+  newTag: { fontSize: F.small, color: C.primary, fontWeight: '800' },
   impTag: { fontSize: F.small, color: C.bad, fontWeight: '800' },
   fromTag: { fontSize: F.small, color: C.muted, fontWeight: '700' },
   title: { fontSize: F.large, fontWeight: '700', color: C.text, lineHeight: 28 },

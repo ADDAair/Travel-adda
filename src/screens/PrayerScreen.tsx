@@ -374,7 +374,7 @@ const st = StyleSheet.create({
   qInfo: { backgroundColor: C.card, borderRadius: R.lg, padding: S.md, alignItems: 'center', marginBottom: S.md, ...shadow },
   qBig: { fontSize: 44, fontWeight: '700', color: C.primary },
   dialWrap: { alignItems: 'center', marginVertical: S.md },
-  pointer: { fontSize: 28, color: C.accent, marginBottom: -4 },
+  pointer: { fontSize: 28, color: C.primary, marginBottom: -4 },
   dial: { width: 260, height: 260, borderRadius: 130, borderWidth: 6, borderColor: C.primary, backgroundColor: C.card, ...shadow },
   dialOk: { borderColor: C.ok, backgroundColor: C.okSoft },
   cardinal: { position: 'absolute', top: 8, alignSelf: 'center', fontSize: F.large, fontWeight: '700', color: C.primary },
