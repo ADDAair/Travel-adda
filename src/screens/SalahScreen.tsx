@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, BackHandler } from 'react-native';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice } from '../components/ui';
-import { DuaInline } from '../components/guide';
+import { DuaInline, StepCard } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { Block } from './GuidesScreen';
 import type { RakatRow } from '../content/types';
@@ -45,6 +45,7 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
           <Text style={st.title} accessibilityRole="header">{sec.icon} {sec.title}</Text>
           {sec.blocks.map((b, i) => {
             if (b.type === 'rakat') return <Rakat key={i} rows={b.rows} />;
+            if (b.type === 'history') return <View key={i} style={{ marginTop: S.md }}><Text style={st.group} accessibilityRole="header">📜 ইতিহাস</Text>{b.items.map((s2, k) => <StepCard key={k} step={s2} />)}</View>;
             if (b.type === 'duas') return <View key={i} style={{ marginBottom: S.sm }}>{b.ids.map((id) => <DuaInline key={id} id={id} />)}</View>;
             if (b.type === 'kahf') return <Button key={i} title="সূরা কাহফ পড়ুন" icon="📖" kind="gold" onPress={() => navigation.navigate('Dua', { openSurah: 18, t: Date.now() })} style={{ marginTop: S.md }} />;
             return <Block key={i} b={b} navigation={navigation} />;

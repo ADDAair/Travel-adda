@@ -28,5 +28,6 @@ export type SalahBlock =
   | GuideBlock
   | { type: 'rakat'; rows: RakatRow[] }
   | { type: 'duas'; ids: string[] }
-  | { type: 'kahf' };
+  | { type: 'kahf' }
+  | { type: 'history'; items: Step[] };   // 📜 ইতিহাস: when and how the prayer began, each item with its source
 export type SalahSection = { id: string; icon: string; title: string; what: string; blocks: SalahBlock[] };
