@@ -6,8 +6,9 @@ import { Button, Field, Notice } from '../components/ui';
 import ChatBubbles, { fmtWhen } from '../components/ChatBubbles';
 import { leaderGroups, notReady } from '../lib/groups';
 import { useMe } from '../lib/me';
-import { helpInbox, helpThread, replyHelp, setThreadStatus, myKhademGroups, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
+import { helpInbox, helpThread, helpInboxOffline, helpThreadOffline, replyHelp, setThreadStatus, myKhademGroups, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
 import { toBn } from '../lib/phone';
+import { savedOr } from '../lib/localdb';
 import { st } from './GroupScreen';
 import type { Msg, Nav, Route } from './navTypes';
 
@@ -24,14 +25,19 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
+  const [offline, setOffline] = useState(false);   // showing the copy kept on the phone
   useEffect(() => { if (route?.params?.groupId) { setGid(route.params.groupId); setThread(null); } }, [route?.params?.groupId]);
 
   const loadGroups = useCallback(async () => {
     try {
-      const led: Grp[] = me && me.role === 'leader' ? (await leaderGroups()).filter((g) => g.active).map((g) => ({ id: g.id, name: g.name, role: 'leader' })) : [];
-      let kh: Grp[] = [];
-      try { kh = (await myKhademGroups()).map((g) => ({ id: g.group_id, name: g.group_name, role: 'khadem', waiting: g.waiting })); } catch (e) { if (!notReady(e)) throw e; }
-      const all = [...led, ...kh.filter((k) => !led.some((l) => l.id === k.id))];
+      // without internet: the saved list of groups (phone database)
+      const { rows: all, offline: off } = await savedOr<Grp>('staff_groups', async () => {
+        const led: Grp[] = me && me.role === 'leader' ? (await leaderGroups()).filter((g) => g.active).map((g) => ({ id: g.id, name: g.name, role: 'leader' })) : [];
+        let kh: Grp[] = [];
+        try { kh = (await myKhademGroups()).map((g) => ({ id: g.group_id, name: g.group_name, role: 'khadem', waiting: g.waiting })); } catch (e) { if (!notReady(e)) throw e; }
+        return [...led, ...kh.filter((k) => !led.some((l) => l.id === k.id))];
+      });
+      setOffline(off);
       setGroups(all);
       setGid((cur) => (cur && all.some((x) => x.id === cur) ? cur : all[0] ? all[0].id : null));
       if (!all.length) setState('ok');
@@ -39,12 +45,12 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
   }, [me]);
   const loadInbox = useCallback(async (quiet?: boolean) => {
     if (!gid) return;
-    try { setRows(await helpInbox(gid)); setState('ok'); }
+    try { const r = await helpInboxOffline(gid); setRows(r.rows); setOffline(r.offline); setState('ok'); }
     catch (e) { if (!quiet) setState(notReady(e) ? 'soon' : 'err'); }
   }, [gid]);
   const loadThread = useCallback(async (quiet?: boolean) => {
     if (!thread) return;
-    try { setMsgs(await helpThread(thread.thread_id)); } catch (e) { if (!quiet) setMsg({ kind: 'bad', text: helpErrorText(e) }); }
+    try { const r = await helpThreadOffline(thread.thread_id); setMsgs(r.rows); setOffline(r.offline); } catch (e) { if (!quiet) setMsg({ kind: 'bad', text: helpErrorText(e) }); }
   }, [thread]);
   useEffect(() => { loadGroups(); }, [loadGroups]);
   useEffect(() => { loadInbox(); }, [loadInbox]);
@@ -84,6 +90,7 @@ export default function HelpInboxScreen({ navigation, route }: { navigation: Nav
         <Pressable onPress={() => { setThread(null); setMsg(null); setText(''); loadInbox(true); }} style={st.back} accessibilityRole="button" accessibilityLabel="সব প্রশ্নের তালিকায় ফিরে যান"><Text style={st.backT}>‹ সব প্রশ্ন</Text></Pressable>
         <Text style={st.title} accessibilityRole="header">🕋 {thread.haji_name}</Text>
         <Text style={[st.small, { marginBottom: S.md }]}>আইডি: {thread.haji_code} · দল: {g ? g.name : ''}</Text>
+        {offline ? <Notice kind="warn" title="ইন্টারনেট নেই" text="ফোনে রাখা আগের বার্তা দেখানো হচ্ছে। উত্তর পাঠাতে ইন্টারনেট লাগবে।" /> : null}
         <View style={st.card}><ChatBubbles rows={msgs} viewer="staff" /></View>
         {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
         <Field label="আপনার উত্তর" hint="পরিষ্কার করে, ছোট বাক্যে লিখুন" value={text} onChangeText={setText} multiline maxLength={MAX_MESSAGE} editable={!busy} />

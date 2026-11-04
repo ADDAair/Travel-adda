@@ -1,4 +1,5 @@
 // Permanent account deletion (Google Play requires it inside the app).
+import { clearLocalDb } from './localdb';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { clearLocalDocs } from './docs';
@@ -35,6 +36,7 @@ export async function deleteMyAccount(password: string): Promise<void> {
     if (keys.length) await AsyncStorage.multiRemove(keys);
   } catch (e) { /* local cleanup is best effort */ }
   await clearLocalDocs();
+  await clearLocalDb();   // phone database: announcements, chat, saved lists
   await cancelEverything();   // prayer and document reminders
   await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 }

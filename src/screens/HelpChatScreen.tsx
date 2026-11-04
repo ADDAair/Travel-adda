@@ -4,8 +4,9 @@ import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import ChatBubbles from '../components/ChatBubbles';
-import { myGroups, notReady, telBd } from '../lib/groups';
-import { myHelpMessages, faqList, groupKhadems, sendHelp, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
+import { myGroupsOffline, notReady, telBd } from '../lib/groups';
+import { myHelpMessages, faqList, myHelpMessagesOffline, faqListOffline, groupKhadems, sendHelp, checkMessage, helpErrorText, MAX_MESSAGE } from '../lib/help';
+import { isOffline } from '../lib/localdb';
 import { toBn } from '../lib/phone';
 import { st } from './GroupScreen';
 import type { ScrollRef } from '../components/KbScroll';
@@ -14,12 +15,13 @@ import type { Msg, Nav, Route } from './navTypes';
 // Haji: a private conversation with the group's leader and khadems. Ready answers are shown first.
 // Other hajis never see it. New answers are fetched every 15 seconds while this page is open.
 export default function HelpChatScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
-  const [groups, setGroups] = useState<Awaited<ReturnType<typeof myGroups>> | undefined>(undefined);
+  const [groups, setGroups] = useState<Awaited<ReturnType<typeof myGroupsOffline>>['rows'] | undefined>(undefined);
   const [gid, setGid] = useState<string | null>(route?.params?.groupId || null);
   const [state, setState] = useState('load');        // load | ok | soon | err
   const [msgs, setMsgs] = useState<Awaited<ReturnType<typeof myHelpMessages>>>([]);
   const [faq, setFaq] = useState<Awaited<ReturnType<typeof faqList>>>([]);
   const [khadems, setKhadems] = useState<Awaited<ReturnType<typeof groupKhadems>>>([]);
+  const [offline, setOffline] = useState(false);
   const [openQ, setOpenQ] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
 
   const loadGroups = useCallback(async () => {
     try {
-      const g = (await myGroups()).filter((x) => x.status === 'active');
+      const g = (await myGroupsOffline()).rows.filter((x) => x.status === 'active');   // saved list when offline
       setGroups(g);
       setGid((cur) => (cur && g.some((x) => x.group_id === cur) ? cur : g[0] ? g[0].group_id : null));
       if (!g.length) setState('ok');
@@ -38,8 +40,9 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
   const loadChat = useCallback(async (quiet?: boolean) => {
     if (!gid) return;
     try {
-      const [m, f, k] = await Promise.all([myHelpMessages(gid), faqList(gid), groupKhadems(gid)]);
-      setMsgs(m); setFaq(f); setKhadems(k); setState('ok');
+      // without internet: the saved conversation and ready answers from the phone database
+      const [m, f, k] = await Promise.all([myHelpMessagesOffline(gid), faqListOffline(gid), groupKhadems(gid).catch((e) => { if (isOffline(e)) return null; throw e; })]);
+      setMsgs(m.rows); setFaq(f.rows); if (k) setKhadems(k); setOffline(m.offline || f.offline); setState('ok');
     } catch (e) { if (!quiet) setState(notReady(e) ? 'soon' : 'err'); }
   }, [gid]);
   useEffect(() => { loadGroups(); }, [loadGroups]);
@@ -129,6 +132,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
 
           <View style={st.card}>
             <Text style={st.h}>🗨️ আপনার কথোপকথন</Text>
+            {offline ? <Notice kind="warn" title="ইন্টারনেট নেই" text="ফোনে রাখা আগের বার্তা দেখানো হচ্ছে। নতুন বার্তা পাঠাতে ইন্টারনেট লাগবে।" /> : null}
             {msgs.length === 0 ? <Text style={st.p}>এখনো কিছু লেখেননি। সমস্যা বা পরামর্শ নিচে লিখে পাঠান।</Text> : <ChatBubbles rows={msgs} viewer="haji" />}
           </View>
           {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}

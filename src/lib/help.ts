@@ -4,6 +4,7 @@ import { normalizeDigits, toBn } from './phone';
 
 import { rpc, fail as err, rows } from './rpc';
 
+import { saveChat, loadChat, savedOr, isOffline } from './localdb';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 export const MAX_MESSAGE = 1000;
 
@@ -43,6 +44,21 @@ export async function sendHelp(groupId: string, text: unknown) {
   return rpc<string>('help_send', { p_group: groupId, p_body: String(text).trim() });
 }
 export const myHelpMessages = (groupId: string) => list('help_my_messages', { p_group: groupId });
+
+// Offline versions (phone database): the newest copy is saved; without internet the saved copy is shown, marked offline.
+// A real refusal from the server (no permission, removed from the group) is never hidden behind an old copy.
+async function withCopy<T extends { id: string; created_at: string }>(convo: string, fetch: () => Promise<T[]>): Promise<{ rows: T[]; offline: boolean }> {
+  try { const rows = await fetch(); await saveChat(convo, rows); return { rows, offline: false }; } catch (e) {
+    if (!isOffline(e)) throw e;
+    const rows = await loadChat<T>(convo);
+    if (!rows.length) throw e;
+    return { rows, offline: true };
+  }
+}
+export const myHelpMessagesOffline = (groupId: string) => withCopy(`my:${groupId}`, () => myHelpMessages(groupId));
+export const helpThreadOffline = (threadId: string) => withCopy(`thread:${threadId}`, () => helpThread(threadId));
+export const faqListOffline = (groupId: string) => savedOr(`faq:${groupId}`, () => faqList(groupId));
+export const helpInboxOffline = (groupId: string) => savedOr(`inbox:${groupId}`, () => helpInbox(groupId));
 export const faqList = (groupId: string) => list('faq_list', { p_group: groupId });
 export const groupKhadems = (groupId: string) => list('group_khadems', { p_group: groupId });
 

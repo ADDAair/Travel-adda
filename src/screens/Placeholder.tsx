@@ -23,6 +23,7 @@ import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
 import type { Msg, Nav, Route } from './navTypes';
 import type { TableRow } from '../lib/types';
+import { clearLocalDb } from '../lib/localdb';
 import { errInfo } from '../lib/errors';
 
 // The account card's profile (older database steps give fewer columns, so the newer ones may be missing).
@@ -87,7 +88,7 @@ export function Account({ navigation }: { navigation: Nav }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert('লগআউট করবেন?', 'আবার ঢুকতে মোবাইল নম্বর (বা যাচাই করা ইমেইল) ও পাসওয়ার্ড লাগবে।', [
     { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: async () => { await pushLogout(); AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1', 'ta.pendingEmail.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
+    { text: 'হ্যাঁ, লগআউট', style: 'destructive', onPress: async () => { await pushLogout(); AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1', 'ta.pendingEmail.v1']).catch(() => {}); clearLocalDocs(); clearLocalDb(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;

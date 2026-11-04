@@ -1,6 +1,7 @@
 // Group leader, groups, members and package terms (supabase/004_groups.sql). All rules are enforced by the database;
 // this file only calls it. Every function throws on failure so screens never show a false success.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { replaceAnnouncements, loadAnnouncements, savedOr } from './localdb';
 import { supabase } from './supabase';
 import { applicationRow } from './leaderKinds';
 import { uid, randomId, shrink } from './docs';
@@ -123,6 +124,8 @@ export async function myGroups(): Promise<RpcRow<'my_groups'>[]> {
   } catch (e) { /* best effort */ }
   return rows;
 }
+// Offline version (phone database): without internet the saved list is used, marked offline (owner, Nov 2026).
+export const myGroupsOffline = () => savedOr('my_groups', myGroups);
 export async function cachedLeader(): Promise<{ name: string; phone: string } | null> {
   try { const v = JSON.parse((await AsyncStorage.getItem(LEADER_CACHE)) || 'null') as { name: string; phone: string } | null; return v && v.phone ? v : null; } catch (e) { return null; }
 }
@@ -143,16 +146,18 @@ export async function acceptContract(contractId: string): Promise<void> {
 }
 
 // ---------- Announcements (leader -> whole group) ----------
-// The last list is kept on the phone so announcements can be read inside the Haram without internet.
-const ANN_CACHE = 'ta.announce.v1';
+// Kept in the phone database (localdb, SQLite) so announcements can be read inside the Haram without internet.
+const ANN_CACHE = 'ta.announce.v1';   // older app versions kept only the last list here; still read once if the database is empty
 export async function groupAnnouncements(groupIds: string[]): Promise<{ rows: Announcement[]; offline: boolean }> {
   if (!groupIds.length) return { rows: [], offline: false };
   try {
     const rows = check(await supabase.from('group_announcements').select('id,group_id,body,created_at').in('group_id', groupIds).order('created_at', { ascending: false }).limit(60)) || [];
-    AsyncStorage.setItem(ANN_CACHE, JSON.stringify(rows)).catch(() => {});
+    await replaceAnnouncements(groupIds, rows, rows.length < 60);   // fewer than the limit = the whole list
     return { rows, offline: false };
   } catch (e) {
     if (notReady(e)) throw e;
+    const saved = await loadAnnouncements(groupIds);
+    if (saved.length) return { rows: saved, offline: true };
     try { const c: unknown = JSON.parse((await AsyncStorage.getItem(ANN_CACHE)) || 'null'); if (Array.isArray(c)) return { rows: (c as Announcement[]).filter((r) => groupIds.includes(r.group_id)), offline: true }; } catch (x) { /* none */ }
     throw e;
   }

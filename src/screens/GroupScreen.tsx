@@ -4,12 +4,13 @@ import ScrollView from '../components/KbScroll';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { toBn } from '../lib/phone';
-import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, notReady, telBd, groupAnnouncements } from '../lib/groups';
+import { myProfile, myGroupsOffline, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, notReady, telBd, groupAnnouncements } from '../lib/groups';
+import { isOffline } from '../lib/localdb';
 import type { Msg, Nav } from './navTypes';
 import type { Announcement, Profile } from '../lib/groups';
 import type { Item, TableRow } from '../lib/types';
 
-type MyGroup = Item<typeof myGroups>;
+type MyGroup = Awaited<ReturnType<typeof myGroupsOffline>>['rows'][number];
 type Contract = TableRow<'contracts'>;
 
 const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
@@ -42,12 +43,15 @@ export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.El
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [open, setOpen] = useState<MyGroup | null>(null);           // group shown with its terms
+  const [groupsOffline, setGroupsOffline] = useState(false);
   const [ann, setAnn] = useState<{ rows: Announcement[]; offline: boolean } | null>(null);             // { rows, offline } leader announcements
 
   const load = useCallback(async () => {
     try {
-      const [p, g] = await Promise.all([myProfile(), myGroups()]);
-      setMe(p); setRows(g);
+      // without internet: the saved group list (phone database), so saved announcements can still be read
+      const [p, gl] = await Promise.all([myProfile().catch((e) => { if (isOffline(e)) return null; throw e; }), myGroupsOffline()]);
+      const g = gl.rows;
+      setMe(p); setRows(g); setGroupsOffline(gl.offline);
       const ids = g.filter((x) => x.status === 'active').map((x) => x.group_id);
       groupAnnouncements(ids).then(setAnn).catch(() => setAnn(null));
       setState('ok');
@@ -84,6 +88,7 @@ export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.El
       <Text style={st.title} accessibilityRole="header">👥 আমার দল ও লিডার</Text>
       {state === 'load' ? <ActivityIndicator color={C.primary} style={{ marginTop: S.lg }} /> : null}
       {state === 'soon' ? <Notice kind="info" title="শীঘ্রই চালু হবে" text="দল ও লিডারের সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে। চালু হলে এখানেই দেখা যাবে।" /> : null}
+      {state === 'ok' && groupsOffline ? <Notice kind="warn" title="ইন্টারনেট নেই" text="ফোনে রাখা তথ্য দেখানো হচ্ছে। নতুন কিছু করতে (যোগ দেওয়া, চুক্তিতে সম্মতি) ইন্টারনেট লাগবে।" /> : null}
       {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
 
