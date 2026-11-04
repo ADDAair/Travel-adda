@@ -12,7 +12,7 @@ import { finishStartup } from '../lib/startup';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE, type Me } from '../lib/me';
 import { processPendingReferral, processPendingTerms } from '../lib/market';
-import TripCard from '../components/TripCard';
+import TripSummary from '../components/TripSummary';
 import PushCard from '../components/PushCard';
 import { PENDING_EMAIL } from '../lib/login';
 import { myKhademGroups, myKhademInvites } from '../lib/help';
@@ -158,7 +158,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
       ) : null}
       {!handsOnPending ? <PushCard mode="home" /> : null}
       {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
-      {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripCard navigation={navigation} />}
+      {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripSummary navigation={navigation} />}
 
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
       {READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => (

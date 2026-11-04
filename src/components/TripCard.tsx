@@ -15,16 +15,12 @@ const TRIP_KEY = 'ta.trip.v1';
 const MONEY_KEY = 'ta.tripMoney.v1';
 const docsKey = (id: string) => `ta.docsCache.v1.${id}`;
 
-// Haji's trip at a glance: days to departure, active contract, documents. Works offline from what the phone kept.
-export default function TripCard({ navigation }: { navigation: Nav }) {
+// The haji's trip facts, from what the phone kept (works offline) and refreshed from the server on every visit.
+export function useTrip(navigation: Nav) {
   const [c, setC] = useState<Res<typeof cachedContractLeader>>(null);            // active contract (cached)
   const [own, setOwn] = useState<{ date: string } | null>(null);        // date typed by the haji when there is no contract
   const [docs, setDocs] = useState<{ count: number; hasPassport: boolean; hasVisa: boolean; passLeft: number | null } | null>(null);      // { count, passport }
   const [money, setMoney] = useState<ContractMoney | null>(null);    // { paid_in, pending_in, still_to_pay } of the active contract
-  const [edit, setEdit] = useState(false);
-  const [val, setVal] = useState('');
-  const [err, setErr] = useState('');
-
   const load = useCallback(async () => {
     setC(await cachedContractLeader());
     try { setOwn(JSON.parse((await AsyncStorage.getItem(TRIP_KEY)) || 'null')); } catch (e) { setOwn(null); }
@@ -47,6 +43,16 @@ export default function TripCard({ navigation }: { navigation: Nav }) {
 
   const date = (c && c.travel_from) || (own && own.date) || null;
   const left = date ? daysUntil(date) : null;
+  return { c, own, setOwn, docs, money, left };
+}
+
+// Haji's trip in full: days to departure, active contract, money, documents, own date. Shown on the "আমার সফর" page.
+export default function TripCard({ navigation }: { navigation: Nav }) {
+  const { c, own, setOwn, docs, money, left } = useTrip(navigation);
+  const [edit, setEdit] = useState(false);
+  const [val, setVal] = useState('');
+  const [err, setErr] = useState('');
+
   const saveDate = async () => {
     const ymd = parseDate(val);
     if (!ymd) { setErr('তারিখ এভাবে লিখুন: ২০-০১-২০২৭'); return; }

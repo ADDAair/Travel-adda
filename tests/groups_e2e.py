@@ -203,6 +203,13 @@ with sync_playwright() as p:
             step('চুক্তির অনুরোধ পাঠানো হয়েছে', has(lp, 'চুক্তির অনুরোধ পাঠানো হয়েছে'))
 
             # 2) haji reads and accepts; phones become visible on both sides
+            # Home shows "আমার সফর" as a short summary; tapping opens the full trip page (Nov 2026)
+            tab(hp, 'হোম'); hp.wait_for_timeout(1500)
+            ts = hp.get_by_role('button', name=re.compile('^আমার সফর: '))
+            step('হোমে "আমার সফর" ছোট সারাংশ', ts.count() > 0 and has(hp, 'কাগজ ', 2000))
+            if ts.count():
+                ts.first.click(); hp.wait_for_timeout(2000); shot(hp, 'H01s-trip-page')
+                step('"আমার সফর" পাতায় পুরো তথ্য (পাসপোর্ট, ভিসা)', has(hp, 'পাসপোর্ট', 3000) and has(hp, 'ভিসা', 1000))
             tab(hp, 'হোম'); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(3500); shot(hp, 'H02-request')
             if hp.get_by_role('button', name=re.compile('^নোটিফিকেশন')).count():   # 009: the bell shows the new contract
                 hp.get_by_role('button', name=re.compile('^নোটিফিকেশন')).first.click(); hp.wait_for_timeout(3000); shot(hp, 'H02n-notifications')

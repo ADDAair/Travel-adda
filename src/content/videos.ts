@@ -14,6 +14,7 @@ export const VIDEO_TOPICS: Record<string, VideoTopic> = {
   Privacy: { title: 'আপনার তথ্য কীভাবে নিরাপদ থাকে', url: null },
   Guides: { title: 'গাইডগুলো কীভাবে পড়বেন', url: null },
   Docs: { title: 'কাগজপত্রের ছবি তোলা ও তালা দেওয়া', url: null },
+  Trip: { title: 'আমার সফরের হিসাব দেখা ও যাত্রার তারিখ লেখা', url: null },
   Salah: { title: 'অজু ও নামাজের নিয়ম', url: null },
   Tasbih: { title: 'তাসবিহ গণনা', url: null },
   Calendar: { title: 'ইসলামি দিনপঞ্জি', url: null },
