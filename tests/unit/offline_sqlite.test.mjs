@@ -131,3 +131,9 @@ test('offline network errors are recognised; server refusals are not', () => {
   assert.equal(L.isOffline({ code: '42501', message: 'not allowed' }), false);
   assert.equal(L.isOffline({ code: 'PGRST202', message: 'Could not find the function' }), false);
 });
+test('the web test preview never loads SQLite (it cannot be bundled there); the phone version does', () => {
+  const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), 'utf8');
+  assert.ok(!read('src/lib/localdb.web.ts').includes('expo-sqlite'));
+  assert.ok(read('src/lib/localdb.ts').includes("from 'expo-sqlite'"));
+  assert.ok(!read('src/lib/localdbCore.ts').includes("from 'expo-sqlite'"));
+});
