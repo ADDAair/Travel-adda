@@ -14,6 +14,7 @@ import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE, type Me } from '../l
 import { processPendingReferral, processPendingTerms } from '../lib/market';
 import TripSummary from '../components/TripSummary';
 import PushCard from '../components/PushCard';
+import { TileGrid } from '../components/TileGrid';
 import { PENDING_EMAIL } from '../lib/login';
 import { myKhademGroups, myKhademInvites } from '../lib/help';
 import { hajiCountPublic, hajiCountText } from '../lib/counts';
@@ -22,7 +23,8 @@ import type { Res } from '../lib/types';
 
 type Hello = { full_name?: string | null; haji_code?: string | null };   // name and ID shown at the top
 
-// Working features. Every card opens something that really works (no fake buttons).
+// Working features, shown as tiles (same design as সহায়ক টুল). Every tile opens something that really works (no fake buttons).
+// `what` is read aloud by the screen reader.
 const READY = [
   { route: 'Prayer', icon: '🕌', title: 'নামাজের সময় ও কিবলা', what: 'আপনার জায়গা অনুযায়ী সময় ও কিবলার দিক। ইন্টারনেট ছাড়াও চলে।' },
   { route: 'Dua', icon: '🤲', title: 'দোয়া ভল্ট', what: 'দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।' },
@@ -161,28 +163,11 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
       {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripSummary navigation={navigation} />}
 
       <Text style={st.h2}>এখন ব্যবহার করুন</Text>
-      {READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => (
-        <Pressable key={x.route} onPress={() => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)}
-          style={({ pressed }) => [st.ready, pressed && { opacity: 0.9 }]} accessibilityRole="button" accessibilityLabel={`${x.title} খুলুন। ${x.what}`}>
-          <Text style={st.readyIc} importantForAccessibility="no">{x.icon}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={st.readyT}>{x.title}</Text>
-            <Text style={st.readyW}>{x.what}</Text>
-          </View>
-          <Text style={st.readyGo}>খুলুন ›</Text>
-        </Pressable>
-      ))}
+      <TileGrid items={READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => ({ ...x, key: x.route }))}
+        onPress={(x) => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)} />
 
       <Text style={[st.h2, { marginTop: S.lg }]}>সহায়ক টুল</Text>
-      <View style={st.tools}>
-        {TOOLS.map((x) => (
-          <Pressable key={x.route} onPress={() => navigation.navigate(x.route, { t: Date.now() })} style={({ pressed }) => [st.toolTile, pressed && { opacity: 0.85 }]}
-            accessibilityRole="button" accessibilityLabel={`${x.title} খুলুন`}>
-            <Text style={st.toolIc} importantForAccessibility="no">{x.icon}</Text>
-            <Text style={st.toolT}>{x.title}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <TileGrid items={TOOLS.map((x) => ({ ...x, key: x.route }))} onPress={(x) => navigation.navigate(x.route, { t: Date.now() })} />
 
       {UPCOMING.length ? <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text> : null}
       {UPCOMING.length ? <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text> : null}
@@ -249,10 +234,6 @@ const st = StyleSheet.create({
   npT: { fontSize: F.title, fontWeight: '700', color: C.text, lineHeight: 34 },
   npP: { fontSize: F.body, fontWeight: '400', color: C.muted },
   npLeft: { fontSize: F.small, fontWeight: '700', color: C.primary },
-  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginTop: S.sm },
-  toolTile: { flexBasis: '30%', flexGrow: 1, minHeight: 96, backgroundColor: C.card, borderRadius: R.md, borderWidth: 1.5, borderColor: C.gold, alignItems: 'center', justifyContent: 'center', padding: S.sm },
-  toolIc: { fontSize: 30 },
-  toolT: { fontSize: F.small, fontWeight: '700', color: C.text, textAlign: 'center', marginTop: 4, lineHeight: 22 },
   soon: { backgroundColor: C.primarySoft, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 4 },
   soonT: { fontSize: 14, color: C.muted, fontWeight: '700' },
 });

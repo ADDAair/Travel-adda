@@ -9,6 +9,7 @@ import { toBn } from '../lib/phone';
 import { GUIDES } from '../content/guides';
 import type { GuideBlock, Phrase, CheckItem } from '../content/types';
 import { CONTENT_REVIEWED } from '../content/ihram';
+import { TileGrid } from '../components/TileGrid';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav } from './navTypes';
 
@@ -42,17 +43,7 @@ export default function GuidesScreen({ navigation }: { navigation: Nav }) {
             <Text style={st.backT}>‹ হোম</Text>
           </Pressable>
           <Text style={st.lead}>যে বিষয়ে জানতে চান, সেটিতে চাপ দিন। সব গাইড ইন্টারনেট ছাড়াও খোলে।</Text>
-          {GUIDES.map((x, i) => (
-            <Pressable key={x.id} onPress={() => go(x.id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-              accessibilityRole="button" accessibilityLabel={`${x.title}। ${x.what}`} accessibilityHint="গাইডটি খুলবে">
-              <Text style={st.rowIc} importantForAccessibility="no">{x.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={st.rowT}>{x.title}</Text>
-                <Text style={st.rowW}>{x.what}</Text>
-              </View>
-              <Text style={st.openT}>খুলুন ›</Text>
-            </Pressable>
-          ))}
+          <TileGrid items={GUIDES.map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint="গাইডটি খুলবে" />
         </>
       )}
       {!CONTENT_REVIEWED ? <Text style={st.review}>ℹ️ ধর্মীয় অংশ প্রকাশের আগে একজন আলেম এবং স্বাস্থ্যের অংশ একজন ডাক্তার দিয়ে যাচাই করা হবে। সন্দেহ হলে লিডার, আলেম বা ডাক্তারকে জিজ্ঞেস করুন।</Text> : null}
@@ -176,11 +167,6 @@ const st = StyleSheet.create({
   backT: { fontSize: F.large, color: C.primary, fontWeight: '700' },
   title: { fontSize: F.title, fontWeight: '700', color: C.primary, lineHeight: 36, marginBottom: S.md },
   lead: { fontSize: F.body, color: C.text, lineHeight: 28, marginBottom: S.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.md, padding: S.md, marginBottom: S.sm, borderWidth: 1, borderColor: C.line, minHeight: 80, ...shadow },
-  rowIc: { fontSize: 32 },
-  rowT: { fontSize: F.large, fontWeight: '700', color: C.text, lineHeight: 30 },
-  rowW: { fontSize: F.small, color: C.muted, lineHeight: 22, marginTop: 2 },
-  openT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
   review: { fontSize: 14, color: C.muted, marginTop: S.lg, lineHeight: 22, textAlign: 'center' },
   p: { fontSize: F.body, color: C.text, lineHeight: 28 },
   src: { fontSize: F.small, color: C.muted, lineHeight: 24, marginTop: S.sm },

@@ -12,6 +12,7 @@ import {
   IMAGES, COMMON, SPECIAL,
 } from '../content/ihram';
 import { StepCard, QA, Illustration } from '../components/guide';
+import { TileGrid } from '../components/TileGrid';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav } from './navTypes';
 
@@ -59,17 +60,7 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
             <Text style={st.backT}>‹ হোম</Text>
           </Pressable>
           <Text style={st.lead}>ইহরাম বাঁধার আগে নিচের অংশগুলো একবার করে পড়ুন। যেকোনো অংশে চাপ দিলে খুলবে।</Text>
-          {SECTIONS.map((x, i) => (
-            <Pressable key={x.id} onPress={() => go(x.id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-              accessibilityRole="button" accessibilityLabel={`${i + 1}। ${x.title}। ${x.what}`} accessibilityHint="অংশটি খুলবে">
-              <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={st.rowT}>{x.icon} {x.title}</Text>
-                <Text style={st.rowW}>{x.what}</Text>
-              </View>
-              <Text style={st.open}>খুলুন ›</Text>
-            </Pressable>
-          ))}
+          <TileGrid numbered items={SECTIONS.map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint="অংশটি খুলবে" />
           <Text style={st.offline}>📶 এই গাইড ইন্টারনেট ছাড়াও খোলে।</Text>
         </>
       )}
@@ -307,12 +298,6 @@ const st = StyleSheet.create({
   backT: { fontSize: F.large, color: C.primary, fontWeight: '700' },
   title: { fontSize: F.title, fontWeight: '700', color: C.primary, lineHeight: 36, marginBottom: S.md },
   lead: { fontSize: F.body, color: C.text, lineHeight: 28, marginBottom: S.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.md, padding: S.md, marginBottom: S.sm, borderWidth: 1, borderColor: C.line, minHeight: 80, ...shadow },
-  num: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.goldSoft, borderWidth: 1.5, borderColor: C.gold, alignItems: 'center', justifyContent: 'center' },
-  numT: { fontSize: F.body, fontWeight: '700', color: C.text },
-  rowT: { fontSize: F.large, fontWeight: '700', color: C.text, lineHeight: 30 },
-  rowW: { fontSize: F.small, color: C.muted, lineHeight: 22, marginTop: 2 },
-  open: { fontSize: F.small, color: C.primary, fontWeight: '700' },
   offline: { fontSize: F.small, color: C.muted, textAlign: 'center', marginTop: S.sm },
   review: { fontSize: 14, color: C.muted, marginTop: S.lg, lineHeight: 22, textAlign: 'center' },
   q: { fontSize: F.large, fontWeight: '700', color: C.text, marginBottom: S.sm, lineHeight: 30 },

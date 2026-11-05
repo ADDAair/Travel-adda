@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, BackHandler } from 'react-native';
-import { C, F, S, R, TOUCH, shadow } from '../theme';
+import { Text, StyleSheet, ScrollView, Pressable, BackHandler } from 'react-native';
+import { C, F, S, TOUCH } from '../theme';
 import { Button } from '../components/ui';
 import { StepCard } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { HAJJ_DAYS } from '../content/hajj';
 import { IMAGES, CONTENT_REVIEWED } from '../content/ihram';
+import { TileGrid } from '../components/TileGrid';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav } from './navTypes';
 
@@ -46,17 +47,7 @@ export default function HajjScreen({ navigation }: { navigation: Nav }) {
             <Text style={st.backT}>‹ হোম</Text>
           </Pressable>
           <Text style={st.lead}>হজের দিনগুলো ক্রম অনুযায়ী সাজানো। যে দিনের কাজ জানতে চান, সেটিতে চাপ দিন।</Text>
-          {HAJJ_DAYS.map((d, i) => (
-            <Pressable key={d.id} onPress={() => go(d.id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-              accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.what}`} accessibilityHint="অংশটি খুলবে">
-              <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={st.rowT}>{d.icon} {d.title}</Text>
-                <Text style={st.rowW}>{d.what}</Text>
-              </View>
-              <Text style={st.openT}>খুলুন ›</Text>
-            </Pressable>
-          ))}
+          <TileGrid numbered items={HAJJ_DAYS.map((d) => ({ ...d, key: d.id }))} onPress={(d) => go(d.id)} hint="অংশটি খুলবে" />
           <Text style={st.offline}>📶 এই গাইড ইন্টারনেট ছাড়াও খোলে।</Text>
         </>
       )}
@@ -71,12 +62,6 @@ const st = StyleSheet.create({
   backT: { fontSize: F.large, color: C.primary, fontWeight: '700' },
   title: { fontSize: F.title, fontWeight: '700', color: C.primary, lineHeight: 36, marginBottom: S.md },
   lead: { fontSize: F.body, color: C.text, lineHeight: 28, marginBottom: S.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: S.md, backgroundColor: C.card, borderRadius: R.md, padding: S.md, marginBottom: S.sm, borderWidth: 1, borderColor: C.line, minHeight: 80, ...shadow },
-  num: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.goldSoft, borderWidth: 1.5, borderColor: C.gold, alignItems: 'center', justifyContent: 'center' },
-  numT: { fontSize: F.body, fontWeight: '700', color: C.text },
-  rowT: { fontSize: F.large, fontWeight: '700', color: C.text, lineHeight: 30 },
-  rowW: { fontSize: F.small, color: C.muted, lineHeight: 22, marginTop: 2 },
-  openT: { fontSize: F.small, color: C.primary, fontWeight: '700' },
   offline: { fontSize: F.small, color: C.muted, textAlign: 'center', marginTop: S.sm },
   review: { fontSize: 14, color: C.muted, marginTop: S.lg, lineHeight: 22, textAlign: 'center' },
 });
