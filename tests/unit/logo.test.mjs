@@ -33,3 +33,12 @@ test('the start screen uses the brand green and says who runs the app', () => {
 test('the source logo files are kept in the project for later use (store listing, print)', () => {
   for (const f of ['assets/brand/ami-haji-logo-vertical.png', 'assets/brand/ami-haji-logo-vertical-green.png']) assert.ok(existsSync(new URL(f, root)), f);
 });
+test('owner request (Nov 2026): the green bar on Home shows the logo before "আমি হাজী"; read aloud once, not twice', () => {
+  const s = read('App.tsx');
+  assert.ok(/name="Home" component=\{HomeScreen\} options=\{\{ title: T\.appName, headerTitle: \(\) => <HeaderBrand \/> \}\}/.test(s));
+  const b = s.slice(s.indexOf('function HeaderBrand'), s.indexOf('function HeaderBrand') + 700);
+  assert.ok(b.includes('<Logo size={30} decorative />') && b.includes('{T.appName}'), 'small logo, then the name');
+  assert.ok(b.includes('accessibilityRole="header"'));
+  const l = read('src/components/Logo.tsx');
+  assert.ok(l.includes('decorative') && l.includes('importantForAccessibility'), 'the header logo is not read aloud separately');
+});
