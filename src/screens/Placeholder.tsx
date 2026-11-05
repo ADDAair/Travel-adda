@@ -4,7 +4,7 @@ import ScrollView from '../components/KbScroll';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
-import { deleteMyAccount } from '../lib/account';
+import { deleteMyAccount, pauseMyAccount, pauseText } from '../lib/account';
 import { lockWanted, setLockWanted, canLock, unlock } from '../lib/applock';
 import { clearLocalDocs } from '../lib/docs';
 import { cancelDocs } from '../lib/notify';
@@ -24,6 +24,7 @@ import { useTutorial } from '../tutorial';
 import type { Msg, Nav, Route } from './navTypes';
 import type { TableRow } from '../lib/types';
 import { errInfo } from '../lib/errors';
+import { notReady } from '../lib/groups';
 
 // The account card's profile (older database steps give fewer columns, so the newer ones may be missing).
 type MyProfile = Pick<TableRow<'profiles'>, 'full_name' | 'haji_code' | 'phone'> & Partial<Pick<TableRow<'profiles'>, 'avatar_path' | 'phone_verified' | 'email' | 'email_verified'>>;
@@ -45,7 +46,7 @@ export function Soon({ title, icon, what, route, navigation }: { title: string; 
 
 export function Account({ navigation }: { navigation: Nav }) {
   const { replay } = useTutorial();
-  const { me } = useMe();
+  const { me, refreshMe } = useMe();
   const [p, setP] = useState<MyProfile | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [imgFail, setImgFail] = useState(false);
@@ -64,7 +65,8 @@ export function Account({ navigation }: { navigation: Nav }) {
     catch (e) { setLockMsg({ kind: 'bad', text: 'বদলানো যায়নি। আবার চেষ্টা করুন।' }); }
   };
   const [delErr, setDelErr] = useState('');
-  const [showDel, setShowDel] = useState(false);        // delete stays hidden so it is never pressed by mistake near "Logout"
+  const [showDel, setShowDel] = useState(false);
+  const [pauseMsg, setPauseMsg] = useState<{ kind: 'ok' | 'bad' | 'warn'; text: string } | null>(null);        // delete stays hidden so it is never pressed by mistake near "Logout"
   useEffect(() => navigation?.addListener?.('blur', () => setShowDel(false)), [navigation]);
 
   const load = useCallback(async () => {
@@ -104,11 +106,31 @@ export function Account({ navigation }: { navigation: Nav }) {
       setDelBusy(false);
     }
   };
-  const askDelete = () => !delPw.trim() ? setDelErr('আগে আপনার পাসওয়ার্ড লিখুন। নিরাপত্তার জন্য এটা লাগে।') : Alert.alert('অ্যাকাউন্ট চিরতরে মুছে ফেলবেন?', 'আপনার নাম, হাজী আইডি, ছবি ও সার্ভারের সব তথ্য মুছে যাবে। এটা আর ফেরানো যাবে না।', [
+  // 035: pause instead of delete — reversible; the app then shows the "account paused" page
+  const doPause = async () => {
+    if (delBusy) return;
+    setDelBusy(true); setDelErr(''); setPauseMsg(null);
+    try {
+      const r = await pauseMyAccount(delPw);
+      setPauseMsg({ kind: r === 'ok' ? 'ok' : r === 'has_contract' ? 'warn' : 'bad', text: pauseText(r) });
+      if (r === 'ok') { setDelPw(''); await refreshMe(); }
+    } catch (e) {
+      const { code, message } = errInfo(e); const m = message.toLowerCase();
+      setPauseMsg({ kind: 'bad', text: code === 'wrong-password' ? 'পাসওয়ার্ড মেলেনি। ঠিক পাসওয়ার্ড লিখে আবার চেষ্টা করুন।'
+        : code === 'password-needed' ? 'আগে আপনার পাসওয়ার্ড লিখুন।'
+        : m.includes('network') || m.includes('fetch') ? 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।'
+        : notReady(e) ? 'অ্যাকাউন্ট বন্ধ রাখার সুবিধা শীঘ্রই চালু হবে।' : 'এখন বন্ধ করা যায়নি। একটু পরে আবার চেষ্টা করুন।' });
+    } finally { setDelBusy(false); }
+  };
+  const askPause = () => !delPw.trim() ? setPauseMsg({ kind: 'bad', text: 'আগে আপনার পাসওয়ার্ড লিখুন। নিরাপত্তার জন্য এটা লাগে।' }) : Alert.alert('অ্যাকাউন্ট বন্ধ রাখবেন?', 'বন্ধ থাকলে আপনার নাম ও প্যাকেজ কেউ দেখবে না, নোটিফিকেশনও আসবে না। আবার লগইন করে যেকোনো সময় চালু করতে পারবেন। কোনো তথ্য মুছবে না।', [
+    { text: 'না, চালু থাকুক', style: 'cancel' },
+    { text: 'হ্যাঁ, বন্ধ রাখুন', onPress: doPause },
+  ]);
+  const askDelete = () => !delPw.trim() ? setDelErr('আগে আপনার পাসওয়ার্ড লিখুন। নিরাপত্তার জন্য এটা লাগে।') : Alert.alert('অ্যাকাউন্ট মুছে ফেলবেন?', 'অ্যাকাউন্ট এখনই বন্ধ হবে, আর ৩০ দিন পরে নাম, হাজী আইডি ও সার্ভারের সব তথ্য চিরতরে মুছে যাবে। ছবি ও কাগজপত্রের ছবি এখনই মুছে যাবে। ৩০ দিনের মধ্যে লগইন করলে মোছা বাতিল করতে পারবেন।', [
     { text: 'না, রাখুন', style: 'cancel' },
-    { text: 'হ্যাঁ, মুছতে চাই', style: 'destructive', onPress: () => Alert.alert('শেষবার নিশ্চিত করুন', 'সত্যিই অ্যাকাউন্ট মুছে ফেলবেন?', [
+    { text: 'হ্যাঁ, মুছতে চাই', style: 'destructive', onPress: () => Alert.alert('শেষবার নিশ্চিত করুন', 'সত্যিই অ্যাকাউন্ট মুছে ফেলবেন? শুধু বিরতি চাইলে "অ্যাকাউন্ট বন্ধ রাখুন" বেছে নিন।', [
       { text: 'না, রাখুন', style: 'cancel' },
-      { text: 'চিরতরে মুছুন', style: 'destructive', onPress: doDelete },
+      { text: 'হ্যাঁ, মুছে ফেলুন', style: 'destructive', onPress: doDelete },
     ]) },
   ]);
   return (
@@ -155,18 +177,22 @@ export function Account({ navigation }: { navigation: Nav }) {
       <Button title="গোপনীয়তা নীতি" icon="🔒" kind="secondary" onPress={() => navigation.navigate('Privacy')} a11yHint="আপনার তথ্য কীভাবে রাখা হয় তা দেখাবে" style={{ marginBottom: S.md }} />
       <Button title="লগআউট" icon="🚪" kind="danger" onPress={logout} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" />
       <Pressable onPress={() => setShowDel((v) => !v)} style={st.moreBtn} accessibilityRole="button" accessibilityState={{ expanded: showDel }}
-        accessibilityLabel={showDel ? 'অ্যাকাউন্ট মুছে ফেলার অপশন লুকান' : 'আরও অপশন দেখুন: অ্যাকাউন্ট মুছে ফেলা'}>
+        accessibilityLabel={showDel ? 'আরও অপশন লুকান' : 'আরও অপশন দেখুন: অ্যাকাউন্ট বন্ধ রাখা বা মুছে ফেলা'}>
         <Text style={st.moreT}>{showDel ? '▾ আরও অপশন লুকান' : '▸ আরও অপশন'}</Text>
       </Pressable>
       {showDel ? <View style={st.delBox}>
-        <Text style={st.delH}>অ্যাকাউন্ট মুছে ফেলা</Text>
-        <Text style={st.delT}>অ্যাকাউন্ট ও সার্ভারের সব তথ্য চিরতরে মুছে ফেলতে চাইলে নিচের বাটন চাপুন। দুইবার নিশ্চিত করতে বলা হবে।</Text>
-        {delErr ? <Notice kind="bad" title={delErr} /> : null}
         {delBusy ? (
-          <View style={st.delBusy}><ActivityIndicator color={C.bad} /><Text style={st.delT}>অ্যাকাউন্ট মুছে ফেলা হচ্ছে…</Text></View>
+          <View style={st.delBusy}><ActivityIndicator color={C.primary} /><Text style={st.delT}>একটু অপেক্ষা করুন…</Text></View>
         ) : (
           <>
-            <Field label="আপনার পাসওয়ার্ড" hint="নিরাপত্তার জন্য পাসওয়ার্ড লাগবে" value={delPw} onChangeText={(v) => { setDelPw(v); setDelErr(''); }} secureTextEntry autoCapitalize="none" autoCorrect={false} />
+            <Field label="আপনার পাসওয়ার্ড" hint="নিচের দুই কাজের জন্যই পাসওয়ার্ড লাগবে" value={delPw} onChangeText={(v) => { setDelPw(v); setDelErr(''); setPauseMsg(null); }} secureTextEntry autoCapitalize="none" autoCorrect={false} />
+            <Text style={[st.delH, { color: C.text }]}>⏸️ অ্যাকাউন্ট বন্ধ রাখুন</Text>
+            <Text style={st.delT}>কিছুদিন অ্যাপ ব্যবহার না করলে বন্ধ রাখুন। কোনো তথ্য মুছবে না। আবার লগইন করে যেকোনো সময় চালু করতে পারবেন।</Text>
+            {pauseMsg ? <Notice kind={pauseMsg.kind} title={pauseMsg.text} /> : null}
+            <Button title="অ্যাকাউন্ট বন্ধ রাখুন" icon="⏸️" kind="secondary" onPress={askPause} a11yHint="পাসওয়ার্ড মিলিয়ে একবার নিশ্চিত করতে বলবে" style={{ marginBottom: S.lg }} />
+            <Text style={st.delH}>🗑️ অ্যাকাউন্ট মুছে ফেলা</Text>
+            <Text style={st.delT}>অনুরোধ করলে অ্যাকাউন্ট সাথে সাথে বন্ধ হবে এবং ৩০ দিন পরে চিরতরে মুছে যাবে। ছবি ও কাগজপত্রের ছবি সাথে সাথেই মুছে যাবে। ৩০ দিনের মধ্যে লগইন করলে মোছা বাতিল করতে পারবেন। চুক্তি ও টাকা জমার রেকর্ড হিসাবের জন্য থেকে যায় (গোপনীয়তা নীতি দেখুন)।</Text>
+            {delErr ? <Notice kind="bad" title={delErr} /> : null}
             <Button title="অ্যাকাউন্ট মুছে ফেলুন" icon="🗑️" kind="danger" onPress={askDelete} a11yHint="পাসওয়ার্ড মিলিয়ে নিশ্চিত করতে দুইবার জিজ্ঞেস করবে" />
           </>
         )}

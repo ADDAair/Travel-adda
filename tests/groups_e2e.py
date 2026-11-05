@@ -180,6 +180,19 @@ with sync_playwright() as p:
                 try: hp.unroute(re.compile(r'.*/rest/v1/rpc/list_offers.*'))
                 except Exception: pass
                 step('অনেক প্যাকেজের অফার পাতা', False, str(e)[:150])
+            # 035: the account page offers "pause" before "delete"; the deletion text says 30 days (nothing is pressed here)
+            try:
+                tab(hp, 'আমার তথ্য'); hp.wait_for_timeout(2500)
+                hp.get_by_role('button', name=re.compile('^আরও অপশন দেখুন')).first.click(); hp.wait_for_timeout(800)
+                pb = hp.get_by_role('button', name=re.compile('অ্যাকাউন্ট বন্ধ রাখুন'))
+                db = hp.get_by_role('button', name=re.compile('অ্যাকাউন্ট মুছে ফেলুন'))
+                step('আমার তথ্য: "অ্যাকাউন্ট বন্ধ রাখুন" আগে, তারপর মুছে ফেলা (৩০ দিন পরে)', pb.count() == 1 and db.count() == 1 and has(hp, '৩০ দিন পরে', 2000)
+                     and pb.first.bounding_box()['y'] < db.first.bounding_box()['y'])
+                pb.first.scroll_into_view_if_needed(); hp.wait_for_timeout(300); shot(hp, 'H06p-account-pause')
+                hp.get_by_role('button', name=re.compile('^আরও অপশন লুকান')).first.click(); hp.wait_for_timeout(300)
+                tab(hp, 'হোম'); hp.wait_for_timeout(800)
+            except Exception as e:
+                step('অ্যাকাউন্ট বন্ধ রাখার অপশন', False, str(e)[:150])
             # every page has "▶️ ভিডিও দেখুন"; until videos exist it says "শীঘ্রই আসছে"
             try:
                 home(hp); hp.wait_for_timeout(800)

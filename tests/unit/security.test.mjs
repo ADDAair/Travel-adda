@@ -22,10 +22,11 @@ test('delete account: wrong password stops BEFORE any file or the account is tou
   assert.ok(!calls().some((c) => c[0] === 'rpc'), 'account not deleted');
 });
 
-test('delete account: the password is checked first (fresh sign-in), then the account is deleted', async () => {
-  globalThis.__sb = { session, signIn: () => ({ data: { session }, error: null }), rpc: () => ({ data: null, error: null }) };
+test('delete account: the password is checked first (fresh sign-in), then the deletion is asked for', async () => {
+  // 035 (owner, Nov 2026): the deletion now waits 30 days, so the app calls request_account_deletion
+  globalThis.__sb = { session, signIn: () => ({ data: { session }, error: null }), rpc: () => ({ data: 'ok', error: null }) };
   await deleteMyAccount('ঠিক-পাসওয়ার্ড1');
-  const i = calls().findIndex((c) => c[0] === 'signIn'); const j = calls().findIndex((c) => c[0] === 'rpc' && c[1] === 'delete_my_account');
+  const i = calls().findIndex((c) => c[0] === 'signIn'); const j = calls().findIndex((c) => c[0] === 'rpc' && c[1] === 'request_account_deletion');
   assert.ok(i >= 0 && j > i, 'sign-in before delete');
   assert.deepEqual(calls()[i][1], { email: 'uabc@users.traveladda.app', password: 'ঠিক-পাসওয়ার্ড1' });
 });

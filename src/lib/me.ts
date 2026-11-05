@@ -4,13 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 export type Me = { full_name?: string; haji_code?: string; phone?: string; role?: string; status?: string; account_type?: string;
-  phone_verified?: boolean; email?: string | null; email_verified?: boolean; verified?: boolean; offline?: boolean };
+  phone_verified?: boolean; email?: string | null; email_verified?: boolean; verified?: boolean; offline?: boolean;
+  delete_after?: string | null };   // 035: removal date after a deletion request
 export const PROFILE_CACHE = 'ta.profileCache.v1';
 export const MeCtx = createContext<{ me: Me | null; refreshMe: () => Promise<Me | null> }>({ me: null, refreshMe: async () => null });
 export const useMe = () => useContext(MeCtx);
 
 // Column sets from newest to oldest database step, so the app keeps working before every SQL file is run.
 const COLS = [
+  'full_name,haji_code,phone,role,status,account_type,phone_verified,email,email_verified,verified,delete_after',   // 035
   'full_name,haji_code,phone,role,status,account_type,phone_verified,email,email_verified,verified',
   'full_name,haji_code,phone,role,status,account_type,phone_verified',
   'full_name,haji_code,phone,role,status,phone_verified',

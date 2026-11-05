@@ -43,6 +43,7 @@ import VerifyPhoneScreen from './src/screens/VerifyPhoneScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import Bell from './src/components/Bell';
 import Suspended from './src/screens/Suspended';
+import Paused from './src/screens/Paused';
 import MyLeaderScreen from './src/screens/MyLeaderScreen';
 import LeadersScreen from './src/screens/LeadersScreen';
 import LeaderContractsScreen from './src/screens/LeaderContractsScreen';
@@ -325,7 +326,9 @@ export default function App() {
     const u = updateGate(gate, me && me.role);
     body = <UpdateNeeded storeUrl={u.storeUrl} onSkip={u.canSkip ? () => setSkipUpdate(true) : null} />;
   } else if (me && me.status === 'suspended') {
-    body = <Suspended />;
+    body = <Suspended me={me} onChanged={refreshMe} />;
+  } else if (me && me.status === 'paused') {
+    body = <Paused me={me} onChanged={refreshMe} />;
   } else if (photoGate === 'missing') {
     body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
