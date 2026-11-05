@@ -168,6 +168,16 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
 
 const soon = (title: string, icon: string, what: string) => (props: { navigation: Nav; route?: Route }) => <Soon {...props} title={title} icon={icon} what={what} />;
 
+// Home's green bar: the logo, then "আমি হাজী" (owner request, Nov 2026). The name is read aloud once.
+function HeaderBrand() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessible accessibilityRole="header" accessibilityLabel={T.appName}>
+      <Logo size={30} decorative />
+      <Text style={{ color: C.onPrimary, fontSize: F.large, fontWeight: '700' }} numberOfLines={1}>{T.appName}</Text>
+    </View>
+  );
+}
+
 function Main() {
   return (
     <Tab.Navigator
@@ -177,7 +187,7 @@ function Main() {
         headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' },
         headerRight: route.name === 'Notifications' ? undefined : () => <Bell onPress={() => navigation.navigate('Notifications')} />,
       })}>
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName, headerTitle: () => <HeaderBrand /> }} />
       <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: 'জরুরি সাহায্য' }} />
       <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
       <Tab.Screen name="Offers" component={OffersScreen} options={{ title: 'অফার ও প্যাকেজ' }} />
