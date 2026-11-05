@@ -9,7 +9,9 @@ import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
 import { useMe, isLeaderAccount } from '../lib/me';
 import LeaderOffersScreen from './LeaderOffersScreen';
 
-import { OfferCard, OfferSummary } from '../components/OfferCard';
+import { OfferCard, OfferSummary, BadgePill } from '../components/OfferCard';
+import { badgesFor, featured, monthBar, BADGE_TEXT, type Badge } from '../lib/offerList';
+import { daysOf } from '../lib/offers';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
 import FundCard from '../components/FundCard';
@@ -97,6 +99,52 @@ function MonthDropdown({ options, value, onChange }: { options: { id: string; la
   );
 }
 
+// Two "special" cards above the list (cheapest, newest), chosen by the app from the packages themselves.
+function Featured({ items, onOpen }: { items: { o: PackageRow; why: Badge }[]; onOpen: (id: string) => void }) {
+  if (!items.length) return null;
+  return (
+    <View style={{ marginBottom: S.sm }}>
+      <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">⭐ বিশেষ অফার</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginTop: S.xs }}>
+        {items.map(({ o, why }) => (
+          <Pressable key={o.id} onPress={() => onOpen(o.id)} accessibilityRole="button"
+            accessibilityLabel={`বিশেষ অফার, ${BADGE_TEXT[why].replace(/^\S+ /, '')}: ${o.title}। ${fmtTaka(o.price_bdt)} জনপ্রতি। ${toBn(daysOf(o))} দিন। দেখতে চাপুন`}
+            style={({ pressed }) => ({ flexGrow: 1, flexBasis: '45%', minWidth: 150, backgroundColor: C.card, borderRadius: R.lg, borderWidth: 2, borderColor: C.gold, padding: S.sm, opacity: pressed ? 0.85 : 1 })}>
+            <BadgePill b={why} />
+            <Text style={{ fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 32, marginTop: 2 }}>{fmtTaka(o.price_bdt)}</Text>
+            <Text style={[st.p, { fontWeight: '700', color: C.primary }]} numberOfLines={2}>{o.title}</Text>
+            <Text style={st.small}>{toBn(daysOf(o))} দিন · দেখুন ›</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Month buttons once there are many packages: each says how many leave that month and the lowest price.
+function MonthBar({ months, value, onChange }: { months: { id: string; label: string; count: number; from: number }[]; value: string | null; onChange: (v: string | null) => void }) {
+  if (!months.length) return null;
+  const Pill = ({ id, text, a11y }: { id: string | null; text: string; a11y: string }) => {
+    const on = value === id;
+    return (
+      <Pressable onPress={() => onChange(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${a11y}${on ? ', বাছাই করা' : ''}`}
+        style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, marginRight: S.xs, marginTop: S.xs, borderRadius: R.pill,
+          borderWidth: 2, borderColor: C.primary, backgroundColor: on ? C.primary : C.card }}>
+        <Text style={[st.p, { color: on ? C.onPrimary : C.primary, fontWeight: '700' }]}>{on ? '✓ ' : ''}{text}</Text>
+      </Pressable>
+    );
+  };
+  return (
+    <View style={{ marginBottom: S.sm }}>
+      <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">📅 কোন মাসে যাবেন</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        <Pill id={null} text="সব মাস" a11y="সব মাসের প্যাকেজ" />
+        {months.map((m) => <Pill key={m.id} id={m.id} text={`${m.label} · ${fmtTaka(m.from)} থেকে`} a11y={`${m.label}, ${toBn(m.count)}টি প্যাকেজ, ${fmtTaka(m.from)} থেকে শুরু`} />)}
+      </View>
+    </View>
+  );
+}
+
 function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [kind, setKind] = useState('umrah');
   const [rows, setRows] = useState<PackageRow[] | null>(null);
@@ -158,6 +206,9 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const active = [q.trim() ? 1 : 0, month, airport, maxPrice].filter(Boolean).length;
   const clearAll = () => { setQ(''); setMonth(null); setAirport(null); setMaxPrice(null); };
   const months = monthOptions(rows || []);
+  const badges = badgesFor(rows);                                    // over all packages of this kind
+  const specials = active ? [] : featured(rows);                      // only on the plain list
+  const bar = monthBar(rows);
 
   // ---- one package on its own page ----
   const open = openId && (rows || []).find((o) => o.id === openId);
@@ -231,10 +282,13 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
           <Button title="সব বাছাই মুছে দিন" icon="✖️" kind="secondary" onPress={clearAll} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
+      {state === 'ok' ? <MonthBar months={bar} value={month} onChange={setMonth} /> : null}
+      {state === 'ok' ? <Featured items={specials} onOpen={(id) => { setMsg(null); setOpenId(id); scroller.current?.scrollTo?.({ y: 0, animated: false }); }} /> : null}
+      {specials.length ? <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">সব প্যাকেজ</Text> : null}
       {active && shown.length > 0 ? <Button title="সব বাছাই মুছে সব প্যাকেজ দেখুন" icon="✖️" kind="secondary" onPress={clearAll} style={{ marginBottom: S.sm }} /> : null}
       {state === 'ok' ? shown.map((o) => {
         const r = mine[o.id];
-        return <OfferSummary key={o.id} o={o} note={r && r.status === 'new' ? '📞 আপনার ফোনের অনুরোধ পাঠানো আছে' : null}
+        return <OfferSummary key={o.id} o={o} badges={badges[o.id]} note={r && r.status === 'new' ? '📞 আপনার ফোনের অনুরোধ পাঠানো আছে' : null}
           onOpen={() => { setMsg(null); setOpenId(o.id); scroller.current?.scrollTo?.({ y: 0, animated: false }); }} />;
       }) : null}
       <Notice kind="info" title="জেনে রাখুন" text="চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।" />

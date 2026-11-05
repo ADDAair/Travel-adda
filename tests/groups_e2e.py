@@ -144,6 +144,32 @@ with sync_playwright() as p:
                 tab(hp, 'হোম'); hp.wait_for_timeout(800)
             except Exception as e:
                 step('হাজীর অফার পাতা', False, str(e)[:150])
+            # many packages (sample data, only inside this test, never on the server): special cards, month buttons, badges
+            try:
+                from datetime import datetime, timezone, timedelta
+                now = datetime.now(timezone.utc)
+                def pk(i, price, dep, ret, made, title):
+                    return {'id': f'00000000-0000-4000-8000-0000000000{i:02d}', 'kind': 'umrah', 'title': title, 'price_bdt': price, 'depart_on': dep, 'return_on': ret,
+                            'makkah_distance_m': 300 + i * 100, 'makkah_nights': 8, 'madinah_nights': 4, 'created_at': made.isoformat(), 'includes': [],
+                            'leader_name': 'নমুনা লিডার', 'leader_code': f'TL-9{i:04d}', 'leader_kind': 'agency', 'agency_name': 'নমুনা এজেন্সি', 'rating_avg': 0}
+                old = now - timedelta(days=30)
+                sample = [pk(i, 150000 + i * 7000, f'2027-0{1 + i % 2}-{10 + i:02d}', f'2027-0{1 + i % 2}-{22 + i % 5:02d}', now - timedelta(hours=3) if i == 5 else old,
+                             f'নমুনা ওমরাহ প্যাকেজ {i + 1}') for i in range(12)]
+                hp.route(re.compile(r'.*/rest/v1/rpc/list_offers.*'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(sample)))
+                tab(hp, 'হোম'); hp.wait_for_timeout(500); tab(hp, 'অফার'); hp.wait_for_timeout(3000)
+                step('অনেক প্যাকেজে উপরে "বিশেষ অফার" (সবচেয়ে কম দাম ও নতুন)', has(hp, 'বিশেষ অফার', 3000) and hp.get_by_role('button', name=re.compile('^বিশেষ অফার')).count() == 2)
+                step('অনেক প্যাকেজে মাসের বোতাম, "থেকে" দামসহ', hp.get_by_role('button', name=re.compile('^জানুয়ারি ২০২৭, .*টি প্যাকেজ')).count() > 0)
+                step('ছোট কার্ডে ব্যাজ "সবচেয়ে কম দাম"', has(hp, 'সবচেয়ে কম দাম', 2000))
+                shot(hp, 'H01t-offers-many')
+                hp.mouse.move(200, 600); hp.mouse.wheel(0, 1100); hp.wait_for_timeout(800); shot(hp, 'H01u-offers-cards')
+                hp.get_by_role('button', name=re.compile('^ফেব্রুয়ারি ২০২৭, ')).first.click(); hp.wait_for_timeout(800)
+                step('মাসের বোতাম চাপলে শুধু সেই মাসের প্যাকেজ', has(hp, '১২টির মধ্যে ৬টি প্যাকেজ মিলেছে', 2000))
+                hp.unroute(re.compile(r'.*/rest/v1/rpc/list_offers.*'))
+                tab(hp, 'হোম'); hp.wait_for_timeout(800)
+            except Exception as e:
+                try: hp.unroute(re.compile(r'.*/rest/v1/rpc/list_offers.*'))
+                except Exception: pass
+                step('অনেক প্যাকেজের অফার পাতা', False, str(e)[:150])
             # every page has "▶️ ভিডিও দেখুন"; until videos exist it says "শীঘ্রই আসছে"
             try:
                 home(hp); hp.wait_for_timeout(800)

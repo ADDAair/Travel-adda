@@ -3,7 +3,8 @@ import { View, Text, Pressable } from 'react-native';
 import { C, S, R, F, TOUCH } from '../theme';
 import { toBn } from '../lib/phone';
 import { INCLUDES, KIND, refOf, daysOf } from '../lib/offers';
-import { routeSteps, routeShort, hasRoute } from '../lib/offerRoute';
+import { routeSteps, hasRoute } from '../lib/offerRoute';
+import { BADGE_TEXT, shortDates, nightsText, walkText, type Badge } from '../lib/offerList';
 import { LEADER_KINDS } from '../lib/leaderKinds';
 import { st, fmtDay, fmtTaka } from '../screens/GroupScreen';
 import { Avatar } from '../screens/LeadersScreen';
@@ -66,27 +67,41 @@ export function LeaderBox({ o, onProfile, onMore }: { o: Offer; onProfile?: () =
   );
 }
 
-// Short card for the list: the facts a haji compares first. Tapping opens the full page.
-export function OfferSummary({ o, onOpen, note, noteColor }: { o: Offer; onOpen?: () => void; note?: string | null; noteColor?: string }): JSX.Element {
-  const label = `${o.title}। ${fmtTaka(o.price_bdt)}। ${fmtDay(o.depart_on)} থেকে, ${toBn(daysOf(o))} দিন। ${routeShort(o)}। লিডার ${o.leader_name || o.agency_name || ''}${o.leader_code ? `, আইডি ${o.leader_code}` : ''}। বিস্তারিত দেখতে চাপুন`;
+// Short card for the list (owner choice Nov 2026): only what a haji compares first — name, days, price, dates and
+// nights, walking distance to the Haram — plus the app's own badges. Leader, route and the rest are on the full page.
+export function BadgePill({ b }: { b: Badge }): JSX.Element {
+  const cheap = b === 'cheap';
   return (
-    <Pressable onPress={onOpen} style={({ pressed }) => [st.card, { opacity: pressed ? 0.85 : 1 }]} accessibilityRole="button" accessibilityLabel={label}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <View style={{ flex: 1, paddingRight: S.sm }}>
-          <Text style={st.small}>{KIND[o.kind || '']?.icon} {KIND[o.kind || '']?.label} · নম্বর {refOf(o.id)}</Text>
-          <Text style={st.gName}>{o.title}</Text>
-        </View>
-        <View style={{ backgroundColor: C.goldSoft, borderRadius: R.md, paddingHorizontal: S.sm, paddingVertical: 4 }}>
-          <Text style={[st.small, { fontWeight: '700', color: C.text }]}>{toBn(daysOf(o))} দিন</Text>
+    <View style={{ alignSelf: 'flex-start', borderRadius: R.pill, paddingHorizontal: S.sm, paddingVertical: 2, marginRight: S.xs, marginTop: 2,
+      backgroundColor: cheap ? C.okSoft : C.goldSoft, borderWidth: 1, borderColor: cheap ? C.ok : C.gold }}>
+      <Text style={{ fontSize: F.small, fontWeight: '700', color: C.text }}>{BADGE_TEXT[b]}</Text>
+    </View>
+  );
+}
+
+export function OfferSummary({ o, onOpen, note, noteColor, badges }: { o: Offer; onOpen?: () => void; note?: string | null; noteColor?: string; badges?: Badge[] }): JSX.Element {
+  const dates = shortDates(o); const nights = nightsText(o); const walk = walkText(o.makkah_distance_m);
+  const b = badges || [];
+  const label = [`${o.title}`, `${fmtTaka(o.price_bdt)} জনপ্রতি`, `${toBn(daysOf(o))} দিন`, dates, nights, walk,
+    ...b.map((x) => BADGE_TEXT[x].replace(/^\S+ /, '')),
+    o.leader_name || o.agency_name ? `লিডার ${o.leader_name || o.agency_name}${o.leader_code ? `, আইডি ${o.leader_code}` : ''}` : '', note || '', 'বিস্তারিত দেখতে চাপুন'].filter(Boolean).join('। ');
+  return (
+    <Pressable onPress={onOpen} style={({ pressed }) => [st.card, { borderWidth: 1.5, borderColor: C.primary, paddingVertical: S.sm, marginBottom: S.sm, opacity: pressed ? 0.85 : 1 }]}
+      accessibilityRole="button" accessibilityLabel={label}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: S.sm }}>
+        <Text style={{ flex: 1, fontSize: F.large, fontWeight: '700', color: C.primary, lineHeight: 28 }}>{o.title}</Text>
+        <View style={{ backgroundColor: C.goldSoft, borderRadius: R.md, paddingHorizontal: S.sm, paddingVertical: 2 }}>
+          <Text style={{ fontSize: F.small, fontWeight: '700', color: C.text }}>{toBn(daysOf(o))} দিন</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 26, fontWeight: '800', color: C.primary }}>{fmtTaka(o.price_bdt)} <Text style={st.small}>জনপ্রতি</Text></Text>
-      <Text style={st.p}>📅 {fmtDay(o.depart_on)} → {fmtDay(o.return_on)}</Text>
-      <Text style={st.p}>✈️ {routeShort(o)}</Text>
-      {o.makkah_distance_m != null ? <Text style={st.p}>🏨 {dist(o.makkah_distance_m, 'মক্কায় হারাম')}</Text> : null}
-      {o.leader_name ? <Text style={[st.p, { marginTop: S.xs }]}>🧭 {o.leader_name} · {o.leader_code} · {Number(o.rating_avg || 0) > 0 ? `⭐ ${toBn(Number(o.rating_avg).toFixed(1))}` : 'নতুন'}{o.leader_kind === 'travel_adda' ? ' · ✅ Travel Adda' : ''}</Text> : null}
-      {note ? <Text style={[st.small, { fontWeight: '700', color: noteColor || C.ok }]}>{note}</Text> : null}
-      <Text style={[st.p, { color: C.primary, fontWeight: '700', marginTop: S.xs }]}>বিস্তারিত দেখুন ›</Text>
+      <Text style={{ fontSize: 24, fontWeight: '800', color: C.text, lineHeight: 34 }}>{fmtTaka(o.price_bdt)} <Text style={st.small}>জনপ্রতি</Text></Text>
+      {b.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 2 }}>{b.map((x) => <BadgePill key={x} b={x} />)}</View> : null}
+      {dates || nights ? <Text style={st.p}>📅 {[dates, nights].filter(Boolean).join(' · ')}</Text> : null}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: S.sm }}>
+        <Text style={[st.p, { flex: 1 }]}>{walk ? `🚶 ${walk}` : ''}</Text>
+        <Text style={[st.p, { color: C.primary, fontWeight: '700' }]}>দেখুন ›</Text>
+      </View>
+      {note ? <Text style={[st.small, { fontWeight: '700', color: noteColor || C.ok, marginBottom: 0 }]}>{note}</Text> : null}
     </Pressable>
   );
 }
