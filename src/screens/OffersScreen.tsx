@@ -66,37 +66,46 @@ function Pills<T extends string | number>({ label, options, value, onChange }: {
   );
 }
 
-// Umrah month: one button that says what is chosen ("সব মাস" at first); tapping it opens the list of months.
-function MonthDropdown({ options, value, onChange }: { options: { id: string; label: string }[]; value: string | null; onChange: (v: string | null) => void }) {
+// One button that says what is chosen; tapping it opens the list (owner request: dropdowns, not rows of buttons).
+function Dropdown<T extends string | number>({ label, name, icon, options, value, onChange, allText, noneText, valueText, note }:
+  { label: string; name: string; icon: string; options: { id: T; label: string }[]; value: T | null; onChange: (v: T | null) => void;
+    allText: string; noneText: string; valueText?: string; note?: string }) {
   const [open, setOpen] = useState(false);
-  const pick = (id: string | null) => { onChange(id); setOpen(false); };
-  const Item = ({ id, label }: { id: string | null; label: string }) => {
+  const pick = (id: T | null) => { onChange(id); setOpen(false); };
+  const cur = valueText || (value == null ? noneText : (options.find((o) => o.id === value) || { label: String(value) }).label);
+  const Item = ({ id, text }: { id: T | null; text: string }) => {
     const on = value === id;
     return (
-      <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${label}${on ? ', বাছাই করা' : ''}`}
+      <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${text}${on ? ', বাছাই করা' : ''}`}
         style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, borderTopWidth: 1, borderColor: C.line, backgroundColor: on ? C.primarySoft : C.card }}>
-        <Text style={st.p}>{on ? '✓ ' : '   '}{label}</Text>
+        <Text style={st.p}>{on ? '✓ ' : '   '}{text}</Text>
       </Pressable>
     );
   };
   return (
     <View style={{ marginBottom: S.md }}>
-      <Text style={[st.small, { fontWeight: '700' }]}>কোন মাসে যাবেন</Text>
+      <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>
       <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }}
-        accessibilityLabel={`মাস: ${monthButtonText(value, options).replace('📅 ', '')}। ${open ? 'তালিকা বন্ধ করতে' : 'অন্য মাস বাছতে'} চাপুন`}
+        accessibilityLabel={`${name}: ${cur}। ${open ? 'তালিকা বন্ধ করতে' : 'অন্যটি বাছতে'} চাপুন`}
         style={{ minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center', marginTop: S.xs, paddingHorizontal: S.md, borderRadius: R.md, borderWidth: 2, borderColor: C.primary, backgroundColor: C.card }}>
-        <Text style={[st.p, { flex: 1 }]}>{monthButtonText(value, options)}</Text>
+        <Text style={[st.p, { flex: 1 }]}>{icon} {cur}</Text>
         <Text style={[st.p, { color: C.primary }]}>{open ? '▲' : '▼'}</Text>
       </Pressable>
       {open ? (
         <View style={{ borderWidth: 2, borderTopWidth: 0, borderColor: C.primary, borderBottomLeftRadius: R.md, borderBottomRightRadius: R.md, overflow: 'hidden' }}>
-          <Item id={null} label="সব মাস একসাথে" />
-          {options.map((o) => <Item key={o.id} id={o.id} label={o.label} />)}
-          <Text style={[st.small, { padding: S.sm }]}>বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।</Text>
+          <Item id={null} text={allText} />
+          {options.map((o) => <Item key={String(o.id)} id={o.id} text={o.label} />)}
+          {note ? <Text style={[st.small, { padding: S.sm }]}>{note}</Text> : null}
         </View>
       ) : null}
     </View>
   );
+}
+
+// Umrah month inside the filters (every month of the coming year, with counts).
+function MonthDropdown({ options, value, onChange }: { options: { id: string; label: string }[]; value: string | null; onChange: (v: string | null) => void }) {
+  return <Dropdown label="কোন মাসে যাবেন" name="মাস" icon="📅" options={options} value={value} onChange={onChange} allText="সব মাস একসাথে" noneText="সব মাস"
+    note="বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।" />;
 }
 
 // Two "special" cards above the list (cheapest, newest), chosen by the app from the packages themselves.
@@ -121,28 +130,11 @@ function Featured({ items, onOpen }: { items: { o: PackageRow; why: Badge }[]; o
   );
 }
 
-// Month buttons once there are many packages: each says how many leave that month and the lowest price.
+// Month choice above the list once there are many packages: only months that have packages, each with its lowest price.
 function MonthBar({ months, value, onChange }: { months: { id: string; label: string; count: number; from: number }[]; value: string | null; onChange: (v: string | null) => void }) {
   if (!months.length) return null;
-  const Pill = ({ id, text, a11y }: { id: string | null; text: string; a11y: string }) => {
-    const on = value === id;
-    return (
-      <Pressable onPress={() => onChange(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${a11y}${on ? ', বাছাই করা' : ''}`}
-        style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, marginRight: S.xs, marginTop: S.xs, borderRadius: R.pill,
-          borderWidth: 2, borderColor: C.primary, backgroundColor: on ? C.primary : C.card }}>
-        <Text style={[st.p, { color: on ? C.onPrimary : C.primary, fontWeight: '700' }]}>{on ? '✓ ' : ''}{text}</Text>
-      </Pressable>
-    );
-  };
-  return (
-    <View style={{ marginBottom: S.sm }}>
-      <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">📅 কোন মাসে যাবেন</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        <Pill id={null} text="সব মাস" a11y="সব মাসের প্যাকেজ" />
-        {months.map((m) => <Pill key={m.id} id={m.id} text={`${m.label} · ${fmtTaka(m.from)} থেকে`} a11y={`${m.label}, ${toBn(m.count)}টি প্যাকেজ, ${fmtTaka(m.from)} থেকে শুরু`} />)}
-      </View>
-    </View>
-  );
+  return <Dropdown label="📅 কোন মাসে যাবেন" name="মাস" icon="📅" value={value} onChange={onChange} allText="সব মাস একসাথে" noneText="সব মাস"
+    options={months.map((m) => ({ id: m.id, label: `${m.label} · ${fmtTaka(m.from)} থেকে (${toBn(m.count)}টি)` }))} />;
 }
 
 function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
@@ -261,12 +253,14 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
         onPress={() => setShowFilters((v) => !v)} style={{ marginBottom: S.sm }} />
       {showFilters ? (
         <View style={st.card}>
-          {monthFilterFor(kind) ? <MonthDropdown options={months} value={month} onChange={setMonth} /> : null}
+          {monthFilterFor(kind) && !bar.length ? <MonthDropdown options={months} value={month} onChange={setMonth} /> : null}
           <Pills label="কোন বিমানবন্দর থেকে" options={AIRPORTS_BD.map((a) => ({ id: a.id, label: a.label }))} value={airport} onChange={setAirport} />
           <Field label="সর্বোচ্চ দাম, জনপ্রতি (টাকা)" hint="নিজে লিখুন, যেমন: ১৮০০০০ বা ২.৫ লাখ" value={priceText} onChangeText={setPriceText} keyboardType="default" maxLength={14}
             error={Number.isNaN(typed) ? 'দাম সংখ্যায় লিখুন, যেমন: ১৮০০০০' : undefined} />
           {maxPrice ? <Text style={[st.small, { marginTop: -S.xs, marginBottom: S.xs }]}>{fmtTaka(maxPrice)} বা তার কম দামের প্যাকেজ দেখানো হচ্ছে</Text> : null}
-          <Pills label="অথবা এক চাপে বাছুন" options={PRICE_LIMITS.map((p) => ({ id: p, label: `${toBn(p / 100000)} লাখ টাকার মধ্যে` }))} value={maxPrice} onChange={setMaxPrice} />
+          <Dropdown label="অথবা এক চাপে বাছুন" name="দামের সীমা" icon="💰" value={maxPrice && PRICE_LIMITS.includes(maxPrice) ? maxPrice : null} onChange={setMaxPrice}
+            allText="দামের কোনো সীমা নেই" noneText="দামের সীমা নেই" valueText={maxPrice && !PRICE_LIMITS.includes(maxPrice) ? `${fmtTaka(maxPrice)} (নিজে লেখা)` : undefined}
+            options={PRICE_LIMITS.map((p) => ({ id: p, label: `${toBn(p / 100000)} লাখ টাকার মধ্যে` }))} />
         </View>
       ) : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}

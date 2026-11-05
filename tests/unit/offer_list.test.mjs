@@ -75,3 +75,15 @@ test('the offer page uses the short cards, special cards and month buttons; badg
   assert.ok(c.includes('walkText(') && c.includes('nightsText(') && c.includes('shortDates('), 'short card lines');
   assert.ok(!/আসন (বাকি|সীমিত)/.test(c + s + l), 'no seat badge until leaders can enter real seats');
 });
+
+test('owner request: month (কোন মাসে যাবেন) and quick price (অথবা এক চাপে বাছুন) are chosen from dropdowns, not rows of buttons', () => {
+  const s = read('src/screens/OffersScreen.tsx');
+  assert.ok(/function Dropdown\b/.test(s), 'one shared dropdown');
+  assert.ok(s.includes('accessibilityState={{ expanded: open }}'), 'screen reader hears open / closed');
+  assert.ok(/<Dropdown[^>]*label="অথবা এক চাপে বাছুন"/.test(s), 'quick price is a dropdown');
+  assert.ok(!/<Pills label="অথবা এক চাপে বাছুন"/.test(s), 'no row of price buttons');
+  const bar = s.slice(s.indexOf('function MonthBar'), s.indexOf('function HajiOffers'));
+  assert.ok(bar.includes('<Dropdown') && !bar.includes('<Pill '), 'month buttons became a dropdown');
+  assert.ok(bar.includes('থেকে'), 'each month still says the "from" price');
+  assert.ok(/monthFilterFor\(kind\) && !bar\.length \? <MonthDropdown/.test(s), 'only one month choice on the page at a time');
+});
