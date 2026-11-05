@@ -167,7 +167,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
         onPress={(x) => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)} />
 
       <Text style={[st.h2, { marginTop: S.lg }]}>সহায়ক টুল</Text>
-      <TileGrid items={TOOLS.map((x) => ({ ...x, key: x.route }))} onPress={(x) => navigation.navigate(x.route, { t: Date.now() })} />
+      <TileGrid tone="gold" items={TOOLS.map((x) => ({ ...x, key: x.route }))} onPress={(x) => navigation.navigate(x.route, { t: Date.now() })} />
 
       {UPCOMING.length ? <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text> : null}
       {UPCOMING.length ? <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text> : null}

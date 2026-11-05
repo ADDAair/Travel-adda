@@ -37,3 +37,17 @@ test('Ihram, Hajj and More guides lists use the same tile grid; Ihram and Hajj k
     assert.ok(!s.includes('<Text style={st.openT}>খুলুন ›</Text>') && !s.includes('<Text style={st.open}>খুলুন ›</Text>'), `${f}: old rows removed`);
   }
 });
+
+test('frame colour: green (main colour) for main features and guide lists; gold only for সহায়ক টুল', () => {
+  const t = read('src/components/TileGrid.tsx');
+  assert.ok(/tone\?: 'green' \| 'gold'/.test(t), 'TileGrid has a tone choice');
+  assert.ok(/tone = 'green'/.test(t), 'green is the default');
+  assert.ok(t.includes('C.primary'), 'green frame uses the app main colour');
+  const h = read('src/screens/HomeScreen.tsx');
+  const grids = h.match(/<TileGrid[^\n]*/g) || [];
+  assert.equal(grids.filter((g) => g.includes('tone="gold"')).length, 1, 'one gold grid on Home');
+  assert.ok(/<TileGrid tone="gold" items=\{TOOLS/.test(h), 'the gold one is সহায়ক টুল');
+  for (const f of ['IhramScreen', 'HajjScreen', 'GuidesScreen']) {
+    assert.ok(!read(`src/screens/${f}.tsx`).includes('tone="gold"'), `${f} uses green`);
+  }
+});
