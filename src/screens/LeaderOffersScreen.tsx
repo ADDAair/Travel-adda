@@ -5,7 +5,8 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
 import { notReady } from '../lib/groups';
-import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffer, setOfferActive, myInterestCounts, canEditOffer, reviewLabel, reviewOf, offerErrorText, offerReviewReady } from '../lib/offers';
+import { INCLUDES, includesFor, cleanIncludes, myOffers, createOffer, updateOffer, setOfferActive, myInterestCounts, canEditOffer, reviewLabel, reviewOf, offerErrorText, offerReviewReady, setOfferSeats } from '../lib/offers';
+import { seatsLine, SEATS_FRESH_DAYS } from '../lib/offerList';
 import { st, errText, confirm } from './GroupScreen';
 import { parseDate } from '../lib/dates';
 import { OfferCard, OfferSummary } from '../components/OfferCard';
@@ -67,6 +68,7 @@ export default function LeaderOffersScreen({ navigation, inTab }: { navigation: 
       <View style={st.cRow}>
         <Text style={st.val}>{statusOf(o)}</Text>
         {canEditOffer(o) ? <Button title="প্যাকেজটি বদলান" icon="✏️" onPress={() => { setMsg(null); setForm(o); }} disabled={busy} style={{ marginTop: S.sm }} /> : null}
+        {o.return_on >= today() ? <SeatsBox o={o} onSaved={load} /> : null}
         <Text style={st.p}>🙋 আগ্রহী: {toBn(c ? c.total : 0)} জন{c && c.open ? ` (টিমের ফোনের অপেক্ষায় ${toBn(c.open)} জন)` : ''}</Text>
         {!o.hidden_by_admin ? <Button title={o.active ? 'প্যাকেজটি লুকান' : 'আবার দেখান'} icon={o.active ? '🙈' : '👁️'} kind="secondary" onPress={() => toggle(o)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
       </View>
@@ -107,6 +109,40 @@ export default function LeaderOffersScreen({ navigation, inTab }: { navigation: 
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+// 034: "⏳ আসন বাকি" — the leader says how many seats are left. Hajis see it for 14 days, then he says it again.
+function SeatsBox({ o, onSaved }: { o: OwnPackage; onSaved: () => Promise<void> | void }): JSX.Element {
+  const [text, setText] = useState(o.seats_left != null ? toBn(o.seats_left) : '');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  const now = seatsLine(o);
+  const save = async (clear: boolean) => {
+    if (busy) return;
+    const t = normalizeDigits(text).trim();
+    const n = clear ? null : Number(t);
+    if (!clear && (!/^\d{1,3}$/.test(t) || (n as number) > 500)) { setMsg({ kind: 'bad', text: '০ থেকে ৫০০-এর মধ্যে একটি সংখ্যা লিখুন।' }); return; }
+    setBusy(true); setMsg(null);
+    try {
+      const r = await setOfferSeats(o.id, n);
+      if (r === 'ok') { setMsg({ kind: 'ok', text: clear ? 'আসন সংখ্যা মুছে দেওয়া হয়েছে।' : n === 0 ? 'জানানো হয়েছে: সব আসন শেষ।' : `জানানো হয়েছে: ${toBn(n)}টি আসন বাকি।` }); if (clear) setText(''); await onSaved(); }
+      else if (r === 'bad_value') setMsg({ kind: 'bad', text: '০ থেকে ৫০০-এর মধ্যে একটি সংখ্যা লিখুন।' });
+      else if (r === 'not_found') setMsg({ kind: 'warn', text: 'এই প্যাকেজে আসন জানানো যায় না। হয়তো যাত্রার তারিখ পার হয়ে গেছে।' });
+      else setMsg({ kind: 'bad', text: 'জানানো যায়নি। আবার চেষ্টা করুন।' });
+    } catch (e) { setMsg({ kind: notReady(e) ? 'info' : 'bad', text: notReady(e) ? 'আসন জানানো শীঘ্রই চালু হবে।' : errText(e) }); }
+    finally { setBusy(false); }
+  };
+  return (
+    <View style={{ marginTop: S.sm, paddingTop: S.sm, borderTopWidth: 1, borderColor: C.line }}>
+      <Text style={st.lbl}>💺 আসন কয়টি বাকি</Text>
+      <Text style={st.p}>{now || (o.seats_left != null ? `${toBn(SEATS_FRESH_DAYS)} দিনের বেশি আগে জানিয়েছিলেন, তাই হাজীরা এখন দেখছেন না। আবার জানান।` : 'এখনো জানাননি।')}</Text>
+      <Text style={st.small}>১০টি বা কম বাকি থাকলে হাজীরা "⏳ আসন বাকি" ব্যাজ দেখবেন। ০ লিখলে "আসন শেষ" দেখাবে। সংখ্যা {toBn(SEATS_FRESH_DAYS)} দিন দেখানো হয়।</Text>
+      <Field label="এখন কয়টি আসন বাকি আছে" hint="যেমন: ৫" value={text} onChangeText={setText} keyboardType="number-pad" maxLength={3} />
+      {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      <Button title="আসন সংখ্যা জানান" icon="💺" onPress={() => save(false)} loading={busy} disabled={busy} />
+      {o.seats_left != null ? <Button title="আসন সংখ্যা মুছুন" icon="✖️" kind="secondary" onPress={() => save(true)} disabled={busy} style={{ marginTop: S.sm }} /> : null}
+    </View>
   );
 }
 

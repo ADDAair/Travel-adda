@@ -155,6 +155,9 @@ with sync_playwright() as p:
                 old = now - timedelta(days=30)
                 sample = [pk(i, 150000 + i * 7000, f'2027-0{1 + i % 2}-{10 + i:02d}', f'2027-0{1 + i % 2}-{22 + i % 5:02d}', now - timedelta(hours=3) if i == 5 else old,
                              f'নমুনা ওমরাহ প্যাকেজ {i + 1}') for i in range(12)]
+                sample[3].update(seats_left=4, seats_updated_at=(now - timedelta(days=1)).isoformat())    # 034: few seats left
+                sample[7].update(seats_left=0, seats_updated_at=(now - timedelta(days=1)).isoformat())    # 034: full
+                sample[9].update(seats_left=2, seats_updated_at=(now - timedelta(days=30)).isoformat())   # 034: too old, not shown
                 hp.route(re.compile(r'.*/rest/v1/rpc/list_offers.*'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(sample)))
                 tab(hp, 'হোম'); hp.wait_for_timeout(500); tab(hp, 'অফার'); hp.wait_for_timeout(3000)
                 step('অনেক প্যাকেজে উপরে "বিশেষ অফার" (সবচেয়ে কম দাম ও নতুন)', has(hp, 'বিশেষ অফার', 3000) and hp.get_by_role('button', name=re.compile('^বিশেষ অফার')).count() == 2)
@@ -166,6 +169,7 @@ with sync_playwright() as p:
                 pd.first.click(); hp.wait_for_timeout(500); pd.first.scroll_into_view_if_needed(); shot(hp, 'H01s-price-dropdown')
                 hp.get_by_role('button', name=re.compile('^দামের কোনো সীমা নেই')).first.click(); hp.wait_for_timeout(400)
                 step('ছোট কার্ডে ব্যাজ "সবচেয়ে কম দাম"', has(hp, 'সবচেয়ে কম দাম', 2000))
+                step('আসন ব্যাজ: "আসন বাকি ৪টি" ও "আসন শেষ"; পুরনো সংখ্যা দেখায় না', has(hp, 'আসন বাকি ৪টি', 2000) and has(hp, 'আসন শেষ', 2000) and hp.get_by_text('আসন বাকি ২টি').count() == 0)
                 shot(hp, 'H01t-offers-many')
                 hp.mouse.move(200, 600); hp.mouse.wheel(0, 1200); hp.wait_for_timeout(800); shot(hp, 'H01u-offers-cards')
                 hp.get_by_role('button', name=re.compile('^ফেব্রুয়ারি ২০২৭ · ')).first.click(); hp.wait_for_timeout(800)

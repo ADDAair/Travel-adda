@@ -137,3 +137,7 @@ export async function offerReviewReady(): Promise<boolean> {
   const r = await supabase.from('offers').select('review').limit(1);
   return !r.error;
 }
+
+// 034: the leader says how many seats are left (null = clear). Answers: 'ok' | 'bad_value' | 'not_found'.
+export const setOfferSeats = async (id: string, seats: number | null): Promise<string> =>
+  String(check(await supabase.rpc('set_offer_seats', { p_offer: id, p_seats: seats })));
