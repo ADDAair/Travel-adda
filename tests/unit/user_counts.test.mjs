@@ -25,9 +25,9 @@ test('a real failure (e.g. no permission) is passed on, never shown as 0', async
 test('the ব্যবহারকারী tab shows the counts card above the search (icon + words, screen-reader label)', async () => {
   const { readFileSync } = await import('node:fs');
   const s = readFileSync(new URL('../../src/screens/AdminScreen.tsx', import.meta.url), 'utf8');
-  const tab = s.slice(s.indexOf('function UsersTab'), s.indexOf('function UsersTab') + 4000);
+  const tab = s.slice(s.indexOf('function UsersTab'), s.indexOf('function UsersTab') + 7000);
   assert.ok(tab.includes('<UserCountsCard'), 'UsersTab must show the card');
-  assert.ok(tab.indexOf('<UserCountsCard') < tab.indexOf("label={tr('নাম, আইডি বা মোবাইল নম্বর'"), 'card comes before the search');
+  assert.ok(tab.indexOf('<UserCountsCard') < tab.indexOf('label={tr("নাম, আইডি বা মোবাইল নম্বর"'), 'card comes before the search');
   const card = s.slice(s.indexOf('function UserCountsCard'));
   assert.ok(card.includes('userCounts()') && card.includes('accessibilityLabel') && card.includes('হাজী') && card.includes('লিডার'));
 });
