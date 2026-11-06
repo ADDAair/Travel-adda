@@ -21,7 +21,7 @@ export default function DistrictPicker({
   nameOf?: (v: string) => string;   // the name shown for a saved value (default: district names)
 }): JSX.Element {
   const ins = useSafeAreaInsets();
-  const nm = nameOf || districtName;
+  const nm = nameOf || ((v: string) => districtName(v));
   const lab = label || tr('জেলা', 'District');
   const what = noun || tr('জেলা', 'district');
   const ph = placeholder || tr('জেলা বাছুন', 'Choose a district');

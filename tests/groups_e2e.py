@@ -249,6 +249,20 @@ with sync_playwright() as p:
             except Exception as e:
                 step('নতুন গাইড', False, str(e)[:150])
             home(lp)
+            # English step 4: the leader panel in English, then back to Bengali for the rest of the test
+            try:
+                lp.get_by_role('button', name=re.compile('^Switch to English')).first.click(); lp.wait_for_timeout(1500)
+                lp.get_by_role('button', name=re.compile('leader panel', re.I)).first.click(); lp.wait_for_timeout(2500)
+                step('ইংরেজি ধাপ ৪: লিডার প্যানেল ইংরেজিতে ("My groups", "Contracts and referral hajis")', has(lp, 'My groups', 3000) and has(lp, 'Contracts and referral hajis', 2000) and lp.get_by_text('আমার দলগুলো').count() == 0)
+                shot(lp, 'L09e-panel-english')
+            except Exception as e:
+                step('ইংরেজি ধাপ ৪: লিডার প্যানেল', False, str(e)[:150])
+            finally:
+                try:
+                    lp.get_by_role('button', name=re.compile('^বাংলায় দেখুন')).first.click(); lp.wait_for_timeout(1500)
+                except Exception:
+                    pass
+            home(lp)
             # 1) leader sends a contract to the haji's ID
             lp.get_by_role('button', name='লিডার প্যানেল খুলুন').click(); lp.wait_for_timeout(2500); shot(lp, 'L10-panel')
             # 0) work area on "আমার লিডার প্রোফাইল": district list > that district's upazilas > union typed (nothing saved)
