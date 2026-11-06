@@ -9,7 +9,7 @@ import { remindersSupported, remindersOn, enableReminders, disableReminders, ref
 import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, placeName, watchHeading, type Place } from '../lib/location';
 import { smoothHeading, qiblaTurn, compassWeak } from '../lib/qibla';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
-import { SALAH } from '../content/salah';
+import { salahL } from '../content/salah';
 import type { Nav } from './navTypes';
 
 const GPS_ERR: Record<string, string> = {
@@ -145,7 +145,7 @@ function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: 
         const past = times[o.key] <= now && !isNext;
         const name = prayerName(o, today);
         const section = o.key === 'dhuhr' && friday ? 'jumuah' : o.key;
-        const info = SALAH.find((x) => x.id === section);
+        const info = salahL().SALAH.find((x) => x.id === section);
         return (
           <Pressable key={o.key} disabled={o.notPrayer} onPress={() => openSalah(section)}
             style={({ pressed }) => [st.row, isNext && st.rowNext, o.notPrayer && st.rowSun, pressed && { opacity: 0.85 }]}

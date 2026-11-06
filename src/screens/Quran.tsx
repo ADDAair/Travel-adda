@@ -6,7 +6,10 @@ import { Notice } from '../components/ui';
 import { toBn, normalizeDigits } from '../lib/phone';
 import META from '../content/quran/meta.json';
 import { SURAH } from '../content/quran/loaders';
-import { SURAH_BN, QURAN_CREDIT, TRANSLATION_PERMISSION_OK } from '../content/quranNames';
+import { SURAH_BN, quranNamesL, TRANSLATION_PERMISSION_OK } from '../content/quranNames';
+import { tr, getLang } from '../lib/lang';
+
+const QN = quranNamesL;   // surah names in the chosen language
 
 const LAST_KEY = 'ta.quranLast.v1';
 const SIZE_KEY = 'ta.duaTextScale.v1';   // same text size as the dua vault
@@ -24,7 +27,7 @@ export function stripBismillah(text: string): string {
 type Verse = { a: number; ar: string; bn: string; pr: string };
 type Spot = { n: number; a: number };   // where the reader stopped
 type Raw = [string, string, string?][];   // one surah file: [arabic, bangla, pronunciation] per ayah
-const typeBn = (t: string) => (t === 'Meccan' ? 'মাক্কী' : 'মাদানী');
+const typeBn = (t: string) => (t === 'Meccan' ? tr('মাক্কী', 'Makki') : tr('মাদানী', 'Madani'));
 
 export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void }) {
   const [q, setQ] = useState('');
@@ -35,29 +38,29 @@ export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void 
   const list = useMemo(() => {
     const t = normalizeDigits(q.trim());
     if (!t) return META;
-    return META.filter((s) => String(s.n) === t || SURAH_BN[s.n - 1].includes(t) || s.tr.toLowerCase().includes(t.toLowerCase()) || s.ar.includes(t));
+    return META.filter((s) => String(s.n) === t || SURAH_BN[s.n - 1].includes(t) || QN().SURAH_BN[s.n - 1].toLowerCase().includes(t.toLowerCase()) || s.tr.toLowerCase().includes(t.toLowerCase()) || s.ar.includes(t));
   }, [q]);
 
   const header = (
     <View>
       {last ? (
         <Pressable onPress={() => onOpen(last.n, last.a)} style={st.resume} accessibilityRole="button"
-          accessibilityLabel={`যেখানে থেমেছিলেন সেখান থেকে পড়ুন: সূরা ${SURAH_BN[last.n - 1]}, আয়াত ${last.a}`}>
+          accessibilityLabel={tr(`যেখানে থেমেছিলেন সেখান থেকে পড়ুন: সূরা ${QN().SURAH_BN[last.n - 1]}, আয়াত ${last.a}`, `Read from where you stopped: Surah ${QN().SURAH_BN[last.n - 1]}, verse ${last.a}`)}>
           <Text style={st.resumeIc} importantForAccessibility="no">📖</Text>
           <View style={{ flex: 1 }}>
-            <Text style={st.resumeH}>যেখানে থেমেছিলেন</Text>
-            <Text style={st.resumeT}>সূরা {SURAH_BN[last.n - 1]}, আয়াত {toBn(last.a)}</Text>
+            <Text style={st.resumeH}>{tr('যেখানে থেমেছিলেন', 'Where you stopped')}</Text>
+            <Text style={st.resumeT}>{tr('সূরা', 'Surah')} {QN().SURAH_BN[last.n - 1]}, {tr('আয়াত', 'verse')} {toBn(last.a)}</Text>
           </View>
-          <Text style={st.go}>পড়ুন ›</Text>
+          <Text style={st.go}>{tr('পড়ুন ›', 'Read ›')}</Text>
         </Pressable>
       ) : null}
       <View style={st.search}>
         <Text style={{ fontSize: 20 }} importantForAccessibility="no">🔍</Text>
-        <TextInput value={q} onChangeText={setQ} placeholder="সূরার নাম বা নম্বর লিখুন" placeholderTextColor="#7A857F"
-          style={st.searchIn} accessibilityLabel="সূরা খুঁজুন" returnKeyType="search" />
-        {q ? <Pressable onPress={() => setQ('')} style={st.clear} accessibilityRole="button" accessibilityLabel="খোঁজা মুছুন"><Text style={st.clearT}>✕ মুছুন</Text></Pressable> : null}
+        <TextInput value={q} onChangeText={setQ} placeholder={tr('সূরার নাম বা নম্বর লিখুন', 'Type the surah\'s name or number')} placeholderTextColor="#7A857F"
+          style={st.searchIn} accessibilityLabel={tr('সূরা খুঁজুন', 'Search surahs')} returnKeyType="search" />
+        {q ? <Pressable onPress={() => setQ('')} style={st.clear} accessibilityRole="button" accessibilityLabel={tr('খোঁজা মুছুন', 'Clear search')}><Text style={st.clearT}>{tr('✕ মুছুন', '✕ Clear')}</Text></Pressable> : null}
       </View>
-      {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো সূরা পাওয়া যায়নি" text="সূরার নম্বর (১–১১৪) বা নামের অংশ লিখে দেখুন।" /> : null}
+      {q.trim() && list.length === 0 ? <Notice kind="info" title={tr('কোনো সূরা পাওয়া যায়নি', 'No surah found')} text={tr('সূরার নম্বর (১–১১৪) বা নামের অংশ লিখে দেখুন।', 'Try the surah number (1–114) or part of the name.')} /> : null}
     </View>
   );
 
@@ -72,18 +75,18 @@ export function QuranList({ onOpen }: { onOpen: (n: number, a?: number) => void 
       initialNumToRender={12}
       renderItem={({ item: s }) => (
         <Pressable onPress={() => onOpen(s.n, 1)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button" accessibilityLabel={`সূরা ${s.n}, ${SURAH_BN[s.n - 1]}, ${s.ayas} আয়াত, ${typeBn(s.type)}`}>
+          accessibilityRole="button" accessibilityLabel={tr(`সূরা ${s.n}, ${QN().SURAH_BN[s.n - 1]}, ${s.ayas} আয়াত, ${typeBn(s.type)}`, `Surah ${s.n}, ${QN().SURAH_BN[s.n - 1]}, ${s.ayas} verses, ${typeBn(s.type)}`)}>
           <View style={st.num}><Text style={st.numT}>{toBn(s.n)}</Text></View>
           <View style={{ flex: 1 }}>
-            <Text style={st.rowT}>{SURAH_BN[s.n - 1]}</Text>
-            <Text style={st.rowW}>{toBn(s.ayas)} আয়াত · {typeBn(s.type)}</Text>
+            <Text style={st.rowT}>{QN().SURAH_BN[s.n - 1]}</Text>
+            <Text style={st.rowW}>{tr(`${toBn(s.ayas)} আয়াত`, `${s.ayas} verses`)} · {typeBn(s.type)}</Text>
           </View>
           <Text style={st.arName}>{s.ar}</Text>
         </Pressable>
       )}
       ListFooterComponent={
         <Text style={st.credit}>
-          {QURAN_CREDIT}{!TRANSLATION_PERMISSION_OK ? '\n(পরীক্ষামূলক সংস্করণ: অনুবাদ ব্যবহারের অনুমতি নেওয়া হচ্ছে।)' : ''}
+          {QN().QURAN_CREDIT}{!TRANSLATION_PERMISSION_OK ? tr('\n(পরীক্ষামূলক সংস্করণ: অনুবাদ ব্যবহারের অনুমতি নেওয়া হচ্ছে।)', '\n(Test version: permission to use the translation is being obtained.)') : ''}{getLang() === 'en' ? '\nAn English translation of the Quran is coming soon; for now the translation is in Bengali.' : ''}
         </Text>
       }
     />
@@ -145,30 +148,30 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
 
   const header = (
     <View>
-      <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel="সব সূরার তালিকায় ফিরে যান">
-        <Text style={st.backT}>‹ সব সূরা</Text>
+      <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel={tr('সব সূরার তালিকায় ফিরে যান', 'Back to the list of all surahs')}>
+        <Text style={st.backT}>{tr('‹ সব সূরা', '‹ All surahs')}</Text>
       </Pressable>
       <View style={st.titleBox}>
-        <Text style={st.title} accessibilityRole="header">সূরা {SURAH_BN[n - 1]}</Text>
+        <Text style={st.title} accessibilityRole="header">{tr('সূরা', 'Surah')} {QN().SURAH_BN[n - 1]}</Text>
         <Text style={st.titleAr}>{meta.ar}</Text>
-        <Text style={st.titleSub}>{toBn(meta.ayas)} আয়াত · {typeBn(meta.type)} · সূরা নম্বর {toBn(n)}</Text>
+        <Text style={st.titleSub}>{tr(`${toBn(meta.ayas)} আয়াত`, `${meta.ayas} verses`)} · {typeBn(meta.type)} · {tr('সূরা নম্বর', 'Surah no.')} {toBn(n)}</Text>
       </View>
       <View style={st.tools}>
-        <Toggle on={showPr} onPress={togglePr} label="উচ্চারণ" />
-        <Toggle on={showTr} onPress={toggleTr} label="অনুবাদ" />
+        <Toggle on={showPr} onPress={togglePr} label={tr('উচ্চারণ', 'Bengali pronunciation')} />
+        <Toggle on={showTr} onPress={toggleTr} label={tr('অনুবাদ', 'Bengali translation')} />
       </View>
       <View style={st.tools}>
-        <Text style={st.sizeL}>লেখার আকার</Text>
-        <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.toolBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা ছোট করুন"><Text style={st.toolT}>অ−</Text></Pressable>
-        <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.toolBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা বড় করুন"><Text style={[st.toolT, { fontSize: 22 }]}>অ+</Text></Pressable>
+        <Text style={st.sizeL}>{tr('লেখার আকার', 'Text size')}</Text>
+        <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.toolBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('লেখা ছোট করুন', 'Make text smaller')}><Text style={st.toolT}>{tr('অ−', 'A−')}</Text></Pressable>
+        <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.toolBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('লেখা বড় করুন', 'Make text bigger')}><Text style={[st.toolT, { fontSize: 22 }]}>{tr('অ+', 'A+')}</Text></Pressable>
       </View>
-      {showPr ? <Text style={st.prNote}>ℹ️ বাংলা উচ্চারণ শুধু সহায়তার জন্য। সঠিক তিলাওয়াতের জন্য আরবি দেখে পড়া ও শিক্ষকের কাছে শেখা উত্তম।</Text> : null}
+      {showPr ? <Text style={st.prNote}>{tr('ℹ️ বাংলা উচ্চারণ শুধু সহায়তার জন্য। সঠিক তিলাওয়াতের জন্য আরবি দেখে পড়া ও শিক্ষকের কাছে শেখা উত্তম।', 'ℹ️ The Bengali pronunciation is only a help. For correct recitation it is best to read the Arabic and learn from a teacher.')}</Text> : null}
       {n !== 1 && n !== 9 ? <Text style={[st.bism, { fontSize: 26 * k, lineHeight: 26 * k * 1.8 }]} accessibilityLanguage="ar">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</Text> : null}
     </View>
   );
 
-  if (err) return <View style={st.center}><Notice kind="bad" title="সূরাটি খোলা যায়নি" text="অ্যাপ বন্ধ করে আবার খুলুন।" /></View>;
-  if (!verses) return <View style={st.center}><ActivityIndicator size="large" color={C.primary} /><Text style={st.loadT}>সূরা খোলা হচ্ছে…</Text></View>;
+  if (err) return <View style={st.center}><Notice kind="bad" title={tr('সূরাটি খোলা যায়নি', 'Could not open the surah')} text={tr('অ্যাপ বন্ধ করে আবার খুলুন।', 'Close the app and open it again.')} /></View>;
+  if (!verses) return <View style={st.center}><ActivityIndicator size="large" color={C.primary} /><Text style={st.loadT}>{tr('সূরা খোলা হচ্ছে…', 'Opening the surah…')}</Text></View>;
 
   return (
     <FlatList
@@ -195,9 +198,9 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
       )}
       ListFooterComponent={
         <View>
-          <Text style={st.end}>— সূরা {SURAH_BN[n - 1]} শেষ —</Text>
-          <Pressable onPress={onBack} style={st.backBig} accessibilityRole="button"><Text style={st.backBigT}>‹ সব সূরার তালিকায় ফিরুন</Text></Pressable>
-          <Text style={st.credit}>{QURAN_CREDIT}</Text>
+          <Text style={st.end}>{tr(`— সূরা ${QN().SURAH_BN[n - 1]} শেষ —`, `— End of Surah ${QN().SURAH_BN[n - 1]} —`)}</Text>
+          <Pressable onPress={onBack} style={st.backBig} accessibilityRole="button"><Text style={st.backBigT}>{tr('‹ সব সূরার তালিকায় ফিরুন', '‹ Back to the list of all surahs')}</Text></Pressable>
+          <Text style={st.credit}>{QN().QURAN_CREDIT}</Text>
         </View>
       }
     />
@@ -206,7 +209,7 @@ export function QuranReader({ n, startAyah = 1, onBack }: { n: number; startAyah
 
 function Toggle({ on, onPress, label }: { on: boolean; onPress: () => void; label: string }) {
   return (
-    <Pressable onPress={onPress} style={[st.toolBtn, { flex: 1 }, on && st.toolOn]} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label + ' দেখান'}>
+    <Pressable onPress={onPress} style={[st.toolBtn, { flex: 1 }, on && st.toolOn]} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={tr(label + ' দেখান', 'Show ' + label)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Text style={{ fontSize: 18 }} importantForAccessibility="no">{on ? '✅' : '⬜'}</Text>
         <Text key={label + (on ? '-on' : '-off')} style={st.toolT}>{label}</Text>

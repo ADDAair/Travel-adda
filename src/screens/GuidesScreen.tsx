@@ -6,7 +6,8 @@ import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice } from '../components/ui';
 import { StepCard, DuaInline } from '../components/guide';
 import { toBn } from '../lib/phone';
-import { GUIDES } from '../content/guides';
+import { guidesL } from '../content/guides';
+import { tr } from '../lib/lang';
 import type { GuideBlock, Phrase, CheckItem } from '../content/types';
 import { CONTENT_REVIEWED } from '../content/ihram';
 import { TileGrid } from '../components/TileGrid';
@@ -25,28 +26,28 @@ export default function GuidesScreen({ navigation }: { navigation: Nav }) {
   }, [open]);
   useEffect(() => navigation?.addListener?.('blur', () => { setOpen(null); Speech.stop(); }), [navigation]);
 
-  const g = GUIDES.find((x) => x.id === open);
+  const g = guidesL().find((x) => x.id === open);
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       {g ? (
         <>
-          <Pressable onPress={() => setOpen(null)} style={st.back} accessibilityRole="button" accessibilityLabel="সব গাইডের তালিকায় ফিরে যান">
-            <Text style={st.backT}>‹ সব গাইড</Text>
+          <Pressable onPress={() => setOpen(null)} style={st.back} accessibilityRole="button" accessibilityLabel={tr('সব গাইডের তালিকায় ফিরে যান', 'Back to the list of all guides')}>
+            <Text style={st.backT}>{tr('‹ সব গাইড', '‹ All guides')}</Text>
           </Pressable>
           <Text style={st.title} accessibilityRole="header">{g.icon} {g.title}</Text>
           {g.blocks.map((b, i) => <Block key={i} b={b} navigation={navigation} />)}
-          <Button title="সব গাইডের তালিকায় ফিরুন" icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.md }} />
+          <Button title={tr('সব গাইডের তালিকায় ফিরুন', 'Back to the list of all guides')} icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.md }} />
         </>
       ) : (
         <>
-          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান">
-            <Text style={st.backT}>‹ হোম</Text>
+          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}>
+            <Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text>
           </Pressable>
-          <Text style={st.lead}>যে বিষয়ে জানতে চান, সেটিতে চাপ দিন। সব গাইড ইন্টারনেট ছাড়াও খোলে।</Text>
-          <TileGrid items={GUIDES.map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint="গাইডটি খুলবে" />
+          <Text style={st.lead}>{tr('যে বিষয়ে জানতে চান, সেটিতে চাপ দিন। সব গাইড ইন্টারনেট ছাড়াও খোলে।', 'Tap the topic you want to know about. All guides open even without internet.')}</Text>
+          <TileGrid items={guidesL().map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint={tr('গাইডটি খুলবে', 'Opens the guide')} />
         </>
       )}
-      {!CONTENT_REVIEWED ? <Text style={st.review}>ℹ️ ধর্মীয় অংশ প্রকাশের আগে একজন আলেম এবং স্বাস্থ্যের অংশ একজন ডাক্তার দিয়ে যাচাই করা হবে। সন্দেহ হলে লিডার, আলেম বা ডাক্তারকে জিজ্ঞেস করুন।</Text> : null}
+      {!CONTENT_REVIEWED ? <Text style={st.review}>{tr('ℹ️ ধর্মীয় অংশ প্রকাশের আগে একজন আলেম এবং স্বাস্থ্যের অংশ একজন ডাক্তার দিয়ে যাচাই করা হবে। সন্দেহ হলে লিডার, আলেম বা ডাক্তারকে জিজ্ঞেস করুন।', 'ℹ️ Before release, the religious parts will be checked by a scholar (alim) and the health parts by a doctor. If in doubt, ask your leader, a scholar or a doctor.')}</Text> : null}
     </ScrollView>
   );
 }
@@ -58,7 +59,7 @@ export function Block({ b, navigation }: { b: GuideBlock; navigation: Nav }) {
     </Notice>
   );
   if (b.type === 'notice') return <Notice kind={b.kind} title={b.title} text={b.text} />;
-  if (b.type === 'source') return <Text style={st.src}>📚 সূত্র: {b.text}</Text>;
+  if (b.type === 'source') return <Text style={st.src}>📚 {tr('সূত্র', 'Source')}: {b.text}</Text>;
   if (b.type === 'steps') return b.steps.map((s, k) => <StepCard key={k} step={{ ...s, title: `${toBn(k + 1)}. ${s.title}` }} />);
   if (b.type === 'phrases') return <Phrases items={b.items} />;
   if (b.type === 'checklist') return <Checklist storageKey={b.key} items={b.items} />;
@@ -92,7 +93,7 @@ function Phrases({ items }: { items: Phrase[] }) {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
       if ((voices || []).length > 0 && !voices.some((v) => String(v.language || '').toLowerCase().startsWith('ar'))) {
-        setMsg('আপনার ফোনে আরবি বলার ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে আরবি ভয়েস নামিয়ে নিন। ততক্ষণ লেখাটা দেখান।');
+        setMsg(tr('আপনার ফোনে আরবি বলার ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে আরবি ভয়েস নামিয়ে নিন। ততক্ষণ লেখাটা দেখান।', 'Your phone has no Arabic voice. Download an Arabic voice from the phone\'s Settings → Language → Text-to-speech. Until then, show the text.'));
         return;
       }
       Speech.stop();
@@ -100,9 +101,9 @@ function Phrases({ items }: { items: Phrase[] }) {
       Speech.speak(text, {
         language: 'ar-SA', rate: 0.8,
         onDone: () => { if (alive.current) setPlaying(null); }, onStopped: () => { if (alive.current) setPlaying(null); },
-        onError: () => { if (alive.current) { setPlaying(null); setMsg('শোনানো যায়নি। লেখাটা দেখান।'); } },
+        onError: () => { if (alive.current) { setPlaying(null); setMsg(tr('শোনানো যায়নি। লেখাটা দেখান।', 'Could not say it aloud. Show the text.')); } },
       });
-    } catch (e) { setPlaying(null); setMsg('শোনানো যায়নি। লেখাটা দেখান।'); }
+    } catch (e) { setPlaying(null); setMsg(tr('শোনানো যায়নি। লেখাটা দেখান।', 'Could not say it aloud. Show the text.')); }
   };
   return (
     <>
@@ -111,10 +112,10 @@ function Phrases({ items }: { items: Phrase[] }) {
         <View key={x.bn} style={st.card}>
           <Text style={st.phBn}>{x.bn}</Text>
           <Text style={st.phAr} accessibilityLanguage="ar" selectable>{x.ar}</Text>
-          <Text style={st.phPron}>উচ্চারণ: {x.pron}</Text>
+          <Text style={st.phPron}>{tr('উচ্চারণ', 'Pronunciation')}: {x.pron}</Text>
           {x.note ? <Text style={st.tip}>ℹ️ {x.note}</Text> : null}
-          <Pressable onPress={() => speak(i, x.ar)} style={st.say} accessibilityRole="button" accessibilityLabel={playing === i ? 'থামান' : `${x.bn}, আরবিতে শোনান`}>
-            <Text style={st.sayT}>{playing === i ? '⏹️ থামান' : '🔊 আরবিতে শোনান'}</Text>
+          <Pressable onPress={() => speak(i, x.ar)} style={st.say} accessibilityRole="button" accessibilityLabel={playing === i ? tr('থামান', 'Stop') : tr(`${x.bn}, আরবিতে শোনান`, `${x.bn}, say it in Arabic`)}>
+            <Text style={st.sayT}>{playing === i ? tr('⏹️ থামান', '⏹️ Stop') : tr('🔊 আরবিতে শোনান', '🔊 Say it in Arabic')}</Text>
           </Pressable>
         </View>
       ))}
@@ -129,16 +130,16 @@ function Checklist({ storageKey, items }: { storageKey: string; items: CheckItem
   }, [storageKey]);
   const save = (a: string[]) => { setDone(a); AsyncStorage.setItem(storageKey, JSON.stringify(a)).catch(() => {}); };
   const toggle = (id: string) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
-  const reset = () => Alert.alert('সব টিক মুছবেন?', 'চেকলিস্ট আবার শুরু থেকে হবে।', [
-    { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => save([]) },
+  const reset = () => Alert.alert(tr('সব টিক মুছবেন?', 'Clear all ticks?'), tr('চেকলিস্ট আবার শুরু থেকে হবে।', 'The checklist will start again from the beginning.'), [
+    { text: tr('না, থাকুক', 'No, keep them'), style: 'cancel' },
+    { text: tr('হ্যাঁ, মুছুন', 'Yes, clear'), style: 'destructive', onPress: () => save([]) },
   ]);
   const count = items.filter((c) => done.includes(c.id)).length;
   const groups = [...new Set(items.map((x) => x.group))];
   return (
     <>
-      <Text style={st.p}>যা গুছিয়ে নিয়েছেন, তাতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।</Text>
-      <Text style={st.progress} accessibilityLiveRegion="polite">{toBn(items.length)}টির মধ্যে {toBn(count)}টি হয়েছে</Text>
+      <Text style={st.p}>{tr('যা গুছিয়ে নিয়েছেন, তাতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।', 'Tap what you have packed to tick it. The ticks stay even if you close the app.')}</Text>
+      <Text style={st.progress} accessibilityLiveRegion="polite">{tr(`${toBn(items.length)}টির মধ্যে ${toBn(count)}টি হয়েছে`, `${count} of ${items.length} done`)}</Text>
       {groups.map((grp) => (
         <View key={grp}>
           <Text style={st.group}>{grp}</Text>
@@ -146,17 +147,17 @@ function Checklist({ storageKey, items }: { storageKey: string; items: CheckItem
             const on = done.includes(c.id);
             return (
               <Pressable key={c.id} onPress={() => toggle(c.id)} style={[st.check, on && st.checkOn]}
-                accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${c.text}। ${on ? 'হয়েছে' : 'বাকি'}`}>
+                accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${c.text}. ${on ? tr('হয়েছে', 'done') : tr('বাকি', 'not yet')}`}>
                 <View style={[st.box, on && st.boxOn]}><Text style={st.boxT}>{on ? '✓' : ''}</Text></View>
                 <Text style={[st.checkT, { flex: 1 }]}>{c.text}</Text>
-                <Text style={[st.state, { color: on ? C.ok : C.muted }]}>{on ? 'হয়েছে' : 'বাকি'}</Text>
+                <Text style={[st.state, { color: on ? C.ok : C.muted }]}>{on ? tr('হয়েছে', 'Done') : tr('বাকি', 'Not yet')}</Text>
               </Pressable>
             );
           })}
         </View>
       ))}
-      {count === items.length ? <Notice kind="ok" title="সব গোছানো হয়েছে!" text="আল্লাহ আপনার সফর সহজ করুন।" /> : null}
-      {count > 0 ? <Button title="সব টিক মুছে নতুন করে শুরু" icon="🔄" kind="danger" onPress={reset} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" style={{ marginTop: S.sm }} /> : null}
+      {count === items.length ? <Notice kind="ok" title={tr('সব গোছানো হয়েছে!', 'Everything is packed!')} text={tr('আল্লাহ আপনার সফর সহজ করুন।', 'May Allah make your journey easy.')} /> : null}
+      {count > 0 ? <Button title={tr('সব টিক মুছে নতুন করে শুরু', 'Clear all ticks and start again')} icon="🔄" kind="danger" onPress={reset} a11yHint={tr('নিশ্চিত করতে আবার জিজ্ঞেস করবে', 'Will ask again to confirm')} style={{ marginTop: S.sm }} /> : null}
     </>
   );
 }

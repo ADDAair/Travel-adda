@@ -1,18 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { C, F, S, R, TOUCH } from '../theme';
-import { PRIVACY, PRIVACY_UPDATED, PRIVACY_CONTACT } from '../content/privacy';
+import { privacyL, PRIVACY_CONTACT } from '../content/privacy';
+import { tr } from '../lib/lang';
+
+const PV = privacyL;   // in the chosen language
 import type { Nav } from './navTypes';
 
 export default function PrivacyScreen({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.navigate('Account')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার তথ্য পাতায় ফিরে যান">
-        <Text style={st.backT}>‹ আমার তথ্য</Text>
+      <Pressable onPress={() => navigation.navigate('Account')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('আমার তথ্য পাতায় ফিরে যান', 'Back to the My info page')}>
+        <Text style={st.backT}>{tr('‹ আমার তথ্য', '‹ My info')}</Text>
       </Pressable>
-      <Text style={st.title} accessibilityRole="header">🔒 গোপনীয়তা নীতি</Text>
-      <Text style={st.date}>সর্বশেষ হালনাগাদ: {PRIVACY_UPDATED}</Text>
-      {PRIVACY.map((sec) => (
+      <Text style={st.title} accessibilityRole="header">{tr('🔒 গোপনীয়তা নীতি', '🔒 Privacy policy')}</Text>
+      <Text style={st.date}>{tr('সর্বশেষ হালনাগাদ', 'Last updated')}: {PV().PRIVACY_UPDATED}</Text>
+      {PV().PRIVACY.map((sec) => (
         <View key={sec.title} style={st.card}>
           <Text style={st.h}>{sec.title}</Text>
           {sec.text ? <Text style={st.p}>{sec.text}</Text> : null}
@@ -25,8 +28,8 @@ export default function PrivacyScreen({ navigation }: { navigation: Nav }) {
         </View>
       ))}
       <View style={st.card}>
-        <Text style={st.h}>যোগাযোগ</Text>
-        <Text style={st.p}>{PRIVACY_CONTACT ? `প্রশ্ন বা অভিযোগ থাকলে লিখুন: ${PRIVACY_CONTACT}` : 'যোগাযোগের ইমেইল শীঘ্রই এখানে যুক্ত হবে।'}</Text>
+        <Text style={st.h}>{tr('যোগাযোগ', 'Contact')}</Text>
+        <Text style={st.p}>{PRIVACY_CONTACT ? tr(`প্রশ্ন বা অভিযোগ থাকলে লিখুন: ${PRIVACY_CONTACT}`, `For questions or complaints, write to: ${PRIVACY_CONTACT}`) : tr('যোগাযোগের ইমেইল শীঘ্রই এখানে যুক্ত হবে।', 'A contact email will be added here soon.')}</Text>
       </View>
     </ScrollView>
   );

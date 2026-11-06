@@ -5,6 +5,9 @@
 
 import type { Img } from '../components/guide';
 
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/ihram';
+
 export const CONTENT_REVIEWED = false;
 
 export const SECTIONS = [
@@ -231,3 +234,19 @@ export const SPECIAL = [
     a: 'নিয়মিত ওষুধ হাতব্যাগে রাখুন, সাথে প্রেসক্রিপশন। ইহরামে ওষুধ খাওয়া, ইনজেকশন, ইনহেলার, ব্যান্ডেজ সবই চলে। সুগন্ধিযুক্ত মলম হলে আলেমকে জিজ্ঞেস করুন।',
   },
 ];
+
+// The guide in the chosen language (English from ./en/ihram.ts); call while drawing.
+export const ihramL = () => ({
+  SECTIONS: inLang(SECTIONS, 'SECTIONS', EN),
+  MIKAT_ROUTES: inLang(MIKAT_ROUTES, 'MIKAT_ROUTES', EN),
+  MIKAT_LIST: inLang(MIKAT_LIST, 'MIKAT_LIST', EN),
+  MIKAT_SOURCE: inLang(MIKAT_SOURCE, 'MIKAT_SOURCE', EN),
+  CHECKLIST: inLang(CHECKLIST, 'CHECKLIST', EN),
+  STEPS: inLang(STEPS, 'STEPS', EN),
+  FORBIDDEN: inLang(FORBIDDEN, 'FORBIDDEN', EN),
+  ALLOWED: inLang(ALLOWED, 'ALLOWED', EN),
+  MISTAKES: inLang(MISTAKES, 'MISTAKES', EN),
+  IMAGES: inLang(IMAGES, 'IMAGES', EN),
+  COMMON: inLang(COMMON, 'COMMON', EN),
+  SPECIAL: inLang(SPECIAL, 'SPECIAL', EN),
+});

@@ -1,4 +1,7 @@
 // Privacy policy shown inside the app. Keep docs/privacy-policy-bn.md in step with this file.
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/privacy';
+
 export const PRIVACY_UPDATED = '৩ নভেম্বর ২০২৬';
 export const PRIVACY_CONTACT = 'amihaji.bd@gmail.com';
 
@@ -78,3 +81,9 @@ export const PRIVACY = [
     text: 'এই নীতি বদলালে অ্যাপে জানানো হবে এবং ওপরের তারিখ বদলে দেওয়া হবে।',
   },
 ];
+
+// In the chosen language (English from ./en/privacy.ts); call while drawing.
+export const privacyL = () => ({
+  PRIVACY: inLang(PRIVACY, 'PRIVACY', EN),
+  PRIVACY_UPDATED: inLang(PRIVACY_UPDATED, 'PRIVACY_UPDATED', EN),
+});

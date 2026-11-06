@@ -7,6 +7,9 @@
 // kind: sm = সুন্নতে মুয়াক্কাদা (জরুরি সুন্নত), sg = সুন্নতে গায়রে মুয়াক্কাদা, fard, wajib, nafl
 import type { KindInfo, RakatKind, SalahSection } from './types';
 
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/salah';
+
 export const KIND: Record<RakatKind, KindInfo> = {
   sm: { label: 'সুন্নত (মুয়াক্কাদা)', hint: 'রাসূল (সা.) নিয়মিত পড়তেন, ছাড়া উচিত নয়', color: 'primary' },
   sg: { label: 'সুন্নত (গায়রে মুয়াক্কাদা)', hint: 'পড়লে সওয়াব, না পড়লে গুনাহ নেই', color: 'muted' },
@@ -239,3 +242,11 @@ export const SALAH_GROUPS = [
 ];
 
 export const DAILY_FARD = 'প্রতিদিন মোট ১৭ রাকাত ফরজ: ফজর ২, যোহর ৪, আসর ৪, মাগরিব ৩, এশা ৪। সাথে বিতর ৩ রাকাত ওয়াজিব।';
+
+// In the chosen language (English from ./en/salah.ts); call while drawing.
+export const salahL = () => ({
+  SALAH: inLang(SALAH, 'SALAH', EN),
+  SALAH_GROUPS: inLang(SALAH_GROUPS, 'SALAH_GROUPS', EN),
+  KIND: inLang(KIND, 'KIND', EN),
+  DAILY_FARD: inLang(DAILY_FARD, 'DAILY_FARD', EN),
+});

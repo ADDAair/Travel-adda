@@ -56,5 +56,5 @@ test('step 3 pages: every Bengali text has its English, and the pages use the En
   const bad = [];
   for (const f of STEP3) for (const [n, l] of unpaired(read(f))) bad.push(`${f}:${n}: ${l.trim().slice(0, 120)}`);
   assert.deepEqual(bad, []);
-  for (const f of STEP3.filter((x) => !x.includes('guide.tsx'))) assert.ok(read(f).includes('inLang('), `${f} uses inLang`);
+  for (const f of STEP3.filter((x) => !x.includes('guide.tsx'))) assert.ok(/inLang\(|\b[a-z]+L\b/.test(read(f)), `${f} uses the content in the chosen language`);
 });

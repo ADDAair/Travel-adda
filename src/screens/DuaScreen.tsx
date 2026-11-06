@@ -6,7 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import type { Dua } from '../content/types';
-import { CATEGORIES, DUAS, CONTENT_REVIEWED, findDua } from '../content/duas';
+import { categoriesL, duasL, CONTENT_REVIEWED, findDua } from '../content/duas';
+import { tr, getLang } from '../lib/lang';
 import { toBn } from '../lib/phone';
 import { QuranList, QuranReader } from './Quran';
 import type { Nav, Route } from './navTypes';
@@ -50,10 +51,11 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
   useEffect(() => navigation?.addListener?.('blur', () => { setOpenId(null); setSurah(null); }), [navigation]);
 
   const list = useMemo(() => {
-    const t = q.trim();
-    if (t) return DUAS.filter((d) => (d.title + ' ' + d.when).includes(t));
+    const t = q.trim().toLowerCase();
+    const all = duasL();   // in the chosen language
+    if (t) return all.filter((d) => (d.title + ' ' + d.when).toLowerCase().includes(t));
     if (cat === 'fav') return favs.map(findDua).filter((d): d is Dua => !!d);
-    return DUAS.filter((d) => d.cat === cat);
+    return all.filter((d) => d.cat === cat);
   }, [cat, q, favs]);
 
   if (openId) return <DuaDetail dua={findDua(openId)} onBack={() => setOpenId(null)} fav={favs.includes(openId)} onFav={() => toggleFav(openId)} />;
@@ -63,7 +65,7 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
     <Segmented
       value={mode}
       onChange={(id) => { setMode(id); setDismissed(true); }}
-      options={[{ id: 'dua', icon: '🤲', label: 'দোয়া' }, { id: 'quran', icon: '📖', label: 'আল-কুরআন' }]}
+      options={[{ id: 'dua', icon: '🤲', label: tr('দোয়া', 'Dua') }, { id: 'quran', icon: '📖', label: tr('আল-কুরআন', 'Al-Quran') }]}
     />
   );
 
@@ -78,17 +80,17 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      {justTried ? <Notice kind="ok" title="চমৎকার! আপনি নিজেই দোয়া বিভাগ খুলেছেন।" text="এভাবেই নিচের বাটনগুলো চেপে অ্যাপের যেকোনো অংশে যাবেন। এখন যেকোনো দোয়ায় চাপ দিয়ে পড়ে দেখুন।" /> : null}
+      {justTried ? <Notice kind="ok" title={tr('চমৎকার! আপনি নিজেই দোয়া বিভাগ খুলেছেন।', 'Well done! You opened the Dua section yourself.')} text={tr('এভাবেই নিচের বাটনগুলো চেপে অ্যাপের যেকোনো অংশে যাবেন। এখন যেকোনো দোয়ায় চাপ দিয়ে পড়ে দেখুন।', 'This is how you go to any part of the app with the buttons at the bottom. Now tap any dua and read it.')} /> : null}
 
       {modeBar}
-      <Pressable onPress={() => navigation.navigate('Tasbih')} style={st.tool} accessibilityRole="button" accessibilityLabel="তাসবিহ গণনা খুলুন">
+      <Pressable onPress={() => navigation.navigate('Tasbih')} style={st.tool} accessibilityRole="button" accessibilityLabel={tr('তাসবিহ গণনা খুলুন', 'Open the tasbih counter')}>
         <Text style={st.toolIc} importantForAccessibility="no">📿</Text>
-        <Text style={st.toolT}>তাসবিহ গণনা</Text>
-        <Text style={st.open}>খুলুন ›</Text>
+        <Text style={st.toolT}>{tr('তাসবিহ গণনা', 'Tasbih counter')}</Text>
+        <Text style={st.open}>{tr('খুলুন ›', 'Open ›')}</Text>
       </Pressable>
-      <Text style={st.lead}>কোন সময়ের দোয়া খুঁজছেন? নিচে বেছে নিন।</Text>
+      <Text style={st.lead}>{tr('কোন সময়ের দোয়া খুঁজছেন? নিচে বেছে নিন।', 'Which dua are you looking for? Choose below.')}</Text>
       <View style={st.cats} accessibilityRole="tablist">
-        {[...CATEGORIES, { id: 'fav', label: 'প্রিয়', icon: '⭐', a11y: 'প্রিয় দোয়া' }].map((c) => {
+        {[...categoriesL(), { id: 'fav', label: tr('প্রিয়', 'Favourites'), icon: '⭐', a11y: tr('প্রিয় দোয়া', 'Favourite duas') }].map((c) => {
           const on = !q.trim() && cat === c.id;
           return (
             <Pressable key={c.id} onPress={() => { setQ(''); setCat(c.id); setDismissed(true); }} style={[st.cat, on && st.catOn]}
@@ -103,39 +105,39 @@ export default function DuaScreen({ route, navigation }: { route?: Route; naviga
 
       <View style={st.search}>
         <Text style={{ fontSize: 20 }} importantForAccessibility="no">🔍</Text>
-        <TextInput value={q} onChangeText={(v) => { setQ(v); setDismissed(true); }} placeholder="দোয়ার নাম লিখে খুঁজুন" placeholderTextColor="#7A857F"
-          style={st.searchIn} accessibilityLabel="দোয়া খুঁজুন" returnKeyType="search" />
+        <TextInput value={q} onChangeText={(v) => { setQ(v); setDismissed(true); }} placeholder={tr('দোয়ার নাম লিখে খুঁজুন', 'Search by the dua\'s name')} placeholderTextColor="#7A857F"
+          style={st.searchIn} accessibilityLabel={tr('দোয়া খুঁজুন', 'Search duas')} returnKeyType="search" />
         {q ? (
-          <Pressable onPress={() => setQ('')} style={st.clear} accessibilityRole="button" accessibilityLabel="খোঁজা মুছুন">
-            <Text style={st.clearT}>✕ মুছুন</Text>
+          <Pressable onPress={() => setQ('')} style={st.clear} accessibilityRole="button" accessibilityLabel={tr('খোঁজা মুছুন', 'Clear search')}>
+            <Text style={st.clearT}>{tr('✕ মুছুন', '✕ Clear')}</Text>
           </Pressable>
         ) : null}
       </View>
 
-      {q.trim() ? <Text style={st.count}>{toBn(list.length)}টি দোয়া পাওয়া গেছে</Text> : null}
-      {q.trim() && list.length === 0 ? <Notice kind="info" title="কোনো দোয়া পাওয়া যায়নি" text="অন্য শব্দ লিখে দেখুন, অথবা ওপরের কোনো বিভাগের বাটন চাপুন।" /> : null}
+      {q.trim() ? <Text style={st.count}>{tr(`${toBn(list.length)}টি দোয়া পাওয়া গেছে`, `${list.length} dua${list.length === 1 ? '' : 's'} found`)}</Text> : null}
+      {q.trim() && list.length === 0 ? <Notice kind="info" title={tr('কোনো দোয়া পাওয়া যায়নি', 'No dua found')} text={tr('অন্য শব্দ লিখে দেখুন, অথবা ওপরের কোনো বিভাগের বাটন চাপুন।', 'Try another word, or tap one of the section buttons above.')} /> : null}
 
       {cat === 'jumuah' && !q.trim() ? (
         <View style={st.jum}>
-          <Text style={st.jumT}>🕌 জুমার নামাজ: আগে ৪ সুন্নত, খুতবা, ২ রাকাত ফরজ, পরে সুন্নত। জুমার দিনে গোসল, সূরা কাহফ ও বেশি দরুদ সুন্নত।</Text>
-          <Button title="জুমার পুরো নিয়ম ও রাকাত" icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { section: 'jumuah', from: 'Dua', t: Date.now() })} style={{ marginTop: S.sm }} />
-          <Button title="সূরা কাহফ পড়ুন" icon="📖" kind="gold" onPress={() => { setMode('quran'); setSurah({ n: 18, a: 1 }); }} style={{ marginTop: S.sm }} />
+          <Text style={st.jumT}>{tr('🕌 জুমার নামাজ: আগে ৪ সুন্নত, খুতবা, ২ রাকাত ফরজ, পরে সুন্নত। জুমার দিনে গোসল, সূরা কাহফ ও বেশি দরুদ সুন্নত।', '🕌 Jumu\'ah prayer: first 4 sunnah, the khutbah, 2 rak\'ahs fard, then sunnah. On Jumu\'ah, bathing, Surah al-Kahf and much durud are sunnah.')}</Text>
+          <Button title={tr('জুমার পুরো নিয়ম ও রাকাত', 'Full rules and rak\'ahs of Jumu\'ah')} icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { section: 'jumuah', from: 'Dua', t: Date.now() })} style={{ marginTop: S.sm }} />
+          <Button title={tr('সূরা কাহফ পড়ুন', 'Read Surah al-Kahf')} icon="📖" kind="gold" onPress={() => { setMode('quran'); setSurah({ n: 18, a: 1 }); }} style={{ marginTop: S.sm }} />
         </View>
       ) : null}
-      {cat === 'fav' && !q.trim() && list.length === 0 ? <Notice kind="info" title="এখনো কোনো প্রিয় দোয়া নেই" text="যেকোনো দোয়া খুলে ওপরের ⭐ বাটন চাপুন, সেটা এখানে চলে আসবে।" /> : null}
+      {cat === 'fav' && !q.trim() && list.length === 0 ? <Notice kind="info" title={tr('এখনো কোনো প্রিয় দোয়া নেই', 'No favourite duas yet')} text={tr('যেকোনো দোয়া খুলে ওপরের ⭐ বাটন চাপুন, সেটা এখানে চলে আসবে।', 'Open any dua and tap the ⭐ button at the top; it will appear here.')} /> : null}
       {list.map((d, i) => (
         <Pressable key={d.id} onPress={() => { setDismissed(true); setOpenId(d.id); }} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button" accessibilityLabel={`${d.title}। ${d.when}`} accessibilityHint="দোয়াটি খুলবে">
+          accessibilityRole="button" accessibilityLabel={`${d.title}. ${d.when}`} accessibilityHint={tr('দোয়াটি খুলবে', 'Opens the dua')}>
           <View style={st.num}><Text style={st.numT}>{toBn(i + 1)}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={st.rowT}>{d.title}</Text>
             <Text style={st.rowW} numberOfLines={2}>{d.when}</Text>
           </View>
-          <Text style={st.open}>খুলুন ›</Text>
+          <Text style={st.open}>{tr('খুলুন ›', 'Open ›')}</Text>
         </Pressable>
       ))}
 
-      {!CONTENT_REVIEWED ? <Text style={st.review}>ℹ️ দোয়াগুলো সহিহ সূত্র থেকে নেওয়া। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে।</Text> : null}
+      {!CONTENT_REVIEWED ? <Text style={st.review}>{tr('ℹ️ দোয়াগুলো সহিহ সূত্র থেকে নেওয়া। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে।', 'ℹ️ The duas are taken from authentic sources. Before the final release they will be checked by a scholar (alim).')}</Text> : null}
     </ScrollView>
   );
 }
@@ -162,23 +164,24 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: Dua | undefined; onBack: 
     if (speaking) { Speech.stop(); setSpeaking(false); return; }
     setTtsMsg('');
     try {
+      const en = getLang() === 'en';   // in English the meaning is read in English
       const voices = await Speech.getAvailableVoicesAsync();
-      const bn = (voices || []).find((v) => String(v.language || '').toLowerCase().startsWith('bn'));
-      if (!bn && (voices || []).length > 0) {
-        setTtsMsg('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।');
+      const bn = (voices || []).find((v) => String(v.language || '').toLowerCase().startsWith(en ? 'en' : 'bn'));
+      if (!bn && !en && (voices || []).length > 0) {
+        setTtsMsg(tr('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।', 'Your phone has no Bengali voice for reading aloud. Download a Bengali voice from the phone\'s Settings → Language → Text-to-speech.'));
         return;
       }
-      const text = (dua?.parts || []).map((p) => (p.label ? p.label + '। ' : '') + p.bn).join(' ');
+      const text = (dua?.parts || []).map((p) => (p.label ? p.label + (en ? '. ' : '। ') : '') + p.bn).join(' ');
       setSpeaking(true);
       Speech.speak(text, {
-        language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
+        language: bn ? bn.language : en ? 'en-US' : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
         onDone: () => { if (alive.current) setSpeaking(false); },
         onStopped: () => { if (alive.current) setSpeaking(false); },
-        onError: () => { if (alive.current) { setSpeaking(false); setTtsMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); } },
+        onError: () => { if (alive.current) { setSpeaking(false); setTtsMsg(tr('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।', 'Could not read it aloud. Try again.')); } },
       });
     } catch (e) {
       setSpeaking(false);
-      setTtsMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।');
+      setTtsMsg(tr('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।', 'Could not read it aloud. Try again.'));
     }
   }, [dua, speaking]);
 
@@ -186,27 +189,27 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: Dua | undefined; onBack: 
   const k = SIZES[scaleIx];
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel="সব দোয়ার তালিকায় ফিরে যান">
-        <Text style={st.backT}>‹ সব দোয়া</Text>
+      <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel={tr('সব দোয়ার তালিকায় ফিরে যান', 'Back to the list of all duas')}>
+        <Text style={st.backT}>{tr('‹ সব দোয়া', '‹ All duas')}</Text>
       </Pressable>
 
       <Text style={st.title} accessibilityRole="header">{dua.title}</Text>
       <Pressable onPress={onFav} style={[st.favBtn, fav && st.favOn]} accessibilityRole="button" accessibilityState={{ selected: fav }}
-        accessibilityLabel={fav ? 'প্রিয় তালিকা থেকে সরান' : 'প্রিয় তালিকায় রাখুন'}>
-        <Text style={st.favT}>{fav ? '⭐ প্রিয় তালিকায় আছে (সরাতে চাপুন)' : '☆ প্রিয় তালিকায় রাখুন'}</Text>
+        accessibilityLabel={fav ? tr('প্রিয় তালিকা থেকে সরান', 'Remove from favourites') : tr('প্রিয় তালিকায় রাখুন', 'Add to favourites')}>
+        <Text style={st.favT}>{fav ? tr('⭐ প্রিয় তালিকায় আছে (সরাতে চাপুন)', '⭐ In favourites (tap to remove)') : tr('☆ প্রিয় তালিকায় রাখুন', '☆ Add to favourites')}</Text>
       </Pressable>
       <View style={st.when}>
-        <Text style={st.whenH}>🕰️ কখন পড়বেন</Text>
+        <Text style={st.whenH}>{tr('🕰️ কখন পড়বেন', '🕰️ When to say it')}</Text>
         <Text style={st.whenT}>{dua.when}</Text>
       </View>
 
       <View style={st.sizeRow}>
-        <Text style={st.sizeL}>লেখার আকার</Text>
-        <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.sizeBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা ছোট করুন">
-          <Text style={st.sizeBtnT}>অ−</Text>
+        <Text style={st.sizeL}>{tr('লেখার আকার', 'Text size')}</Text>
+        <Pressable onPress={() => changeSize(-1)} disabled={scaleIx === 0} style={[st.sizeBtn, scaleIx === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('লেখা ছোট করুন', 'Make text smaller')}>
+          <Text style={st.sizeBtnT}>{tr('অ−', 'A−')}</Text>
         </Pressable>
-        <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.sizeBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="লেখা বড় করুন">
-          <Text style={[st.sizeBtnT, { fontSize: 24 }]}>অ+</Text>
+        <Pressable onPress={() => changeSize(1)} disabled={scaleIx === SIZES.length - 1} style={[st.sizeBtn, scaleIx === SIZES.length - 1 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('লেখা বড় করুন', 'Make text bigger')}>
+          <Text style={[st.sizeBtnT, { fontSize: 24 }]}>{tr('অ+', 'A+')}</Text>
         </Pressable>
       </View>
 
@@ -214,23 +217,23 @@ function DuaDetail({ dua, onBack, fav, onFav }: { dua: Dua | undefined; onBack: 
         <View key={i} style={st.card}>
           {p.label ? <Text style={st.partL}>{p.label}</Text> : null}
           <Text style={[st.ar, { fontSize: 28 * k, lineHeight: 28 * k * 1.9 }]} accessibilityLanguage="ar">{p.ar}</Text>
-          <Text style={st.h}>উচ্চারণ</Text>
+          <Text style={st.h}>{tr('উচ্চারণ', 'Pronunciation')}</Text>
           <Text style={[st.pron, { fontSize: F.body * k, lineHeight: F.body * k * 1.6 }]}>{p.pron}</Text>
-          <Text style={st.h}>অর্থ</Text>
+          <Text style={st.h}>{tr('অর্থ', 'Meaning')}</Text>
           <Text style={[st.bn, { fontSize: F.body * k, lineHeight: F.body * k * 1.6 }]}>{p.bn}</Text>
         </View>
       ))}
 
-      {dua.note ? <Notice kind="info" title="জেনে রাখুন" text={dua.note} /> : null}
+      {dua.note ? <Notice kind="info" title={tr('জেনে রাখুন', 'Good to know')} text={dua.note} /> : null}
 
-      <Button title={speaking ? 'শোনা বন্ধ করুন' : 'বাংলা অর্থ শুনুন'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak}
-        a11yHint="ফোন বাংলায় দোয়ার অর্থ পড়ে শোনাবে" style={{ marginBottom: S.sm }} />
+      <Button title={speaking ? tr('শোনা বন্ধ করুন', 'Stop listening') : tr('বাংলা অর্থ শুনুন', 'Listen to the meaning')} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak}
+        a11yHint={tr('ফোন বাংলায় দোয়ার অর্থ পড়ে শোনাবে', 'The phone reads the meaning of the dua aloud')} style={{ marginBottom: S.sm }} />
       {ttsMsg ? <Notice kind="warn" title={ttsMsg} /> : null}
-      <Text style={st.audioSoon}>🎧 আরবি তিলাওয়াতের অডিও শীঘ্রই আসছে।</Text>
+      <Text style={st.audioSoon}>{tr('🎧 আরবি তিলাওয়াতের অডিও শীঘ্রই আসছে।', '🎧 Audio of the Arabic recitation is coming soon.')}</Text>
 
-      <Text style={st.source}>📚 সূত্র: {dua.source}</Text>
+      <Text style={st.source}>📚 {tr('সূত্র', 'Source')}: {dua.source}</Text>
 
-      <Button title="সব দোয়ার তালিকায় ফিরুন" icon="‹" kind="primary" onPress={onBack} style={{ marginTop: S.md }} />
+      <Button title={tr('সব দোয়ার তালিকায় ফিরুন', 'Back to the list of all duas')} icon="‹" kind="primary" onPress={onBack} style={{ marginTop: S.md }} />
     </ScrollView>
   );
 }

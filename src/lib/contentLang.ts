@@ -7,7 +7,7 @@ import { getLang } from './lang';
 
 export type EnMap = Readonly<Record<string, string>>;
 export const SKIP_KEYS: ReadonlySet<string> = new Set(['id', 'icon', 'type', 'kind', 'cat', 'to', 'route', 'screen', 'url', 'link', 'ar',
-  'key', 'color', 'group', 'src', 'img', 'images', 'duas', 'ids']);
+  'key', 'color', 'src', 'img', 'images', 'duas', 'ids']);
 const BENGALI = /[ঀ-৲৴-৿]/;
 
 type Obj = Record<string, unknown>;
@@ -41,14 +41,16 @@ export function translate<T>(v: T, root: string, en: EnMap): T {
 }
 
 // In Bengali: the content itself. In English: a translated copy, made once and then kept.
-const cache = new Map<string, { from: unknown; to: unknown }>();
+let cache = new WeakMap<EnMap, Map<string, { from: unknown; to: unknown }>>();   // per English file, per export
 export function inLang<T>(v: T, root: string, en: EnMap): T {
   if (getLang() !== 'en') return v;
-  const c = cache.get(root);
+  let m = cache.get(en);
+  if (!m) { m = new Map(); cache.set(en, m); }
+  const c = m.get(root);
   if (c && c.from === v) return c.to as T;
   const to = translate(v, root, en);
-  cache.set(root, { from: v, to });
+  m.set(root, { from: v, to });
   return to;
 }
 // Admin corrections change the Bengali in place: forget the copies so English is made again from the new state.
-export const clearLangCache = (): void => { cache.clear(); };
+export const clearLangCache = (): void => { cache = new WeakMap(); };

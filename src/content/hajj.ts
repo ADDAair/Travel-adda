@@ -1,6 +1,9 @@
 // Hajj day-by-day guide, arranged for Tamattu Hajj (what most Bangladeshi pilgrims perform), Hanafi practice.
 // IMPORTANT: must be reviewed by a qualified alim before public launch.
 
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/hajj';
+
 export const HAJJ_DAYS = [
   {
     id: 'basics', icon: '📘', title: 'হজের আগে জেনে নিন', what: 'হজের ধরন, ফরজ কাজ, যা সাথে রাখবেন',
@@ -181,3 +184,8 @@ export const HAJJ_DAYS = [
     ],
   },
 ];
+
+// In the chosen language (English from ./en/hajj.ts); call while drawing.
+export const hajjL = () => ({
+  HAJJ_DAYS: inLang(HAJJ_DAYS, 'HAJJ_DAYS', EN),
+});

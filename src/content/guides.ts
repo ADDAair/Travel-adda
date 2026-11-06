@@ -5,6 +5,9 @@
 
 import type { Guide } from './types';
 
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/guides';
+
 export const GUIDES: Guide[] = [
   {
     id: 'health', icon: '🩺', title: 'স্বাস্থ্য ও গরম থেকে সুরক্ষা', what: 'হিটস্ট্রোক, পানি, পায়ের যত্ন, ওষুধ, টিকা',
@@ -365,3 +368,6 @@ export const GUIDES: Guide[] = [
     ],
   },
 ];
+
+// In the chosen language (English from ./en/guides.ts); call while drawing.
+export const guidesL = (): Guide[] => inLang(GUIDES, 'GUIDES', EN);

@@ -1,4 +1,7 @@
 // Bengali surah names (common Bangladeshi spelling). Index = surah number - 1.
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/quranNames';
+
 export const SURAH_BN = [
   'আল-ফাতিহা', 'আল-বাকারা', 'আলে ইমরান', 'আন-নিসা', 'আল-মায়িদা', 'আল-আনআম', 'আল-আরাফ', 'আল-আনফাল', 'আত-তাওবা', 'ইউনুস',
   'হুদ', 'ইউসুফ', 'আর-রাদ', 'ইবরাহীম', 'আল-হিজর', 'আন-নাহল', 'বনী ইসরাঈল (আল-ইসরা)', 'আল-কাহফ', 'মারইয়াম', 'ত্বা-হা',
@@ -15,3 +18,6 @@ export const SURAH_BN = [
 ];
 export const QURAN_CREDIT = 'আরবি পাঠ: Tanzil Project (tanzil.net), CC BY 3.0, অপরিবর্তিত। বাংলা অনুবাদ: মাওলানা মুহিউদ্দীন খান (Tanzil-এর মাধ্যমে)।';
 export const TRANSLATION_PERMISSION_OK = false; // must be true (written permission) before public launch
+
+// In the chosen language (English from ./en/quranNames.ts); call while drawing.
+export const quranNamesL = () => ({ SURAH_BN: inLang(SURAH_BN, 'SURAH_BN', EN), QURAN_CREDIT: inLang(QURAN_CREDIT, 'QURAN_CREDIT', EN) });

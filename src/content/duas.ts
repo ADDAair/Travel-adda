@@ -3,6 +3,8 @@
 // Later this list can be updated from the admin panel; this file stays as the offline fallback.
 
 import type { Dua } from './types';
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/duas';
 
 export const CONTENT_REVIEWED = false;
 
@@ -524,5 +526,8 @@ export const DUAS: Dua[] = [
   },
 ];
 
-export const duasByCat = (cat: string) => DUAS.filter((d) => d.cat === cat);
-export const findDua = (id: string) => DUAS.find((d) => d.id === id);
+// In the chosen language (English from ./en/duas.ts); call while drawing.
+export const duasL = (): Dua[] => inLang(DUAS, 'DUAS', EN);
+export const categoriesL = (): typeof CATEGORIES => inLang(CATEGORIES, 'CATEGORIES', EN);
+export const duasByCat = (cat: string) => duasL().filter((d) => d.cat === cat);
+export const findDua = (id: string) => duasL().find((d) => d.id === id);

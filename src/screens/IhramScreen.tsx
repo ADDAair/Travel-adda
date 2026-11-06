@@ -7,10 +7,10 @@ import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import type { DuaPart } from '../content/types';
 import { findDua } from '../content/duas';
-import {
-  CONTENT_REVIEWED, SECTIONS, MIKAT_ROUTES, MIKAT_LIST, MIKAT_SOURCE, CHECKLIST, STEPS, FORBIDDEN, ALLOWED, MISTAKES,
-  IMAGES, COMMON, SPECIAL,
-} from '../content/ihram';
+import { CONTENT_REVIEWED, ihramL } from '../content/ihram';
+import { tr, getLang } from '../lib/lang';
+
+const IH = ihramL;   // the guide in the chosen language
 import { StepCard, QA, Illustration } from '../components/guide';
 import { TileGrid } from '../components/TileGrid';
 import type { ScrollRef } from '../components/KbScroll';
@@ -35,13 +35,13 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
   // Leaving the screen closes the open section.
   useEffect(() => navigation?.addListener?.('blur', () => setOpen(null)), [navigation]);
 
-  const sec = SECTIONS.find((x) => x.id === open);
+  const sec = IH().SECTIONS.find((x) => x.id === open);
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       {sec ? (
         <>
-          <Pressable onPress={() => setOpen(null)} style={st.back} accessibilityRole="button" accessibilityLabel="গাইডের সব অংশে ফিরে যান">
-            <Text style={st.backT}>‹ সব অংশ</Text>
+          <Pressable onPress={() => setOpen(null)} style={st.back} accessibilityRole="button" accessibilityLabel={tr('গাইডের সব অংশে ফিরে যান', 'Back to all parts of the guide')}>
+            <Text style={st.backT}>{tr('‹ সব অংশ', '‹ All parts')}</Text>
           </Pressable>
           <Text style={st.title} accessibilityRole="header">{sec.icon} {sec.title}</Text>
           {open === 'mikat' ? <Mikat /> : null}
@@ -52,34 +52,34 @@ export default function IhramScreen({ navigation }: { navigation: Nav }) {
           {open === 'common' ? <Common /> : null}
           {open === 'special' ? <Special /> : null}
           {open === 'mistake' ? <Mistakes /> : null}
-          <Button title="গাইডের সব অংশে ফিরুন" icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.lg }} />
+          <Button title={tr('গাইডের সব অংশে ফিরুন', 'Back to all parts of the guide')} icon="‹" kind="secondary" onPress={() => setOpen(null)} style={{ marginTop: S.lg }} />
         </>
       ) : (
         <>
-          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান">
-            <Text style={st.backT}>‹ হোম</Text>
+          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}>
+            <Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text>
           </Pressable>
-          <Text style={st.lead}>ইহরাম বাঁধার আগে নিচের অংশগুলো একবার করে পড়ুন। যেকোনো অংশে চাপ দিলে খুলবে।</Text>
-          <TileGrid numbered items={SECTIONS.map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint="অংশটি খুলবে" />
-          <Text style={st.offline}>📶 এই গাইড ইন্টারনেট ছাড়াও খোলে।</Text>
+          <Text style={st.lead}>{tr('ইহরাম বাঁধার আগে নিচের অংশগুলো একবার করে পড়ুন। যেকোনো অংশে চাপ দিলে খুলবে।', 'Before entering ihram, read each part below once. Tap any part to open it.')}</Text>
+          <TileGrid numbered items={IH().SECTIONS.map((x) => ({ ...x, key: x.id }))} onPress={(x) => go(x.id)} hint={tr('অংশটি খুলবে', 'Opens the part')} />
+          <Text style={st.offline}>{tr('📶 এই গাইড ইন্টারনেট ছাড়াও খোলে।', '📶 This guide opens even without internet.')}</Text>
         </>
       )}
-      {!CONTENT_REVIEWED ? <Text style={st.review}>ℹ️ তথ্যগুলো কুরআন ও সহিহ হাদিসের সূত্র থেকে নেওয়া। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে। কোনো বিষয়ে সন্দেহ হলে আপনার লিডার বা আলেমকে জিজ্ঞেস করুন।</Text> : null}
+      {!CONTENT_REVIEWED ? <Text style={st.review}>{tr('ℹ️ তথ্যগুলো কুরআন ও সহিহ হাদিসের সূত্র থেকে নেওয়া। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে। কোনো বিষয়ে সন্দেহ হলে আপনার লিডার বা আলেমকে জিজ্ঞেস করুন।', 'ℹ️ The information is taken from the Quran and authentic hadith. Before the final release it will be checked by a scholar (alim). If in doubt about anything, ask your leader or a scholar.')}</Text> : null}
     </ScrollView>
   );
 }
 
 function Mikat() {
   const [route, setRoute] = useState('makkah');
-  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (v && MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
+  useEffect(() => { AsyncStorage.getItem(ROUTE_KEY).then((v) => { if (v && IH().MIKAT_ROUTES.some((x) => x.id === v)) setRoute(v); }).catch(() => {}); }, []);
   const choose = (id: string) => { setRoute(id); AsyncStorage.setItem(ROUTE_KEY, id).catch(() => {}); };
-  const r = MIKAT_ROUTES.find((x) => x.id === route) || MIKAT_ROUTES[0];
+  const r = IH().MIKAT_ROUTES.find((x) => x.id === route) || IH().MIKAT_ROUTES[0];
   const [showAll, setShowAll] = useState(false);
   return (
     <>
-      <Text style={st.q}>আপনার যাত্রা কোনটি? নিচে বেছে নিন।</Text>
+      <Text style={st.q}>{tr('আপনার যাত্রা কোনটি? নিচে বেছে নিন।', 'Which is your journey? Choose below.')}</Text>
       <View accessibilityRole="radiogroup" style={{ marginBottom: S.md }}>
-        {MIKAT_ROUTES.map((x) => {
+        {IH().MIKAT_ROUTES.map((x) => {
           const on = x.id === route;
           return (
             <Pressable key={x.id} onPress={() => choose(x.id)} style={[st.opt, on && st.optOn]}
@@ -87,7 +87,7 @@ function Mikat() {
               <View style={[st.radio, on && st.radioOn]}>{on ? <View style={st.radioDot} /> : null}</View>
               <Text style={st.optIc} importantForAccessibility="no">{x.icon}</Text>
               <Text style={[st.optT, { color: on ? C.primary : C.text }]}>{x.label}</Text>
-              {on ? <Text style={st.optSel}>বাছাই করা</Text> : null}
+              {on ? <Text style={st.optSel}>{tr('বাছাই করা', 'Chosen')}</Text> : null}
             </Pressable>
           );
         })}
@@ -96,25 +96,25 @@ function Mikat() {
         <Text style={st.answerH}>{r.title}</Text>
         <Text style={st.p}>{r.text}</Text>
       </View>
-      <Text style={st.h3}>আপনি যা করবেন</Text>
+      <Text style={st.h3}>{tr('আপনি যা করবেন', 'What you will do')}</Text>
       {r.todo.map((t, i) => (
         <View key={i} style={st.bulletRow}>
           <View style={st.bNum}><Text style={st.bNumT}>{toBn(i + 1)}</Text></View>
           <Text style={[st.p, { flex: 1 }]}>{t}</Text>
         </View>
       ))}
-      {r.source ? <Text style={st.source}>📚 সূত্র: {r.source}</Text> : null}
-      <Notice kind="warn" title="মীকাত পার হওয়ার পরে ইহরাম বাঁধা যায় না" text="ইহরাম ছাড়া মীকাত পার হলে গুনাহ হয় এবং বদলা দিতে হয়। তাই একটু আগে বাঁধাই নিরাপদ।" />
-      <Button title={showAll ? 'সব মীকাতের তালিকা লুকান' : 'সব মীকাতের তালিকা দেখুন'} icon="🗺️" kind="secondary" onPress={() => setShowAll(!showAll)} />
+      {r.source ? <Text style={st.source}>📚 {tr('সূত্র', 'Source')}: {r.source}</Text> : null}
+      <Notice kind="warn" title={tr('মীকাত পার হওয়ার পরে ইহরাম বাঁধা যায় না', 'Ihram cannot be entered after passing the miqat')} text={tr('ইহরাম ছাড়া মীকাত পার হলে গুনাহ হয় এবং বদলা দিতে হয়। তাই একটু আগে বাঁধাই নিরাপদ।', 'Passing the miqat without ihram is a sin and a compensation is due. So entering it a little early is safest.')} />
+      <Button title={showAll ? tr('সব মীকাতের তালিকা লুকান', 'Hide the list of all miqats') : tr('সব মীকাতের তালিকা দেখুন', 'See the list of all miqats')} icon="🗺️" kind="secondary" onPress={() => setShowAll(!showAll)} />
       {showAll ? (
         <View style={{ marginTop: S.md }}>
-          {MIKAT_LIST.map((m) => (
+          {IH().MIKAT_LIST.map((m) => (
             <View key={m.name} style={st.listItem}>
               <Text style={st.liT}>📍 {m.name}</Text>
               <Text style={st.liW}>{m.who}</Text>
             </View>
           ))}
-          <Text style={st.source}>📚 সূত্র: {MIKAT_SOURCE}</Text>
+          <Text style={st.source}>📚 {tr('সূত্র', 'Source')}: {IH().MIKAT_SOURCE}</Text>
         </View>
       ) : null}
     </>
@@ -128,51 +128,51 @@ function Checklist() {
   }, []);
   const save = (a: string[]) => { setDone(a); AsyncStorage.setItem(CHECK_KEY, JSON.stringify(a)).catch(() => {}); };
   const toggle = (id: string) => save(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
-  const reset = () => Alert.alert('সব টিক মুছবেন?', 'চেকলিস্ট আবার শুরু থেকে হবে।', [
-    { text: 'না, থাকুক', style: 'cancel' },
-    { text: 'হ্যাঁ, মুছুন', style: 'destructive', onPress: () => save([]) },
+  const reset = () => Alert.alert(tr('সব টিক মুছবেন?', 'Clear all ticks?'), tr('চেকলিস্ট আবার শুরু থেকে হবে।', 'The checklist will start again from the beginning.'), [
+    { text: tr('না, থাকুক', 'No, keep them'), style: 'cancel' },
+    { text: tr('হ্যাঁ, মুছুন', 'Yes, clear'), style: 'destructive', onPress: () => save([]) },
   ]);
-  const count = CHECKLIST.filter((c) => done.includes(c.id)).length;
-  const all = count === CHECKLIST.length;
+  const count = IH().CHECKLIST.filter((c) => done.includes(c.id)).length;
+  const all = count === IH().CHECKLIST.length;
   return (
     <>
-      <Text style={st.p}>যে কাজটি করা হয়ে গেছে, সেটিতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।</Text>
-      <Text style={st.progress} accessibilityLiveRegion="polite">{toBn(CHECKLIST.length)}টির মধ্যে {toBn(count)}টি হয়েছে</Text>
-      {CHECKLIST.map((c) => {
+      <Text style={st.p}>{tr('যে কাজটি করা হয়ে গেছে, সেটিতে চাপ দিয়ে টিক দিন। অ্যাপ বন্ধ করলেও টিক থেকে যাবে।', 'Tap each task you have done to tick it. The ticks stay even if you close the app.')}</Text>
+      <Text style={st.progress} accessibilityLiveRegion="polite">{tr(`${toBn(IH().CHECKLIST.length)}টির মধ্যে ${toBn(count)}টি হয়েছে`, `${count} of ${IH().CHECKLIST.length} done`)}</Text>
+      {IH().CHECKLIST.map((c) => {
         const on = done.includes(c.id);
         return (
           <Pressable key={c.id} onPress={() => toggle(c.id)} style={[st.check, on && st.checkOn]}
-            accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${c.text}। ${on ? 'হয়েছে' : 'বাকি'}`}>
+            accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${c.text}. ${on ? tr('হয়েছে', 'done') : tr('বাকি', 'not yet')}`}>
             <View style={[st.box, on && st.boxOn]}><Text style={st.boxT}>{on ? '✓' : ''}</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={st.checkT}>{c.text}</Text>
               <Text style={st.checkN}>{c.note}</Text>
-              <Text style={[st.state, { color: on ? C.ok : C.muted }]}>{on ? '✅ হয়েছে' : '⬜ বাকি'}</Text>
+              <Text style={[st.state, { color: on ? C.ok : C.muted }]}>{on ? tr('✅ হয়েছে', '✅ Done') : tr('⬜ বাকি', '⬜ Not yet')}</Text>
             </View>
           </Pressable>
         );
       })}
-      {all ? <Notice kind="ok" title="সব প্রস্তুতি শেষ!" text="এখন মীকাতের আগে নিয়ত করে তালবিয়াহ পড়ুন।" /> : null}
-      {count > 0 ? <Button title="সব টিক মুছে নতুন করে শুরু" icon="🔄" kind="danger" onPress={reset} a11yHint="নিশ্চিত করতে আবার জিজ্ঞেস করবে" /> : null}
+      {all ? <Notice kind="ok" title={tr('সব প্রস্তুতি শেষ!', 'All preparation done!')} text={tr('এখন মীকাতের আগে নিয়ত করে তালবিয়াহ পড়ুন।', 'Now make the intention before the miqat and say the talbiyah.')} /> : null}
+      {count > 0 ? <Button title={tr('সব টিক মুছে নতুন করে শুরু', 'Clear all ticks and start again')} icon="🔄" kind="danger" onPress={reset} a11yHint={tr('নিশ্চিত করতে আবার জিজ্ঞেস করবে', 'Will ask again to confirm')} /> : null}
     </>
   );
 }
 
 function Steps({ onTalbiyah, onRules }: { onTalbiyah: () => void; onRules: () => void }) {
   const [i, setI] = useState(0);
-  const s = STEPS[i];
-  const last = i === STEPS.length - 1;
+  const s = IH().STEPS[i];
+  const last = i === IH().STEPS.length - 1;
   return (
     <>
-      <Text style={st.progress} accessibilityLiveRegion="polite">ধাপ {toBn(i + 1)} / {toBn(STEPS.length)}</Text>
+      <Text style={st.progress} accessibilityLiveRegion="polite">{tr('ধাপ', 'Step')} {toBn(i + 1)} / {toBn(IH().STEPS.length)}</Text>
       <View style={st.dots} importantForAccessibility="no-hide-descendants">
-        {STEPS.map((_, k) => <View key={k} style={[st.dot, k <= i && st.dotOn]} />)}
+        {IH().STEPS.map((_, k) => <View key={k} style={[st.dot, k <= i && st.dotOn]} />)}
       </View>
-      <StepCard step={s} images={IMAGES} />
-      {i === 4 || i === 5 ? <Button title="নিয়ত ও তালবিয়াহ দেখুন" icon="🤲" kind="gold" onPress={onTalbiyah} style={{ marginBottom: S.sm }} /> : null}
-      {last ? <Button title="নিষেধগুলো পড়ুন" icon="🚫" kind="gold" onPress={onRules} style={{ marginBottom: S.sm }} /> : null}
-      {!last ? <Button title="পরের ধাপ ›" onPress={() => setI(i + 1)} /> : <Notice kind="ok" title="সব ধাপ শেষ" text="আল্লাহ আপনার ইবাদত কবুল করুন।" />}
-      {i > 0 ? <Button title="‹ আগের ধাপ" kind="secondary" onPress={() => setI(i - 1)} style={{ marginTop: S.sm }} /> : null}
+      <StepCard step={s} images={IH().IMAGES} />
+      {i === 4 || i === 5 ? <Button title={tr('নিয়ত ও তালবিয়াহ দেখুন', 'See the intention and talbiyah')} icon="🤲" kind="gold" onPress={onTalbiyah} style={{ marginBottom: S.sm }} /> : null}
+      {last ? <Button title={tr('নিষেধগুলো পড়ুন', 'Read the restrictions')} icon="🚫" kind="gold" onPress={onRules} style={{ marginBottom: S.sm }} /> : null}
+      {!last ? <Button title={tr('পরের ধাপ ›', 'Next step ›')} onPress={() => setI(i + 1)} /> : <Notice kind="ok" title={tr('সব ধাপ শেষ', 'All steps done')} text={tr('আল্লাহ আপনার ইবাদত কবুল করুন।', 'May Allah accept your worship.')} />}
+      {i > 0 ? <Button title={tr('‹ আগের ধাপ', '‹ Previous step')} kind="secondary" onPress={() => setI(i - 1)} style={{ marginTop: S.sm }} /> : null}
     </>
   );
 }
@@ -189,60 +189,61 @@ function Talbiyah() {
     if (speaking) { Speech.stop(); setSpeaking(false); return; }
     setMsg('');
     try {
+      const en = getLang() === 'en';   // in English the meaning is read in English
       const voices = await Speech.getAvailableVoicesAsync();
-      const bn = (voices || []).find((v) => String(v.language || '').toLowerCase().startsWith('bn'));
-      if (!bn && (voices || []).length > 0) {
-        setMsg('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।');
+      const bn = (voices || []).find((v) => String(v.language || '').toLowerCase().startsWith(en ? 'en' : 'bn'));
+      if (!bn && !en && (voices || []).length > 0) {
+        setMsg(tr('আপনার ফোনে বাংলা পড়ে শোনানোর ভয়েস নেই। ফোনের Settings → Language → Text-to-speech থেকে বাংলা ভয়েস নামিয়ে নিন।', 'Your phone has no Bengali voice for reading aloud. Download a Bengali voice from the phone\'s Settings → Language → Text-to-speech.'));
         return;
       }
       setSpeaking(true);
       Speech.speak((talbiyah?.parts || []).map((p) => p.bn).join(' '), {
-        language: bn ? bn.language : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
+        language: bn ? bn.language : en ? 'en-US' : 'bn-BD', voice: bn ? bn.identifier : undefined, rate: 0.85,
         onDone: () => { if (alive.current) setSpeaking(false); },
         onStopped: () => { if (alive.current) setSpeaking(false); },
-        onError: () => { if (alive.current) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); } },
+        onError: () => { if (alive.current) { setSpeaking(false); setMsg(tr('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।', 'Could not read it aloud. Try again.')); } },
       });
-    } catch (e) { setSpeaking(false); setMsg('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।'); }
+    } catch (e) { setSpeaking(false); setMsg(tr('পড়ে শোনানো যায়নি। আবার চেষ্টা করুন।', 'Could not read it aloud. Try again.')); }
   };
 
   const Block = ({ label, p }: { label?: string; p: DuaPart }) => (
     <View style={st.duaCard}>
       {label ? <Text style={st.partL}>{label}</Text> : null}
       <Text style={st.ar} accessibilityLanguage="ar">{p.ar}</Text>
-      <Text style={st.hSmall}>উচ্চারণ</Text>
+      <Text style={st.hSmall}>{tr('উচ্চারণ', 'Pronunciation')}</Text>
       <Text style={st.pron}>{p.pron}</Text>
-      <Text style={st.hSmall}>অর্থ</Text>
+      <Text style={st.hSmall}>{tr('অর্থ', 'Meaning')}</Text>
       <Text style={st.p}>{p.bn}</Text>
     </View>
   );
-  if (!niyyah || !talbiyah) return <Notice kind="bad" title="দোয়াটি পাওয়া যায়নি" text="অ্যাপ আপডেট করে আবার দেখুন।" />;
+  if (!niyyah || !talbiyah) return <Notice kind="bad" title={tr('দোয়াটি পাওয়া যায়নি', 'The dua was not found')} text={tr('অ্যাপ আপডেট করে আবার দেখুন।', 'Update the app and look again.')} />;
   return (
     <>
-      <Text style={st.h3}>১. নিয়ত</Text>
+      <Text style={st.h3}>{tr('১. নিয়ত', '1. Intention')}</Text>
       <Text style={st.p}>{niyyah.when}</Text>
       {niyyah.parts.map((p) => <Block key={p.label} label={p.label} p={p} />)}
-      <Text style={st.source}>📚 সূত্র: {niyyah.source}</Text>
-      <Text style={[st.h3, { marginTop: S.lg }]}>২. তালবিয়াহ</Text>
+      <Text style={st.source}>📚 {tr('সূত্র', 'Source')}: {niyyah.source}</Text>
+      <Text style={[st.h3, { marginTop: S.lg }]}>{tr('২. তালবিয়াহ', '2. Talbiyah')}</Text>
       <Text style={st.p}>{talbiyah.when}</Text>
       {talbiyah.parts.map((p, k) => <Block key={k} p={p} />)}
-      <Button title={speaking ? 'শোনা বন্ধ করুন' : 'তালবিয়াহর বাংলা অর্থ শুনুন'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak}
-        a11yHint="ফোন বাংলায় তালবিয়াহর অর্থ পড়ে শোনাবে" />
+      <Button title={speaking ? tr('শোনা বন্ধ করুন', 'Stop listening') : tr('তালবিয়াহর বাংলা অর্থ শুনুন', 'Listen to the meaning of the talbiyah')} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak}
+        a11yHint={tr('ফোন বাংলায় তালবিয়াহর অর্থ পড়ে শোনাবে', 'The phone reads the meaning of the talbiyah aloud')} />
       {msg ? <Notice kind="warn" title={msg} /> : null}
-      <Text style={st.source}>📚 সূত্র: {talbiyah.source}</Text>
+      <Text style={st.source}>📚 {tr('সূত্র', 'Source')}: {talbiyah.source}</Text>
     </>
   );
 }
 
 function Rules() {
   const [tab, setTab] = useState('no');
-  const list = tab === 'no' ? FORBIDDEN : ALLOWED;
+  const list = tab === 'no' ? IH().FORBIDDEN : IH().ALLOWED;
   return (
     <>
-      <Segmented value={tab} onChange={setTab} options={[{ id: 'no', icon: '🚫', label: 'যা নিষেধ' }, { id: 'yes', icon: '✅', label: 'যা করা যায়' }]} />
-      <Text style={st.p}>{tab === 'no' ? 'নিয়ত করার পর থেকে ইহরাম শেষ না হওয়া পর্যন্ত এগুলো করবেন না:' : 'ইহরাম অবস্থায়ও এগুলো করা যায়:'}</Text>
+      <Segmented value={tab} onChange={setTab} options={[{ id: 'no', icon: '🚫', label: tr('যা নিষেধ', 'Forbidden') }, { id: 'yes', icon: '✅', label: tr('যা করা যায়', 'Allowed') }]} />
+      <Text style={st.p}>{tab === 'no' ? tr('নিয়ত করার পর থেকে ইহরাম শেষ না হওয়া পর্যন্ত এগুলো করবেন না:', 'From the intention until ihram ends, do not do these:') : tr('ইহরাম অবস্থায়ও এগুলো করা যায়:', 'These may be done even in ihram:')}</Text>
       {list.map((x) => (
         <View key={x.text} style={[st.rule, { borderLeftColor: tab === 'no' ? C.bad : C.ok }]}>
-          <Text style={st.ruleT}>{tab === 'no' ? '🚫 নিষেধ: ' : '✅ করা যায়: '}{x.text}</Text>
+          <Text style={st.ruleT}>{tab === 'no' ? tr('🚫 নিষেধ: ', '🚫 Forbidden: ') : tr('✅ করা যায়: ', '✅ Allowed: ')}{x.text}</Text>
           <Text style={st.ruleS}>📚 {x.source}</Text>
         </View>
       ))}
@@ -253,9 +254,9 @@ function Rules() {
 function Mistakes() {
   return (
     <>
-      <Notice kind="info" title="ভয় পাবেন না" text="ভুল হলে নিজে সিদ্ধান্ত না নিয়ে আগে আপনার গ্রুপ লিডার বা কোনো আলেমকে জানান।" />
-      {MISTAKES.map((m) => <QA key={m.q} q={m.q} a={m.a} source={m.source} />)}
-      <Text style={st.soonNote}>📞 এক চাপে লিডারকে ফোন করার সুবিধা "ম্যাপ ও SOS" অংশে শীঘ্রই আসছে।</Text>
+      <Notice kind="info" title={tr('ভয় পাবেন না', 'Do not be afraid')} text={tr('ভুল হলে নিজে সিদ্ধান্ত না নিয়ে আগে আপনার গ্রুপ লিডার বা কোনো আলেমকে জানান।', 'If you make a mistake, do not decide yourself; first tell your group leader or a scholar.')} />
+      {IH().MISTAKES.map((m) => <QA key={m.q} q={m.q} a={m.a} source={m.source} />)}
+      <Text style={st.soonNote}>{tr('📞 এক চাপে লিডারকে ফোন করার সুবিধা "ম্যাপ ও SOS" অংশে শীঘ্রই আসছে।', '📞 Calling your leader with one tap is coming soon in the "SOS" part.')}</Text>
     </>
   );
 }
@@ -263,11 +264,11 @@ function Mistakes() {
 function Common() {
   return (
     <>
-      <Text style={st.p}>নিচের ভুলগুলো অনেক হাজী না জেনে করে ফেলেন। একবার পড়ে নিন।</Text>
-      {COMMON.map((x, i) => (
+      <Text style={st.p}>{tr('নিচের ভুলগুলো অনেক হাজী না জেনে করে ফেলেন। একবার পড়ে নিন।', 'Many hajis make the mistakes below without knowing. Read them once.')}</Text>
+      {IH().COMMON.map((x, i) => (
         <View key={i} style={[st.rule, { borderLeftColor: C.warn }]}>
           <Text style={st.ruleT}>⚠️ {x.text}</Text>
-          {x.image ? <Illustration img={IMAGES[x.image]} /> : null}
+          {x.image ? <Illustration img={IH().IMAGES[x.image]} /> : null}
           <Text style={st.ruleS}>📚 {x.source}</Text>
         </View>
       ))}
@@ -278,8 +279,8 @@ function Common() {
 function Special() {
   return (
     <>
-      <Notice kind="info" title="ইসলাম সহজ করেছে" text="অসুস্থ, বয়স্ক ও শিশুদের জন্য বেশ কিছু ছাড় আছে। কোনটি আপনার জন্য প্রযোজ্য, লিডার বা আলেমের সাথে মিলিয়ে নিন।" />
-      {SPECIAL.map((x) => <QA key={x.q} q={x.q} a={x.a} source={x.source} icon="🧓" />)}
+      <Notice kind="info" title={tr('ইসলাম সহজ করেছে', 'Islam has made it easy')} text={tr('অসুস্থ, বয়স্ক ও শিশুদের জন্য বেশ কিছু ছাড় আছে। কোনটি আপনার জন্য প্রযোজ্য, লিডার বা আলেমের সাথে মিলিয়ে নিন।', 'There are several allowances for the ill, the elderly and children. Check with your leader or a scholar which apply to you.')} />
+      {IH().SPECIAL.map((x) => <QA key={x.q} q={x.q} a={x.a} source={x.source} icon="🧓" />)}
     </>
   );
 }

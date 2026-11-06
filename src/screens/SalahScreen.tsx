@@ -6,7 +6,10 @@ import { DuaInline, StepCard } from '../components/guide';
 import { toBn } from '../lib/phone';
 import { Block } from './GuidesScreen';
 import type { RakatRow } from '../content/types';
-import { SALAH, SALAH_GROUPS, KIND, DAILY_FARD } from '../content/salah';
+import { salahL } from '../content/salah';
+import { tr } from '../lib/lang';
+
+const SL = salahL;   // in the chosen language
 import { CONTENT_REVIEWED } from '../content/ihram';
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav, Route } from './navTypes';
@@ -20,7 +23,7 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
 
   useEffect(() => {
     const p = route && route.params;
-    if (p && p.section && SALAH.some((x) => x.id === p.section)) { go(p.section); setFrom(p.from || null); }
+    if (p && p.section && SL().SALAH.some((x) => x.id === p.section)) { go(p.section); setFrom(p.from || null); }
   }, [route && route.params && route.params.t]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return undefined;
@@ -33,47 +36,47 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
     if (from) { const f = from; setFrom(null); setOpen(null); navigation.navigate(f); return; }
     setOpen(null);
   };
-  const sec = SALAH.find((x) => x.id === open);
+  const sec = SL().SALAH.find((x) => x.id === open);
 
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
       {sec ? (
         <>
-          <Pressable onPress={close} style={st.back} accessibilityRole="button" accessibilityLabel={from ? 'আগের পাতায় ফিরে যান' : 'সব অংশের তালিকায় ফিরে যান'}>
-            <Text style={st.backT}>‹ {from ? 'ফিরে যান' : 'সব অংশ'}</Text>
+          <Pressable onPress={close} style={st.back} accessibilityRole="button" accessibilityLabel={from ? tr('আগের পাতায় ফিরে যান', 'Back to the previous page') : tr('সব অংশের তালিকায় ফিরে যান', 'Back to the list of all parts')}>
+            <Text style={st.backT}>‹ {from ? tr('ফিরে যান', 'Back') : tr('সব অংশ', 'All parts')}</Text>
           </Pressable>
           <Text style={st.title} accessibilityRole="header">{sec.icon} {sec.title}</Text>
           {sec.blocks.map((b, i) => {
             if (b.type === 'rakat') return <Rakat key={i} rows={b.rows} />;
-            if (b.type === 'history') return <View key={i} style={{ marginTop: S.md }}><Text style={st.group} accessibilityRole="header">📜 ইতিহাস</Text>{b.items.map((s2, k) => <StepCard key={k} step={s2} />)}</View>;
+            if (b.type === 'history') return <View key={i} style={{ marginTop: S.md }}><Text style={st.group} accessibilityRole="header">{tr('📜 ইতিহাস', '📜 History')}</Text>{b.items.map((s2, k) => <StepCard key={k} step={s2} />)}</View>;
             if (b.type === 'duas') return <View key={i} style={{ marginBottom: S.sm }}>{b.ids.map((id) => <DuaInline key={id} id={id} />)}</View>;
-            if (b.type === 'kahf') return <Button key={i} title="সূরা কাহফ পড়ুন" icon="📖" kind="gold" onPress={() => navigation.navigate('Dua', { openSurah: 18, t: Date.now() })} style={{ marginTop: S.md }} />;
+            if (b.type === 'kahf') return <Button key={i} title={tr('সূরা কাহফ পড়ুন', 'Read Surah al-Kahf')} icon="📖" kind="gold" onPress={() => navigation.navigate('Dua', { openSurah: 18, t: Date.now() })} style={{ marginTop: S.md }} />;
             return <Block key={i} b={b} navigation={navigation} />;
           })}
-          <Button title={from ? 'ফিরে যান' : 'সব অংশের তালিকায় ফিরুন'} icon="‹" kind="secondary" onPress={close} style={{ marginTop: S.md }} />
+          <Button title={from ? tr('ফিরে যান', 'Back') : tr('সব অংশের তালিকায় ফিরুন', 'Back to the list of all parts')} icon="‹" kind="secondary" onPress={close} style={{ marginTop: S.md }} />
         </>
       ) : (
         <>
-          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান">
-            <Text style={st.backT}>‹ হোম</Text>
+          <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}>
+            <Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text>
           </Pressable>
-          <Text style={st.title} accessibilityRole="header">🕌 নামাজের রাকাত ও নিয়ম</Text>
-          <Notice kind="info" title="এক নজরে" text={DAILY_FARD} />
-          {SALAH_GROUPS.map((g) => (
+          <Text style={st.title} accessibilityRole="header">{tr('🕌 নামাজের রাকাত ও নিয়ম', '🕌 Prayer rak\'ahs and rules')}</Text>
+          <Notice kind="info" title={tr('এক নজরে', 'At a glance')} text={SL().DAILY_FARD} />
+          {SL().SALAH_GROUPS.map((g) => (
             <View key={g.title}>
               <Text style={st.group}>{g.title}</Text>
               {g.ids.map((id) => {
-                const x = SALAH.find((s) => s.id === id);
+                const x = SL().SALAH.find((s) => s.id === id);
                 if (!x) return null;
                 return (
                   <Pressable key={id} onPress={() => go(id)} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}
-                    accessibilityRole="button" accessibilityLabel={`${x.title}। ${x.what}`} accessibilityHint="বিস্তারিত খুলবে">
+                    accessibilityRole="button" accessibilityLabel={`${x.title}. ${x.what}`} accessibilityHint={tr('বিস্তারিত খুলবে', 'Opens the details')}>
                     <Text style={st.rowIc} importantForAccessibility="no">{x.icon}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={st.rowT}>{x.title}</Text>
                       <Text style={st.rowW}>{x.what}</Text>
                     </View>
-                    <Text style={st.openT}>খুলুন ›</Text>
+                    <Text style={st.openT}>{tr('খুলুন ›', 'Open ›')}</Text>
                   </Pressable>
                 );
               })}
@@ -81,7 +84,7 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
           ))}
         </>
       )}
-      {!CONTENT_REVIEWED ? <Text style={st.review}>ℹ️ হানাফি মত অনুযায়ী, কুরআন ও হাদিসের সূত্রসহ। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে।</Text> : null}
+      {!CONTENT_REVIEWED ? <Text style={st.review}>{tr('ℹ️ হানাফি মত অনুযায়ী, কুরআন ও হাদিসের সূত্রসহ। চূড়ান্ত প্রকাশের আগে একজন আলেম দিয়ে যাচাই করা হবে।', 'ℹ️ Following the Hanafi view, with sources from the Quran and hadith. Before the final release it will be checked by a scholar (alim).')}</Text> : null}
     </ScrollView>
   );
 }
@@ -90,9 +93,9 @@ export default function SalahScreen({ navigation, route }: { navigation: Nav; ro
 function Rakat({ rows }: { rows: RakatRow[] }) {
   const total = rows.reduce((a, r) => a + r.n, 0);
   return (
-    <View style={st.table} accessible accessibilityLabel={rows.map((r) => `${r.n} রাকাত ${KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`).join('। ')}>
+    <View style={st.table} accessible accessibilityLabel={rows.map((r) => tr(`${r.n} রাকাত ${SL().KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`, `${r.n} rak'ah${r.n === 1 ? '' : 's'} ${SL().KIND[r.kind].label}${r.when ? `, ${r.when}` : ''}`)).join('. ')}>
       {rows.map((r, i) => {
-        const k = KIND[r.kind];
+        const k = SL().KIND[r.kind];
         return (
           <View key={i} style={[st.tRow, i > 0 && st.tLine]}>
             <View style={[st.badge, { borderColor: (C as Record<string, string>)[k.color] }]}><Text style={[st.badgeN, { color: (C as Record<string, string>)[k.color] }]}>{toBn(r.n)}</Text></View>
@@ -104,7 +107,7 @@ function Rakat({ rows }: { rows: RakatRow[] }) {
           </View>
         );
       })}
-      <Text style={st.total}>মোট {toBn(total)} রাকাত</Text>
+      <Text style={st.total}>{tr(`মোট ${toBn(total)} রাকাত`, `Total ${total} rak'ahs`)}</Text>
     </View>
   );
 }

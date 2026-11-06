@@ -1,6 +1,9 @@
 // Umrah step-by-step guide (after ihram until leaving ihram). Bundled; works offline.
 // IMPORTANT: must be reviewed by a qualified alim before public launch (CONTENT_REVIEWED in ihram.js covers the guides).
 
+import { inLang } from '../lib/contentLang';
+import { EN } from './en/umrah';
+
 export const UMRAH_STEPS = [
   {
     title: 'ইহরাম বাঁধা হয়েছে তো?',
@@ -70,3 +73,9 @@ export const COUNTERS = {
   tawaf: { key: 'ta.count.tawaf.v1', title: 'তাওয়াফের চক্কর গণনা' },
   sai: { key: 'ta.count.sai.v1', title: 'সাঈর চক্কর গণনা', labelFor: (i: number) => (i % 2 === 1 ? 'সাফা থেকে মারওয়া' : 'মারওয়া থেকে সাফা') },
 };
+
+// In the chosen language (English from ./en/umrah.ts); call while drawing.
+export const umrahL = () => ({
+  UMRAH_STEPS: inLang(UMRAH_STEPS, 'UMRAH_STEPS', EN),
+  COUNTERS: inLang(COUNTERS, 'COUNTERS', EN),
+});
