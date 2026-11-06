@@ -1,14 +1,15 @@
 // Phone reminders before a passport or visa expires: 6 months, 1 month and 1 week before, at 10 in the morning.
 // Made on the phone (no server). Re-made whenever the document list is loaded online or a date changes.
 import { Platform } from 'react-native';
+import { tr } from './lang';
 import * as Notifications from 'expo-notifications';
 import { notifySupported, cancelDocs, DOC_PREFIX } from './notify';
 import { typeOf } from './docs';
 
 const STEPS = [
-  { days: 180, text: 'মেয়াদ শেষ হতে আর ৬ মাস বাকি। সৌদি ভিসার জন্য পাসপোর্টের মেয়াদ অন্তত ৬ মাস থাকতে হয়।' },
-  { days: 30, text: 'মেয়াদ শেষ হতে আর ১ মাস বাকি।' },
-  { days: 7, text: 'মেয়াদ শেষ হতে আর ১ সপ্তাহ বাকি।' },
+  { days: 180, get text() { return tr('মেয়াদ শেষ হতে আর ৬ মাস বাকি। সৌদি ভিসার জন্য পাসপোর্টের মেয়াদ অন্তত ৬ মাস থাকতে হয়।', 'It expires in 6 months. For a Saudi visa the passport needs at least 6 months left.'); } },
+  { days: 30, get text() { return tr('মেয়াদ শেষ হতে আর ১ মাস বাকি।', 'It expires in 1 month.'); } },
+  { days: 7, get text() { return tr('মেয়াদ শেষ হতে আর ১ সপ্তাহ বাকি।', 'It expires in 1 week.'); } },
 ];
 
 type DocRow = { id: string; doc_type: string; expires_on?: string | null };
@@ -20,7 +21,7 @@ export async function scheduleDocReminders(rows: readonly DocRow[] | null | unde
     await cancelDocs();
     if (!p.granted) return { ok: false, reason: 'denied' };
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('docs', { name: 'কাগজের মেয়াদ', importance: Notifications.AndroidImportance.DEFAULT });
+      await Notifications.setNotificationChannelAsync('docs', { name: tr('কাগজের মেয়াদ', 'Document expiry'), importance: Notifications.AndroidImportance.DEFAULT });
     }
     const now = Date.now();
     let n = 0;
@@ -33,7 +34,7 @@ export async function scheduleDocReminders(rows: readonly DocRow[] | null | unde
         if (at <= now + 60000) continue;
         await Notifications.scheduleNotificationAsync({
           identifier: `${DOC_PREFIX}${r.id}-${s.days}`,
-          content: { title: `${typeOf(r.doc_type).icon} ${typeOf(r.doc_type).label}: মেয়াদ মনে করিয়ে দিচ্ছি`, body: s.text, sound: 'default' },
+          content: { title: tr(`${typeOf(r.doc_type).icon} ${typeOf(r.doc_type).label}: মেয়াদ মনে করিয়ে দিচ্ছি`, `${typeOf(r.doc_type).icon} ${typeOf(r.doc_type).label}: expiry reminder`), body: s.text, sound: 'default' },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at), channelId: 'docs' },
         });
         n++;

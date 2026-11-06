@@ -1,6 +1,7 @@
 // Optional lock for private pages (documents): the phone's own fingerprint / face / screen PIN must say OK.
 // The choice is kept in the phone's secure store. Off by default; if the phone has no screen lock, it cannot be used.
 import * as SecureStore from 'expo-secure-store';
+import { tr } from './lang';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 const KEY = 'ta.applock.v1';
@@ -14,9 +15,9 @@ export async function setLockWanted(on: boolean): Promise<void> {
 export async function canLock(): Promise<boolean> {
   try { return Number(await LocalAuthentication.getEnrolledLevelAsync()) > 0; } catch (e) { return false; }
 }
-export async function unlock(reason = 'কাগজপত্র খুলতে ফোনের আঙুলের ছাপ বা পিন দিন'): Promise<boolean> {
+export async function unlock(reason = tr('কাগজপত্র খুলতে ফোনের আঙুলের ছাপ বা পিন দিন', 'Use your fingerprint or PIN to open your documents')): Promise<boolean> {
   try {
-    const r = await LocalAuthentication.authenticateAsync({ promptMessage: reason, cancelLabel: 'বাতিল', disableDeviceFallback: false });
+    const r = await LocalAuthentication.authenticateAsync({ promptMessage: reason, cancelLabel: tr('বাতিল', 'Cancel'), disableDeviceFallback: false });
     return !!(r && r.success);
   } catch (e) { return false; }
 }

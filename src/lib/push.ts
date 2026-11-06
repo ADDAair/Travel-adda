@@ -2,6 +2,7 @@
 // The notification box (🔔) keeps working without this; push only adds the phone alert.
 // Nothing here ever throws to the screens: every function answers with a plain state word.
 import { Platform, Linking } from 'react-native';
+import { tr } from './lang';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
@@ -16,10 +17,10 @@ const projectId: string | undefined = (app as { expo?: { extra?: { eas?: { proje
 async function channels(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('notices', {
-    name: 'জরুরি নোটিশ ও খবর', importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 250, 150, 250],
+    name: tr('জরুরি নোটিশ ও খবর', 'Notices and news'), importance: Notifications.AndroidImportance.HIGH, sound: 'default', vibrationPattern: [0, 250, 150, 250],
   });
   await Notifications.setNotificationChannelAsync('important', {
-    name: 'জরুরি নোটিশ', importance: Notifications.AndroidImportance.MAX, sound: 'default', vibrationPattern: [0, 400, 200, 400],
+    name: tr('জরুরি নোটিশ', 'Important notices'), importance: Notifications.AndroidImportance.MAX, sound: 'default', vibrationPattern: [0, 400, 200, 400],
   });
 }
 

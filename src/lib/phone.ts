@@ -1,5 +1,5 @@
 import { getLang } from './lang';
-const BN = '০১২৩৪৫৬৭৮৯';
+const BN = '০১২৩৪৫৬৭৮৯';   // i18n-ok: digits
 // Accepts Bengali or English digits; returns normalized English-digit string.
 export function normalizeDigits(s: unknown): string {
   return String(s || '').replace(/[০-৯]/g, (d) => String(BN.indexOf(d))).replace(/\s|-/g, '');

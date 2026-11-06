@@ -277,7 +277,8 @@ export default function App() {
   useEffect(() => {
     refreshReminders();
     const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refreshReminders(); });
-    return () => sub.remove();
+    const offLang = onLang(() => { refreshReminders(); });   // reminders say the prayer in the new language
+    return () => { sub.remove(); offLang(); };
   }, []);
 
   // Push: refresh this phone's registration after login; a tap on a Travel Adda alert opens the 🔔 page.
