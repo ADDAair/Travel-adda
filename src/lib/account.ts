@@ -8,6 +8,7 @@ import { cancelEverything } from './notify';
 import { fail } from './rpc';
 import { notReady } from './groups';
 import { toBn } from './phone';
+import { tr, monthName } from './lang';
 
 // 1) (after the password) delete the user's own files (storage policies allow only their own folder)
 // 2) call request_account_deletion() (035): the account is paused now and removed by the server after 30 days
@@ -44,19 +45,18 @@ export async function resumeMyAccount(): Promise<string> {
 }
 
 export const pauseText = (a: string): string => ({
-  ok: 'অ্যাকাউন্ট বন্ধ রাখা হয়েছে। আবার লগইন করে "অ্যাকাউন্ট আবার চালু করুন" চাপলেই সব আগের মতো ফিরে আসবে।',
-  has_contract: 'চলমান চুক্তি থাকায় এখন অ্যাকাউন্ট বন্ধ রাখা যাবে না। চুক্তি শেষ বা বাতিল হলে আবার চেষ্টা করুন।',
-  not_active: 'অ্যাকাউন্টটি এখন চালু নেই, তাই বন্ধ করা যাবে না।',
-  password_needed: 'নিরাপত্তার জন্য পাসওয়ার্ড আবার লিখে চেষ্টা করুন।',
-} as Record<string, string>)[a] || 'এখন করা যায়নি। একটু পরে আবার চেষ্টা করুন।';
+  ok: tr('অ্যাকাউন্ট বন্ধ রাখা হয়েছে। আবার লগইন করে "অ্যাকাউন্ট আবার চালু করুন" চাপলেই সব আগের মতো ফিরে আসবে।', 'The account is paused. Log in again and tap "Turn the account on again" to get everything back as before.'),
+  has_contract: tr('চলমান চুক্তি থাকায় এখন অ্যাকাউন্ট বন্ধ রাখা যাবে না। চুক্তি শেষ বা বাতিল হলে আবার চেষ্টা করুন।', 'The account cannot be paused while a contract is running. Try again when the contract ends or is cancelled.'),
+  not_active: tr('অ্যাকাউন্টটি এখন চালু নেই, তাই বন্ধ করা যাবে না।', 'The account is not active now, so it cannot be paused.'),
+  password_needed: tr('নিরাপত্তার জন্য পাসওয়ার্ড আবার লিখে চেষ্টা করুন।', 'For safety, write your password again and try.'),
+} as Record<string, string>)[a] || tr('এখন করা যায়নি। একটু পরে আবার চেষ্টা করুন।', 'That did not work now. Try again a little later.');
 
 // The removal day in Bangladesh time, e.g. "৬ ডিসেম্বর ২০২৬".
-const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 export function deleteDay(iso: string | null | undefined): string {
   const t = Date.parse(String(iso || ''));
   if (!Number.isFinite(t)) return '';
   const d = new Date(t + 6 * 3600000);
-  return `${toBn(d.getUTCDate())} ${BN_MONTH[d.getUTCMonth()]} ${toBn(d.getUTCFullYear())}`;
+  return `${toBn(d.getUTCDate())} ${monthName(d.getUTCMonth())} ${toBn(d.getUTCFullYear())}`;
 }
 
 export async function deleteMyAccount(password: string): Promise<void> {

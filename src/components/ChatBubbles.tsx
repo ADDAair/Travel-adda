@@ -3,14 +3,14 @@ import { View, Text, StyleSheet } from 'react-native';
 import { C, F, S, R } from '../theme';
 import { toBn } from '../lib/phone';
 import { roleLabel } from '../lib/help';
+import { tr, monthName } from '../lib/lang';
 
-const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 // "২৪ অক্টোবর, ১০:০৫" (24-hour clock: no AM/PM confusion)
 export function fmtWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const hh = String(d.getHours()).padStart(2, '0'); const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${toBn(d.getDate())} ${BN_MONTH[d.getMonth()]}, ${toBn(hh)}:${toBn(mm)}`;
+  return `${toBn(d.getDate())} ${monthName(d.getMonth())}, ${toBn(hh)}:${toBn(mm)}`;
 }
 
 // One conversation. "mineSide" = messages written by the person looking at the screen sit on the right.
@@ -22,7 +22,7 @@ export default function ChatBubbles({ rows, viewer }: { rows: readonly ChatMsg[]
     <View>
       {(rows || []).map((m) => {
         const right = m.mine;
-        const who = viewer === 'haji' ? roleLabel(m.sender_role || '', !!m.mine) : (m.mine ? '✍️ আপনি' : roleLabel(m.sender_role || ''));
+        const who = viewer === 'haji' ? roleLabel(m.sender_role || '', !!m.mine) : (m.mine ? tr('✍️ আপনি', '✍️ You') : roleLabel(m.sender_role || ''));
         const name = m.mine || !m.sender_name ? '' : ` · ${m.sender_name}`;
         return (
           <View key={m.id} style={[b.row, right ? b.right : b.left]}

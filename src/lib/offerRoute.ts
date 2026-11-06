@@ -1,5 +1,6 @@
 // Package journey (supabase/020_offer_route.sql), leader search and filters on the Offers page. No network here.
 import { toBn, normalizeDigits } from './phone';
+import { tr, lbl, monthName } from './lang';
 
 // The package fields this file reads (a haji's list row, a leader's own row or an admin row all have them).
 type Offer = {
@@ -11,20 +12,22 @@ export type RouteForm = { from?: string; arrive?: string; first?: string; mk?: u
 export type RouteStep = { icon: string; title: string; text: string; when?: string };
 
 export const AIRPORTS_BD = [
-  { id: 'DAC', label: 'ঢাকা', full: 'হযরত শাহজালাল আন্তর্জাতিক বিমানবন্দর, ঢাকা' },
-  { id: 'CGP', label: 'চট্টগ্রাম', full: 'শাহ আমানত আন্তর্জাতিক বিমানবন্দর, চট্টগ্রাম' },
-  { id: 'ZYL', label: 'সিলেট', full: 'ওসমানী আন্তর্জাতিক বিমানবন্দর, সিলেট' },
+  { id: 'DAC', label: 'ঢাকা', full: 'হযরত শাহজালাল আন্তর্জাতিক বিমানবন্দর, ঢাকা', en: 'Dhaka', fullEn: 'Hazrat Shahjalal International Airport, Dhaka' },
+  { id: 'CGP', label: 'চট্টগ্রাম', full: 'শাহ আমানত আন্তর্জাতিক বিমানবন্দর, চট্টগ্রাম', en: 'Chattogram', fullEn: 'Shah Amanat International Airport, Chattogram' },
+  { id: 'ZYL', label: 'সিলেট', full: 'ওসমানী আন্তর্জাতিক বিমানবন্দর, সিলেট', en: 'Sylhet', fullEn: 'Osmani International Airport, Sylhet' },
 ];
 export const AIRPORTS_SA = [
-  { id: 'JED', label: 'জেদ্দা', full: 'কিং আবদুল আজিজ বিমানবন্দর, জেদ্দা' },
-  { id: 'MED', label: 'মদিনা', full: 'প্রিন্স মোহাম্মদ বিন আবদুল আজিজ বিমানবন্দর, মদিনা' },
+  { id: 'JED', label: 'জেদ্দা', full: 'কিং আবদুল আজিজ বিমানবন্দর, জেদ্দা', en: 'Jeddah', fullEn: 'King Abdulaziz Airport, Jeddah' },
+  { id: 'MED', label: 'মদিনা', full: 'প্রিন্স মোহাম্মদ বিন আবদুল আজিজ বিমানবন্দর, মদিনা', en: 'Madinah', fullEn: 'Prince Mohammad bin Abdulaziz Airport, Madinah' },
 ];
-export const CITIES = [{ id: 'makkah', label: 'মক্কা', icon: '🕋' }, { id: 'madinah', label: 'মদিনা', icon: '🕌' }];
+export const CITIES = [
+  { id: 'makkah', label: 'মক্কা', icon: '🕋', en: 'Makkah' },
+  { id: 'madinah', label: 'মদিনা', icon: '🕌', en: 'Madinah' },
+];
 export const PRICE_LIMITS = [150000, 200000, 300000];
-const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
 
-const name = (list: readonly { id: string; label: string }[], id: string | null | undefined): string => (list.find((a) => a.id === id) || { label: '' }).label || '';
-const nights = (n: number): string => `${toBn(n)} রাত`;
+const name = (list: readonly { id: string; label: string; en?: string }[], id: string | null | undefined): string => lbl(list.find((a) => a.id === id));
+const nights = (n: number): string => tr(`${toBn(n)} রাত`, `${n} night${n === 1 ? '' : 's'}`);
 export const hasRoute = (o: Offer | null | undefined): boolean => !!(o && o.from_airport && o.makkah_nights != null);
 
 function cityOrder(o: Offer): { c: string; n: number }[] {
@@ -35,17 +38,17 @@ function cityOrder(o: Offer): { c: string; n: number }[] {
 // Steps in travel order: fly out, each holy city with its nights, fly home.
 export function routeSteps(o: Offer): RouteStep[] | null {
   if (!hasRoute(o)) return null;
-  const out: RouteStep[] = [{ icon: '🛫', title: 'যাত্রা শুরু', text: `${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, when: o.depart_on || undefined }];
+  const out: RouteStep[] = [{ icon: '🛫', title: tr('যাত্রা শুরু', 'Departure'), text: tr(`${name(AIRPORTS_BD, o.from_airport)} থেকে ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`, `${name(AIRPORTS_BD, o.from_airport)} to ${name(AIRPORTS_SA, o.arrive_at)}${o.airline ? ` · ${o.airline}` : ''}`), when: o.depart_on || undefined }];
   cityOrder(o).forEach(({ c, n }) => {
     const city = CITIES.find((x) => x.id === c);
-    if (city) out.push({ icon: city.icon, title: city.label, text: `${nights(n)} থাকা` });
+    if (city) out.push({ icon: city.icon, title: lbl(city), text: tr(`${nights(n)} থাকা`, `${nights(n)} stay`) });
   });
-  out.push({ icon: '🛬', title: 'দেশে ফেরা', text: `${name(AIRPORTS_SA, o.return_from)} থেকে ${name(AIRPORTS_BD, o.return_to)}`, when: o.return_on || undefined });
+  out.push({ icon: '🛬', title: tr('দেশে ফেরা', 'Return home'), text: tr(`${name(AIRPORTS_SA, o.return_from)} থেকে ${name(AIRPORTS_BD, o.return_to)}`, `${name(AIRPORTS_SA, o.return_from)} to ${name(AIRPORTS_BD, o.return_to)}`), when: o.return_on || undefined });
   return out;
 }
 
 export function routeShort(o: Offer): string {
-  if (!hasRoute(o)) return 'যাত্রাপথ উল্লেখ নেই';
+  if (!hasRoute(o)) return tr('যাত্রাপথ উল্লেখ নেই', 'Route not given');
   const mid = cityOrder(o).map(({ c, n }) => `${name(CITIES, c)} ${nights(n)}`);
   return [name(AIRPORTS_BD, o.from_airport), ...mid, name(AIRPORTS_BD, o.return_to)].join(' → ');
 }
@@ -55,15 +58,15 @@ const int = (v: unknown): number | null => { const t = normalizeDigits(String(v 
 // Form check. r = { from, arrive, first, mk, md, back, to }; days = whole trip length in days.
 export function checkRoute(r: RouteForm, days: number): Record<string, string> {
   const e: Record<string, string> = {};
-  if (!r.from) e.from = 'কোন বিমানবন্দর থেকে যাত্রা শুরু, বাছাই করুন।';
-  if (!r.arrive) e.arrive = 'সৌদিতে কোথায় নামবেন, বাছাই করুন।';
-  if (!r.first) e.first = 'আগে মক্কা না মদিনা, বাছাই করুন।';
-  if (!r.back) e.back = 'সৌদির কোন বিমানবন্দর থেকে ফিরবেন, বাছাই করুন।';
-  if (!r.to) e.to = 'দেশের কোন বিমানবন্দরে ফিরবেন, বাছাই করুন।';
+  if (!r.from) e.from = tr('কোন বিমানবন্দর থেকে যাত্রা শুরু, বাছাই করুন।', 'Choose the airport you leave from.');
+  if (!r.arrive) e.arrive = tr('সৌদিতে কোথায় নামবেন, বাছাই করুন।', 'Choose where you land in Saudi Arabia.');
+  if (!r.first) e.first = tr('আগে মক্কা না মদিনা, বাছাই করুন।', 'Choose Makkah or Madinah first.');
+  if (!r.back) e.back = tr('সৌদির কোন বিমানবন্দর থেকে ফিরবেন, বাছাই করুন।', 'Choose the Saudi airport you return from.');
+  if (!r.to) e.to = tr('দেশের কোন বিমানবন্দরে ফিরবেন, বাছাই করুন।', 'Choose the airport you return to at home.');
   const mk = int(r.mk); const md = int(r.md) ?? 0;
-  if (mk === null || !Number.isInteger(mk) || mk < 1 || mk > 60) e.mk = 'মক্কায় কত রাত থাকবেন, সংখ্যায় লিখুন (কমপক্ষে ১)।';
-  if (!Number.isInteger(md) || md < 0 || md > 60) e.md = 'মদিনায় কত রাত থাকবেন, সংখ্যায় লিখুন (না থাকলে ০)।';
-  else if (!e.mk && mk !== null && days > 1 && mk + md > days - 1) e.md = `মক্কা ও মদিনা মিলিয়ে সর্বোচ্চ ${toBn(days - 1)} রাত হতে পারে (সফর ${toBn(days)} দিনের)।`;
+  if (mk === null || !Number.isInteger(mk) || mk < 1 || mk > 60) e.mk = tr('মক্কায় কত রাত থাকবেন, সংখ্যায় লিখুন (কমপক্ষে ১)।', 'Write the nights in Makkah as a number (at least 1).');
+  if (!Number.isInteger(md) || md < 0 || md > 60) e.md = tr('মদিনায় কত রাত থাকবেন, সংখ্যায় লিখুন (না থাকলে ০)।', 'Write the nights in Madinah as a number (0 if none).');
+  else if (!e.mk && mk !== null && days > 1 && mk + md > days - 1) e.md = tr(`মক্কা ও মদিনা মিলিয়ে সর্বোচ্চ ${toBn(days - 1)} রাত হতে পারে (সফর ${toBn(days)} দিনের)।`, `Makkah and Madinah together can be at most ${days - 1} nights (the trip is ${days} days).`);
   return e;
 }
 
@@ -102,14 +105,14 @@ export function monthOptions(rows: Offer[] | null | undefined, today?: string | 
   for (let i = 0; i < 12; i += 1) { ids.add(`${y}-${String(mo).padStart(2, '0')}`); mo += 1; if (mo > 12) { mo = 1; y += 1; } }
   const count: Record<string, number> = {};
   (rows || []).forEach((o) => { const m = String(o.depart_on || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(m)) { count[m] = (count[m] || 0) + 1; if (m >= t) ids.add(m); } });
-  return [...ids].sort().map((id) => ({ id, label: `${BN_MONTH[Number(id.slice(5)) - 1]} ${toBn(id.slice(0, 4))} (${toBn(count[id] || 0)}টি)` }));
+  return [...ids].sort().map((id) => ({ id, label: tr(`${monthName(Number(id.slice(5)) - 1)} ${toBn(id.slice(0, 4))} (${toBn(count[id] || 0)}টি)`, `${monthName(Number(id.slice(5)) - 1)} ${id.slice(0, 4)} (${count[id] || 0})`) }));
 }
 
 // A price the haji types: "১,৮০,০০০", "180000", "২.৫ লাখ", "2 lakh". null when empty, NaN when not a price.
 export function parsePrice(v: unknown): number | null {
   const t = normalizeDigits(String(v ?? '')).replace(/[,\s]/g, '').toLowerCase();
   if (!t) return null;
-  const m = t.match(/^(\d+(?:\.\d+)?)(লাখ|লক্ষ|lakh|lac)?(টাকা|tk)?$/);
+  const m = t.match(/^(\d+(?:\.\d+)?)(লাখ|লক্ষ|lakh|lac)?(টাকা|tk)?$/);   // i18n-ok: words a haji may type
   if (!m) return NaN;
   const n = Math.round(Number(m[1]) * (m[2] ? 100000 : 1));
   return n > 0 && n < 1e8 ? n : NaN;
@@ -117,4 +120,4 @@ export function parsePrice(v: unknown): number | null {
 
 // Hajj happens once a year, so the month choice is only for umrah.
 export const monthFilterFor = (kind: string): boolean => kind === 'umrah';
-export const monthButtonText = (month: string | null | undefined, options: { id: string; label: string }[] | null | undefined): string => `📅 ${month ? ((options || []).find((x) => x.id === month) || { label: month }).label : 'সব মাস'}`;
+export const monthButtonText = (month: string | null | undefined, options: { id: string; label: string }[] | null | undefined): string => `📅 ${month ? ((options || []).find((x) => x.id === month) || { label: month }).label : tr('সব মাস', 'All months')}`;

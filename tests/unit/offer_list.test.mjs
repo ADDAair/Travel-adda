@@ -80,7 +80,7 @@ test('owner request: month (কোন মাসে যাবেন) and quick pr
   const s = read('src/screens/OffersScreen.tsx');
   assert.ok(/function Dropdown\b/.test(s), 'one shared dropdown');
   assert.ok(s.includes('accessibilityState={{ expanded: open }}'), 'screen reader hears open / closed');
-  assert.ok(/<Dropdown[^>]*label="অথবা এক চাপে বাছুন"/.test(s), 'quick price is a dropdown');
+  assert.ok(/<Dropdown[^>]*label=\{tr\('অথবা এক চাপে বাছুন'/.test(s), 'quick price is a dropdown');
   assert.ok(!/<Pills label="অথবা এক চাপে বাছুন"/.test(s), 'no row of price buttons');
   const bar = s.slice(s.indexOf('function MonthBar'), s.indexOf('function HajiOffers'));
   assert.ok(bar.includes('<Dropdown') && !bar.includes('<Pill '), 'month buttons became a dropdown');

@@ -20,13 +20,13 @@ type Manip = {
 const Im = IM as unknown as Manip;
 
 export const DOC_TYPES = [
-  { id: 'passport', icon: '🛂', label: 'পাসপোর্ট' },
-  { id: 'visa', icon: '📄', label: 'ভিসা' },
-  { id: 'ticket', icon: '✈️', label: 'বিমানের টিকেট' },
-  { id: 'hotel_voucher', icon: '🏨', label: 'হোটেল ভাউচার' },
-  { id: 'other', icon: '📎', label: 'অন্যান্য (টিকার সনদ ইত্যাদি)' },
+  { id: 'passport', icon: '🛂', label: 'পাসপোর্ট', en: 'Passport' },
+  { id: 'visa', icon: '📄', label: 'ভিসা', en: 'Visa' },
+  { id: 'ticket', icon: '✈️', label: 'বিমানের টিকেট', en: 'Air ticket' },
+  { id: 'hotel_voucher', icon: '🏨', label: 'হোটেল ভাউচার', en: 'Hotel voucher' },
+  { id: 'other', icon: '📎', label: 'অন্যান্য (টিকার সনদ ইত্যাদি)', en: 'Other (vaccination card etc.)' },
 ];
-export const typeOf = (id: string): { id: string; icon: string; label: string } => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
+export const typeOf = (id: string): { id: string; icon: string; label: string; en: string } => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const LOCAL = Platform.OS === 'web' ? null : `${FileSystem.documentDirectory}docs/`;

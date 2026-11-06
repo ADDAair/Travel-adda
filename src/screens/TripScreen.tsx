@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
+import { tr } from '../lib/lang';
 import ScrollView from '../components/KbScroll';
 import TripCard from '../components/TripCard';
 import { C, F, S, TOUCH } from '../theme';
@@ -9,8 +10,8 @@ import type { Nav } from './navTypes';
 export default function TripScreen({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={st.wrap} contentContainerStyle={st.in} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান">
-        <Text style={st.backT}>‹ হোম</Text>
+      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}>
+        <Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text>
       </Pressable>
       <TripCard navigation={navigation} />
     </ScrollView>

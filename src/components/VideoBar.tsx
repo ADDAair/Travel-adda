@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
+import { tr } from '../lib/lang';
 import { C, F, S, R, TOUCH } from '../theme';
 import { videoFor } from '../content/videos';
 import { useVideoTopics } from '../lib/videoLinks';
@@ -24,7 +25,7 @@ export default function VideoBar({ route }: { route: string }) {
       </Pressable>
       {info ? (
         <View style={{ marginTop: S.xs, padding: S.sm, borderRadius: R.md, backgroundColor: C.primarySoft, borderWidth: 1, borderColor: C.primary }} accessibilityRole="alert">
-          <Text style={{ fontSize: F.body, color: C.text }}>🎬 "{v.title}" নিয়ে কার্টুন ভিডিও তৈরি হচ্ছে, শীঘ্রই আসছে। ততক্ষণ পাতার লেখা ও ধাপগুলো দেখুন।</Text>
+          <Text style={{ fontSize: F.body, color: C.text }}>🎬 "{v.title}" {tr('নিয়ে কার্টুন ভিডিও তৈরি হচ্ছে, শীঘ্রই আসছে। ততক্ষণ পাতার লেখা ও ধাপগুলো দেখুন।', '— a cartoon video about this is being made, coming soon. Until then, read the page and its steps.')}</Text>
         </View>
       ) : null}
     </View>

@@ -11,6 +11,7 @@ import LeaderOffersScreen from './LeaderOffersScreen';
 
 import { OfferCard, OfferSummary, BadgePill } from '../components/OfferCard';
 import { badgesFor, featured, monthBar, BADGE_TEXT, type Badge } from '../lib/offerList';
+import { tr, lbl } from '../lib/lang';
 import { daysOf } from '../lib/offers';
 import { filterOffers, monthOptions, AIRPORTS_BD, PRICE_LIMITS, parsePrice, monthFilterFor, monthButtonText } from '../lib/offerRoute';
 import { toBn } from '../lib/phone';
@@ -27,7 +28,7 @@ export { OfferCard };
 export default function OffersScreen({ navigation, route }: { navigation: Nav; route?: Route }) {
   const { me } = useMe();
   const leader = isLeaderAccount(me);
-  useEffect(() => { navigation?.setOptions?.({ title: leader ? 'আমার প্যাকেজ' : 'অফার ও প্যাকেজ' }); }, [leader, navigation]);
+  useEffect(() => { navigation?.setOptions?.({ title: leader ? tr('আমার প্যাকেজ', 'My packages') : tr('অফার ও প্যাকেজ', 'Offers and packages') }); }, [leader, navigation]);
   if (!leader) return <HajiOffers navigation={navigation} route={route} />;
   if (!me || me.role !== 'leader') return <PendingLeader navigation={navigation} />;
   return <LeaderOffersScreen navigation={navigation} inTab />;
@@ -37,9 +38,9 @@ export default function OffersScreen({ navigation, route }: { navigation: Nav; r
 function PendingLeader({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Text style={st.title} accessibilityRole="header">🎁 আমার প্যাকেজ</Text>
-      <Notice kind="info" title="অনুমোদনের পর প্যাকেজ দিতে পারবেন" text={'অ্যাডমিন আপনার লাইসেন্স যাচাই করে অনুমোদন দিলে এখানে ওমরাহ ও হজ প্যাকেজ যোগ করতে পারবেন। হাজীরা তখন "অফার" পাতায় আপনার প্যাকেজ দেখবেন।'} />
-      <Button title="লিডার নিবন্ধনের অবস্থা দেখুন" icon="🧭" onPress={() => navigation.navigate('LeaderApply')} />
+      <Text style={st.title} accessibilityRole="header">{tr('🎁 আমার প্যাকেজ', '🎁 My packages')}</Text>
+      <Notice kind="info" title={tr('অনুমোদনের পর প্যাকেজ দিতে পারবেন', 'You can add packages after approval')} text={tr('অ্যাডমিন আপনার লাইসেন্স যাচাই করে অনুমোদন দিলে এখানে ওমরাহ ও হজ প্যাকেজ যোগ করতে পারবেন। হাজীরা তখন "অফার" পাতায় আপনার প্যাকেজ দেখবেন।', 'Once the admin checks your licence and approves, you can add Umrah and Hajj packages here. Hajis will then see them on the "Offers" page.')} />
+      <Button title={tr('লিডার নিবন্ধনের অবস্থা দেখুন', 'See your leader registration status')} icon="🧭" onPress={() => navigation.navigate('LeaderApply')} />
     </ScrollView>
   );
 }
@@ -54,7 +55,7 @@ function Pills<T extends string | number>({ label, options, value, onChange }: {
           const on = value === o.id;
           return (
             <Pressable key={String(o.id)} onPress={() => onChange(on ? null : o.id)} accessibilityRole="button" accessibilityState={{ selected: on }}
-              accessibilityLabel={`${label}: ${o.label}${on ? ', বাছাই করা, বাদ দিতে আবার চাপুন' : ''}`}
+              accessibilityLabel={`${label}: ${o.label}${on ? tr(', বাছাই করা, বাদ দিতে আবার চাপুন', ', chosen, tap again to remove') : ''}`}
               style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, marginRight: S.xs, marginTop: S.xs, borderRadius: R.lg,
                 borderWidth: 2, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
               <Text style={st.p}>{on ? '✓ ' : ''}{o.label}</Text>
@@ -76,7 +77,7 @@ function Dropdown<T extends string | number>({ label, name, icon, options, value
   const Item = ({ id, text }: { id: T | null; text: string }) => {
     const on = value === id;
     return (
-      <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${text}${on ? ', বাছাই করা' : ''}`}
+      <Pressable onPress={() => pick(id)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${text}${on ? tr(', বাছাই করা', ', chosen') : ''}`}
         style={{ minHeight: TOUCH, justifyContent: 'center', paddingHorizontal: S.md, borderTopWidth: 1, borderColor: C.line, backgroundColor: on ? C.primarySoft : C.card }}>
         <Text style={st.p}>{on ? '✓ ' : '   '}{text}</Text>
       </Pressable>
@@ -86,7 +87,7 @@ function Dropdown<T extends string | number>({ label, name, icon, options, value
     <View style={{ marginBottom: S.md }}>
       <Text style={[st.small, { fontWeight: '700' }]}>{label}</Text>
       <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${name}: ${cur}। ${open ? 'তালিকা বন্ধ করতে' : 'অন্যটি বাছতে'} চাপুন`}
+        accessibilityLabel={tr(`${name}: ${cur}। ${open ? 'তালিকা বন্ধ করতে' : 'অন্যটি বাছতে'} চাপুন`, `${name}: ${cur}. Tap to ${open ? 'close the list' : 'choose another'}`)}
         style={{ minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center', marginTop: S.xs, paddingHorizontal: S.md, borderRadius: R.md, borderWidth: 2, borderColor: C.primary, backgroundColor: C.card }}>
         <Text style={[st.p, { flex: 1 }]}>{icon} {cur}</Text>
         <Text style={[st.p, { color: C.primary }]}>{open ? '▲' : '▼'}</Text>
@@ -104,8 +105,8 @@ function Dropdown<T extends string | number>({ label, name, icon, options, value
 
 // Umrah month inside the filters (every month of the coming year, with counts).
 function MonthDropdown({ options, value, onChange }: { options: { id: string; label: string }[]; value: string | null; onChange: (v: string | null) => void }) {
-  return <Dropdown label="কোন মাসে যাবেন" name="মাস" icon="📅" options={options} value={value} onChange={onChange} allText="সব মাস একসাথে" noneText="সব মাস"
-    note="বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।" />;
+  return <Dropdown label={tr('কোন মাসে যাবেন', 'Which month will you go')} name={tr('মাস', 'Month')} icon="📅" options={options} value={value} onChange={onChange} allText={tr('সব মাস একসাথে', 'All months together')} noneText={tr('সব মাস', 'All months')}
+    note={tr('বন্ধনীতে লেখা আছে সেই মাসে কয়টি প্যাকেজ আছে।', 'The number in brackets is how many packages leave that month.')} />;
 }
 
 // Two "special" cards above the list (cheapest, newest), chosen by the app from the packages themselves.
@@ -113,16 +114,16 @@ function Featured({ items, onOpen }: { items: { o: PackageRow; why: Badge }[]; o
   if (!items.length) return null;
   return (
     <View style={{ marginBottom: S.sm }}>
-      <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">⭐ বিশেষ অফার</Text>
+      <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">{tr('⭐ বিশেষ অফার', '⭐ Special offers')}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm, marginTop: S.xs }}>
         {items.map(({ o, why }) => (
           <Pressable key={o.id} onPress={() => onOpen(o.id)} accessibilityRole="button"
-            accessibilityLabel={`বিশেষ অফার, ${BADGE_TEXT[why].replace(/^\S+ /, '')}: ${o.title}। ${fmtTaka(o.price_bdt)} জনপ্রতি। ${toBn(daysOf(o))} দিন। দেখতে চাপুন`}
+            accessibilityLabel={tr(`বিশেষ অফার, ${BADGE_TEXT[why].replace(/^\S+ /, '')}: ${o.title}। ${fmtTaka(o.price_bdt)} জনপ্রতি। ${toBn(daysOf(o))} দিন। দেখতে চাপুন`, `Special offer, ${BADGE_TEXT[why].replace(/^\S+ /, '')}: ${o.title}. ${fmtTaka(o.price_bdt)} per person. ${daysOf(o)} days. Tap to see`)}
             style={({ pressed }) => ({ flexGrow: 1, flexBasis: '45%', minWidth: 150, backgroundColor: C.card, borderRadius: R.lg, borderWidth: 2, borderColor: C.gold, padding: S.sm, opacity: pressed ? 0.85 : 1 })}>
             <BadgePill b={why} />
             <Text style={{ fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 32, marginTop: 2 }}>{fmtTaka(o.price_bdt)}</Text>
             <Text style={[st.p, { fontWeight: '700', color: C.primary }]} numberOfLines={2}>{o.title}</Text>
-            <Text style={st.small}>{toBn(daysOf(o))} দিন · দেখুন ›</Text>
+            <Text style={st.small}>{tr(`${toBn(daysOf(o))} দিন · দেখুন ›`, `${daysOf(o)} days · See ›`)}</Text>
           </Pressable>
         ))}
       </View>
@@ -133,8 +134,8 @@ function Featured({ items, onOpen }: { items: { o: PackageRow; why: Badge }[]; o
 // Month choice above the list once there are many packages: only months that have packages, each with its lowest price.
 function MonthBar({ months, value, onChange }: { months: { id: string; label: string; count: number; from: number }[]; value: string | null; onChange: (v: string | null) => void }) {
   if (!months.length) return null;
-  return <Dropdown label="📅 কোন মাসে যাবেন" name="মাস" icon="📅" value={value} onChange={onChange} allText="সব মাস একসাথে" noneText="সব মাস"
-    options={months.map((m) => ({ id: m.id, label: `${m.label} · ${fmtTaka(m.from)} থেকে (${toBn(m.count)}টি)` }))} />;
+  return <Dropdown label={tr('📅 কোন মাসে যাবেন', '📅 Which month will you go')} name={tr('মাস', 'Month')} icon="📅" value={value} onChange={onChange} allText={tr('সব মাস একসাথে', 'All months together')} noneText={tr('সব মাস', 'All months')}
+    options={months.map((m) => ({ id: m.id, label: tr(`${m.label} · ${fmtTaka(m.from)} থেকে (${toBn(m.count)}টি)`, `${m.label} · from ${fmtTaka(m.from)} (${m.count})`) }))} />;
 }
 
 function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
@@ -173,22 +174,22 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     return () => sub.remove();
   }, [openId]);
 
-  const ask = (o: PackageRow) => confirm('আপনাকে ফোন করার অনুরোধ পাঠাবেন?',
-    'আপনার নাম ও মোবাইল নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে লিডারের সাথে কথা বলার ব্যবস্থা করবে।',
-    'হ্যাঁ, পাঠান', async () => {
+  const ask = (o: PackageRow) => confirm(tr('আপনাকে ফোন করার অনুরোধ পাঠাবেন?', 'Send a request to call you?'),
+    tr('আপনার নাম ও মোবাইল নম্বর শুধু Travel Adda টিম দেখবে। টিম আপনাকে ফোন করে লিডারের সাথে কথা বলার ব্যবস্থা করবে।', 'Only the Travel Adda team will see your name and mobile number. The team will call you and arrange a talk with the leader.'),
+    tr('হ্যাঁ, পাঠান', 'Yes, send'), async () => {
       if (busy) return;
       setBusy(o.id); setMsg(null);
-      try { await requestCallback(o.id); setMsg({ kind: 'ok', text: 'অনুরোধ পাঠানো হয়েছে। Travel Adda টিম আপনাকে ফোন করবে।' }); await load(kind); }
+      try { await requestCallback(o.id); setMsg({ kind: 'ok', text: tr('অনুরোধ পাঠানো হয়েছে। Travel Adda টিম আপনাকে ফোন করবে।', 'Request sent. The Travel Adda team will call you.') }); await load(kind); }
       catch (e) {
         const { code, message: m } = errInfo(e);
-        if (code === '23505') setMsg({ kind: 'info', text: 'এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।' });
-        else if (code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: 'অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।' });
+        if (code === '23505') setMsg({ kind: 'info', text: tr('এই প্যাকেজের জন্য আপনার অনুরোধ আগেই পাঠানো আছে।', 'Your request for this package was already sent.') });
+        else if (code === '42501' || /row-level security/i.test(m)) setMsg({ kind: 'warn', text: tr('অনুরোধ পাঠানো যায়নি। হয়তো প্যাকেজটি আর নেই, অথবা আপনার ১০টি অনুরোধ এখনো খোলা আছে।', 'The request could not be sent. Maybe the package is gone, or you already have 10 open requests.') });
         else setMsg({ kind: 'bad', text: errText(e) });
       } finally { setBusy(null); }
     });
-  const cancel = (r: Res<typeof myInterests>[string]) => confirm('অনুরোধটি বাতিল করবেন?', 'টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'হ্যাঁ, বাতিল', async () => {
+  const cancel = (r: Res<typeof myInterests>[string]) => confirm(tr('অনুরোধটি বাতিল করবেন?', 'Cancel this request?'), tr('টিম আর এই প্যাকেজের জন্য আপনাকে ফোন করবে না।', 'The team will not call you about this package.'), tr('হ্যাঁ, বাতিল', 'Yes, cancel'), async () => {
     setBusy(r.offer_id); setMsg(null);
-    try { await cancelCallback(r.id); setMsg({ kind: 'ok', text: 'অনুরোধ বাতিল করা হয়েছে।' }); await load(kind); }
+    try { await cancelCallback(r.id); setMsg({ kind: 'ok', text: tr('অনুরোধ বাতিল করা হয়েছে।', 'Request cancelled.') }); await load(kind); }
     catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(null); }
   });
@@ -209,34 +210,34 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     const req = r && r.status === 'new';
     return (
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-        <Pressable onPress={() => setOpenId(null)} style={st.back} accessibilityRole="button" accessibilityLabel="সব প্যাকেজের তালিকায় ফিরে যান"><Text style={st.backT}>‹ সব প্যাকেজ</Text></Pressable>
+        <Pressable onPress={() => setOpenId(null)} style={st.back} accessibilityRole="button" accessibilityLabel={tr('সব প্যাকেজের তালিকায় ফিরে যান', 'Back to the list of all packages')}><Text style={st.backT}>{tr('‹ সব প্যাকেজ', '‹ All packages')}</Text></Pressable>
         {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
         <OfferCard o={open}
           onProfile={open.leader_id ? () => navigation.navigate('Leaders', { id: open.leader_id }) : undefined}
           onMore={open.leader_code ? () => { setQ(open.leader_code); setMonth(null); setAirport(null); setMaxPrice(null); setOpenId(null); } : undefined}>
           <View style={[st.cRow, { paddingTop: S.sm }]}>
-            <Text style={st.lbl}>আগ্রহী হলে</Text>
+            <Text style={st.lbl}>{tr('আগ্রহী হলে', 'If you are interested')}</Text>
             {help && help.phone ? (
               <>
-                <Button title="Travel Adda হেল্পলাইনে ফোন করুন" icon="📞" onPress={callHelp} a11yHint={`ফোনে প্যাকেজ নম্বর ${refOf(open.id)} বলুন`} />
-                <Text style={st.small}>ফোনে বলুন: "প্যাকেজ নম্বর {refOf(open.id)}"{help.hours ? ` · সময়: ${help.hours}` : ''}</Text>
+                <Button title={tr('Travel Adda হেল্পলাইনে ফোন করুন', 'Call the Travel Adda helpline')} icon="📞" onPress={callHelp} a11yHint={tr(`ফোনে প্যাকেজ নম্বর ${refOf(open.id)} বলুন`, `Say package number ${refOf(open.id)} on the phone`)} />
+                <Text style={st.small}>{tr(`ফোনে বলুন: "প্যাকেজ নম্বর ${refOf(open.id)}"`, `On the phone say: "package number ${refOf(open.id)}"`)}{help.hours ? ` · ${tr('সময়', 'hours')}: ${help.hours}` : ''}</Text>
               </>
-            ) : <Notice kind="info" title="হেল্পলাইন নম্বর শীঘ্রই আসছে" text='এখন "আমাকে ফোন করুন" চাপুন, টিম আপনাকে ফোন করবে।' />}
+            ) : <Notice kind="info" title={tr('হেল্পলাইন নম্বর শীঘ্রই আসছে', 'Helpline number coming soon')} text={tr('এখন tr("আমাকে ফোন করুন", "Call me") চাপুন, টিম আপনাকে ফোন করবে।', 'For now tap "Call me" and the team will call you.')} />}
             {req ? (
               <>
-                <Notice kind="ok" title="আপনার অনুরোধ পাঠানো আছে" text={`পাঠিয়েছেন: ${fmtDay(r.created_at)}। Travel Adda টিম আপনাকে ফোন করবে।`} />
-                <Button title="অনুরোধ বাতিল করুন" kind="danger" onPress={() => cancel(r)} disabled={!!busy} />
+                <Notice kind="ok" title={tr('আপনার অনুরোধ পাঠানো আছে', 'Your request has been sent')} text={tr(`পাঠিয়েছেন: ${fmtDay(r.created_at)}। Travel Adda টিম আপনাকে ফোন করবে।`, `Sent: ${fmtDay(r.created_at)}. The Travel Adda team will call you.`)} />
+                <Button title={tr('অনুরোধ বাতিল করুন', 'Cancel the request')} kind="danger" onPress={() => cancel(r)} disabled={!!busy} />
               </>
             ) : (
               <>
-                {r && r.status === 'contacted' ? <Text style={st.small}>✅ টিম আগে এই প্যাকেজ নিয়ে আপনার সাথে কথা বলেছে।</Text> : null}
-                <Button title="আমাকে ফোন করুন" icon="🙋" kind="secondary" onPress={() => ask(open)} loading={busy === open.id} style={{ marginTop: S.sm }} />
+                {r && r.status === 'contacted' ? <Text style={st.small}>{tr('✅ টিম আগে এই প্যাকেজ নিয়ে আপনার সাথে কথা বলেছে।', '✅ The team has already talked with you about this package.')}</Text> : null}
+                <Button title={tr('আমাকে ফোন করুন', 'Call me')} icon="🙋" kind="secondary" onPress={() => ask(open)} loading={busy === open.id} style={{ marginTop: S.sm }} />
               </>
             )}
           </View>
         </OfferCard>
-        <Notice kind="info" title="জেনে রাখুন" text="চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।" />
-        <Button title="সব প্যাকেজের তালিকায় ফিরে যান" icon="‹" kind="secondary" onPress={() => setOpenId(null)} style={{ marginBottom: S.xl }} />
+        <Notice kind="info" title={tr('জেনে রাখুন', 'Good to know')} text={tr('চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।', 'After the contract, pay only into Travel Adda\'s official account, never to the leader directly. Travel Adda checks the money and passes it to the leader, so your money stays safe.')} />
+        <Button title={tr('সব প্যাকেজের তালিকায় ফিরে যান', 'Back to the list of all packages')} icon="‹" kind="secondary" onPress={() => setOpenId(null)} style={{ marginBottom: S.xl }} />
       </ScrollView>
     );
   }
@@ -244,48 +245,48 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   // ---- list with search and filters ----
   return (
     <ScrollView ref={scroller} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Text style={st.title} accessibilityRole="header">🎁 অফার ও প্যাকেজ</Text>
+      <Text style={st.title} accessibilityRole="header">{tr('🎁 অফার ও প্যাকেজ', '🎁 Offers and packages')}</Text>
       <FundCard onOpen={() => navigation.navigate('Fund')} />
-      <Segmented options={[{ id: 'umrah', icon: '🔄', label: 'ওমরাহ' }, { id: 'hajj', icon: '🕋', label: 'হজ' }]} value={kind} onChange={(k) => { setRows(null); setKind(k); setMsg(null); setMonth(null); }} />
+      <Segmented options={[{ id: 'umrah', icon: '🔄', label: tr('ওমরাহ', 'Umrah') }, { id: 'hajj', icon: '🕋', label: tr('হজ', 'Hajj') }]} value={kind} onChange={(k) => { setRows(null); setKind(k); setMsg(null); setMonth(null); }} />
       <View style={{ height: S.sm }} />
-      <Field label="লিডারের আইডি বা নাম দিয়ে খুঁজুন" hint="যেমন: TL-00004 বা এজেন্সির নাম" value={q} onChangeText={setQ} maxLength={40} autoCorrect={false} />
-      <Button title={showFilters ? 'বাছাই লুকান' : active ? `বাছাই করুন (${toBn(active)}টি চালু)` : 'মাস, বিমানবন্দর ও দাম দিয়ে বাছাই করুন'} icon="🔎" kind="secondary"
+      <Field label={tr('লিডারের আইডি বা নাম দিয়ে খুঁজুন', 'Search by leader ID or name')} hint={tr('যেমন: TL-00004 বা এজেন্সির নাম', 'e.g. TL-00004 or the agency name')} value={q} onChangeText={setQ} maxLength={40} autoCorrect={false} />
+      <Button title={showFilters ? tr('বাছাই লুকান', 'Hide filters') : active ? tr(`বাছাই করুন (${toBn(active)}টি চালু)`, `Filter (${active} on)`) : tr('মাস, বিমানবন্দর ও দাম দিয়ে বাছাই করুন', 'Filter by month, airport and price')} icon="🔎" kind="secondary"
         onPress={() => setShowFilters((v) => !v)} style={{ marginBottom: S.sm }} />
       {showFilters ? (
         <View style={st.card}>
           {monthFilterFor(kind) && !bar.length ? <MonthDropdown options={months} value={month} onChange={setMonth} /> : null}
-          <Pills label="কোন বিমানবন্দর থেকে" options={AIRPORTS_BD.map((a) => ({ id: a.id, label: a.label }))} value={airport} onChange={setAirport} />
-          <Field label="সর্বোচ্চ দাম, জনপ্রতি (টাকা)" hint="নিজে লিখুন, যেমন: ১৮০০০০ বা ২.৫ লাখ" value={priceText} onChangeText={setPriceText} keyboardType="default" maxLength={14}
-            error={Number.isNaN(typed) ? 'দাম সংখ্যায় লিখুন, যেমন: ১৮০০০০' : undefined} />
-          {maxPrice ? <Text style={[st.small, { marginTop: -S.xs, marginBottom: S.xs }]}>{fmtTaka(maxPrice)} বা তার কম দামের প্যাকেজ দেখানো হচ্ছে</Text> : null}
-          <Dropdown label="অথবা এক চাপে বাছুন" name="দামের সীমা" icon="💰" value={maxPrice && PRICE_LIMITS.includes(maxPrice) ? maxPrice : null} onChange={setMaxPrice}
-            allText="দামের কোনো সীমা নেই" noneText="দামের সীমা নেই" valueText={maxPrice && !PRICE_LIMITS.includes(maxPrice) ? `${fmtTaka(maxPrice)} (নিজে লেখা)` : undefined}
-            options={PRICE_LIMITS.map((p) => ({ id: p, label: `${toBn(p / 100000)} লাখ টাকার মধ্যে` }))} />
+          <Pills label={tr('কোন বিমানবন্দর থেকে', 'From which airport')} options={AIRPORTS_BD.map((a) => ({ id: a.id, label: lbl(a) }))} value={airport} onChange={setAirport} />
+          <Field label={tr('সর্বোচ্চ দাম, জনপ্রতি (টাকা)', 'Highest price per person (taka)')} hint={tr('নিজে লিখুন, যেমন: ১৮০০০০ বা ২.৫ লাখ', 'Type it, e.g. 180000 or 2.5 lakh')} value={priceText} onChangeText={setPriceText} keyboardType="default" maxLength={14}
+            error={Number.isNaN(typed) ? tr('দাম সংখ্যায় লিখুন, যেমন: ১৮০০০০', 'Write the price in numbers, e.g. 180000') : undefined} />
+          {maxPrice ? <Text style={[st.small, { marginTop: -S.xs, marginBottom: S.xs }]}>{tr(`${fmtTaka(maxPrice)} বা তার কম দামের প্যাকেজ দেখানো হচ্ছে`, `Showing packages of ${fmtTaka(maxPrice)} or less`)}</Text> : null}
+          <Dropdown label={tr('অথবা এক চাপে বাছুন', 'Or choose with one tap')} name={tr('দামের সীমা', 'Price limit')} icon="💰" value={maxPrice && PRICE_LIMITS.includes(maxPrice) ? maxPrice : null} onChange={setMaxPrice}
+            allText={tr('দামের কোনো সীমা নেই', 'No price limit')} noneText={tr('দামের সীমা নেই', 'No price limit')} valueText={maxPrice && !PRICE_LIMITS.includes(maxPrice) ? tr(`${fmtTaka(maxPrice)} (নিজে লেখা)`, `${fmtTaka(maxPrice)} (typed)`) : undefined}
+            options={PRICE_LIMITS.map((p) => ({ id: p, label: tr(`${toBn(p / 100000)} লাখ টাকার মধ্যে`, `Up to ${p / 100000} lakh taka`) }))} />
         </View>
       ) : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {state === 'load' || (state === 'ok' && rows === null) ? <ActivityIndicator color={C.primary} style={{ marginTop: S.lg }} /> : null}
-      {state === 'soon' ? <Notice kind="info" title="শীঘ্রই আসছে" text="যাচাই করা গ্রুপ লিডারদের হজ ও ওমরাহ প্যাকেজ এখানে দেখা যাবে।" /> : null}
-      {state === 'err' ? <Notice kind="bad" title="প্যাকেজ আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={() => load(kind)} style={{ marginTop: S.sm }} /></Notice> : null}
-      {state === 'ok' && rows && rows.length === 0 ? <Notice kind="info" title={`এখন কোনো ${KIND[kind].label} প্যাকেজ নেই`} text="লিডাররা প্যাকেজ দিলে এখানে দেখা যাবে। পরে আবার দেখুন।" /> : null}
+      {state === 'soon' ? <Notice kind="info" title={tr('শীঘ্রই আসছে', 'Coming soon')} text={tr('যাচাই করা গ্রুপ লিডারদের হজ ও ওমরাহ প্যাকেজ এখানে দেখা যাবে।', 'Hajj and Umrah packages from verified group leaders will be shown here.')} /> : null}
+      {state === 'err' ? <Notice kind="bad" title={tr('প্যাকেজ আনা যায়নি', 'Could not get the packages')} text={tr('ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।', 'Check the internet connection and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={() => load(kind)} style={{ marginTop: S.sm }} /></Notice> : null}
+      {state === 'ok' && rows && rows.length === 0 ? <Notice kind="info" title={tr(`এখন কোনো ${KIND[kind].label} প্যাকেজ নেই`, `No ${KIND[kind].label} packages now`)} text={tr('লিডাররা প্যাকেজ দিলে এখানে দেখা যাবে। পরে আবার দেখুন।', 'Packages will show here when leaders add them. Check again later.')} /> : null}
       {state === 'ok' && rows && rows.length > 0 ? (
-        <Text style={[st.small, { marginVertical: S.xs }]}>{active ? `${toBn(rows.length)}টির মধ্যে ${toBn(shown.length)}টি প্যাকেজ মিলেছে` : `${toBn(rows.length)}টি প্যাকেজ`} · কম দামেরগুলো আগে · সব প্যাকেজ অ্যাডমিন যাচাই করা</Text>
+        <Text style={[st.small, { marginVertical: S.xs }]}>{active ? tr(`${toBn(rows.length)}টির মধ্যে ${toBn(shown.length)}টি প্যাকেজ মিলেছে`, `${shown.length} of ${rows.length} packages match`) : tr(`${toBn(rows.length)}টি প্যাকেজ`, `${rows.length} package${rows.length === 1 ? '' : 's'}`)} · {tr('কম দামেরগুলো আগে · সব প্যাকেজ অ্যাডমিন যাচাই করা', 'cheapest first · all packages checked by the admin')}</Text>
       ) : null}
       {state === 'ok' && rows && rows.length > 0 && shown.length === 0 ? (
-        <Notice kind="info" title="এই বাছাইয়ে কোনো প্যাকেজ মেলেনি" text={q.trim() ? 'আইডি ঠিক লিখেছেন কিনা দেখুন, অথবা বাছাই কমিয়ে দেখুন।' : 'বাছাই কমিয়ে আবার দেখুন।'}>
-          <Button title="সব বাছাই মুছে দিন" icon="✖️" kind="secondary" onPress={clearAll} style={{ marginTop: S.sm }} />
+        <Notice kind="info" title={tr('এই বাছাইয়ে কোনো প্যাকেজ মেলেনি', 'No package matches these filters')} text={q.trim() ? tr('আইডি ঠিক লিখেছেন কিনা দেখুন, অথবা বাছাই কমিয়ে দেখুন।', 'Check the ID, or use fewer filters.') : tr('বাছাই কমিয়ে আবার দেখুন।', 'Use fewer filters and look again.')}>
+          <Button title={tr('সব বাছাই মুছে দিন', 'Clear all filters')} icon="✖️" kind="secondary" onPress={clearAll} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
       {state === 'ok' ? <MonthBar months={bar} value={month} onChange={setMonth} /> : null}
       {state === 'ok' ? <Featured items={specials} onOpen={(id) => { setMsg(null); setOpenId(id); scroller.current?.scrollTo?.({ y: 0, animated: false }); }} /> : null}
-      {specials.length ? <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">সব প্যাকেজ</Text> : null}
-      {active && shown.length > 0 ? <Button title="সব বাছাই মুছে সব প্যাকেজ দেখুন" icon="✖️" kind="secondary" onPress={clearAll} style={{ marginBottom: S.sm }} /> : null}
+      {specials.length ? <Text style={[st.p, { fontWeight: '700' }]} accessibilityRole="header">{tr('সব প্যাকেজ', 'All packages')}</Text> : null}
+      {active && shown.length > 0 ? <Button title={tr('সব বাছাই মুছে সব প্যাকেজ দেখুন', 'Clear filters and see all packages')} icon="✖️" kind="secondary" onPress={clearAll} style={{ marginBottom: S.sm }} /> : null}
       {state === 'ok' ? shown.map((o) => {
         const r = mine[o.id];
-        return <OfferSummary key={o.id} o={o} badges={badges[o.id]} note={r && r.status === 'new' ? '📞 আপনার ফোনের অনুরোধ পাঠানো আছে' : null}
+        return <OfferSummary key={o.id} o={o} badges={badges[o.id]} note={r && r.status === 'new' ? tr('📞 আপনার ফোনের অনুরোধ পাঠানো আছে', '📞 Your call request has been sent') : null}
           onOpen={() => { setMsg(null); setOpenId(o.id); scroller.current?.scrollTo?.({ y: 0, animated: false }); }} />;
       }) : null}
-      <Notice kind="info" title="জেনে রাখুন" text="চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।" />
+      <Notice kind="info" title={tr('জেনে রাখুন', 'Good to know')} text={tr('চুক্তি হওয়ার পর টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন, লিডারকে সরাসরি নয়। Travel Adda টাকা যাচাই করে লিডারকে দেয়, তাই আপনার টাকা নিরাপদ থাকে।', 'After the contract, pay only into Travel Adda\'s official account, never to the leader directly. Travel Adda checks the money and passes it to the leader, so your money stays safe.')} />
     </ScrollView>
   );
 }

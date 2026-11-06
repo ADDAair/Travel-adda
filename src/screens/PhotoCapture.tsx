@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, Linking } from 'react-native';
+import { tr } from '../lib/lang';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R } from '../theme';
@@ -89,7 +90,7 @@ export default function PhotoCapture({ onDone, onSkip, onCancel }: { onDone: () 
       <View style={st.pad}>
         {Header}
         <Text style={st.tip}>{P.tipLight}</Text>
-        <View style={st.camBox} accessible accessibilityLabel="সামনের ক্যামেরার ছবি">
+        <View style={st.camBox} accessible accessibilityLabel={tr('সামনের ক্যামেরার ছবি', 'Front camera picture')}>
           <CameraView
             ref={camRef}
             style={StyleSheet.absoluteFill}
@@ -109,7 +110,7 @@ export default function PhotoCapture({ onDone, onSkip, onCancel }: { onDone: () 
         <Text style={st.title} accessibilityRole="header">{P.previewTitle}</Text>
         <Text style={st.body}>{P.previewText}</Text>
         <View style={st.camBox}>
-          <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityLabel="আপনার তোলা ছবি" />
+          <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityLabel={tr('আপনার তোলা ছবি', 'The photo you took')} />
         </View>
         {err ? <Notice kind="bad" title={err} /> : null}
         <Button title={busy ? P.saving : P.use} icon="✅" onPress={save} loading={busy} />

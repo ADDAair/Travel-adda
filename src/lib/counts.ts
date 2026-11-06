@@ -3,6 +3,7 @@
 //  - Leader panel: the leader's own numbers (hajis in his groups, running contracts, call requests this month).
 // Neither is ever allowed to break a page: on any failure they are simply not shown.
 import { call } from './rpc';
+import { tr } from './lang';
 import { toBn, normalizeDigits } from './phone';
 
 const num = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -15,7 +16,7 @@ export async function hajiCountPublic(): Promise<number | null> {
   } catch (e) { return null; }   // offline or step 032 not run: no line
 }
 export const hajiCountText = (n: number | null | undefined): string | null =>
-  (n ? `${bnCount(n)}+ হাজী "আমি হাজী" অ্যাপ ব্যবহার করছেন` : null);
+  (n ? tr(`${bnCount(n)}+ হাজী "আমি হাজী" অ্যাপ ব্যবহার করছেন`, `${n.toLocaleString('en-IN')}+ hajis are using the "Ami Haji" app`) : null);
 
 // Admin's minimum: '' turns the line off; null = not a sensible whole number (1 … 10 কোটি).
 export function cleanCountMin(v: unknown): string | null {

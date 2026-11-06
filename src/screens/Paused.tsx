@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Text, ScrollView } from 'react-native';
+import { tr } from '../lib/lang';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
@@ -22,25 +23,25 @@ export default function Paused({ me, onChanged }: { me: Me; onChanged: () => Pro
     try {
       const r = await resumeMyAccount();
       if (r === 'ok') { await onChanged(); return; }          // the app opens as before
-      setMsg({ kind: 'info', text: 'অ্যাকাউন্ট আগেই চালু আছে। একটু অপেক্ষা করুন বা অ্যাপ আবার খুলুন।' }); await onChanged();
-    } catch (e) { setMsg({ kind: 'bad', text: 'চালু করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট আগের মতোই বন্ধ আছে।' }); }
+      setMsg({ kind: 'info', text: tr('অ্যাকাউন্ট আগেই চালু আছে। একটু অপেক্ষা করুন বা অ্যাপ আবার খুলুন।', 'The account is already on. Wait a moment or open the app again.') }); await onChanged();
+    } catch (e) { setMsg({ kind: 'bad', text: tr('চালু করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন। আপনার অ্যাকাউন্ট আগের মতোই বন্ধ আছে।', 'Could not turn it on. Check the internet connection and try again. Your account is still paused.') }); }
     finally { setBusy(false); }
   };
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.xl }]}>
-      <Text style={st.title} accessibilityRole="header">⏸️ আপনার অ্যাকাউন্ট বন্ধ আছে</Text>
+      <Text style={st.title} accessibilityRole="header">{tr('⏸️ আপনার অ্যাকাউন্ট বন্ধ আছে', '⏸️ Your account is paused')}</Text>
       {day ? (
-        <Notice kind="warn" title={`অ্যাকাউন্টটি ${day} তারিখে মুছে যাবে`}
-          text="আপনি অ্যাকাউন্ট মুছে ফেলার অনুরোধ করেছিলেন। মুছতে না চাইলে নিচের বাটন চাপুন। এতে মোছা বাতিল হবে এবং অ্যাকাউন্ট আবার চালু হবে।" />
+        <Notice kind="warn" title={tr(`অ্যাকাউন্টটি ${day} তারিখে মুছে যাবে`, `The account will be deleted on ${day}`)}
+          text={tr('আপনি অ্যাকাউন্ট মুছে ফেলার অনুরোধ করেছিলেন। মুছতে না চাইলে নিচের বাটন চাপুন। এতে মোছা বাতিল হবে এবং অ্যাকাউন্ট আবার চালু হবে।', 'You asked to delete the account. If you do not want that, tap the button below. The deletion is cancelled and the account turns on again.')} />
       ) : (
-        <Notice kind="info" title="আপনি নিজে অ্যাকাউন্টটি বন্ধ রেখেছেন"
-          text="বন্ধ থাকা অবস্থায় আপনার নাম ও প্যাকেজ কেউ দেখতে পায় না, কোনো নোটিফিকেশনও আসে না। আপনার তথ্য মুছে যায়নি।" />
+        <Notice kind="info" title={tr('আপনি নিজে অ্যাকাউন্টটি বন্ধ রেখেছেন', 'You paused this account yourself')}
+          text={tr('বন্ধ থাকা অবস্থায় আপনার নাম ও প্যাকেজ কেউ দেখতে পায় না, কোনো নোটিফিকেশনও আসে না। আপনার তথ্য মুছে যায়নি।', 'While paused, nobody sees your name or packages, and no notifications come. Your data has not been deleted.')} />
       )}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-      <Button title={day ? 'মোছা বাতিল করে অ্যাকাউন্ট আবার চালু করুন' : 'অ্যাকাউন্ট আবার চালু করুন'} icon="▶️" onPress={resume} loading={busy} disabled={busy}
-        style={{ marginBottom: S.md }} a11yHint="অ্যাপ আগের মতো খুলবে" />
-      <Button title="লগআউট" icon="🚪" kind="secondary" onPress={async () => { await pushLogout(); supabase.auth.signOut().catch(() => {}); }} disabled={busy} />
-      <Text style={[st.small, { marginTop: S.lg, color: C.muted }]}>অ্যাকাউন্ট বন্ধ থাকলেও লগইন করা যায়। যেকোনো সময় এই পাতা থেকে আবার চালু করতে পারবেন।</Text>
+      <Button title={day ? tr('মোছা বাতিল করে অ্যাকাউন্ট আবার চালু করুন', 'Cancel the deletion and turn the account on') : tr('অ্যাকাউন্ট আবার চালু করুন', 'Turn the account on again')} icon="▶️" onPress={resume} loading={busy} disabled={busy}
+        style={{ marginBottom: S.md }} a11yHint={tr('অ্যাপ আগের মতো খুলবে', 'The app opens as before')} />
+      <Button title={tr('লগআউট', 'Log out')} icon="🚪" kind="secondary" onPress={async () => { await pushLogout(); supabase.auth.signOut().catch(() => {}); }} disabled={busy} />
+      <Text style={[st.small, { marginTop: S.lg, color: C.muted }]}>{tr('অ্যাকাউন্ট বন্ধ থাকলেও লগইন করা যায়। যেকোনো সময় এই পাতা থেকে আবার চালু করতে পারবেন।', 'You can log in even while the account is paused. Turn it on again from this page any time.')}</Text>
     </ScrollView>
   );
 }

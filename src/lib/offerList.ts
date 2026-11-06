@@ -2,6 +2,7 @@
 // and month buttons with a "from" price. Badges are worked out here from the packages themselves: never bought by a
 // leader and never invented. Seats (034) are the number the leader gave, shown only while it is recent.
 import { toBn } from './phone';
+import { tr, monthName, monthShort } from './lang';
 
 export const FEATURED_MIN = 4;     // special cards only when there are at least this many packages
 export const MONTH_BAR_MIN = 11;   // month buttons only for more than 10 packages
@@ -10,7 +11,13 @@ export const SEATS_FEW = 10;       // "⏳ আসন বাকি" when this man
 export const SEATS_FRESH_DAYS = 14; // a seat number older than this is not shown (it may be wrong by now)
 
 export type Badge = 'cheap' | 'new' | 'seats' | 'full';
-export const BADGE_TEXT: Record<Badge, string> = { cheap: '🏷️ সবচেয়ে কম দাম', new: '🆕 নতুন', seats: '⏳ আসন বাকি', full: '⛔ আসন শেষ' };
+// getters: the words follow the chosen language
+export const BADGE_TEXT: Record<Badge, string> = {
+  get cheap() { return tr('🏷️ সবচেয়ে কম দাম', '🏷️ Lowest price'); },
+  get new() { return tr('🆕 নতুন', '🆕 New'); },
+  get seats() { return tr('⏳ আসন বাকি', '⏳ Seats left'); },
+  get full() { return tr('⛔ আসন শেষ', '⛔ Full'); },
+};
 
 type Pkg = { id: string; price_bdt?: number | null; depart_on?: string | null; return_on?: string | null; created_at?: string | null;
   seats_left?: number | null; seats_updated_at?: string | null };
@@ -25,10 +32,8 @@ export function seatsNow(o: Seats, now: number = Date.now()): number | null {
 }
 const full = (o: Pkg, now: number): boolean => seatsNow(o, now) === 0;
 export const badgeText = (b: Badge, o?: Seats, now: number = Date.now()): string =>
-  (b === 'seats' && o && seatsNow(o, now) != null ? `${BADGE_TEXT.seats} ${toBn(seatsNow(o, now))}টি` : BADGE_TEXT[b]);
+  (b === 'seats' && o && seatsNow(o, now) != null ? tr(`${BADGE_TEXT.seats} ${toBn(seatsNow(o, now))}টি`, `${BADGE_TEXT.seats}: ${seatsNow(o, now)}`) : BADGE_TEXT[b]);
 
-const BN_MONTH = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-const BN_SHORT = ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগ', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'];
 
 const price = (o: Pkg): number => { const n = Number(o.price_bdt); return Number.isFinite(n) && n > 0 ? n : Infinity; };
 const isNew = (o: Pkg, now: number): boolean => {
@@ -75,27 +80,30 @@ export function monthBar<T extends Pkg>(rows: T[] | null | undefined): { id: str
   });
   const ids = Object.keys(m).sort();
   if (ids.length < 2) return [];
-  return ids.map((id) => ({ id, label: `${BN_MONTH[Number(id.slice(5)) - 1]} ${toBn(id.slice(0, 4))}`, count: m[id].count, from: m[id].from }));
+  return ids.map((id) => ({ id, label: `${monthName(Number(id.slice(5)) - 1)} ${toBn(id.slice(0, 4))}`, count: m[id].count, from: m[id].from }));
 }
 
 const dm = (iso: string | null | undefined): string => {
   const x = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-  return x ? `${toBn(Number(x[3]))} ${BN_SHORT[Number(x[2]) - 1]}` : '';
+  return x ? `${toBn(Number(x[3]))} ${monthShort(Number(x[2]) - 1)}` : '';
 };
 export const shortDates = (o: { depart_on?: string | null; return_on?: string | null }): string => {
   const a = dm(o.depart_on); const b = dm(o.return_on);
   return a && b ? `${a} – ${b}` : a;
 };
 export const nightsText = (o: { makkah_nights?: number | null; madinah_nights?: number | null }): string =>
-  [o.makkah_nights ? `মক্কা ${toBn(o.makkah_nights)} রাত` : '', o.madinah_nights ? `মদিনা ${toBn(o.madinah_nights)} রাত` : ''].filter(Boolean).join(' · ');
-export const walkText = (m: number | null | undefined, place = 'হারাম'): string =>
-  (m == null ? '' : m >= 1000 ? `${place} থেকে ${toBn(Number((m / 1000).toFixed(1)))} কিমি` : `${place} থেকে ${toBn(m)} মিটার`);
+  [o.makkah_nights ? tr(`মক্কা ${toBn(o.makkah_nights)} রাত`, `Makkah ${o.makkah_nights} nights`) : '', o.madinah_nights ? tr(`মদিনা ${toBn(o.madinah_nights)} রাত`, `Madinah ${o.madinah_nights} nights`) : ''].filter(Boolean).join(' · ');
+export const walkText = (m: number | null | undefined, place?: string): string => {
+  if (m == null) return '';
+  const p = place || tr('হারাম', 'the Haram');
+  return m >= 1000 ? tr(`${p} থেকে ${toBn(Number((m / 1000).toFixed(1)))} কিমি`, `${Number((m / 1000).toFixed(1))} km from ${p}`) : tr(`${p} থেকে ${toBn(m)} মিটার`, `${m} m from ${p}`);
+};
 
 // The line on the package page: "৭টি আসন বাকি · লিডার জানিয়েছেন ৩ নভেম্বর" (empty when not said recently).
 export function seatsLine(o: Seats, now: number = Date.now()): string {
   const n = seatsNow(o, now);
   if (n == null) return '';
   const d = new Date(String(o.seats_updated_at));
-  const when = `${toBn(d.getDate())} ${BN_MONTH[d.getMonth()]}`;   // the phone's own day (Bangladesh)
-  return `${n === 0 ? 'সব আসন শেষ' : `${toBn(n)}টি আসন বাকি`} · লিডার জানিয়েছেন ${when}`;
+  const when = `${toBn(d.getDate())} ${monthName(d.getMonth())}`;   // the phone's own day (Bangladesh)
+  return tr(`${n === 0 ? 'সব আসন শেষ' : `${toBn(n)}টি আসন বাকি`} · লিডার জানিয়েছেন ${when}`, `${n === 0 ? 'All seats taken' : `${n} seat${n === 1 ? '' : 's'} left`} · leader said on ${when}`);
 }

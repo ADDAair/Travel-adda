@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Text, ScrollView, Linking } from 'react-native';
+import { tr } from '../lib/lang';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, S } from '../theme';
 import { Button, Notice } from '../components/ui';
@@ -24,15 +25,15 @@ export default function Suspended({ me, onChanged }: { me?: Me | null; onChanged
   useEffect(() => { getHelpline().then(setHelp).catch(() => {}); }, []);
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.xl }]}>
-      <Text style={st.title} accessibilityRole="header">⛔ অ্যাকাউন্ট বন্ধ আছে</Text>
-      <Notice kind="warn" title="Travel Adda অ্যাডমিন আপনার অ্যাকাউন্টটি বন্ধ রেখেছেন" text="কারণ জানতে বা আবার চালু করতে হেল্পলাইনে যোগাযোগ করুন। আপনার তথ্য মুছে ফেলা হয়নি।" />
+      <Text style={st.title} accessibilityRole="header">{tr('⛔ অ্যাকাউন্ট বন্ধ আছে', '⛔ Account is closed')}</Text>
+      <Notice kind="warn" title={tr('Travel Adda অ্যাডমিন আপনার অ্যাকাউন্টটি বন্ধ রেখেছেন', 'The Travel Adda admin has closed your account')} text={tr('কারণ জানতে বা আবার চালু করতে হেল্পলাইনে যোগাযোগ করুন। আপনার তথ্য মুছে ফেলা হয়নি।', 'Contact the helpline to know why or to open it again. Your data has not been deleted.')} />
       {me && me.delete_after ? (
-        <Notice kind="warn" title={`অ্যাকাউন্টটি ${day} তারিখে মুছে যাবে`} text="আপনি অ্যাকাউন্ট মুছে ফেলার অনুরোধ করেছিলেন। মুছতে না চাইলে নিচের বাটন চাপুন।">
-          <Button title="মোছা বাতিল করুন" icon="↩️" kind="secondary" onPress={cancelDelete} loading={busy} disabled={busy} style={{ marginTop: S.sm }} />
+        <Notice kind="warn" title={tr(`অ্যাকাউন্টটি ${day} তারিখে মুছে যাবে`, `The account will be deleted on ${day}`)} text={tr('আপনি অ্যাকাউন্ট মুছে ফেলার অনুরোধ করেছিলেন। মুছতে না চাইলে নিচের বাটন চাপুন।', 'You asked to delete the account. If you do not want that, tap the button below.')}>
+          <Button title={tr('মোছা বাতিল করুন', 'Cancel the deletion')} icon="↩️" kind="secondary" onPress={cancelDelete} loading={busy} disabled={busy} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
-      {help && help.phone ? <Button title="হেল্পলাইনে ফোন করুন" icon="📞" onPress={() => Linking.openURL(`tel:${help.phone}`).catch(() => {})} style={{ marginBottom: S.md }} /> : null}
-      <Button title="লগআউট" icon="🚪" kind="danger" onPress={async () => { await pushLogout(); supabase.auth.signOut().catch(() => {}); }} />
+      {help && help.phone ? <Button title={tr('হেল্পলাইনে ফোন করুন', 'Call the helpline')} icon="📞" onPress={() => Linking.openURL(`tel:${help.phone}`).catch(() => {})} style={{ marginBottom: S.md }} /> : null}
+      <Button title={tr('লগআউট', 'Log out')} icon="🚪" kind="danger" onPress={async () => { await pushLogout(); supabase.auth.signOut().catch(() => {}); }} />
     </ScrollView>
   );
 }

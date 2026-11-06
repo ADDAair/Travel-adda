@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { tr } from '../lib/lang';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field } from './ui';
@@ -55,43 +56,43 @@ export default function TripCard({ navigation }: { navigation: Nav }) {
 
   const saveDate = async () => {
     const ymd = parseDate(val);
-    if (!ymd) { setErr('তারিখ এভাবে লিখুন: ২০-০১-২০২৭'); return; }
+    if (!ymd) { setErr(tr('তারিখ এভাবে লিখুন: ২০-০১-২০২৭', 'Write the date like this: 20-01-2027')); return; }
     await AsyncStorage.setItem(TRIP_KEY, JSON.stringify({ date: ymd })).catch(() => {});
     setOwn({ date: ymd }); setEdit(false); setErr('');
   };
 
   return (
-    <View style={t.card} accessible={!edit} accessibilityLabel={left != null ? `আমার সফর। যাত্রার আর ${left} দিন বাকি` : 'আমার সফর'}>
-      <Text style={t.h}>🧳 আমার সফর</Text>
-      {left != null && left > 0 ? <Text style={t.big}>যাত্রার আর <Text style={t.num}>{toBn(left)}</Text> দিন বাকি</Text> : null}
-      {left === 0 ? <Text style={t.big}>আজ যাত্রার দিন। আল্লাহ সহজ করুন 🤲</Text> : null}
-      {left != null && left < 0 ? <Text style={t.big}>সফর চলছে বা শেষ হয়েছে</Text> : null}
+    <View style={t.card} accessible={!edit} accessibilityLabel={left != null ? tr(`আমার সফর। যাত্রার আর ${left} দিন বাকি`, `My trip. ${left} days left until the journey`) : tr('আমার সফর', 'My trip')}>
+      <Text style={t.h}>{tr('🧳 আমার সফর', '🧳 My trip')}</Text>
+      {left != null && left > 0 ? <Text style={t.big}>{tr('যাত্রার আর ', '')}<Text style={t.num}>{toBn(left)}</Text>{tr(' দিন বাকি', ' days left until the journey')}</Text> : null}
+      {left === 0 ? <Text style={t.big}>{tr('আজ যাত্রার দিন। আল্লাহ সহজ করুন 🤲', 'Today is the travel day. May Allah make it easy 🤲')}</Text> : null}
+      {left != null && left < 0 ? <Text style={t.big}>{tr('সফর চলছে বা শেষ হয়েছে', 'The trip is on or has ended')}</Text> : null}
       {c ? (
-        <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button" accessibilityLabel={`চুক্তি চালু: ${c.title}, লিডার ${c.name}। খুলুন`}>
-          <Text style={t.rowT}>✅ চুক্তি চালু: {c.title} · লিডার {c.name} ›</Text>
+        <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button" accessibilityLabel={tr(`চুক্তি চালু: ${c.title}, লিডার ${c.name}। খুলুন`, `Contract active: ${c.title}, leader ${c.name}. Open`)}>
+          <Text style={t.rowT}>✅ {tr('চুক্তি চালু', 'Contract active')}: {c.title} · {tr('লিডার', 'leader')} {c.name} ›</Text>
         </Pressable>
       ) : (
-        <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button" accessibilityLabel="এখনো কোনো চুক্তি নেই। লিডার খুঁজুন">
-          <Text style={t.rowT}>🤝 এখনো কোনো চুক্তি নেই · লিডার খুঁজুন ›</Text>
+        <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button" accessibilityLabel={tr('এখনো কোনো চুক্তি নেই। লিডার খুঁজুন', 'No contract yet. Find a leader')}>
+          <Text style={t.rowT}>{tr('🤝 এখনো কোনো চুক্তি নেই · লিডার খুঁজুন ›', '🤝 No contract yet · find a leader ›')}</Text>
         </Pressable>
       )}
       {c && money ? (
         <Pressable onPress={() => navigation.navigate('MyLeader')} style={t.row} accessibilityRole="button">
-          <Text style={t.rowT}>💳 জমা হয়েছে ৳{toBn(Number(money.paid_in).toLocaleString('en-IN'))}{Number(money.pending_in) > 0 ? ` (যাচাই চলছে ৳${toBn(Number(money.pending_in).toLocaleString('en-IN'))})` : ''} · বাকি ৳{toBn(Number(money.still_to_pay).toLocaleString('en-IN'))} ›</Text>
+          <Text style={t.rowT}>💳 {tr('জমা হয়েছে', 'Paid')} ৳{toBn(Number(money.paid_in).toLocaleString('en-IN'))}{Number(money.pending_in) > 0 ? ` (${tr('যাচাই চলছে', 'being checked')} ৳${toBn(Number(money.pending_in).toLocaleString('en-IN'))})` : ''} · {tr('বাকি', 'still to pay')} ৳{toBn(Number(money.still_to_pay).toLocaleString('en-IN'))} ›</Text>
         </Pressable>
       ) : null}
       <Pressable onPress={() => navigation.navigate('Docs')} style={t.row} accessibilityRole="button">
-        <Text style={t.rowT}>{docs && docs.hasPassport ? '✅' : '⬜'} পাসপোর্ট  {docs && docs.hasVisa ? '✅' : '⬜'} ভিসা{docs && docs.passLeft != null && docs.passLeft < 183 ? `  ⚠️ পাসপোর্টের মেয়াদ ${docs.passLeft < 0 ? 'শেষ' : `আর ${toBn(docs.passLeft)} দিন`}` : ''} ›</Text>
+        <Text style={t.rowT}>{docs && docs.hasPassport ? '✅' : '⬜'} {tr('পাসপোর্ট', 'Passport')}  {docs && docs.hasVisa ? '✅' : '⬜'} {tr('ভিসা', 'Visa')}{docs && docs.passLeft != null && docs.passLeft < 183 ? `  ⚠️ ${docs.passLeft < 0 ? tr('পাসপোর্টের মেয়াদ শেষ', 'passport expired') : tr(`পাসপোর্টের মেয়াদ আর ${toBn(docs.passLeft)} দিন`, `passport valid ${docs.passLeft} more days`)}` : ''} ›</Text>
       </Pressable>
       {!c ? (edit ? (
         <View style={{ marginTop: S.sm }}>
-          <Field label="যাত্রার তারিখ" hint="দিন-মাস-বছর, যেমন: ২০-০১-২০২৭" value={val} onChangeText={setVal} maxLength={10} error={err} />
-          <Button title="সংরক্ষণ করুন" onPress={saveDate} />
-          <Button title="বাতিল" kind="secondary" onPress={() => { setEdit(false); setErr(''); }} style={{ marginTop: S.xs }} />
+          <Field label={tr('যাত্রার তারিখ', 'Travel date')} hint={tr('দিন-মাস-বছর, যেমন: ২০-০১-২০২৭', 'day-month-year, e.g. 20-01-2027')} value={val} onChangeText={setVal} maxLength={10} error={err} />
+          <Button title={tr('সংরক্ষণ করুন', 'Save')} onPress={saveDate} />
+          <Button title={tr('বাতিল', 'Cancel')} kind="secondary" onPress={() => { setEdit(false); setErr(''); }} style={{ marginTop: S.xs }} />
         </View>
       ) : (
         <Pressable onPress={() => { setVal(own && own.date ? ymdToInput(own.date) : ''); setEdit(true); }} style={t.row} accessibilityRole="button">
-          <Text style={[t.rowT, { color: C.primary, textDecorationLine: 'underline' }]}>📅 {own && own.date ? 'যাত্রার তারিখ বদলান' : 'যাত্রার তারিখ লিখুন'}</Text>
+          <Text style={[t.rowT, { color: C.primary, textDecorationLine: 'underline' }]}>📅 {own && own.date ? tr('যাত্রার তারিখ বদলান', 'Change the travel date') : tr('যাত্রার তারিখ লিখুন', 'Write the travel date')}</Text>
         </Pressable>
       )) : null}
     </View>

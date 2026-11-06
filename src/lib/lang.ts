@@ -39,3 +39,28 @@ export function deviceLang(locale?: string): Lang {
   if (loc === undefined) { try { loc = Intl.DateTimeFormat().resolvedOptions().locale; } catch (e) { loc = ''; } }
   return /^en\b/i.test(String(loc || '')) ? 'en' : 'bn';
 }
+
+// The text in the chosen language, with the English written right next to the Bengali (pages and helpers).
+// Call it while drawing (never at file level), so a language change shows at once.
+export const tr = (bn: string, en: string): string => (current === 'en' ? en : bn);
+// For tables that keep both: { label: 'পাসপোর্ট', en: 'Passport' }
+export const lbl = (x: { label: string; en?: string } | null | undefined): string => (x ? (current === 'en' && x.en ? x.en : x.label) : '');
+
+// Shared date and money words for both languages.
+const BN_D = '০১২৩৪৫৬৭৮৯';
+const dig = (s: unknown): string => (current === 'en' ? String(s) : String(s).replace(/\d/g, (d) => BN_D[Number(d)]));
+const MONTHS: Record<Lang, string[]> = {
+  bn: ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+const MONTHS_SHORT: Record<Lang, string[]> = {
+  bn: ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগ', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+};
+export const monthName = (i: number): string => MONTHS[current][i] || '';
+export const monthShort = (i: number): string => MONTHS_SHORT[current][i] || '';
+// "১,৬০,০০০ টাকা" / "Tk 1,60,000" (Bangladeshi grouping in both)
+export const takaText = (n: unknown, maxFrac = 0): string => {
+  const s = Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: maxFrac });
+  return current === 'en' ? `Tk ${s}` : `${dig(s)} টাকা`;
+};
