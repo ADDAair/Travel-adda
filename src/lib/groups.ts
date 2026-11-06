@@ -1,6 +1,7 @@
 // Group leader, groups, members and package terms (supabase/004_groups.sql). All rules are enforced by the database;
 // this file only calls it. Every function throws on failure so screens never show a false success.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tr } from './lang';
 import { supabase } from './supabase';
 import { applicationRow } from './leaderKinds';
 import { uid, randomId, shrink } from './docs';
@@ -101,13 +102,13 @@ export async function reopenGroup(groupId: string): Promise<void> {
   try { await rpc<string>('leader_reopen_group', { p_group: groupId }); }
   catch (e) { if (notReady(e)) throw fail('soon'); throw e; }
 }
-const REMOVED: Record<string, string> = {
-  deleted: 'দলটি মুছে ফেলা হয়েছে।',
-  closed: 'দলে কেউ যোগ দিয়েছিলেন বা আমন্ত্রণ পেয়েছিলেন, তাই রেকর্ড রাখতে দলটি মোছা হয়নি, বন্ধ করা হয়েছে। নতুন কেউ আর যোগ দিতে পারবেন না। চাইলে পরে আবার চালু করতে পারবেন।',
-  already_closed: 'দলটি আগেই বন্ধ করা আছে।',
-  not_found: 'দলটি আর পাওয়া যায়নি।',
-};
-export const removeGroupText = (r: string): string => REMOVED[r] || 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
+const removed = (r: string): string | undefined => ({
+  deleted: tr('দলটি মুছে ফেলা হয়েছে।', 'The group was deleted.'),
+  closed: tr('দলে কেউ যোগ দিয়েছিলেন বা আমন্ত্রণ পেয়েছিলেন, তাই রেকর্ড রাখতে দলটি মোছা হয়নি, বন্ধ করা হয়েছে। নতুন কেউ আর যোগ দিতে পারবেন না। চাইলে পরে আবার চালু করতে পারবেন।', 'Someone had joined or been invited, so to keep the record the group was closed, not deleted. Nobody new can join. You can open it again later if you want.'),
+  already_closed: tr('দলটি আগেই বন্ধ করা আছে।', 'The group is already closed.'),
+  not_found: tr('দলটি আর পাওয়া যায়নি।', 'The group was not found any more.'),
+} as Record<string, string>)[r];
+export const removeGroupText = (r: string): string => removed(r) || tr('কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।', 'That did not work. Try again a little later.');
 
 export const telBd = (p: unknown): string => { const d = String(p || '').replace(/[^\d+]/g, ''); return /^01\d{9}$/.test(d) ? `+88${d}` : d; };
 

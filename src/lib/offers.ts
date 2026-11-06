@@ -1,5 +1,6 @@
 // Offers & packages (supabase/005_offers.sql). The database enforces every rule; functions throw on failure.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tr } from './lang';
 import { supabase } from './supabase';
 import { normalizeDigits } from './phone';
 import { rows as rowsOf, type RpcRow } from './rpc';
@@ -11,20 +12,24 @@ type Review = { review?: string | null; review_note?: string | null; hidden_by_a
 const check = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.error; return r.data; };
 const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
 
+// labels are getters, so they follow the chosen language wherever .label is read
 export const INCLUDES = [
-  { id: 'flight', icon: '✈️', label: 'বিমান টিকেট' },
-  { id: 'visa', icon: '📄', label: 'ভিসা' },
-  { id: 'food', icon: '🍛', label: 'খাবার' },
-  { id: 'transport', icon: '🚌', label: 'সৌদির ভেতরে যাতায়াত' },
-  { id: 'ziyarah', icon: '🕌', label: 'যিয়ারত ভ্রমণ' },
-  { id: 'qurbani', icon: '🐑', label: 'কুরবানি' },
-  { id: 'guide', icon: '🧭', label: 'আলেম / গাইড' },
-  { id: 'insurance', icon: '🩺', label: 'স্বাস্থ্য বিমা' },
+  { id: 'flight', icon: '✈️', get label() { return tr('বিমান টিকেট', 'Air ticket'); } },
+  { id: 'visa', icon: '📄', get label() { return tr('ভিসা', 'Visa'); } },
+  { id: 'food', icon: '🍛', get label() { return tr('খাবার', 'Food'); } },
+  { id: 'transport', icon: '🚌', get label() { return tr('সৌদির ভেতরে যাতায়াত', 'Transport inside Saudi Arabia'); } },
+  { id: 'ziyarah', icon: '🕌', get label() { return tr('যিয়ারত ভ্রমণ', 'Ziyarah tours'); } },
+  { id: 'qurbani', icon: '🐑', get label() { return tr('কুরবানি', 'Qurbani'); } },
+  { id: 'guide', icon: '🧭', get label() { return tr('আলেম / গাইড', 'Alim / guide'); } },
+  { id: 'insurance', icon: '🩺', get label() { return tr('স্বাস্থ্য বিমা', 'Health insurance'); } },
 ];
 // Umrah has no qurbani, so it is never offered as a choice there (the database refuses it too).
 export const includesFor = (kind: string) => INCLUDES.filter((x) => kind === 'hajj' || x.id !== 'qurbani');
 export const cleanIncludes = (kind: string, ids: string[]): string[] => ids.filter((id) => kind === 'hajj' || id !== 'qurbani');
-export const KIND: Record<string, { icon: string; label: string }> = { hajj: { icon: '🕋', label: 'হজ' }, umrah: { icon: '🔄', label: 'ওমরাহ' } };
+export const KIND: Record<string, { icon: string; label: string }> = {
+  hajj: { icon: '🕋', get label() { return tr('হজ', 'Hajj'); } },
+  umrah: { icon: '🔄', get label() { return tr('ওমরাহ', 'Umrah'); } },
+};
 // Short reference the haji can say on the phone, e.g. "প্যাকেজ নম্বর 3FA9C2".
 export const refOf = (id: unknown): string => String(id || '').replace(/-/g, '').slice(0, 6).toUpperCase();
 export const daysOf = (o: { depart_on?: string | null; return_on?: string | null }): number => Math.round((Date.parse(o.return_on || '') - Date.parse(o.depart_on || '')) / 86400000) + 1;
@@ -83,8 +88,8 @@ export const reviewOf = (o: Review | null | undefined): string => (o && o.review
 export const canEditOffer = (o: Review | null | undefined): boolean => !!o && !o.hidden_by_admin && (reviewOf(o) === 'pending' || reviewOf(o) === 'rejected');
 export function reviewLabel(o: Review): string | null {
   const r = reviewOf(o);
-  if (r === 'pending') return '⏳ অনুমোদনের অপেক্ষায়: অ্যাডমিন দেখার পর হাজীরা দেখবেন';
-  if (r === 'rejected') return `↩️ অ্যাডমিন ফেরত দিয়েছেন। কারণ: ${o.review_note || 'উল্লেখ নেই'}। ঠিক করে আবার জমা দিন।`;
+  if (r === 'pending') return tr('⏳ অনুমোদনের অপেক্ষায়: অ্যাডমিন দেখার পর হাজীরা দেখবেন', '⏳ Waiting for approval: hajis see it after the admin checks');
+  if (r === 'rejected') return tr(`↩️ অ্যাডমিন ফেরত দিয়েছেন। কারণ: ${o.review_note || 'উল্লেখ নেই'}। ঠিক করে আবার জমা দিন।`, `↩️ The admin sent it back. Reason: ${o.review_note || 'not given'}. Correct it and submit again.`);
   return null;
 }
 const EDITABLE = [...ROUTE_COLS, 'kind', 'title', 'price_bdt', 'depart_on', 'return_on', 'makkah_hotel', 'makkah_distance_m', 'madinah_hotel',
@@ -98,12 +103,12 @@ export async function updateOffer(id: string, o: TableUpdate<'offers'>): Promise
 }
 export function offerErrorText(e: { message?: string; code?: string } | null | undefined): string | null {
   const m = String((e && e.message) || '');
-  if (/approved package cannot be changed/.test(m)) return 'অনুমোদনের পর প্যাকেজ বদলানো যায় না। দরকার হলে এটি লুকিয়ে নতুন প্যাকেজ দিন।';
-  if (/umrah_no_qurbani/.test(m)) return 'ওমরাহ প্যাকেজে কুরবানি থাকে না। কুরবানি বাদ দিন।';
-  if (/journey required/.test(m)) return 'যাত্রাপথ (বিমানবন্দর, মক্কা ও মদিনায় কত রাত) পূরণ করুন।';
-  if (/offers_route_nights/.test(m)) return 'মক্কা ও মদিনার রাত মিলিয়ে সফরের দিনের চেয়ে বেশি হয়ে গেছে।';
-  if (/departure date has passed/.test(m)) return 'যাওয়ার তারিখ পার হয়ে গেছে। নতুন তারিখ দিন।';
-  if (e && e.code === 'not-changed') return 'বদলানো যায়নি। প্যাকেজটি হয়তো এর মধ্যে অনুমোদন হয়ে গেছে। পাতাটি আবার খুলে দেখুন।';
+  if (/approved package cannot be changed/.test(m)) return tr('অনুমোদনের পর প্যাকেজ বদলানো যায় না। দরকার হলে এটি লুকিয়ে নতুন প্যাকেজ দিন।', 'A package cannot be changed after approval. If needed, hide it and add a new package.');
+  if (/umrah_no_qurbani/.test(m)) return tr('ওমরাহ প্যাকেজে কুরবানি থাকে না। কুরবানি বাদ দিন।', 'Umrah packages have no qurbani. Remove qurbani.');
+  if (/journey required/.test(m)) return tr('যাত্রাপথ (বিমানবন্দর, মক্কা ও মদিনায় কত রাত) পূরণ করুন।', 'Fill in the route (airports, nights in Makkah and Madinah).');
+  if (/offers_route_nights/.test(m)) return tr('মক্কা ও মদিনার রাত মিলিয়ে সফরের দিনের চেয়ে বেশি হয়ে গেছে।', 'The Makkah and Madinah nights together are more than the trip days.');
+  if (/departure date has passed/.test(m)) return tr('যাওয়ার তারিখ পার হয়ে গেছে। নতুন তারিখ দিন।', 'The departure date has passed. Give a new date.');
+  if (e && e.code === 'not-changed') return tr('বদলানো যায়নি। প্যাকেজটি হয়তো এর মধ্যে অনুমোদন হয়ে গেছে। পাতাটি আবার খুলে দেখুন।', 'Could not change it. The package may have been approved meanwhile. Open the page again.');
   return null;
 }
 export async function setOfferActive(id: string, active: boolean): Promise<void> {
