@@ -95,7 +95,7 @@ test('date choice: the last 60 days, newest first, in Bengali, today and yesterd
   assert.equal(new Set(d.map((x) => x.label)).size, 60, 'every label is different');
 });
 test('fund rules: sadaqah only, no refund, Travel Adda decides, spending is public, names only with consent', async () => {
-  const { FUND_RULES } = await import('../../src/lib/fund.ts');
-  const all = FUND_RULES.join(' ');
+  const { fundRules } = await import('../../src/lib/fund.ts');
+  const all = fundRules().join(' ');
   for (const w of ['সদকা', 'যাকাত', 'ফেরত', 'Travel Adda', 'সবাই', 'রাজি', 'ভুয়া']) assert.ok(all.includes(w), w);
 });

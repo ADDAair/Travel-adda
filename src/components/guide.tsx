@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice } from './ui';
 import { toBn } from '../lib/phone';
+import { tr, refText } from '../lib/lang';
 import { findDua } from '../content/duas';
 
 export type Img = { src: number | { uri: string }; ratio: number; caption: string };
@@ -31,10 +32,10 @@ export function DuaInline({ id }: { id: string }) {
   return (
     <View style={g.duaWrap}>
       <Pressable onPress={() => setOpen(!open)} style={g.duaBtn} accessibilityRole="button" accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${open ? 'দোয়া লুকান' : 'দোয়া দেখুন'}: ${d.title}`}>
+        accessibilityLabel={`${open ? tr('দোয়া লুকান', 'Hide dua') : tr('দোয়া দেখুন', 'Show dua')}: ${d.title}`}>
         <Text style={g.duaBtnIc} importantForAccessibility="no">🤲</Text>
         <Text style={g.duaBtnT}>{d.title}</Text>
-        <Text style={g.duaBtnGo}>{open ? 'লুকান ▲' : 'দেখুন ▼'}</Text>
+        <Text style={g.duaBtnGo}>{open ? tr('লুকান ▲', 'Hide ▲') : tr('দেখুন ▼', 'Show ▼')}</Text>
       </Pressable>
       {open ? (
         <View style={g.duaBody}>
@@ -42,14 +43,14 @@ export function DuaInline({ id }: { id: string }) {
             <View key={i} style={i > 0 ? { marginTop: S.md } : null}>
               {p.label ? <Text style={g.partL}>{p.label}</Text> : null}
               <Text style={g.ar} accessibilityLanguage="ar">{p.ar}</Text>
-              <Text style={g.h}>উচ্চারণ</Text>
+              <Text style={g.h}>{tr('উচ্চারণ', 'Pronunciation')}</Text>
               <Text style={g.p}>{p.pron}</Text>
-              <Text style={g.h}>অর্থ</Text>
+              <Text style={g.h}>{tr('অর্থ', 'Meaning')}</Text>
               <Text style={g.p}>{p.bn}</Text>
             </View>
           ))}
           {d.note ? <Text style={g.note}>ℹ️ {d.note}</Text> : null}
-          <Text style={g.src}>📚 সূত্র: {d.source}</Text>
+          <Text style={g.src}>📚 {tr('সূত্র', 'Source')}: {refText(d.source)}</Text>
         </View>
       ) : null}
     </View>
@@ -66,7 +67,7 @@ export function StepCard({ step, images, children }: { step: Step; images?: Reco
       {(step.images || []).map((k) => <Illustration key={k} img={images && images[k]} />)}
       {(step.duas || []).map((id) => <DuaInline key={id} id={id} />)}
       {children}
-      {step.source ? <Text style={g.src}>📚 সূত্র: {step.source}</Text> : null}
+      {step.source ? <Text style={g.src}>📚 {tr('সূত্র', 'Source')}: {refText(step.source)}</Text> : null}
     </View>
   );
 }
@@ -80,34 +81,34 @@ export function RoundCounter({ storageKey, total = 7, title, labelFor }: { stora
   const save = (x: number) => { setN(x); AsyncStorage.setItem(storageKey, String(x)).catch(() => {}); };
   const add = () => { if (n >= total) return; Vibration.vibrate(40); save(n + 1); };
   const sub = () => { if (n > 0) save(n - 1); };
-  const reset = () => Alert.alert('গণনা আবার শূন্য থেকে শুরু করবেন?', 'এটা নতুন তাওয়াফ বা সাঈ শুরুর সময় করুন।', [
-    { text: 'না', style: 'cancel' },
-    { text: 'হ্যাঁ, শূন্য করুন', style: 'destructive', onPress: () => save(0) },
+  const reset = () => Alert.alert(tr('গণনা আবার শূন্য থেকে শুরু করবেন?', 'Start counting again from zero?'), tr('এটা নতুন তাওয়াফ বা সাঈ শুরুর সময় করুন।', "Do this when you start a new tawaf or sa'i."), [
+    { text: tr('না', 'No'), style: 'cancel' },
+    { text: tr('হ্যাঁ, শূন্য করুন', 'Yes, reset'), style: 'destructive', onPress: () => save(0) },
   ]);
   const done = n >= total;
   const next = !done && labelFor ? labelFor(n + 1) : null;
   return (
     <View style={g.counter}>
       <Text style={g.cTitle}>{title}</Text>
-      <Text style={g.cNum} accessibilityLiveRegion="polite" accessibilityLabel={`${total} চক্করের মধ্যে ${n} চক্কর শেষ`}>
+      <Text style={g.cNum} accessibilityLiveRegion="polite" accessibilityLabel={tr(`${total} চক্করের মধ্যে ${n} চক্কর শেষ`, `${n} of ${total} rounds done`)}>
         {toBn(n)} <Text style={g.cOf}>/ {toBn(total)}</Text>
       </Text>
       <View style={g.cDots} importantForAccessibility="no-hide-descendants">
         {Array.from({ length: total }).map((_, i) => <View key={i} style={[g.cDot, i < n && g.cDotOn]} />)}
       </View>
-      {next ? <Text style={g.cNext}>এখন {toBn(n + 1)} নম্বর চক্কর: {next}</Text> : null}
-      {done ? <Notice kind="ok" title={`${toBn(total)} চক্কর পূর্ণ হয়েছে`} text="আলহামদুলিল্লাহ। এবার পরের ধাপে যান।" /> : (
-        <Button title="এক চক্কর শেষ হলো" icon="✔️" kind="gold" onPress={add} a11yHint="চক্কর শেষ হলে চাপুন, গণনা এক বাড়বে" />
+      {next ? <Text style={g.cNext}>{tr(`এখন ${toBn(n + 1)} নম্বর চক্কর`, `Now round ${n + 1}`)}: {next}</Text> : null}
+      {done ? <Notice kind="ok" title={tr(`${toBn(total)} চক্কর পূর্ণ হয়েছে`, `${total} rounds completed`)} text={tr('আলহামদুলিল্লাহ। এবার পরের ধাপে যান।', 'Alhamdulillah. Now go to the next step.')} /> : (
+        <Button title={tr('এক চক্কর শেষ হলো', 'One round done')} icon="✔️" kind="gold" onPress={add} a11yHint={tr('চক্কর শেষ হলে চাপুন, গণনা এক বাড়বে', 'Tap when a round is done; the count goes up by one')} />
       )}
       <View style={g.cRow}>
-        <Pressable onPress={sub} disabled={n === 0} style={[g.cSmall, n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="ভুল চাপ, এক কমান">
-          <Text style={g.cSmallT}>− ভুল চাপ, এক কমান</Text>
+        <Pressable onPress={sub} disabled={n === 0} style={[g.cSmall, n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('ভুল চাপ, এক কমান', 'Wrong tap, take one off')}>
+          <Text style={g.cSmallT}>{tr('− ভুল চাপ, এক কমান', '− Wrong tap, take one off')}</Text>
         </Pressable>
-        <Pressable onPress={reset} disabled={n === 0} style={[g.cSmall, n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="গণনা শূন্য করুন">
-          <Text style={g.cSmallT}>↺ শূন্য করুন</Text>
+        <Pressable onPress={reset} disabled={n === 0} style={[g.cSmall, n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('গণনা শূন্য করুন', 'Reset the count')}>
+          <Text style={g.cSmallT}>{tr('↺ শূন্য করুন', '↺ Reset')}</Text>
         </Pressable>
       </View>
-      <Text style={g.cHelp}>গোনায় সন্দেহ হলে কম সংখ্যাটি ধরুন এবং বাকি চক্কর পূর্ণ করুন।</Text>
+      <Text style={g.cHelp}>{tr('গোনায় সন্দেহ হলে কম সংখ্যাটি ধরুন এবং বাকি চক্কর পূর্ণ করুন।', 'If you are unsure of the count, take the lower number and complete the remaining rounds.')}</Text>
     </View>
   );
 }

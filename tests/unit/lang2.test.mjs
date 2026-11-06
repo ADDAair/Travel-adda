@@ -100,3 +100,13 @@ test('district names: the saved value stays Bengali, the name shown follows the 
   const p = read('src/components/DistrictPicker.tsx');
   assert.ok(p.includes('districtName(') && p.includes('districtMatch('), 'the picker shows and searches both');
 });
+
+test('help fund in English: rules, the unnamed person, statuses', async () => {
+  const F = await import('../../src/lib/fund.js');
+  await setLang('en');
+  const all = F.fundRules().join(' ');
+  for (const w of ['sadaqah', 'zakat', 'not returned', 'Travel Adda', 'Everyone', 'agree', 'fake']) assert.ok(all.includes(w), w);
+  assert.equal(F.personLabel({ name: null, district: 'নোয়াখালী', age: 65 }), 'A 65-year-old from Noakhali');
+  assert.ok(F.helpStatusText('travelled').startsWith('🕋 Alhamdulillah'));
+  assert.equal(F.recentDates(new Date('2026-10-31T10:00:00Z'), 2)[0].label, 'Today — 31 October 2026');
+});

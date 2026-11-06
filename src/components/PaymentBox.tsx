@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Modal, type ViewStyle } from 'react-native';
+import { tr } from '../lib/lang';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S, R, TOUCH } from '../theme';
@@ -37,32 +38,32 @@ export default function PaymentBox({ contract }: { contract: Contract }): JSX.El
   if (state === 'soon') return null;      // database step 008 not run yet: nothing to show
   return (
     <View style={[st.cRow, { paddingTop: S.sm, marginTop: S.md }]}>
-      <Text style={st.h}>💳 টাকা জমা</Text>
+      <Text style={st.h}>{tr('💳 টাকা জমা', '💳 Payments')}</Text>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-      {state === 'err' ? <Notice kind="bad" title="টাকার হিসাব আনা যায়নি" text="ইন্টারনেট দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
+      {state === 'err' ? <Notice kind="bad" title={tr('টাকার হিসাব আনা যায়নি', 'Could not load the money details')} text={tr('ইন্টারনেট দেখে আবার চেষ্টা করুন।', 'Check the internet and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {money ? (
         <View style={p.sum}>
-          <Line l="প্যাকেজের মোট দাম" v={fmtTaka(money.price_bdt)} />
-          <Line l="✅ Travel Adda পেয়েছে" v={fmtTaka(money.paid_in)} strong />
-          {Number(money.pending_in) > 0 ? <Line l="⏳ যাচাই চলছে" v={fmtTaka(money.pending_in)} /> : null}
-          <Line l="বাকি" v={fmtTaka(money.still_to_pay)} strong />
+          <Line l={tr('প্যাকেজের মোট দাম', 'Total package price')} v={fmtTaka(money.price_bdt)} />
+          <Line l={tr('✅ Travel Adda পেয়েছে', '✅ Travel Adda received')} v={fmtTaka(money.paid_in)} strong />
+          {Number(money.pending_in) > 0 ? <Line l={tr('⏳ যাচাই চলছে', '⏳ Being checked')} v={fmtTaka(money.pending_in)} /> : null}
+          <Line l={tr('বাকি', 'Still to pay')} v={fmtTaka(money.still_to_pay)} strong />
         </View>
       ) : null}
-      <Notice kind="warn" title="টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন" text="লিডার বা অন্য কাউকে হাতে বা নিজের নম্বরে টাকা দেবেন না। Travel Adda টাকা পেয়ে যাচাই করে লিডারকে দেবে, তাই আপনার টাকা নিরাপদ থাকে।" />
+      <Notice kind="warn" title={tr('টাকা শুধু Travel Adda-র অফিসিয়াল অ্যাকাউন্টে দিন', 'Pay only into Travel Adda\'s official account')} text={tr('লিডার বা অন্য কাউকে হাতে বা নিজের নম্বরে টাকা দেবেন না। Travel Adda টাকা পেয়ে যাচাই করে লিডারকে দেবে, তাই আপনার টাকা নিরাপদ থাকে।', 'Do not give money by hand or to a personal number of the leader or anyone else. Travel Adda checks the money and then pays the leader, so your money stays safe.')} />
       {info && (info.bkash || info.bank) ? (
         <View style={p.info}>
           {info.bkash ? <Text style={st.p} selectable>📱 {info.bkash}</Text> : null}
           {info.bank ? <Text style={st.p} selectable>🏦 {info.bank}</Text> : null}
         </View>
-      ) : <Notice kind="info" title="অ্যাকাউন্ট নম্বর শীঘ্রই দেওয়া হবে" text="এখন টাকা পাঠানোর আগে Travel Adda হেল্পলাইনে জেনে নিন।" />}
-      {form ? <PayForm contract={contract} onClose={() => setForm(false)} onSaved={() => { setForm(false); setMsg({ kind: 'ok', text: 'জমা দেওয়া হয়েছে। Travel Adda অ্যাকাউন্ট মিলিয়ে নিশ্চিত করবে।' }); load(); }} />
-        : <Button title="টাকা পাঠিয়েছি, তথ্য দিন" icon="🧾" onPress={() => { setMsg(null); setForm(true); }} style={{ marginTop: S.sm }} />}
-      {rows.length ? <Text style={[st.lbl, { marginTop: S.md }]}>আমার জমা</Text> : null}
+      ) : <Notice kind="info" title={tr('অ্যাকাউন্ট নম্বর শীঘ্রই দেওয়া হবে', 'The account number will be given soon')} text={tr('এখন টাকা পাঠানোর আগে Travel Adda হেল্পলাইনে জেনে নিন।', 'For now, ask the Travel Adda helpline before sending money.')} />}
+      {form ? <PayForm contract={contract} onClose={() => setForm(false)} onSaved={() => { setForm(false); setMsg({ kind: 'ok', text: tr('জমা দেওয়া হয়েছে। Travel Adda অ্যাকাউন্ট মিলিয়ে নিশ্চিত করবে।', 'Sent. Travel Adda will check its account and confirm.') }); load(); }} />
+        : <Button title={tr('টাকা পাঠিয়েছি, তথ্য দিন', 'I have paid, give the details')} icon="🧾" onPress={() => { setMsg(null); setForm(true); }} style={{ marginTop: S.sm }} />}
+      {rows.length ? <Text style={[st.lbl, { marginTop: S.md }]}>{tr('আমার জমা', 'My payments')}</Text> : null}
       {rows.map((r) => (
         <View key={r.id} style={st.cRow}>
           <Text style={st.val}>{fmtTaka(r.amount)} · {methodLabel(r.method)}</Text>
-          <Text style={st.small}>{PAY_STATUS[r.status]?.icon} {PAY_STATUS[r.status]?.label} · লেনদেন নম্বর {r.txn_ref} · {fmtDay(r.paid_on)}</Text>
-          {r.status === 'rejected' && r.admin_note ? <Text style={st.small}>কারণ: {r.admin_note}</Text> : null}
+          <Text style={st.small}>{PAY_STATUS[r.status]?.icon} {PAY_STATUS[r.status]?.label} · {tr('লেনদেন নম্বর', 'Transaction no.')} {r.txn_ref} · {fmtDay(r.paid_on)}</Text>
+          {r.status === 'rejected' && r.admin_note ? <Text style={st.small}>{tr('কারণ', 'Reason')}: {r.admin_note}</Text> : null}
         </View>
       ))}
     </View>
@@ -90,29 +91,29 @@ function PayForm({ contract, onClose, onSaved }: { contract: Contract; onClose: 
       if (r.canceled || !r.assets || !r.assets[0]) return;
       const a = r.assets[0];
       const pdf = a.mimeType === 'application/pdf' || /\.pdf$/i.test(a.name || '');
-      if (pdf && a.size && a.size > 5 * 1024 * 1024) { setFail('ফাইলটি ৫ এমবির বেশি বড়।'); return; }
-      setFile({ uri: a.uri, kind: pdf ? 'pdf' : 'image', name: a.name || 'রসিদ' });
-    } catch (e) { setFail('ফাইল খোলা যায়নি।'); }
+      if (pdf && a.size && a.size > 5 * 1024 * 1024) { setFail(tr('ফাইলটি ৫ এমবির বেশি বড়।', 'The file is larger than 5 MB.')); return; }
+      setFile({ uri: a.uri, kind: pdf ? 'pdf' : 'image', name: a.name || tr('রসিদ', 'Receipt') });
+    } catch (e) { setFail(tr('ফাইল খোলা যায়নি।', 'Could not open the file.')); }
   };
   const save = () => {
     if (busy) return;
     const e: Partial<Record<'amount' | 'ref' | 'day', string>> = {};
     const amt = Number(normalizeDigits(amount).replace(/[,\s]/g, ''));
     const paidOn = parseDate(day, 2020);
-    if (!Number.isFinite(amt) || amt <= 0 || amt >= 1e8) e.amount = 'কত টাকা পাঠিয়েছেন, শুধু সংখ্যায় লিখুন।';
-    if (ref.trim().length < 3) e.ref = 'লেনদেন নম্বর (TrxID) বা রসিদ নম্বর লিখুন।';
-    if (!paidOn || paidOn > todayYMD()) e.day = 'যে তারিখে পাঠিয়েছেন, লিখুন (আজ বা আগের দিন)।';
+    if (!Number.isFinite(amt) || amt <= 0 || amt >= 1e8) e.amount = tr('কত টাকা পাঠিয়েছেন, শুধু সংখ্যায় লিখুন।', 'Write how much you sent, in numbers only.');
+    if (ref.trim().length < 3) e.ref = tr('লেনদেন নম্বর (TrxID) বা রসিদ নম্বর লিখুন।', 'Write the transaction number (TrxID) or receipt number.');
+    if (!paidOn || paidOn > todayYMD()) e.day = tr('যে তারিখে পাঠিয়েছেন, লিখুন (আজ বা আগের দিন)।', 'Write the date you sent it (today or earlier).');
     setErr(e); setFail('');
     if (Object.keys(e).length) return;
-    confirm(`${fmtTaka(amt)} জমার তথ্য পাঠাবেন?`, 'Travel Adda অ্যাকাউন্টের সাথে মিলিয়ে নিশ্চিত করবে। ভুল তথ্য দেবেন না।', 'হ্যাঁ, পাঠান', async () => {
+    confirm(tr(`${fmtTaka(amt)} জমার তথ্য পাঠাবেন?`, `Send the details of the ${fmtTaka(amt)} payment?`), tr('Travel Adda অ্যাকাউন্টের সাথে মিলিয়ে নিশ্চিত করবে। ভুল তথ্য দেবেন না।', 'Travel Adda will check it against its account and confirm. Do not give wrong details.'), tr('হ্যাঁ, পাঠান', 'Yes, send'), async () => {
       setBusy(true);
       try { await submitPayment({ contractId: contract.id, amount: amt, method, ref, paidOn: paidOn as string, file }); onSaved(); }
       catch (err0) {
         const x = err0 as { code?: string; message?: string } | null;
         const m = String(x?.message || '');
-        setFail(x?.code === 'too-big' ? 'রসিদের ফাইল ৫ এমবির বেশি বড়।'
-          : x?.code === '23505' ? 'এই লেনদেন নম্বর আগেই জমা দেওয়া হয়েছে।'
-            : x?.code === '42501' || /row-level security/i.test(m) ? 'জমা দেওয়া যায়নি। চুক্তিটি এখন চালু আছে কি না দেখুন, বা আজ অনেকবার জমা দেওয়া হয়েছে।'
+        setFail(x?.code === 'too-big' ? tr('রসিদের ফাইল ৫ এমবির বেশি বড়।', 'The receipt file is larger than 5 MB.')
+          : x?.code === '23505' ? tr('এই লেনদেন নম্বর আগেই জমা দেওয়া হয়েছে।', 'This transaction number has already been sent.')
+            : x?.code === '42501' || /row-level security/i.test(m) ? tr('জমা দেওয়া যায়নি। চুক্তিটি এখন চালু আছে কি না দেখুন, বা আজ অনেকবার জমা দেওয়া হয়েছে।', 'Could not send. Check that the contract is active, or too many were sent today.')
               : errText(x));      // everything typed stays
         setBusy(false);
       }
@@ -122,15 +123,15 @@ function PayForm({ contract, onClose, onSaved }: { contract: Contract; onClose: 
   if (cam) {
     return (
       <Modal visible animationType="slide" onRequestClose={() => setCam(false)}>
-        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri: string) => { setCam(false); setFile({ uri, kind: 'image', name: 'ক্যামেরার ছবি' }); }} /></SafeAreaProvider>
+        <SafeAreaProvider><DocCamera onCancel={() => setCam(false)} onUse={(uri: string) => { setCam(false); setFile({ uri, kind: 'image', name: tr('ক্যামেরার ছবি', 'Camera photo') }); }} /></SafeAreaProvider>
       </Modal>
     );
   }
   return (
     <View style={p.form}>
       {fail ? <Notice kind="bad" title={fail} /> : null}
-      <Field label="কত টাকা পাঠিয়েছেন" hint="যেমন: 50000" value={amount} onChangeText={setAmount} keyboardType="numeric" maxLength={12} error={err.amount} />
-      <Text style={[st.lbl, { marginBottom: S.xs }]}>কীভাবে পাঠিয়েছেন</Text>
+      <Field label={tr('কত টাকা পাঠিয়েছেন', 'How much did you send')} hint={tr('যেমন: 50000', 'e.g. 50000')} value={amount} onChangeText={setAmount} keyboardType="numeric" maxLength={12} error={err.amount} />
+      <Text style={[st.lbl, { marginBottom: S.xs }]}>{tr('কীভাবে পাঠিয়েছেন', 'How did you send it')}</Text>
       <View style={p.chips}>
         {PAY_METHODS.map((m) => (
           <Pressable key={m.id} onPress={() => setMethod(m.id)} style={[p.chip, method === m.id && p.chipOn]}
@@ -139,22 +140,22 @@ function PayForm({ contract, onClose, onSaved }: { contract: Contract; onClose: 
           </Pressable>
         ))}
       </View>
-      <Field label="লেনদেন নম্বর (TrxID) বা রসিদ নম্বর" hint="যেমন: 9A7B6C5D4E" value={ref} onChangeText={setRef} maxLength={60} autoCapitalize="characters" autoCorrect={false} error={err.ref} />
-      <Field label="কবে পাঠিয়েছেন" hint="দিন-মাস-বছর" value={day} onChangeText={setDay} maxLength={10} error={err.day} />
-      <Text style={st.lbl}>রসিদ বা স্ক্রিনশট (ইচ্ছা করলে, দিলে যাচাই দ্রুত হয়)</Text>
+      <Field label={tr('লেনদেন নম্বর (TrxID) বা রসিদ নম্বর', 'Transaction number (TrxID) or receipt number')} hint={tr('যেমন: 9A7B6C5D4E', 'e.g. 9A7B6C5D4E')} value={ref} onChangeText={setRef} maxLength={60} autoCapitalize="characters" autoCorrect={false} error={err.ref} />
+      <Field label={tr('কবে পাঠিয়েছেন', 'When did you send it')} hint={tr('দিন-মাস-বছর', 'day-month-year')} value={day} onChangeText={setDay} maxLength={10} error={err.day} />
+      <Text style={st.lbl}>{tr('রসিদ বা স্ক্রিনশট (ইচ্ছা করলে, দিলে যাচাই দ্রুত হয়)', 'Receipt or screenshot (optional; it makes checking faster)')}</Text>
       {file ? (
         <>
-          <Notice kind="ok" title={`যুক্ত হয়েছে: ${file.kind === 'pdf' ? '📕' : '🖼️'} ${file.name}`} />
-          <Button title="রসিদ সরিয়ে দিন" kind="danger" onPress={() => setFile(null)} disabled={busy} />
+          <Notice kind="ok" title={tr(`যুক্ত হয়েছে: ${file.kind === 'pdf' ? '📕' : '🖼️'} ${file.name}`, `Added: ${file.kind === 'pdf' ? '📕' : '🖼️'} ${file.name}`)} />
+          <Button title={tr('রসিদ সরিয়ে দিন', 'Remove the receipt')} kind="danger" onPress={() => setFile(null)} disabled={busy} />
         </>
       ) : (
         <>
-          <Button title="ক্যামেরায় রসিদের ছবি তুলুন" icon="📷" kind="secondary" onPress={() => setCam(true)} disabled={busy} style={{ marginTop: S.xs }} />
-          <Button title="ফোন থেকে স্ক্রিনশট বা ফাইল বাছুন" icon="📁" kind="secondary" onPress={pick} disabled={busy} style={{ marginTop: S.sm }} />
+          <Button title={tr('ক্যামেরায় রসিদের ছবি তুলুন', 'Take a photo of the receipt')} icon="📷" kind="secondary" onPress={() => setCam(true)} disabled={busy} style={{ marginTop: S.xs }} />
+          <Button title={tr('ফোন থেকে স্ক্রিনশট বা ফাইল বাছুন', 'Choose a screenshot or file from the phone')} icon="📁" kind="secondary" onPress={pick} disabled={busy} style={{ marginTop: S.sm }} />
         </>
       )}
-      <Button title="জমার তথ্য পাঠান" icon="📨" onPress={save} loading={busy} style={{ marginTop: S.md }} />
-      <Button title="বাতিল" kind="secondary" onPress={onClose} disabled={busy} style={{ marginTop: S.sm }} />
+      <Button title={tr('জমার তথ্য পাঠান', 'Send payment details')} icon="📨" onPress={save} loading={busy} style={{ marginTop: S.md }} />
+      <Button title={tr('বাতিল', 'Cancel')} kind="secondary" onPress={onClose} disabled={busy} style={{ marginTop: S.sm }} />
     </View>
   );
 }

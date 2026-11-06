@@ -5,22 +5,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { uid, randomId, shrink } from './docs';
 import { rpc, check, fail, type DbResult, rows } from './rpc';
+import { tr } from './lang';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export type PayMethod = 'bkash' | 'nagad' | 'bank' | 'office';
 export type PayStatus = 'submitted' | 'confirmed' | 'rejected';
 export const PAY_METHODS: ReadonlyArray<{ id: PayMethod; icon: string; label: string }> = [
-  { id: 'bkash', icon: '📱', label: 'বিকাশ' },
-  { id: 'nagad', icon: '📱', label: 'নগদ' },
-  { id: 'bank', icon: '🏦', label: 'ব্যাংক' },
-  { id: 'office', icon: '🏢', label: 'অফিসে নগদ' },
+  { id: 'bkash', icon: '📱', get label() { return tr('বিকাশ', 'bKash'); } },
+  { id: 'nagad', icon: '📱', get label() { return tr('নগদ', 'Nagad'); } },
+  { id: 'bank', icon: '🏦', get label() { return tr('ব্যাংক', 'Bank'); } },
+  { id: 'office', icon: '🏢', get label() { return tr('অফিসে নগদ', 'Cash at the office'); } },
 ];
 export const methodLabel = (id: string): string => (PAY_METHODS.find((m) => m.id === id) || { label: id }).label;
 export const PAY_STATUS: Record<PayStatus, { icon: string; label: string }> = {
-  submitted: { icon: '⏳', label: 'যাচাই চলছে' },
-  confirmed: { icon: '✅', label: 'টাকা পাওয়া গেছে' },
-  rejected: { icon: '✖️', label: 'মেলেনি' },
+  submitted: { icon: '⏳', get label() { return tr('যাচাই চলছে', 'Being checked'); } },
+  confirmed: { icon: '✅', get label() { return tr('টাকা পাওয়া গেছে', 'Money received'); } },
+  rejected: { icon: '✖️', get label() { return tr('মেলেনি', 'Did not match'); } },
 };
 
 // The parts of the Supabase client used here, typed (the database itself has no generated types yet).

@@ -6,8 +6,9 @@ import { C, S, R, F, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { st, fmtDay, confirm } from './GroupScreen';
 import { toBn } from '../lib/phone';
+import { tr, takaText } from '../lib/lang';
 import { fundSummary, donate, myDonations, myConfirmedTotal, applyHelp, myHelpApplication, withdrawHelp, helpErrorText, personLabel,
-  kindLabel, helpStatusText, fundPayInfo, fundTabs, recentDates, FUND_RULES, donateAccess, donateAccessText, requestDonateAccess, requestAccessText,
+  kindLabel, helpStatusText, fundPayInfo, fundTabs, recentDates, fundRules, donateAccess, donateAccessText, requestDonateAccess, requestAccessText,
   type FundSummary, type HelpForm, type DonateAccess } from '../lib/fund';
 import { PAY_METHODS, PAY_STATUS } from '../lib/payments';
 import DistrictPicker from '../components/DistrictPicker';
@@ -15,7 +16,7 @@ import { useMe } from '../lib/me';
 
 type Nav = { navigate: (r: string, p?: object) => void };
 type Msg = { kind: 'ok' | 'bad' | 'warn' | 'info'; text: string } | null;
-const taka = (n: number): string => `${toBn(Math.round(n).toLocaleString('en-IN'))} টাকা`;
+const taka = (n: number): string => takaText(Math.round(n));
 
 function Choice({ label, options, value, onChange }: { label: string; options: { id: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -45,7 +46,7 @@ function Toggle({ label, hint, value, onChange }: { label: string; hint?: string
         {hint ? <Text style={st.small}>{hint}</Text> : null}
       </View>
       <Switch value={value} onValueChange={onChange} importantForAccessibility="no" />
-      <Text style={[st.small, { width: 40, textAlign: 'right' }]}>{value ? 'হ্যাঁ' : 'না'}</Text>
+      <Text style={[st.small, { width: 40, textAlign: 'right' }]}>{value ? tr('হ্যাঁ', 'Yes') : tr('না', 'No')}</Text>
     </Pressable>
   );
 }
@@ -56,9 +57,9 @@ function Rules() {
   return (
     <View style={[st.card, { borderWidth: 1, borderColor: C.line }]}>
       <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ minHeight: TOUCH, justifyContent: 'center' }}>
-        <Text style={st.h}>📜 তহবিলের নিয়ম {open ? '▲' : '▼'}</Text>
+        <Text style={st.h}>📜 {tr('তহবিলের নিয়ম', 'Fund rules')} {open ? '▲' : '▼'}</Text>
       </Pressable>
-      {open ? FUND_RULES.map((r, i) => <Text key={i} style={[st.p, { marginBottom: S.xs }]}>{toBn(i + 1)}. {r}</Text>) : <Text style={st.small}>জমা দেওয়ার আগে একবার পড়ে নিন (চাপলে খুলবে)।</Text>}
+      {open ? fundRules().map((r, i) => <Text key={i} style={[st.p, { marginBottom: S.xs }]}>{toBn(i + 1)}. {r}</Text>) : <Text style={st.small}>{tr('জমা দেওয়ার আগে একবার পড়ে নিন (চাপলে খুলবে)।', 'Read once before giving (tap to open).')}</Text>}
     </View>
   );
 }
@@ -74,26 +75,26 @@ export default function FundScreen({ navigation }: { navigation: Nav & { addList
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Offers')} style={st.back} accessibilityRole="button" accessibilityLabel="অফার পাতায় ফিরে যান">
-        <Text style={st.backT}>‹ অফার ও প্যাকেজ</Text>
+      <Pressable onPress={() => navigation.navigate('Offers')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('অফার পাতায় ফিরে যান', 'Back to the offers page')}>
+        <Text style={st.backT}>{tr('‹ অফার ও প্যাকেজ', '‹ Offers and packages')}</Text>
       </Pressable>
       <View style={{ backgroundColor: C.goldSoft, borderColor: C.gold, borderWidth: 2, borderRadius: R.lg, padding: S.md, marginBottom: S.md }}>
-        <Text style={{ fontSize: F.title, fontWeight: '700', color: C.text }} accessibilityRole="header">🤲 হজ-ওমরাহ সহায়তা তহবিল</Text>
-        <Text style={[st.p, { marginTop: S.xs }]}>সামর্থ্যবানদের দানে সামর্থ্যহীন মানুষ আল্লাহর ঘরে যাবেন। সব হিসাব সবার সামনে।</Text>
+        <Text style={{ fontSize: F.title, fontWeight: '700', color: C.text }} accessibilityRole="header">{tr('🤲 হজ-ওমরাহ সহায়তা তহবিল', '🤲 Hajj-Umrah help fund')}</Text>
+        <Text style={[st.p, { marginTop: S.xs }]}>{tr('সামর্থ্যবানদের দানে সামর্থ্যহীন মানুষ আল্লাহর ঘরে যাবেন। সব হিসাব সবার সামনে।', 'With gifts from those who can, people who cannot afford it will go to the House of Allah. All accounts are open to everyone.')}</Text>
         {s === undefined ? <ActivityIndicator color={C.primary} style={{ marginTop: S.sm }} /> : null}
         {s ? (
           <View style={{ marginTop: S.sm }}>
             <Text style={{ fontSize: F.hero, fontWeight: '700', color: C.primary }}>{taka(s.collected)}</Text>
-            <Text style={st.small}>মোট জমা (Travel Adda যাচাই করেছে)</Text>
+            <Text style={st.small}>{tr('মোট জমা (Travel Adda যাচাই করেছে)', 'Total received (checked by Travel Adda)')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md, marginTop: S.sm }}>
-              <Text style={st.p}>🤝 দাতা: {toBn(s.donors)} জন</Text>
-              <Text style={st.p}>💚 এখন তহবিলে: {taka(s.balance)}</Text>
-              <Text style={st.p}>🕋 সফর সম্পন্ন: {toBn(s.travelled)} জন</Text>
+              <Text style={st.p}>{tr(`🤝 দাতা: ${toBn(s.donors)} জন`, `🤝 Donors: ${s.donors}`)}</Text>
+              <Text style={st.p}>{tr('💚 এখন তহবিলে', '💚 In the fund now')}: {taka(s.balance)}</Text>
+              <Text style={st.p}>{tr(`🕋 সফর সম্পন্ন: ${toBn(s.travelled)} জন`, `🕋 Journeys completed: ${s.travelled}`)}</Text>
             </View>
           </View>
         ) : null}
-        {s === null ? <Notice kind="info" title="শীঘ্রই আসছে" text="তহবিলের এই অংশ এখনো চালু হয়নি।" /> : null}
-        <Text style={[st.small, { marginTop: S.sm }]}>এটি সদকার তহবিল, যাকাতের নয়।</Text>
+        {s === null ? <Notice kind="info" title={tr('শীঘ্রই আসছে', 'Coming soon')} text={tr('তহবিলের এই অংশ এখনো চালু হয়নি।', 'This part of the fund is not on yet.')} /> : null}
+        <Text style={[st.small, { marginTop: S.sm }]}>{tr('এটি সদকার তহবিল, যাকাতের নয়।', 'This is a sadaqah fund, not a zakat fund.')}</Text>
       </View>
       {s ? (
         <>
@@ -125,11 +126,11 @@ function Give({ onDone }: { onDone: () => void }) {
     } catch (e) { setAskMsg({ kind: 'bad', text: helpErrorText(e) }); }
     finally { setAsking(false); }
   };
-  if (access === undefined) return <View style={st.card}><ActivityIndicator color={C.primary} accessibilityLabel="অনুমতি দেখা হচ্ছে" /></View>;
+  if (access === undefined) return <View style={st.card}><ActivityIndicator color={C.primary} accessibilityLabel={tr('অনুমতি দেখা হচ্ছে', 'Checking permission')} /></View>;
   if (access === null) return (
     <View style={st.card}>
-      <Notice kind="bad" title="তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।" />
-      <Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={loadAccess} />
+      <Notice kind="bad" title={tr('তথ্য আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।', 'Could not load the information. Check the internet and try again.')} />
+      <Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={loadAccess} />
     </View>
   );
   const m = donateAccessText(access);
@@ -140,7 +141,7 @@ function Give({ onDone }: { onDone: () => void }) {
         <Text style={st.h} accessibilityRole="header">{m.icon} {m.title}</Text>
         <Text style={[st.p, { marginBottom: S.sm }]}>{m.body}</Text>
         {askMsg ? <Notice kind={askMsg.kind} title={askMsg.text} /> : null}
-        {m.canAsk ? <Button title="অনুমতি চাই" icon="🙋" onPress={ask} loading={asking} /> : null}
+        {m.canAsk ? <Button title={tr('অনুমতি চাই', 'Ask for permission')} icon="🙋" onPress={ask} loading={asking} /> : null}
       </View>
       <MyGifts />
     </>
@@ -154,9 +155,9 @@ function MyGifts({ reload = 0 }: { reload?: number }) {
   const total = mine ? myConfirmedTotal(mine) : 0;
   return (
     <View style={st.card}>
-      <Text style={st.h}>🧾 আমার দান</Text>
+      <Text style={st.h}>{tr('🧾 আমার দান', '🧾 My gifts')}</Text>
       {mine === null ? <ActivityIndicator color={C.primary} /> : null}
-      {mine && mine.length ? <Text style={[st.val, { color: C.primary }]}>যাচাই করা মোট: {taka(total)}</Text> : null}
+      {mine && mine.length ? <Text style={[st.val, { color: C.primary }]}>{tr('যাচাই করা মোট', 'Checked total')}: {taka(total)}</Text> : null}
       {(mine || []).map((d) => {
         const ps = (PAY_STATUS as Record<string, { icon: string; label: string }>)[d.status] || { icon: '', label: d.status };
         return <Text key={d.id} style={st.p}>{fmtDay(d.created_at)} · {taka(Number(d.amount))} · {ps.icon} {ps.label}{d.admin_note && d.status === 'rejected' ? ` (${d.admin_note})` : ''}</Text>;
@@ -179,7 +180,7 @@ function GiveForm({ onDone, onNotAllowed }: { onDone: () => void; onNotAllowed: 
     setBusy(true); setMsg(null);
     try {
       const r = await donate({ amount: f.amount, method: f.method, ref: f.ref, paidOn: f.paidOn, showName: f.showName });
-      if (r === 'ok') { setMsg({ kind: 'ok', text: 'জমা দেওয়া হয়েছে। Travel Adda টাকা মিলিয়ে দেখলে মোট জমায় যোগ হবে, আর আপনি নোটিফিকেশন পাবেন। জাযাকাল্লাহু খাইরান।' }); setF((x) => ({ ...x, amount: '', ref: '' })); setReload((n) => n + 1); onDone(); }
+      if (r === 'ok') { setMsg({ kind: 'ok', text: tr('জমা দেওয়া হয়েছে। Travel Adda টাকা মিলিয়ে দেখলে মোট জমায় যোগ হবে, আর আপনি নোটিফিকেশন পাবেন। জাযাকাল্লাহু খাইরান।', 'Sent. When Travel Adda checks the money, it is added to the total and you get a notification. JazakAllahu khairan.') }); setF((x) => ({ ...x, amount: '', ref: '' })); setReload((n) => n + 1); onDone(); }
       else setMsg({ kind: 'warn', text: helpErrorText({ code: r || '' }) });
     } catch (e) {
       if ((e as { code?: string }).code === 'not_allowed') { onNotAllowed(); return; }   // permission was turned off meanwhile
@@ -190,28 +191,28 @@ function GiveForm({ onDone, onNotAllowed }: { onDone: () => void; onNotAllowed: 
   return (
     <>
       <View style={st.card}>
-        <Text style={st.h}>১. টাকা পাঠান</Text>
+        <Text style={st.h}>{tr('১. টাকা পাঠান', '1. Send the money')}</Text>
         {info === null ? <ActivityIndicator color={C.primary} /> : (
           <>
-            {info.bkash ? <Text style={st.p} selectable>📱 বিকাশ/নগদ: {info.bkash}</Text> : null}
-            {info.bank ? <Text style={st.p} selectable>🏦 ব্যাংক: {info.bank}</Text> : null}
-            {!info.bkash && !info.bank ? <Text style={st.p}>টাকা পাঠানোর নম্বর শীঘ্রই দেওয়া হবে। এখন Travel Adda হেল্পলাইনে যোগাযোগ করুন।</Text> : null}
-            <Text style={st.small}>শুধু এই অফিসিয়াল নম্বরে পাঠান। কাউকে হাতে টাকা দেবেন না।</Text>
+            {info.bkash ? <Text style={st.p} selectable>📱 {tr('বিকাশ/নগদ', 'bKash/Nagad')}: {info.bkash}</Text> : null}
+            {info.bank ? <Text style={st.p} selectable>🏦 {tr('ব্যাংক', 'Bank')}: {info.bank}</Text> : null}
+            {!info.bkash && !info.bank ? <Text style={st.p}>{tr('টাকা পাঠানোর নম্বর শীঘ্রই দেওয়া হবে। এখন Travel Adda হেল্পলাইনে যোগাযোগ করুন।', 'The number to send money to will be given soon. For now contact the Travel Adda helpline.')}</Text> : null}
+            <Text style={st.small}>{tr('শুধু এই অফিসিয়াল নম্বরে পাঠান। কাউকে হাতে টাকা দেবেন না।', 'Send only to this official number. Do not give money to anyone by hand.')}</Text>
           </>
         )}
       </View>
       <View style={st.card}>
-        <Text style={st.h}>২. পাঠানোর পর এখানে লিখুন</Text>
-        <Field label="কত টাকা" hint="যেমন: ৫০০০" value={f.amount} onChangeText={set('amount')} keyboardType="number-pad" maxLength={12} editable={!busy} />
-        <Choice label="কীভাবে পাঠিয়েছেন" options={PAY_METHODS.map((m) => ({ id: m.id, label: `${m.icon} ${m.label}` }))} value={f.method} onChange={set('method')} />
-        <Field label="লেনদেন নম্বর (TrxID) বা রসিদ নম্বর" hint="যেমন: 9A7B3C2D" value={f.ref} onChangeText={set('ref')} autoCapitalize="characters" autoCorrect={false} maxLength={60} editable={!busy} />
-        <DistrictPicker label="কবে পাঠিয়েছেন (তারিখ)" noun="তারিখ" placeholder="তারিখ বাছুন" searchHint="যেমন: ২৫ অক্টোবর"
+        <Text style={st.h}>{tr('২. পাঠানোর পর এখানে লিখুন', '2. After sending, write it here')}</Text>
+        <Field label={tr('কত টাকা', 'How much')} hint={tr('যেমন: ৫০০০', 'e.g. 5000')} value={f.amount} onChangeText={set('amount')} keyboardType="number-pad" maxLength={12} editable={!busy} />
+        <Choice label={tr('কীভাবে পাঠিয়েছেন', 'How did you send it')} options={PAY_METHODS.map((m) => ({ id: m.id, label: `${m.icon} ${m.label}` }))} value={f.method} onChange={set('method')} />
+        <Field label={tr('লেনদেন নম্বর (TrxID) বা রসিদ নম্বর', 'Transaction number (TrxID) or receipt number')} hint={tr('যেমন: 9A7B3C2D', 'e.g. 9A7B3C2D')} value={f.ref} onChangeText={set('ref')} autoCapitalize="characters" autoCorrect={false} maxLength={60} editable={!busy} />
+        <DistrictPicker label={tr('কবে পাঠিয়েছেন (তারিখ)', 'When did you send it (date)')} noun={tr('তারিখ', 'date')} placeholder={tr('তারিখ বাছুন', 'Choose the date')} searchHint={tr('যেমন: ২৫ অক্টোবর', 'e.g. 25 October')}
           options={dates.map((d) => d.label)} value={(dates.find((d) => d.ymd === f.paidOn) || dates[0]).label}
           onChange={(label: string) => { const d = dates.find((x) => x.label === label); if (d) set('paidOn')(d.ymd); }} />
-        <Toggle label="আমার নাম দেখানো হোক" hint="না দিলে সবাই শুধু টাকার পরিমাণ দেখবে, নাম গোপন থাকবে" value={f.showName} onChange={set('showName')} />
+        <Toggle label={tr('আমার নাম দেখানো হোক', 'Show my name')} hint={tr('না দিলে সবাই শুধু টাকার পরিমাণ দেখবে, নাম গোপন থাকবে', 'If not, everyone sees only the amount; your name stays hidden')} value={f.showName} onChange={set('showName')} />
         {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-        <Text style={[st.small, { marginBottom: S.sm }]}>জমা দিলে আপনি ওপরের "তহবিলের নিয়ম" মেনে নিচ্ছেন।</Text>
-        <Button title="দানের তথ্য জমা দিন" icon="💝" onPress={send} loading={busy} />
+        <Text style={[st.small, { marginBottom: S.sm }]}>{tr('জমা দিলে আপনি ওপরের "তহবিলের নিয়ম" মেনে নিচ্ছেন।', 'By sending you accept the "Fund rules" above.')}</Text>
+        <Button title={tr('দানের তথ্য জমা দিন', 'Send gift details')} icon="💝" onPress={send} loading={busy} />
       </View>
       <MyGifts reload={reload} />
     </>
@@ -233,12 +234,12 @@ function Apply() {
     setBusy(true); setMsg(null);
     try {
       const r = await applyHelp(f);
-      if (r === 'ok') { setMsg({ kind: 'ok', text: 'আবেদন জমা হয়েছে। Travel Adda আপনার দেওয়া পরিচিত মানুষকে ফোন করে যাচাই করবে, তারপর নোটিফিকেশনে জানাবে।' }); setF(EMPTY); load(); }
+      if (r === 'ok') { setMsg({ kind: 'ok', text: tr('আবেদন জমা হয়েছে। Travel Adda আপনার দেওয়া পরিচিত মানুষকে ফোন করে যাচাই করবে, তারপর নোটিফিকেশনে জানাবে।', 'Application sent. Travel Adda will call the person you named to check, then tell you by notification.') }); setF(EMPTY); load(); }
       else setMsg({ kind: 'warn', text: helpErrorText({ code: r || '' }) });
     } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }
     finally { setBusy(false); }
   };
-  const withdraw = () => confirm('আবেদন ফিরিয়ে নেবেন?', 'পরে আবার নতুন করে আবেদন করতে পারবেন।', 'ফিরিয়ে নিন', async () => {
+  const withdraw = () => confirm(tr('আবেদন ফিরিয়ে নেবেন?', 'Withdraw the application?'), tr('পরে আবার নতুন করে আবেদন করতে পারবেন।', 'You can apply again later.'), tr('ফিরিয়ে নিন', 'Withdraw'), async () => {
     try { await withdrawHelp(); load(); } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }
   });
   if (mine === undefined) return <ActivityIndicator color={C.primary} />;
@@ -248,29 +249,29 @@ function Apply() {
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {mine ? (
         <View style={st.card}>
-          <Text style={st.h}>আমার আবেদন · {kindLabel(mine.kind)}</Text>
+          <Text style={st.h}>{tr('আমার আবেদন', 'My application')} · {kindLabel(mine.kind)}</Text>
           <Text style={st.p}>{helpStatusText(mine.status)}</Text>
-          {mine.status === 'rejected' && mine.admin_note ? <Text style={st.small}>কারণ: {mine.admin_note}</Text> : null}
-          <Text style={st.small}>জমা: {fmtDay(mine.created_at)}</Text>
-          {mine.status === 'pending' ? <Button title="আবেদন ফিরিয়ে নিন" icon="↩️" kind="secondary" onPress={withdraw} style={{ marginTop: S.sm }} /> : null}
+          {mine.status === 'rejected' && mine.admin_note ? <Text style={st.small}>{tr('কারণ', 'Reason')}: {mine.admin_note}</Text> : null}
+          <Text style={st.small}>{tr('জমা', 'Sent')}: {fmtDay(mine.created_at)}</Text>
+          {mine.status === 'pending' ? <Button title={tr('আবেদন ফিরিয়ে নিন', 'Withdraw application')} icon="↩️" kind="secondary" onPress={withdraw} style={{ marginTop: S.sm }} /> : null}
         </View>
       ) : null}
       {!open ? (
         <View style={st.card}>
-          <Text style={st.h}>📝 সাহায্যের আবেদন</Text>
-          <Text style={[st.small, { marginBottom: S.sm }]}>নিজের টাকায় হজ বা ওমরাহ করার সামর্থ্য না থাকলে আবেদন করুন। তথ্য গোপন থাকবে; শুধু Travel Adda দেখবে।</Text>
-          <Choice label="কোনটি করতে চান" options={[{ id: 'umrah', label: '🕌 ওমরাহ' }, { id: 'hajj', label: '🕋 হজ' }]} value={f.kind} onChange={set('kind')} />
-          <Field label="আপনার বয়স" hint="যেমন: ৬৫" value={String(f.age)} onChangeText={set('age')} keyboardType="number-pad" maxLength={3} editable={!busy} />
-          <DistrictPicker label="আপনার জেলা" value={f.district || null} onChange={set('district')} />
-          <Field label="পেশা" hint="যেমন: কৃষক, দোকানদার, অবসরপ্রাপ্ত" value={f.profession} onChangeText={set('profession')} maxLength={60} editable={!busy} />
-          <Field label="কেন সাহায্য দরকার" hint="নিজের ভাষায় অল্প কথায় লিখুন" value={f.reason} onChangeText={set('reason')} multiline maxLength={800} editable={!busy} />
-          <Toggle label="আগে কখনো হজ বা ওমরাহ করেছেন?" value={f.wentBefore} onChange={set('wentBefore')} />
-          <Text style={st.lbl}>আপনাকে চেনেন এমন একজন (Travel Adda তাঁকে ফোন করে যাচাই করবে)</Text>
-          <Field label="তাঁর নাম ও পরিচয়" hint="যেমন: মসজিদের ইমাম, ইউপি সদস্য" value={f.refName} onChangeText={set('refName')} maxLength={60} editable={!busy} />
-          <Field label="তাঁর মোবাইল নম্বর" hint="যেমন: 01712345678" value={f.refPhone} onChangeText={set('refPhone')} keyboardType="phone-pad" maxLength={15} editable={!busy} />
-          <Toggle label="অনুমোদন পেলে আমার নাম দেখানো যাবে" hint="না দিলে শুধু জেলা আর বয়স দেখাবে, যেমন: নোয়াখালীর ৬৫ বছর বয়সী একজন" value={f.showName} onChange={set('showName')} />
-          <Text style={[st.small, { marginBottom: S.sm }]}>জমা দিলে আপনি ওপরের "তহবিলের নিয়ম" মেনে নিচ্ছেন।</Text>
-          <Button title="আবেদন জমা দিন" icon="📝" onPress={send} loading={busy} />
+          <Text style={st.h}>{tr('📝 সাহায্যের আবেদন', '📝 Apply for help')}</Text>
+          <Text style={[st.small, { marginBottom: S.sm }]}>{tr('নিজের টাকায় হজ বা ওমরাহ করার সামর্থ্য না থাকলে আবেদন করুন। তথ্য গোপন থাকবে; শুধু Travel Adda দেখবে।', 'Apply if you cannot afford Hajj or Umrah with your own money. Your details stay private; only Travel Adda sees them.')}</Text>
+          <Choice label={tr('কোনটি করতে চান', 'Which one do you want to do')} options={[{ id: 'umrah', label: tr('🕌 ওমরাহ', '🕌 Umrah') }, { id: 'hajj', label: tr('🕋 হজ', '🕋 Hajj') }]} value={f.kind} onChange={set('kind')} />
+          <Field label={tr('আপনার বয়স', 'Your age')} hint={tr('যেমন: ৬৫', 'e.g. 65')} value={String(f.age)} onChangeText={set('age')} keyboardType="number-pad" maxLength={3} editable={!busy} />
+          <DistrictPicker label={tr('আপনার জেলা', 'Your district')} value={f.district || null} onChange={set('district')} />
+          <Field label={tr('পেশা', 'Profession')} hint={tr('যেমন: কৃষক, দোকানদার, অবসরপ্রাপ্ত', 'e.g. farmer, shopkeeper, retired')} value={f.profession} onChangeText={set('profession')} maxLength={60} editable={!busy} />
+          <Field label={tr('কেন সাহায্য দরকার', 'Why help is needed')} hint={tr('নিজের ভাষায় অল্প কথায় লিখুন', 'Write briefly in your own words')} value={f.reason} onChangeText={set('reason')} multiline maxLength={800} editable={!busy} />
+          <Toggle label={tr('আগে কখনো হজ বা ওমরাহ করেছেন?', 'Have you done Hajj or Umrah before?')} value={f.wentBefore} onChange={set('wentBefore')} />
+          <Text style={st.lbl}>{tr('আপনাকে চেনেন এমন একজন (Travel Adda তাঁকে ফোন করে যাচাই করবে)', 'Someone who knows you (Travel Adda will call them to check)')}</Text>
+          <Field label={tr('তাঁর নাম ও পরিচয়', 'Their name and who they are')} hint={tr('যেমন: মসজিদের ইমাম, ইউপি সদস্য', 'e.g. mosque imam, union council member')} value={f.refName} onChangeText={set('refName')} maxLength={60} editable={!busy} />
+          <Field label={tr('তাঁর মোবাইল নম্বর', 'Their mobile number')} hint={tr('যেমন: 01712345678', 'e.g. 01712345678')} value={f.refPhone} onChangeText={set('refPhone')} keyboardType="phone-pad" maxLength={15} editable={!busy} />
+          <Toggle label={tr('অনুমোদন পেলে আমার নাম দেখানো যাবে', 'My name may be shown once approved')} hint={tr('না দিলে শুধু জেলা আর বয়স দেখাবে, যেমন: নোয়াখালীর ৬৫ বছর বয়সী একজন', 'If not, only district and age show, e.g. a 65-year-old from Noakhali')} value={f.showName} onChange={set('showName')} />
+          <Text style={[st.small, { marginBottom: S.sm }]}>{tr('জমা দিলে আপনি ওপরের "তহবিলের নিয়ম" মেনে নিচ্ছেন।', 'By sending you accept the "Fund rules" above.')}</Text>
+          <Button title={tr('আবেদন জমা দিন', 'Send application')} icon="📝" onPress={send} loading={busy} />
         </View>
       ) : null}
     </>
@@ -282,22 +283,22 @@ function Report({ s }: { s: FundSummary }) {
   return (
     <>
       <View style={st.card}>
-        <Text style={st.h}>💸 টাকা কোথায় খরচ হলো</Text>
-        {!s.spends.length ? <Text style={st.p}>এখনো কোনো খরচ হয়নি।</Text> : null}
+        <Text style={st.h}>{tr('💸 টাকা কোথায় খরচ হলো', '💸 Where the money was spent')}</Text>
+        {!s.spends.length ? <Text style={st.p}>{tr('এখনো কোনো খরচ হয়নি।', 'Nothing spent yet.')}</Text> : null}
         {s.spends.map((x, i) => (
           <Text key={i} style={[st.p, { marginBottom: S.xs }]}>{fmtDay(x.at)} · {taka(x.amount)} · {personLabel(x)} ({kindLabel(x.kind)}) — {x.purpose}</Text>
         ))}
-        <Text style={st.small}>মোট খরচ: {taka(s.spent)} · এখন তহবিলে: {taka(s.balance)}</Text>
+        <Text style={st.small}>{tr('মোট খরচ', 'Total spent')}: {taka(s.spent)} · {tr('এখন তহবিলে', 'In the fund now')}: {taka(s.balance)}</Text>
       </View>
       <View style={st.card}>
-        <Text style={st.h}>🤲 যাচাই করা, সাহায্যের অপেক্ষায়</Text>
-        {!s.waiting.length ? <Text style={st.p}>এখন কেউ অপেক্ষায় নেই।</Text> : null}
-        {s.waiting.map((w, i) => <Text key={i} style={st.p}>• {personLabel(w)} — {kindLabel(w.kind)}{w.status === 'funded' ? ' (টাকা দেওয়া হয়েছে)' : ''}</Text>)}
+        <Text style={st.h}>{tr('🤲 যাচাই করা, সাহায্যের অপেক্ষায়', '🤲 Checked, waiting for help')}</Text>
+        {!s.waiting.length ? <Text style={st.p}>{tr('এখন কেউ অপেক্ষায় নেই।', 'Nobody is waiting now.')}</Text> : null}
+        {s.waiting.map((w, i) => <Text key={i} style={st.p}>• {personLabel(w)} — {kindLabel(w.kind)}{w.status === 'funded' ? tr(' (টাকা দেওয়া হয়েছে)', ' (money given)') : ''}</Text>)}
       </View>
       <View style={st.card}>
-        <Text style={st.h}>💝 সাম্প্রতিক দান</Text>
-        {!s.recent.length ? <Text style={st.p}>এখনো কোনো দান যাচাই হয়নি।</Text> : null}
-        {s.recent.map((d, i) => <Text key={i} style={st.p}>• {d.name || 'একজন দাতা (নাম গোপন)'} — {taka(d.amount)}</Text>)}
+        <Text style={st.h}>{tr('💝 সাম্প্রতিক দান', '💝 Recent gifts')}</Text>
+        {!s.recent.length ? <Text style={st.p}>{tr('এখনো কোনো দান যাচাই হয়নি।', 'No gift has been checked yet.')}</Text> : null}
+        {s.recent.map((d, i) => <Text key={i} style={st.p}>• {d.name || tr('একজন দাতা (নাম গোপন)', 'A donor (name hidden)')} — {taka(d.amount)}</Text>)}
       </View>
     </>
   );

@@ -82,7 +82,7 @@ test('screens: Give tab checks permission; admin fund page has the permission pa
   assert.ok(give.includes('donateAccess(') && give.includes('requestDonateAccess(') && give.includes('অনুমতি চাই'));
   const admin = readFileSync(new URL('../../src/screens/AdminFund.tsx', import.meta.url), 'utf8');
   assert.ok(admin.includes('setDonateMode(') && admin.includes('donorAccess(') && admin.includes('setDonorAccess('));
-  assert.ok(F.FUND_RULES.join(' ').includes('অনুমতি'));
+  assert.ok(F.fundRules().join(' ').includes('অনুমতি'));
   const sql = readFileSync(new URL('../../supabase/028_fund_access.sql', import.meta.url), 'utf8');
   assert.ok(/enable row level security/.test(sql));
 });
