@@ -19,7 +19,7 @@ import { reloadAppAsync } from 'expo';
 import { Platform, Pressable } from 'react-native';
 import { T } from '../strings';
 import { Button, Card, Notice, Field } from '../components/ui';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearUserData } from '../lib/offlineStore';
 import { supabase } from '../lib/supabase';
 import { toBn } from '../lib/phone';
 import { useTutorial } from '../tutorial';
@@ -91,7 +91,7 @@ export function Account({ navigation }: { navigation: Nav }) {
   const photoDone = async () => { setCamOpen(false); setSaved(true); await load(); };
   const logout = () => Alert.alert(tr('লগআউট করবেন?', 'Log out?'), tr('আবার ঢুকতে মোবাইল নম্বর (বা যাচাই করা ইমেইল) ও পাসওয়ার্ড লাগবে।', 'To come back you will need your mobile number (or verified email) and password.'), [
     { text: tr('না, থাকুক', 'No, stay'), style: 'cancel' },
-    { text: tr('হ্যাঁ, লগআউট', 'Yes, log out'), style: 'destructive', onPress: async () => { await pushLogout(); AsyncStorage.multiRemove(['ta.profileCache.v1', 'ta.groupLeader.v1', 'ta.announce.v1', 'ta.contractLeader.v1', 'ta.trip.v1', 'ta.helpline.v1', 'ta.tripMoney.v1', 'ta.payInfo.v1', 'ta.notifs.v1', 'ta.pendingEmail.v1']).catch(() => {}); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
+    { text: tr('হ্যাঁ, লগআউট', 'Yes, log out'), style: 'destructive', onPress: async () => { await pushLogout(); await clearUserData(); clearLocalDocs(); cancelDocs(); resetUnread(); supabase.auth.signOut().catch(() => {}); } },
   ]);
   const doDelete = async () => {
     if (delBusy) return;

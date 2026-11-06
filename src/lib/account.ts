@@ -4,6 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { clearLocalDocs } from './docs';
+import { clearUserData } from './offlineStore';
 import { cancelEverything } from './notify';
 import { fail } from './rpc';
 import { notReady } from './groups';
@@ -76,7 +77,8 @@ export async function deleteMyAccount(password: string): Promise<void> {
     if (old.error) throw old.error;
   } else if (r.data !== 'ok') throw new Error(r.data === 'password_needed' ? 'password needed' : `deletion refused: ${String(r.data)}`);
 
-  try {
+  await clearUserData();     // everything about the person (src/lib/offlineStore.ts) ...
+  try {                      // ... and, since the account is gone, this phone's app settings too (except the start screens)
     const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('ta.') && k !== 'ta.onboarded.v1');
     if (keys.length) await AsyncStorage.multiRemove(keys);
   } catch (e) { /* local cleanup is best effort */ }

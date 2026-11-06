@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Modal, type ViewStyle } from 'react-native';
 import { tr } from '../lib/lang';
+import { withCopy } from '../lib/offlineStore';
+import { OfflineNote } from './OfflineNote';
 import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { C, S, R, TOUCH } from '../theme';
@@ -11,7 +13,7 @@ import { parseDate, todayYMD, ymdToInput } from '../lib/dates';
 import { PAY_METHODS, PAY_STATUS, methodLabel, payInfo, myPayments, contractMoney, submitPayment,
   type ContractMoney, type MyPayment, type PayInfo, type PayMethod } from '../lib/payments';
 import { DocCamera } from '../screens/DocsScreen';
-import { st, confirm, errText, fmtDay, fmtTaka } from '../screens/GroupScreen';
+import { st, confirm, errText, fmtDay, fmtTaka, fmtWhen } from '../screens/GroupScreen';
 
 // Haji: pay Travel Adda (never the leader directly), record the payment with a receipt, and follow its status.
 type Contract = { id: string };   // a contract (only its id is needed here)
@@ -25,12 +27,14 @@ export default function PaymentBox({ contract }: { contract: Contract }): JSX.El
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [form, setForm] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
+  const [offAt, setOffAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     payInfo().then(setInfo).catch(() => setInfo(null));
     try {
-      const [m, p] = await Promise.all([contractMoney(contract.id), myPayments(contract.id)]);
-      setMoney(m); setRows(p); setState('ok');
+      const x = await withCopy(`pay.${contract.id}`, () => Promise.all([contractMoney(contract.id), myPayments(contract.id)]));
+      const [m, p] = x.data;
+      setMoney(m); setRows(p); setOffAt(x.offline ? x.at : null); setState('ok');
     } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, [contract.id]);
   useEffect(() => { load(); }, [load]);
@@ -39,6 +43,7 @@ export default function PaymentBox({ contract }: { contract: Contract }): JSX.El
   return (
     <View style={[st.cRow, { paddingTop: S.sm, marginTop: S.md }]}>
       <Text style={st.h}>{tr('💳 টাকা জমা', '💳 Payments')}</Text>
+      {offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {state === 'err' ? <Notice kind="bad" title={tr('টাকার হিসাব আনা যায়নি', 'Could not load the money details')} text={tr('ইন্টারনেট দেখে আবার চেষ্টা করুন।', 'Check the internet and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
       {money ? (

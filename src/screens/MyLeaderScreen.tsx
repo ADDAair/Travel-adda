@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState, type JSX } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator, Image } from 'react-native';
 import { tr } from '../lib/lang';
+import { withCopy } from '../lib/offlineStore';
+import { OfflineNote } from '../components/OfflineNote';
 import ScrollView from '../components/KbScroll';
 import * as DocumentPicker from 'expo-document-picker';
 import { C, S } from '../theme';
@@ -13,7 +15,7 @@ import { myContracts, respondContract, cancelContract, rateLeader, fileComplaint
 import { shareContractPdf } from '../lib/contractPdf';
 import PaymentBox from '../components/PaymentBox';
 import { myChatConsents, type MyConsent } from '../lib/chatConsent';
-import { st, confirm, errText, fmtDay } from './GroupScreen';
+import { st, confirm, errText, fmtDay, fmtWhen } from './GroupScreen';
 import type { Msg, Nav } from './navTypes';
 
 import type { MyContract, Res } from '../lib/types';
@@ -36,12 +38,14 @@ export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   const [asks, setAsks] = useState<MyConsent[]>([]);
+  const [offAt, setOffAt] = useState<number | null>(null);   // showing the copy saved on this phone (no internet)
 
   const load = useCallback(async () => {
     myChatConsents().then(setAsks).catch(() => {});
     try {
-      const [c, r, k] = await Promise.all([myContracts(), myReferral(), myComplaints()]);
-      setRows(c); setRef(r); setComplaints(k); setState('ok');
+      const x = await withCopy('myLeader', () => Promise.all([myContracts(), myReferral(), myComplaints()]));
+      const [c, r, k] = x.data;
+      setRows(c); setRef(r); setComplaints(k); setOffAt(x.offline ? x.at : null); setState('ok');
     } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
   useEffect(() => { load(); return navigation?.addListener?.('focus', load); }, [load, navigation]);
@@ -62,6 +66,7 @@ export default function MyLeaderScreen({ navigation }: { navigation: Nav }): JSX
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}><Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">{tr('🤝 লিডার ও চুক্তি', '🤝 Leader and contract')}</Text>
+      {offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {asks.some((k) => k.status === 'asked') ? (
         <Notice kind="warn" title={tr('🔐 Travel Adda আপনার অনুমতি চাইছে', '🔐 Travel Adda is asking your permission')} text={tr('বিরোধ মেটাতে লিডারের সাথে আপনার প্রশ্ন-উত্তর দেখার অনুমতি চাওয়া হয়েছে। আপনি রাজি না হলে কেউ দেখবে না।', 'Permission is asked to see your questions and answers with the leader, to settle a dispute. If you do not agree, nobody will see them.')}>

@@ -4,6 +4,8 @@ import ScrollView from '../components/KbScroll';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
 import { tr, getLang, monthName, takaText } from '../lib/lang';
+import { withCopy } from '../lib/offlineStore';
+import { OfflineNote } from '../components/OfflineNote';
 import { toBn } from '../lib/phone';
 import { myProfile, myGroups, joinGroup, respondInvite, leaveGroup, groupContracts, myAcceptances, acceptContract, notReady, telBd, groupAnnouncements } from '../lib/groups';
 import type { Msg, Nav } from './navTypes';
@@ -45,11 +47,13 @@ export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.El
   const [msg, setMsg] = useState<Msg>(null);
   const [open, setOpen] = useState<MyGroup | null>(null);           // group shown with its terms
   const [ann, setAnn] = useState<{ rows: Announcement[]; offline: boolean } | null>(null);             // { rows, offline } leader announcements
+  const [offAt, setOffAt] = useState<number | null>(null);   // showing the copy saved on this phone (no internet)
 
   const load = useCallback(async () => {
     try {
-      const [p, g] = await Promise.all([myProfile(), myGroups()]);
-      setMe(p); setRows(g);
+      const x = await withCopy('groups', () => Promise.all([myProfile(), myGroups()]));
+      const [p, g] = x.data;
+      setMe(p); setRows(g); setOffAt(x.offline ? x.at : null);
       const ids = g.filter((x) => x.status === 'active').map((x) => x.group_id);
       groupAnnouncements(ids).then(setAnn).catch(() => setAnn(null));
       setState('ok');
@@ -87,6 +91,7 @@ export default function GroupScreen({ navigation }: { navigation: Nav }): JSX.El
       {state === 'load' ? <ActivityIndicator color={C.primary} style={{ marginTop: S.lg }} /> : null}
       {state === 'soon' ? <Notice kind="info" title={tr('শীঘ্রই চালু হবে', 'Coming soon')} text={tr('দল ও লিডারের সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে। চালু হলে এখানেই দেখা যাবে।', 'The group and leader feature has one last step left. It will show here when ready.')} /> : null}
       {state === 'err' ? <Notice kind="bad" title={tr('তথ্য আনা যায়নি', 'Could not get the details')} text={tr('ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।', 'Check the internet connection and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
+      {offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
 
       {state === 'ok' ? (
@@ -172,9 +177,14 @@ function GroupTerms({ group, onBack }: { group: MyGroup; onBack: () => void }): 
   const [acc, setAcc] = useState<Record<string, string>>({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [offAt, setOffAt] = useState<number | null>(null);
   const load = useCallback(async () => {
     setErr('');
-    try { const [c, a] = await Promise.all([groupContracts(group.group_id), myAcceptances()]); setRows(c); setAcc(a); }
+    try {
+      const x = await withCopy(`terms.${group.group_id}`, () => Promise.all([groupContracts(group.group_id), myAcceptances()]));
+      const [c, a] = x.data;
+      setRows(c); setAcc(a); setOffAt(x.offline ? x.at : null);
+    }
     catch (e) { setErr(errText(e)); setRows((x) => x || []); }
   }, [group]);
   useEffect(() => { load(); }, [load]);
@@ -187,6 +197,7 @@ function GroupTerms({ group, onBack }: { group: MyGroup; onBack: () => void }): 
       <Pressable onPress={onBack} style={st.back} accessibilityRole="button" accessibilityLabel={tr('দলের পাতায় ফিরে যান', 'Back to the group page')}><Text style={st.backT}>{tr('‹ আমার দল', '‹ My group')}</Text></Pressable>
       <Text style={st.title} accessibilityRole="header">{tr('📜 প্যাকেজের শর্ত', '📜 Package terms')}</Text>
       <Text style={st.small}>{group.group_name} · {tr('লিডার', 'Leader')}: {group.leader_name}</Text>
+      {offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {err ? <Notice kind="bad" title={err} /> : null}
       {rows === null ? <ActivityIndicator color={C.primary} /> : null}
       {rows && rows.length === 0 && !err ? <Notice kind="info" title={tr('এখনো কোনো শর্ত দেওয়া হয়নি', 'No terms given yet')} text={tr('লিডার প্যাকেজের শর্ত লিখলে এখানে দেখা যাবে।', 'When the leader writes the package terms, they will show here.')} /> : null}

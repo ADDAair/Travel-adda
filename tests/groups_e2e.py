@@ -333,6 +333,17 @@ with sync_playwright() as p:
                 result['payments'] = 'form ok'
             else:
                 result['payments'] = 'db-missing (008 not run)'
+            # offline step 1 (Nov 2026): without internet the haji's own page shows the copy saved on the phone, with its time
+            try:
+                hp.context.set_offline(True)
+                tab(hp, 'হোম'); hp.wait_for_timeout(1200); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(4000); shot(hp, 'H03o-offline')
+                step('ইন্টারনেট ছাড়া: "আমার লিডার" পাতায় আগের তথ্য ও "শেষ হালনাগাদ"', has(hp, 'ইন্টারনেট নেই বা দুর্বল', 4000) and has(hp, 'শেষ হালনাগাদ', 1000) and has(hp, '১,৫০,০০০ টাকা', 2000))
+            except Exception as e:
+                step('ইন্টারনেট ছাড়া "আমার লিডার" পাতা', False, str(e)[:150])
+            finally:
+                hp.context.set_offline(False)
+            tab(hp, 'হোম'); hp.wait_for_timeout(1200); btn(hp, '^লিডার ও চুক্তি খুলুন').click(); hp.wait_for_timeout(4000)
+            step('ইন্টারনেট ফিরলে আবার নতুন তথ্য (সতর্কবার্তা চলে যায়)', not has(hp, 'ইন্টারনেট নেই বা দুর্বল', 1500))
 
             # 3) rating, directory, profile, call request, SOS
             btn(hp, '^লিডারকে রেটিং দিন$').click(); hp.wait_for_timeout(500)
