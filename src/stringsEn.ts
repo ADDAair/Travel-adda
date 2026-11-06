@@ -11,7 +11,7 @@ export const en: Strings = {
   soon: 'Coming soon',
   retry: 'Try again',
   goHome: 'Back to Home',
-  tabs: { Home: 'Home', Map: 'Emergency', Dua: 'Dua', Offers: 'Offers', Account: 'My info' },
+  tabs: { Home: 'Home', Map: 'SOS', Dua: 'Dua', Offers: 'Offers', Account: 'My info' },   // short: 5 tabs share the width
   auth: {
     loginTab: 'Log in', registerTab: 'New account',
     loginTitle: 'Log in to your account', registerTitle: 'Open a new account',
