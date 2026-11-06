@@ -2,6 +2,7 @@
 // Database policies let each user see, add and delete only their own rows and files.
 // Opened photos are also kept inside this app's private folder on the phone, so they open without internet.
 import { Platform } from 'react-native';
+import { tr } from './lang';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IM from 'expo-image-manipulator';
@@ -20,13 +21,13 @@ type Manip = {
 const Im = IM as unknown as Manip;
 
 export const DOC_TYPES = [
-  { id: 'passport', icon: '🛂', label: 'পাসপোর্ট', en: 'Passport' },
-  { id: 'visa', icon: '📄', label: 'ভিসা', en: 'Visa' },
-  { id: 'ticket', icon: '✈️', label: 'বিমানের টিকেট', en: 'Air ticket' },
-  { id: 'hotel_voucher', icon: '🏨', label: 'হোটেল ভাউচার', en: 'Hotel voucher' },
-  { id: 'other', icon: '📎', label: 'অন্যান্য (টিকার সনদ ইত্যাদি)', en: 'Other (vaccination card etc.)' },
+  { id: 'passport', icon: '🛂', get label() { return tr('পাসপোর্ট', 'Passport'); } },
+  { id: 'visa', icon: '📄', get label() { return tr('ভিসা', 'Visa'); } },
+  { id: 'ticket', icon: '✈️', get label() { return tr('বিমানের টিকেট', 'Air ticket'); } },
+  { id: 'hotel_voucher', icon: '🏨', get label() { return tr('হোটেল ভাউচার', 'Hotel voucher'); } },
+  { id: 'other', icon: '📎', get label() { return tr('অন্যান্য (টিকার সনদ ইত্যাদি)', 'Other (vaccination card etc.)'); } },
 ];
-export const typeOf = (id: string): { id: string; icon: string; label: string; en: string } => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
+export const typeOf = (id: string): { id: string; icon: string; label: string } => DOC_TYPES.find((t) => t.id === id) || DOC_TYPES[4];
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const LOCAL = Platform.OS === 'web' ? null : `${FileSystem.documentDirectory}docs/`;
