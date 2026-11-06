@@ -85,7 +85,7 @@ function DocsInner({ navigation }: { navigation: Nav }) {
       setMsg({ kind: 'ok', text: tr(`${typeOf(type).label} সংরক্ষণ হয়েছে।`, `${typeOf(type).label} saved.`) });
       await load();
     } catch (e) {
-      setMsg({ kind: 'bad', text: errText(e) });   // the picked file stays, so tr("আবার চেষ্টা করুন", "Try again") works without picking again
+      setMsg({ kind: 'bad', text: errText(e) });   // the picked file stays, so "আবার চেষ্টা করুন" works without picking again
     } finally {
       setBusy(false); top();
     }

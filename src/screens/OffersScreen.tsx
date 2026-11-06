@@ -222,7 +222,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
                 <Button title={tr('Travel Adda হেল্পলাইনে ফোন করুন', 'Call the Travel Adda helpline')} icon="📞" onPress={callHelp} a11yHint={tr(`ফোনে প্যাকেজ নম্বর ${refOf(open.id)} বলুন`, `Say package number ${refOf(open.id)} on the phone`)} />
                 <Text style={st.small}>{tr(`ফোনে বলুন: "প্যাকেজ নম্বর ${refOf(open.id)}"`, `On the phone say: "package number ${refOf(open.id)}"`)}{help.hours ? ` · ${tr('সময়', 'hours')}: ${help.hours}` : ''}</Text>
               </>
-            ) : <Notice kind="info" title={tr('হেল্পলাইন নম্বর শীঘ্রই আসছে', 'Helpline number coming soon')} text={tr('এখন tr("আমাকে ফোন করুন", "Call me") চাপুন, টিম আপনাকে ফোন করবে।', 'For now tap "Call me" and the team will call you.')} />}
+            ) : <Notice kind="info" title={tr('হেল্পলাইন নম্বর শীঘ্রই আসছে', 'Helpline number coming soon')} text={tr('এখন "আমাকে ফোন করুন" চাপুন, টিম আপনাকে ফোন করবে।', 'For now tap "Call me" and the team will call you.')} />}
             {req ? (
               <>
                 <Notice kind="ok" title={tr('আপনার অনুরোধ পাঠানো আছে', 'Your request has been sent')} text={tr(`পাঠিয়েছেন: ${fmtDay(r.created_at)}। Travel Adda টিম আপনাকে ফোন করবে।`, `Sent: ${fmtDay(r.created_at)}. The Travel Adda team will call you.`)} />

@@ -92,7 +92,7 @@ export default function GroupStaffScreen({ navigation, route }: { navigation: Na
             {khadems.map((k) => (
               <View key={k.user_id} style={{ borderTopWidth: 1, borderColor: C.line, paddingVertical: S.sm }}>
                 <Text style={st.val}>🤝 {k.full_name}</Text>
-                <Text style={st.small}>{tr(`আইডি: ${k.code}${k.phone ? \` · $${toBn(k.phone)}\` : ''}`, `ID: ${k.code}${k.phone ? \` · ${k.phone}\` : ''}`)}</Text>
+                <Text style={st.small}>{tr(`আইডি: ${k.code}${k.phone ? ` · ${toBn(k.phone)}` : ''}`, `ID: ${k.code}${k.phone ? ` · ${k.phone}` : ''}`)}</Text>
                 <Button title={tr('খাদেম থেকে সরান', 'Remove as khadem')} kind="danger" onPress={() => remove(k)} disabled={busy} style={{ marginTop: S.xs }} />
               </View>
             ))}

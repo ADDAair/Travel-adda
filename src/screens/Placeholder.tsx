@@ -130,7 +130,7 @@ export function Account({ navigation }: { navigation: Nav }) {
   ]);
   const askDelete = () => !delPw.trim() ? setDelErr(tr('আগে আপনার পাসওয়ার্ড লিখুন। নিরাপত্তার জন্য এটা লাগে।', 'First write your password. It is needed for safety.')) : Alert.alert(tr('অ্যাকাউন্ট মুছে ফেলবেন?', 'Delete the account?'), tr('অ্যাকাউন্ট এখনই বন্ধ হবে, আর ৩০ দিন পরে নাম, হাজী আইডি ও সার্ভারের সব তথ্য চিরতরে মুছে যাবে। ছবি ও কাগজপত্রের ছবি এখনই মুছে যাবে। ৩০ দিনের মধ্যে লগইন করলে মোছা বাতিল করতে পারবেন।', 'The account is paused now, and after 30 days your name, haji ID and all server data are deleted for ever. Your photo and document photos are deleted now. Log in within 30 days to cancel the deletion.'), [
     { text: tr('না, রাখুন', 'No, keep it'), style: 'cancel' },
-    { text: tr('হ্যাঁ, মুছতে চাই', 'Yes, I want to delete'), style: 'destructive', onPress: () => Alert.alert(tr('শেষবার নিশ্চিত করুন', 'Confirm one last time'), tr('সত্যিই অ্যাকাউন্ট মুছে ফেলবেন? শুধু বিরতি চাইলে tr("অ্যাকাউন্ট বন্ধ রাখুন", "Pause the account") বেছে নিন।', 'Really delete the account? If you only want a break, choose "Pause the account".'), [
+    { text: tr('হ্যাঁ, মুছতে চাই', 'Yes, I want to delete'), style: 'destructive', onPress: () => Alert.alert(tr('শেষবার নিশ্চিত করুন', 'Confirm one last time'), tr('সত্যিই অ্যাকাউন্ট মুছে ফেলবেন? শুধু বিরতি চাইলে "অ্যাকাউন্ট বন্ধ রাখুন" বেছে নিন।', 'Really delete the account? If you only want a break, choose "Pause the account".'), [
       { text: tr('না, রাখুন', 'No, keep it'), style: 'cancel' },
       { text: tr('হ্যাঁ, মুছে ফেলুন', 'Yes, delete'), style: 'destructive', onPress: doDelete },
     ]) },

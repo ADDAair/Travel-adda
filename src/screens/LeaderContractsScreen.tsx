@@ -79,7 +79,7 @@ export default function LeaderContractsScreen({ navigation }: { navigation: Nav 
             </>
           ) : (
             <>
-              <Text style={[st.small, { marginBottom: S.sm }]}>{tr('আপনার লিডার আইডি (রেফারেল কোড) দিয়ে যাঁরা নিবন্ধন করেছেন। নিশ্চিত করলে তাঁরা tr('আমার লিডার', 'My leader') হিসেবে আপনাকে দেখবেন।', 'People who registered with your leader ID (referral code). Once you confirm, they will see you as "My leader".')}</Text>
+              <Text style={[st.small, { marginBottom: S.sm }]}>{tr('আপনার লিডার আইডি (রেফারেল কোড) দিয়ে যাঁরা নিবন্ধন করেছেন। নিশ্চিত করলে তাঁরা "আমার লিডার" হিসেবে আপনাকে দেখবেন।', 'People who registered with your leader ID (referral code). Once you confirm, they will see you as "My leader".')}</Text>
               {refs.length === 0 ? <Notice kind="info" title={tr('এখনো কেউ আপনার রেফারেল কোড দেননি', 'Nobody has used your referral code yet')} /> : null}
               {refs.map((r) => (
                 <View key={r.haji_id} style={st.card}>
@@ -169,8 +169,8 @@ function SendForm({ onDone }: { onDone: (m: Msg) => void }): JSX.Element {
     setOfferId(o.id); setKind(o.kind);
     const inc = INCLUDES.filter((x) => (o.includes || []).includes(x.id)).map((x) => x.label);
     const exc = INCLUDES.filter((x) => !(o.includes || []).includes(x.id)).map((x) => x.label);
-    const hotel = [o.makkah_hotel && tr(`মক্কার হোটেল: ${o.makkah_hotel}${o.makkah_distance_m != null ? ` (হারাম থেকে ${o.makkah_distance_m} মিটার)` : ''}`, `Makkah hotel: ${o.makkah_hotel}${o.makkah_distance_m != null ? \` (${o.makkah_distance_m} m from the Haram)\` : ''}`),
-      o.madinah_hotel && tr(`মদিনার হোটেল: ${o.madinah_hotel}${o.madinah_distance_m != null ? ` (${o.madinah_distance_m} মিটার)` : ''}`, `Madinah hotel: ${o.madinah_hotel}${o.madinah_distance_m != null ? \` (${o.madinah_distance_m} m)\` : ''}`)].filter(Boolean).join('\n');
+    const hotel = [o.makkah_hotel && tr(`মক্কার হোটেল: ${o.makkah_hotel}${o.makkah_distance_m != null ? ` (হারাম থেকে ${o.makkah_distance_m} মিটার)` : ''}`, `Makkah hotel: ${o.makkah_hotel}${o.makkah_distance_m != null ? ` (${o.makkah_distance_m} m from the Haram)` : ''}`),
+      o.madinah_hotel && tr(`মদিনার হোটেল: ${o.madinah_hotel}${o.madinah_distance_m != null ? ` (${o.madinah_distance_m} মিটার)` : ''}`, `Madinah hotel: ${o.madinah_hotel}${o.madinah_distance_m != null ? ` (${o.madinah_distance_m} m)` : ''}`)].filter(Boolean).join('\n');
     setF((x) => ({ ...x, title: o.title, price: String(Number(o.price_bdt)), includes: [inc.join(', '), hotel, o.notes].filter(Boolean).join('\n'), excludes: exc.join(', '),
       from: o.depart_on.split('-').reverse().join('-'), to: o.return_on.split('-').reverse().join('-') }));
   };
