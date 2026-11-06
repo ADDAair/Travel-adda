@@ -21,4 +21,5 @@ export const SecurityLevel = { NONE: 0, SECRET: 1, BIOMETRIC_WEAK: 2, BIOMETRIC_
 export const setNotificationCategoryAsync = h('category');
 export const AndroidAudioUsage = { ALARM: 4, NOTIFICATION: 5 }; export const AndroidAudioContentType = { SONIFICATION: 4 };
 export const AndroidNotificationVisibility = { PUBLIC: 1 }; export const AndroidNotificationPriority = { MAX: 'max', HIGH: 'high' };
+export const usePreventScreenCapture = () => {}; export const preventScreenCaptureAsync = async () => {}; export const allowScreenCaptureAsync = async () => {};
 export default {};

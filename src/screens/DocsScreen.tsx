@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image, Modal, ActivityIndicator, Ale
 import ScrollView from '../components/KbScroll';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as DocumentPicker from 'expo-document-picker';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -49,6 +50,9 @@ export default function DocsScreen(props: { navigation: Nav; route?: Route }) {
 }
 
 function DocsInner({ navigation }: { navigation: Nav }) {
+  // Security step 1: while the documents are shown, no screenshots and a blank preview in the recent-apps list.
+  // (DocsInner is only mounted while this page is open and unlocked, so the rest of the app is not affected.)
+  usePreventScreenCapture('docs');
   const [rows, setRows] = useState<DocRow[] | null>(null);          // null = loading
   const [offline, setOffline] = useState(false);
   const [loadErr, setLoadErr] = useState('');

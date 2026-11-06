@@ -25,6 +25,23 @@ jobs:
           cd android
           run ./gradlew assembleRelease --no-daemon || exit 1
           ls -la app/build/outputs/apk/release/
+      # Security step 1 (Nov 2026): Expo signs with the public "Android Debug" key, which anyone has. The APK is re-signed
+      # with Travel Adda's own test key, re-made from a GitHub secret (tools/test_signing_key.mjs); the key never leaves
+      # this job and is deleted right after use. No secret = no APK (never silently debug-signed).
+      - name: sign with Travel Adda's own test key
+        env: { TA_SIGN_SEED_SRC: '${{ secrets.CI_TEST_SECRET }}' }
+        run: |
+          set -eo pipefail
+          if [ -z "$TA_SIGN_SEED_SRC" ]; then echo "::error title=NO SIGNING SECRET::no signing secret (CI_TEST_SECRET) - no APK is made, so it is never signed with the public debug key"; exit 1; fi
+          K="$RUNNER_TEMP/ta-sign"; trap 'rm -rf "$K"' EXIT
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          node tools/test_signing_key.mjs "$K"
+          f=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          "$BT/apksigner" sign --key "$K/key.pk8" --cert "$K/cert.der" --out "$f.signed" "$f"
+          rm -f "$K/key.pk8"; mv "$f.signed" "$f"; rm -f "$f.signed.idsig"
+          "$BT/apksigner" verify --print-certs "$f" | tee certs.txt
+          if grep -q "Android Debug" certs.txt; then echo "::error title=DEBUG KEY::the APK is still signed with the public debug key"; exit 1; fi
+          grep -q "CN=Ami Haji Test" certs.txt || { echo "::error title=SIGNING::the APK does not carry the Travel Adda test key"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: travel-adda-test-apk
