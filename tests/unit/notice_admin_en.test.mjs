@@ -62,4 +62,7 @@ test('the admin screens have the optional English boxes, and the preview shows t
   assert.ok(n.includes("tr('ইংরেজি শিরোনাম (ইচ্ছা করলে)'"), 'labelled in Bengali as optional');
   const p = read('src/screens/AdminPart4.tsx');
   assert.ok(/notifySegment\([^;]*titleEn[^;]*bodyEn/.test(p), 'the segment form sends them too');
+  const box = p.slice(p.indexOf('export function SegmentNotifyBox'), p.indexOf('// ---------- 5) SOS record'));
+  assert.ok(box.includes('noEnYet()'), 'before step 037: a plain message, inside the segment form');
+  assert.equal(p.split('titleEn').length - 1, box.split('titleEn').length - 1, 'titleEn is used only inside the segment form');
 });

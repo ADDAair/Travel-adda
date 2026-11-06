@@ -120,7 +120,7 @@ function LeaderCosts({ leader, onBack }: { leader: Rate; onBack: () => void }): 
     try {
       const [b, r, l] = await Promise.all([leaderBalance(id), serviceCosts(id), ledger()]);
       setBal(b); setRows(r); setContracts(l as LedgerRow[]);
-    } catch (e) { setRows([]); setMsg({ kind: 'bad', text: titleEn.trim() && notReady(e) ? noEnYet() : errMsg(e) }); }
+    } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
   const set = (k: 'contract' | 'kind' | 'amount' | 'note') => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -232,7 +232,7 @@ export function SegmentNotifyBox(): JSX.Element {
     setBusy(true); setMsg(null);
     try { const n = await notifySegment(kind, kind === 'district' ? value.trim() : value, title, body, titleEn, bodyEn); setMsg({ kind: 'ok', text: tr(`✅ ${toBn(n)} জনকে পাঠানো হয়েছে।`, `✅ Sent to ${n} people.`) }); setTitle(''); setBody(''); setTitleEn(''); setBodyEn(''); }
     catch (e) {
-      setMsg({ kind: 'bad', text: (e as Coded)?.code === 'title' ? tr('শিরোনাম লিখুন (অন্তত ২ অক্ষর)।', 'Write a title (at least 2 letters).') : (e as Coded)?.code === 'too_many' ? tr('এক ঘণ্টায় ২০টির বেশি পাঠানো যায় না। একটু পরে চেষ্টা করুন।', 'No more than 20 can be sent in an hour. Try a little later.') : errMsg(e) });
+      setMsg({ kind: 'bad', text: (e as Coded)?.code === 'title' ? tr('শিরোনাম লিখুন (অন্তত ২ অক্ষর)।', 'Write a title (at least 2 letters).') : (e as Coded)?.code === 'too_many' ? tr('এক ঘণ্টায় ২০টির বেশি পাঠানো যায় না। একটু পরে চেষ্টা করুন।', 'No more than 20 can be sent in an hour. Try a little later.') : titleEn.trim() && notReady(e) ? noEnYet() : errMsg(e) });
     }
     finally { setBusy(false); }
   };
