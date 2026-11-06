@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { T } from '../strings';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button, Notice } from './ui';
 import { pushSupported, pushState, pushPref, enablePush, disablePush, notNow, openPhoneSettings, type PushState } from '../lib/push';
@@ -25,31 +26,31 @@ export default function PushCard({ mode = 'settings' }: { mode?: 'home' | 'setti
     setBusy(true); setMsg(null);
     const r = await enablePush();
     setBusy(false);
-    if (r === 'on') { setSt('on'); setMsg({ kind: 'ok', text: 'চালু হয়েছে। এখন অ্যাপ বন্ধ থাকলেও জরুরি খবর ফোনে আসবে।' }); }
+    if (r === 'on') { setSt('on'); setMsg({ kind: 'ok', text: T.push.on }); }
     else if (r === 'denied') { setSt('denied'); }
-    else if (r === 'unavailable') { setSt('off'); setMsg({ kind: 'warn', text: 'এই ফোনে বা অ্যাপের এই সংস্করণে ফোনে নোটিফিকেশন আসা সম্ভব নয়। 🔔 ঘণ্টায় সব খবর আগের মতোই দেখবেন।' }); }
+    else if (r === 'unavailable') { setSt('off'); setMsg({ kind: 'warn', text: T.push.unavailable }); }
     else if (r === 'soon') { setSt('soon'); }
-    else setMsg({ kind: 'bad', text: 'চালু করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।' });
+    else setMsg({ kind: 'bad', text: T.push.onFail });
   };
   const off = async () => {
     if (busy) return;
     setBusy(true); setMsg(null);
     const r = await disablePush();
     setBusy(false);
-    if (r === 'off') { setSt('off'); setMsg({ kind: 'ok', text: 'বন্ধ হয়েছে। খবর শুধু অ্যাপের 🔔 ঘণ্টায় দেখবেন।' }); }
-    else setMsg({ kind: 'bad', text: 'বন্ধ করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।' });
+    if (r === 'off') { setSt('off'); setMsg({ kind: 'ok', text: T.push.off }); }
+    else setMsg({ kind: 'bad', text: T.push.offFail });
   };
   const later = async () => { await notNow(); setSt('off'); };
 
   if (mode === 'home') {
     return (
       <View style={p.card}>
-        <Text style={p.h}>🔔 জরুরি খবর ফোনে পান</Text>
-        <Text style={p.t}>চুক্তি, টাকা জমার খবর আর Travel Adda-র জরুরি নোটিশ অ্যাপ বন্ধ থাকলেও ফোনে আসবে।</Text>
+        <Text style={p.h}>{T.push.askT}</Text>
+        <Text style={p.t}>{T.push.ask}</Text>
         {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-        <Button title="চালু করুন" icon="🔔" onPress={on} loading={busy} />
-        <Pressable onPress={later} style={p.skip} accessibilityRole="button" accessibilityLabel="এখন না। পরে 🔔 পাতা থেকে চালু করা যাবে">
-          <Text style={p.skipT}>এখন না</Text>
+        <Button title={T.push.turnOn} icon="🔔" onPress={on} loading={busy} />
+        <Pressable onPress={later} style={p.skip} accessibilityRole="button" accessibilityLabel={T.push.laterA11y}>
+          <Text style={p.skipT}>{T.push.later}</Text>
         </Pressable>
       </View>
     );
@@ -60,19 +61,19 @@ export default function PushCard({ mode = 'settings' }: { mode?: 'home' | 'setti
       <View style={p.row}>
         <Text style={p.ic} importantForAccessibility="no">{st === 'on' ? '📲' : '🔕'}</Text>
         <View style={{ flex: 1 }}>
-          <Text style={p.lbl}>ফোনে নোটিফিকেশন</Text>
-          <Text style={p.state}>{st === 'on' ? '✅ চালু আছে' : st === 'denied' ? '⛔ ফোনের সেটিংসে বন্ধ' : st === 'unavailable' ? 'এই ফোনে সম্ভব নয়' : '⭕ বন্ধ আছে'}</Text>
+          <Text style={p.lbl}>{T.push.label}</Text>
+          <Text style={p.state}>{st === 'on' ? T.push.stOn : st === 'denied' ? T.push.stDenied : st === 'unavailable' ? T.push.stNo : T.push.stOff}</Text>
         </View>
         {busy ? <ActivityIndicator color={C.primary} /> : null}
       </View>
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-      {st === 'on' ? <Button title="ফোনে নোটিফিকেশন বন্ধ করুন" kind="secondary" onPress={off} disabled={busy} /> : null}
-      {st === 'off' || st === 'unset' ? <Button title="ফোনে নোটিফিকেশন চালু করুন" icon="🔔" onPress={on} loading={busy} /> : null}
+      {st === 'on' ? <Button title={T.push.turnOffBtn} kind="secondary" onPress={off} disabled={busy} /> : null}
+      {st === 'off' || st === 'unset' ? <Button title={T.push.turnOnBtn} icon="🔔" onPress={on} loading={busy} /> : null}
       {st === 'denied' ? (
         <>
-          <Text style={p.t}>ফোনের সেটিংসে "আমি হাজী" অ্যাপের নোটিফিকেশন বন্ধ করা আছে। সেটিংস খুলে "Notifications" বা "বিজ্ঞপ্তি" চালু করুন, তারপর এখানে ফিরে আসুন।</Text>
-          <Button title="ফোনের সেটিংস খুলুন" icon="⚙️" kind="secondary" onPress={openPhoneSettings} />
-          <Button title="আবার দেখুন" icon="🔄" kind="secondary" onPress={on} loading={busy} style={{ marginTop: S.sm }} />
+          <Text style={p.t}>{T.push.denied}</Text>
+          <Button title={T.push.settings} icon="⚙️" kind="secondary" onPress={openPhoneSettings} />
+          <Button title={T.push.again} icon="🔄" kind="secondary" onPress={on} loading={busy} style={{ marginTop: S.sm }} />
         </>
       ) : null}
     </View>

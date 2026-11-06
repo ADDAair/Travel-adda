@@ -35,6 +35,10 @@ def login(ctx, who, tag):
     phone, pw, name, kind = who
     pg = ctx.new_page(); pg.on('dialog', lambda d: d.accept()); pg.on('pageerror', lambda e: result['errors'].append(f'{tag}: {e}'))
     pg.goto('http://localhost:8080/'); pg.wait_for_timeout(3000)
+    lb = pg.get_by_role('button', name='বাংলা', exact=True)          # first start: the language choice (English added Nov 2026)
+    if lb.count() > 0:
+        if tag == 'হাজী': shot(pg, 'H00l-language-choice')
+        lb.first.click(); pg.wait_for_timeout(800)
     for _ in range(3): pg.get_by_text('পরবর্তী', exact=True).first.click(); pg.wait_for_timeout(400)
     pg.get_by_text('শুরু করুন', exact=True).first.click(); pg.wait_for_timeout(800)
     pg.get_by_label('মোবাইল নম্বর').fill(phone); pg.get_by_label('পাসওয়ার্ড', exact=True).fill(pw)
@@ -205,6 +209,15 @@ with sync_playwright() as p:
             # new guides: Haram / Nabawi gates, Nusuk-Rawdah, lost (links to the emergency page), hotels, transport, Zamzam
             try:
                 home(hp); hp.wait_for_timeout(800); shot(hp, 'H00t-home-tiles')
+                # English: the EN button next to the bell switches the whole page at once, and back again
+                try:
+                    hp.get_by_role('button', name=re.compile('^Switch to English')).first.click(); hp.wait_for_timeout(1500)
+                    step('ইংরেজি: উপরের EN বোতাম চাপলে হোম ইংরেজিতে ("Use now", "Helpful tools")', has(hp, 'Use now', 3000) and has(hp, 'Helpful tools', 2000) and hp.get_by_text('এখন ব্যবহার করুন').count() == 0)
+                    shot(hp, 'H00e-home-english')
+                    hp.get_by_role('button', name=re.compile('^বাংলায় দেখুন')).first.click(); hp.wait_for_timeout(1500)
+                    step('ইংরেজি থেকে আবার বাংলা', has(hp, 'এখন ব্যবহার করুন', 3000))
+                except Exception as e:
+                    step('ভাষা বদলানো', False, str(e)[:150])
                 hp.get_by_role('button', name=re.compile('আরও গাইড ও তথ্য')).first.click(); hp.wait_for_timeout(2000); shot(hp, 'H00g-guide-tiles')
                 titles = ['মসজিদুল হারামের গেট ও সুবিধা', 'মসজিদে নববীর গেট ও সুবিধা', 'Nusuk অ্যাপ ও রওজা বুকিং', 'পথ হারালে কী করবেন', 'মক্কা ও মদিনার হোটেল এলাকা', 'যাতায়াত: ট্রেন, বাস ও ট্যাক্সি', 'জমজম, টাকা ও সিম কার্ড', 'ওমরাহ ভিসার ফিঙ্গারপ্রিন্ট (Saudi Visa Bio)', 'প্রতারণা থেকে সাবধান']
                 step('নতুন ৯টি গাইড তালিকায় আছে', all(hp.get_by_text(t).count() > 0 for t in titles))

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { T } from '../strings';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { tripSummary } from '../lib/trip';
 import { useTrip } from './TripCard';
@@ -11,12 +12,12 @@ export default function TripSummary({ navigation }: { navigation: Nav }) {
   const line = tripSummary({ hasContract: !!c, left, passport: !!docs?.hasPassport, visa: !!docs?.hasVisa, passLeft: docs?.passLeft });
   return (
     <Pressable onPress={() => navigation.navigate('Trip')} style={({ pressed }) => [t.card, pressed && { opacity: 0.85 }]}
-      accessibilityRole="button" accessibilityLabel={`আমার সফর: ${line}। বিস্তারিত দেখতে খুলুন`}>
+      accessibilityRole="button" accessibilityLabel={T.trip.a11y(line)}>
       <View style={{ flex: 1 }}>
-        <Text style={t.h}>🧳 আমার সফর</Text>
+        <Text style={t.h}>{T.trip.title}</Text>
         <Text style={t.line}>{line}</Text>
       </View>
-      <Text style={t.open}>খুলুন ›</Text>
+      <Text style={t.open}>{T.common.open}</Text>
     </Pressable>
   );
 }

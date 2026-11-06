@@ -15,6 +15,7 @@ with sync_playwright() as p:
         pg = ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto('http://localhost:8080/'); pg.wait_for_timeout(3000)
+        shot(pg, f'{scale_name}-00-language'); click_text(pg, 'বাংলা', True)
         shot(pg, f'{scale_name}-01-onboarding-1'); click_text(pg, 'পরবর্তী', True)
         shot(pg, f'{scale_name}-02-onboarding-2'); click_text(pg, 'পরবর্তী', True)
         shot(pg, f'{scale_name}-03-onboarding-3'); click_text(pg, 'পরবর্তী', True)

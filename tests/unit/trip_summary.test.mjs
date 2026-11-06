@@ -17,12 +17,13 @@ test('days left first, then contract and papers', () => {
 test('a passport about to expire is mentioned (it matters most)', () => {
   assert.equal(tripSummary({ hasContract: false, left: 40, passport: true, visa: false, passLeft: 100 }), 'যাত্রার আর ৪০ দিন · চুক্তি নেই · কাগজ ১/২ · পাসপোর্টের মেয়াদ কম');
 });
-test('Home uses the short card; the full card lives on its own page "আমার সফর"', () => {
+test('Home uses the short card; the full card lives on its own page "আমার সফর"', async () => {
+  const { bn } = await import('../../src/strings.js');   // texts moved to the dictionary (English added, Nov 2026)
   const home = read('src/screens/HomeScreen.tsx');
   assert.ok(home.includes('<TripSummary') && !home.includes('<TripCard'));
   const sum = read('src/components/TripSummary.tsx');
-  assert.ok(sum.includes("navigation.navigate('Trip')") && sum.includes('accessibilityRole="button"') && sum.includes('খুলুন'));
+  assert.ok(sum.includes("navigation.navigate('Trip')") && sum.includes('accessibilityRole="button"') && sum.includes('T.common.open') && bn.common.open === 'খুলুন ›');
   const app = read('App.tsx');
-  assert.ok(/name="Trip" component=\{TripScreen\} options=\{\{ title: 'আমার সফর' \}\}/.test(app));
+  assert.ok(/name="Trip" component=\{TripScreen\} options=\{\{ title: T\.titles\.Trip \}\}/.test(app) && bn.titles.Trip === 'আমার সফর');
   assert.ok(read('src/screens/TripScreen.tsx').includes('<TripCard'));
 });

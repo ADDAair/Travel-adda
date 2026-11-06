@@ -1,3 +1,4 @@
+import { T } from '../strings';
 // Password strength for the sign-up form. Shown with a bar AND a word, never colour alone.
 // level 0 = not allowed (too short or too easy to guess), 1 = medium (allowed), 2 = strong.
 const SEQ = '01234567890123456789';
@@ -20,4 +21,5 @@ export function passwordStrength(pw: unknown, phone: unknown = ''): Strength {
   if (checks.length && !tooEasy) level = checks.mixed && checks.long ? 2 : 1;
   return { level, checks, tooEasy };
 }
-export const STRENGTH_LABEL: readonly string[] = ['দুর্বল', 'মাঝারি', 'শক্তিশালী'];
+// The words are in strings.ts (auth2.levels) so they follow the chosen language.
+export const strengthLabel = (level: number): string => T.auth2.levels[level] || '';

@@ -4,54 +4,34 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button } from '../components/ui';
 import { toBn } from '../lib/phone';
+import { T } from '../strings';
 
 // Keep this in step with what really works in the app (no promises for features that are not built yet).
-const SLIDES = [
-  { icon: '🕋', title: 'আস-সালামু আলাইকুম!', body: '"আমি হাজী" অ্যাপে আপনাকে স্বাগতম (Travel Adda-র একটি সেবা)। হজ ও ওমরাহর সফরে এই অ্যাপ আপনার পাশে থাকবে।' },
-  {
-    icon: '✅', title: 'এখনই যা ব্যবহার করতে পারবেন', list: [
-      ['🕌', 'নামাজের সময় ও কিবলা', 'আপনার জায়গা অনুযায়ী সময়, কম্পাসে কিবলা'],
-      ['🤲', 'দোয়া ও আল-কুরআন', '৪৫টি দোয়া, ১১৪ সূরা, বাংলা উচ্চারণ ও অর্থ'],
-      ['👥', 'আমার দল ও লিডার', 'যাচাই করা লিডার, ফোন, প্যাকেজের শর্তে সম্মতি'],
-      ['📄', 'আমার কাগজপত্র', 'পাসপোর্ট, ভিসা, টিকেটের ছবি নিরাপদে রাখা'],
-      ['🕋', 'মীকাত ও ইহরাম গাইড', 'কোথায়, কীভাবে ইহরাম বাঁধবেন'],
-      ['🔄', 'ওমরাহ ধাপে ধাপে', 'তাওয়াফ ও সাঈর চক্কর গোনার বাটনসহ'],
-      ['⛺', 'হজের দিনগুলো', '৮ থেকে ১৩ জিলহজ, দিন অনুযায়ী করণীয়'],
-      ['📚', 'আরও গাইড', 'স্বাস্থ্য, আরবি কথা, প্রস্তুতি, জানাজা, কসর, যিয়ারত'],
-      ['🧎', 'নামাজের রাকাত ও নিয়ম', 'অজু, নামাজ, জুমা, বিতর, ঈদ; তাসবিহ ও দিনপঞ্জি'],
-    ],
-  },
-  { icon: '👇', title: 'নিচের ৫টি বাটন', body: null, tabs: true },
-  {
-    icon: '💡', title: 'সহজে ব্যবহারের কয়েকটি কথা', list: [
-      ['🏠', 'সব কিছু হোম থেকে', 'হোমের বড় কার্ডে চাপ দিলেই খুলবে। ওপরে পরের নামাজের সময় থাকবে।'],
-      ['📶', 'ইন্টারনেট ছাড়াও চলে', 'দোয়া, কুরআন, গাইড ও নামাজের সময় হারামের ভেতরেও খুলবে।'],
-      ['‹', 'পেছনে যেতে', 'ওপরের "‹" লেখায় বা ফোনের পেছনের বাটনে চাপুন।'],
-      ['🔠', 'লেখা বড় করতে', '"আমার তথ্য" পাতায় লেখার আকার বদলানো যায়।'],
-      ['🔁', 'ভুলে গেলে আবার দেখুন', '"আমার তথ্য" পাতা থেকে এই পরিচিতি যেকোনো সময় আবার দেখা যাবে।'],
-    ],
-  },
-];
-const TABS = [
-  ['🏠', 'হোম', 'সব গাইড, পরের নামাজের সময়'],
-  ['🆘', 'জরুরি', 'জরুরি নম্বর, লিডারকে ফোন, পথ হারালে আরবি কার্ড'],
-  ['🤲', 'দোয়া', 'মাঝের সোনালি বড় বাটন: দোয়া ও আল-কুরআন'],
-  ['🎁', 'অফার', 'যাচাই করা এজেন্সির হজ ও ওমরাহ প্যাকেজ'],
-  ['👤', 'আমার তথ্য', 'আপনার ছবি, হাজী আইডি, পরিচিতি আবার দেখা, লগআউট'],
-];
+// The texts are in strings.ts / stringsEn.ts (onboard), so they follow the chosen language.
+type Slide = { icon: string; title: string; body?: string | null; list?: [string, string, string][]; tabs?: boolean };
+const slides = (): Slide[] => {
+  const O = T.onboard;
+  return [
+    { icon: '🕋', title: O.welcomeT, body: O.welcome },
+    { icon: '✅', title: O.nowT, list: O.now },
+    { icon: '👇', title: O.tabsT, body: null, tabs: true },
+    { icon: '💡', title: O.tipsT, list: O.tips },
+  ];
+};
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [i, setI] = useState(0);
   const ins = useSafeAreaInsets();
+  const O = T.onboard; const SLIDES = slides(); const TABS = O.tabs;
   const sl = SLIDES[i];
   const last = i === SLIDES.length - 1;
   return (
     <View style={[st.wrap, { paddingTop: ins.top + S.sm, paddingBottom: Math.max(ins.bottom, S.md) }]}>
       <View style={st.top}>
-        <Text style={st.step} accessibilityLabel={`${SLIDES.length}টির মধ্যে ${i + 1} নম্বর পাতা`}>{toBn(i + 1)} / {toBn(SLIDES.length)}</Text>
+        <Text style={st.step} accessibilityLabel={O.pageA11y(i + 1, SLIDES.length)}>{toBn(i + 1)} / {toBn(SLIDES.length)}</Text>
         {!last ? (
-          <Pressable onPress={onDone} style={st.skip} accessibilityRole="button" accessibilityLabel="এড়িয়ে যান" accessibilityHint="পরিচিতি বাদ দিয়ে সরাসরি শুরু করুন">
-            <Text style={st.skipT}>এড়িয়ে যান</Text>
+          <Pressable onPress={onDone} style={st.skip} accessibilityRole="button" accessibilityLabel={O.skip} accessibilityHint={O.skipHint}>
+            <Text style={st.skipT}>{O.skip}</Text>
           </Pressable>
         ) : <View style={{ height: TOUCH }} />}
       </View>
@@ -90,8 +70,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
         </View>
       </ScrollView>
       <View style={st.nav}>
-        {i > 0 ? <Button title="পেছনে" kind="secondary" onPress={() => setI(i - 1)} style={{ flex: 1 }} /> : null}
-        <Button title={last ? 'শুরু করুন' : 'পরবর্তী'} kind={last ? 'accent' : 'primary'} onPress={() => (last ? onDone() : setI(i + 1))} style={{ flex: 2 }} />
+        {i > 0 ? <Button title={O.back} kind="secondary" onPress={() => setI(i - 1)} style={{ flex: 1 }} /> : null}
+        <Button title={last ? O.start : O.next} kind={last ? 'accent' : 'primary'} onPress={() => (last ? onDone() : setI(i + 1))} style={{ flex: 2 }} />
       </View>
     </View>
   );

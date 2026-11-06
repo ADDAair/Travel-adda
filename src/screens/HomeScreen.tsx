@@ -23,30 +23,22 @@ import type { Res } from '../lib/types';
 
 type Hello = { full_name?: string | null; haji_code?: string | null };   // name and ID shown at the top
 
-// Working features, shown as tiles (same design as সহায়ক টুল). Every tile opens something that really works (no fake buttons).
-// `what` is read aloud by the screen reader.
-const READY = [
-  { route: 'Prayer', icon: '🕌', title: 'নামাজের সময় ও কিবলা', what: 'আপনার জায়গা অনুযায়ী সময় ও কিবলার দিক। ইন্টারনেট ছাড়াও চলে।' },
-  { route: 'Dua', icon: '🤲', title: 'দোয়া ভল্ট', what: 'দোয়া ও সম্পূর্ণ আল-কুরআন (১১৪ সূরা)। ইন্টারনেট ছাড়াও চলে।' },
-  { route: 'MyLeader', icon: '🤝', title: 'লিডার ও চুক্তি', what: 'যাচাই করা লিডার খুঁজুন, রেফারেল কোড, চুক্তি পড়ে সম্মতি, দলের ঘোষণা।', hajiOnly: true },
-  { route: 'Docs', icon: '📄', title: 'আমার কাগজপত্র', what: 'পাসপোর্ট, ভিসা, টিকেটের ছবি নিরাপদে। একবার খুললে ইন্টারনেট ছাড়াও দেখা যায়।' },
-  { route: 'Ihram', icon: '🕋', title: 'মীকাত ও ইহরাম গাইড', what: 'কোথায়, কীভাবে ইহরাম বাঁধবেন। নিয়ত, তালবিয়াহ ও নিষেধ।' },
-  { route: 'Umrah', icon: '🔄', title: 'ওমরাহ ধাপে ধাপে', what: 'তাওয়াফ, সাঈ, চুল কাটা। চক্কর গোনার বাটনসহ।' },
-  { route: 'Hajj', icon: '⛺', title: 'হজের দিনগুলো', what: '৮ থেকে ১৩ জিলহজ, দিন অনুযায়ী করণীয়। মদিনা যিয়ারত।' },
-  { route: 'Guides', icon: '📚', title: 'আরও গাইড ও তথ্য', what: 'প্রতারণা থেকে সাবধান, ওমরাহ ভিসার ফিঙ্গারপ্রিন্ট, হারাম ও নববীর গেট, Nusuk ও রওজা বুকিং, পথ হারালে, হোটেল এলাকা, যাতায়াত, জমজম ও সিম, স্বাস্থ্য, আরবি কথা, প্রস্তুতি, হুইলচেয়ার আরও অনেক।' },
+// Working features, shown as tiles (same design as the helpful tools). Every tile opens something that really works.
+// The words are in strings.ts / stringsEn.ts (home.ready: [title, what]); `what` is read aloud by the screen reader.
+const READY: { route: string; icon: string; hajiOnly?: boolean }[] = [
+  { route: 'Prayer', icon: '🕌' }, { route: 'Dua', icon: '🤲' }, { route: 'MyLeader', icon: '🤝', hajiOnly: true },
+  { route: 'Docs', icon: '📄' }, { route: 'Ihram', icon: '🕋' }, { route: 'Umrah', icon: '🔄' }, { route: 'Hajj', icon: '⛺' }, { route: 'Guides', icon: '📚' },
 ];
+const ready = () => READY.map((x) => ({ ...x, key: x.route, title: T.home.ready[x.route][0], what: T.home.ready[x.route][1] }));
 
 const PROFILE_CACHE = ME_CACHE;
-const TOOLS = [
-  { route: 'Salah', icon: '🧎', title: 'নামাজের রাকাত ও নিয়ম' },
-  { route: 'Tasbih', icon: '📿', title: 'তাসবিহ গণনা' },
-  { route: 'Calendar', icon: '📅', title: 'ইসলামি দিনপঞ্জি' },
-];
+const TOOLS = [{ route: 'Salah', icon: '🧎' }, { route: 'Tasbih', icon: '📿' }, { route: 'Calendar', icon: '📅' }];
 
 const UPCOMING: [string, string, string][] = [
 ];
 
 export default function HomeScreen({ navigation }: { navigation: Nav }) {
+  const H = T.home;
   const { handsOnPending, skipHandsOn } = useTutorial();
   const { me, refreshMe } = useMe();
   const leaderAcc = isLeaderAccount(me);
@@ -106,71 +98,71 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
 
   useEffect(() => { if (state !== 'load') finishStartup('home'); }, [state]);
   if (state === 'load') {
-    return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>আপনার তথ্য আনা হচ্ছে…</Text></View>;
+    return <View style={st.center}><ActivityIndicator color={C.primary} size="large" /><Text style={st.loadT}>{H.loading}</Text></View>;
   }
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <View style={st.hero} accessible accessibilityLabel={p ? `আস-সালামু আলাইকুম, ${p.full_name}। আপনার হাজী আইডি ${p.haji_code}` : 'আস-সালামু আলাইকুম'}>
-        <Text style={st.hi}>আস-সালামু আলাইকুম 👋</Text>
+      <View style={st.hero} accessible accessibilityLabel={p ? H.heroA11y(String(p.full_name || ''), String(p.haji_code || '')) : H.salam}>
+        <Text style={st.hi}>{H.salamWave}</Text>
         {p ? <Text style={st.nm}>{p.full_name}</Text> : null}
-        {p ? <View style={st.idPill}><Text style={st.idT}>{leaderAcc ? 'লিডার আইডি' : 'হাজী আইডি'}: {toBn(p.haji_code)}</Text></View> : null}
+        {p ? <View style={st.idPill}><Text style={st.idT}>{leaderAcc ? H.leaderId : H.hajiId}: {toBn(p.haji_code)}</Text></View> : null}
       </View>
       {!leaderAcc && countLine ? <Text style={st.count}>🤝 {countLine}</Text> : null}
       <NoticeBar navigation={navigation} />
       {state === 'err' ? (
-        <Notice kind="warn" title="ইন্টারনেট সংযোগ নেই" text={p ? 'আপনার আগের তথ্য দেখানো হচ্ছে। নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।' : 'নিচের গাইড, দোয়া ও নামাজের সময় ইন্টারনেট ছাড়াও চলবে।'}>
+        <Notice kind="warn" title={H.offlineT} text={p ? H.offlineOld : H.offline}>
           <Button title={T.retry} icon="🔄" kind="secondary" onPress={retry} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
 
       {next ? (
         <Pressable onPress={() => navigation.navigate('Prayer')} style={({ pressed }) => [st.np, pressed && { opacity: 0.9 }]} accessibilityRole="button"
-          accessibilityLabel={`পরের নামাজ ${next.nm}, ${next.t.part} ${next.t.time}। আর ${fmtLeft(next.nextAt - now)} বাকি। নামাজের সময় ও কিবলা খুলুন`}>
+          accessibilityLabel={H.nextA11y(next.nm, next.t.part, next.t.time, fmtLeft(next.nextAt - now))}>
           <Text style={st.npIc} importantForAccessibility="no">🕌</Text>
           <View style={{ flex: 1 }}>
-            <Text style={st.npL}>পরের নামাজ · {ploc?.label}</Text>
+            <Text style={st.npL}>{H.next(String(ploc?.label || ''))}</Text>
             <Text style={st.npT}>{next.nm} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
-            <Text style={st.npLeft}>⏳ আর {fmtLeft(next.nextAt - now)} বাকি</Text>
+            <Text style={st.npLeft}>{H.left(fmtLeft(next.nextAt - now))}</Text>
           </View>
-          <Text style={st.readyGo}>সব ›</Text>
+          <Text style={st.readyGo}>{T.common.all}</Text>
         </Pressable>
       ) : null}
 
       {handsOnPending ? (
         <Card style={st.coach}>
-          <Text style={st.coachH}>✋ একবার চেষ্টা করুন</Text>
-          <Text style={st.coachB}>নিচের মাঝখানের <Text style={{ fontWeight: '700' }}>সোনালি "দোয়া"</Text> বাটনে একবার চাপুন।</Text>
+          <Text style={st.coachH}>{H.tryT}</Text>
+          <Text style={st.coachB}>{H.try1}<Text style={{ fontWeight: '700' }}>{H.tryGold}</Text>{H.try2}</Text>
           <Text style={st.arrow} importantForAccessibility="no">👇</Text>
-          <Pressable onPress={skipHandsOn} style={st.skip} accessibilityRole="button" accessibilityLabel="এখন না, পরে করব">
-            <Text style={st.skipT}>এখন না, পরে করব</Text>
+          <Pressable onPress={skipHandsOn} style={st.skip} accessibilityRole="button" accessibilityLabel={H.later}>
+            <Text style={st.skipT}>{H.later}</Text>
           </Pressable>
         </Card>
       ) : null}
 
       {!handsOnPending && pendingEmail ? (
-        <Notice kind="info" title="📧 ইমেইল যাচাই বাকি" text={`${pendingEmail} যাচাই করলে এই ইমেইল দিয়েও লগইন করতে পারবেন।`}>
-          <Button title="ইমেইল যাচাই করুন" icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
+        <Notice kind="info" title={H.mailT} text={H.mail(pendingEmail)}>
+          <Button title={H.mailBtn} icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
       {!handsOnPending && khadem ? (
-        <Notice kind={khadem.waiting || khadem.invites ? 'warn' : 'info'} title={khadem.n ? `🤝 আপনি ${toBn(khadem.n)}টি দলের খাদেম` : '📩 খাদেম হওয়ার অনুরোধ এসেছে'}
-          text={khadem.invites ? `${toBn(khadem.invites)}টি দল থেকে খাদেম হওয়ার অনুরোধ এসেছে। খুলে রাজি বা না বলুন।` : khadem.waiting ? `${toBn(khadem.waiting)}টি প্রশ্নের উত্তর বাকি।` : 'দলের হাজী আর তাঁদের প্রশ্ন দেখুন।'}>
-          <Button title="খাদেমের পাতা খুলুন" icon="🤝" kind="secondary" onPress={() => navigation.navigate('KhademHome')} style={{ marginTop: S.sm }} />
+        <Notice kind={khadem.waiting || khadem.invites ? 'warn' : 'info'} title={khadem.n ? H.khademT(khadem.n) : H.khademInviteT}
+          text={khadem.invites ? H.khademInvites(khadem.invites) : khadem.waiting ? H.khademWaiting(khadem.waiting) : H.khademNone}>
+          <Button title={H.khademBtn} icon="🤝" kind="secondary" onPress={() => navigation.navigate('KhademHome')} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
       {!handsOnPending ? <PushCard mode="home" /> : null}
-      {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title="আমার লিডার পাতা খুলুন" kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
+      {refMsg ? <Notice kind={refMsg.kind} title={refMsg.text}>{refMsg.kind !== 'ok' ? <Button title={H.myLeaderBtn} kind="secondary" onPress={() => navigation.navigate('MyLeader')} style={{ marginTop: S.sm }} /> : null}</Notice> : null}
       {leaderAcc ? <LeaderHomeCard me={me} navigation={navigation} /> : <TripSummary navigation={navigation} />}
 
-      <Text style={st.h2}>এখন ব্যবহার করুন</Text>
-      <TileGrid items={READY.filter((x) => !(leaderAcc && x.hajiOnly)).map((x) => ({ ...x, key: x.route }))}
+      <Text style={st.h2}>{H.useNow}</Text>
+      <TileGrid items={ready().filter((x) => !(leaderAcc && x.hajiOnly))}
         onPress={(x) => navigation.navigate(x.route, x.route === 'Dua' ? { tutorialDone: false } : undefined)} />
 
-      <Text style={[st.h2, { marginTop: S.lg }]}>সহায়ক টুল</Text>
-      <TileGrid tone="gold" items={TOOLS.map((x) => ({ ...x, key: x.route }))} onPress={(x) => navigation.navigate(x.route, { t: Date.now() })} />
+      <Text style={[st.h2, { marginTop: S.lg }]}>{H.toolsT}</Text>
+      <TileGrid tone="gold" items={TOOLS.map((x) => ({ ...x, key: x.route, title: H.tools[x.route] }))} onPress={(x) => navigation.navigate(x.route, { t: Date.now() })} />
 
-      {UPCOMING.length ? <Text style={[st.h2, { marginTop: S.lg }]}>যা আসছে</Text> : null}
-      {UPCOMING.length ? <Text style={st.sub}>এই সুবিধাগুলো তৈরি হচ্ছে। তৈরি হলেই এখানে চালু হবে।</Text> : null}
+      {UPCOMING.length ? <Text style={[st.h2, { marginTop: S.lg }]}>{H.upcoming}</Text> : null}
+      {UPCOMING.length ? <Text style={st.sub}>{H.upcomingSub}</Text> : null}
       {UPCOMING.map(([ic, title, what]) => (
         <View key={title} style={st.row} accessible accessibilityLabel={`${title}, ${what}, ${T.soon}`}>
           <Text style={st.rowIc} importantForAccessibility="no">{ic}</Text>
@@ -187,16 +179,17 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
 
 // Leader accounts: the panel when approved, otherwise where the application stands.
 function LeaderHomeCard({ me, navigation }: { me: Me | null; navigation: Nav }) {
+  const H = T.home;
   const approved = me?.role === 'leader';
   return (
     <Pressable onPress={() => navigation.navigate(approved ? 'Leader' : 'LeaderApply')} style={({ pressed }) => [st.ready, { borderWidth: 2, borderColor: C.gold }, pressed && { opacity: 0.9 }]}
-      accessibilityRole="button" accessibilityLabel={approved ? 'লিডার প্যানেল খুলুন' : 'লিডার আবেদনের অবস্থা দেখুন'}>
+      accessibilityRole="button" accessibilityLabel={approved ? H.panelA11y : H.statusA11y}>
       <Text style={st.readyIc} importantForAccessibility="no">🧭</Text>
       <View style={{ flex: 1 }}>
-        <Text style={st.readyT}>{approved ? 'লিডার প্যানেল' : 'লিডার অ্যাকাউন্ট: অনুমোদন বাকি'}</Text>
-        <Text style={st.readyW}>{approved ? 'হাজী, চুক্তি, দল, প্যাকেজ ও ঘোষণা এক জায়গায়।' : 'এজেন্সির তথ্য ও কাগজ জমা দিন, অ্যাডমিন যাচাই করে অনুমোদন দেবেন।'}</Text>
+        <Text style={st.readyT}>{approved ? H.panel : H.pending}</Text>
+        <Text style={st.readyW}>{approved ? H.panelW : H.pendingW}</Text>
       </View>
-      <Text style={st.readyGo}>খুলুন ›</Text>
+      <Text style={st.readyGo}>{T.common.open}</Text>
     </Pressable>
   );
 }

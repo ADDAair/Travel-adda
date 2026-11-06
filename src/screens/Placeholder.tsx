@@ -4,6 +4,7 @@ import ScrollView from '../components/KbScroll';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PhotoCapture from './PhotoCapture';
 import { signedAvatarUrl } from '../lib/avatar';
+import { LangSwitch } from '../components/LangButton';
 import { deleteMyAccount, pauseMyAccount, pauseText } from '../lib/account';
 import { lockWanted, setLockWanted, canLock, unlock } from '../lib/applock';
 import { clearLocalDocs } from '../lib/docs';
@@ -163,6 +164,10 @@ export function Account({ navigation }: { navigation: Nav }) {
           <Button title={p.email_verified ? 'ইমেইল বদলান' : 'ইমেইল যোগ করুন (ইমেইলেও লগইন)'} icon="📧" kind="secondary" onPress={() => navigation.navigate('VerifyPhone', { channel: 'email' })} style={{ marginTop: S.sm }} />
         ) : null}
       </Card>
+      <View style={{ marginBottom: S.lg }}>
+        <Text style={st.sizeH}>{T.langSetting.title}</Text>
+        <LangSwitch />
+      </View>
       <TextSize />
       <Button title="টিউটোরিয়াল আবার দেখুন" icon="🎓" kind="secondary" onPress={replay} a11yHint="প্রথম দিনের পরিচিতি আবার দেখাবে" style={{ marginBottom: S.md }} />
       {isLeaderAccount(me) ? (

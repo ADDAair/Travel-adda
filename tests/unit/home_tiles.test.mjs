@@ -14,7 +14,7 @@ test('one shared tile grid: gold frame, 3 per row, big enough to tap, label for 
   const mh = Number((t.match(/minHeight: (\d+)/) || [])[1]);
   assert.ok(mh >= 96, 'tile at least 96 high (touch target ≥ 48)');
   assert.ok(t.includes('accessibilityRole="button"'));
-  assert.ok(/accessibilityLabel=\{`[^`]*\$\{x\.title\}[^`]*\$\{x\.what/.test(t), 'the short description is still read aloud');
+  assert.ok(/accessibilityLabel=\{T\.tile\.a11y\([\s\S]{0,60}x\.title, x\.what/.test(t), 'the short description is still read aloud (in the chosen language)');
   assert.ok(t.includes('importantForAccessibility="no"'), 'emoji icon is not read aloud');
   assert.ok(t.includes('toBn('), 'order numbers in Bengali digits');
 });

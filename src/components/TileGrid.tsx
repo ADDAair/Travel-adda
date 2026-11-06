@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { T } from '../strings';
 import { C, F, S, R } from '../theme';
 import { toBn } from '../lib/phone';
 
@@ -8,14 +9,14 @@ import { toBn } from '../lib/phone';
 // The short description is not printed (keeps tiles calm) but is read aloud by the screen reader.
 export type Tile = { key: string; icon: string; title: string; what?: string };
 
-export function TileGrid<T extends Tile>({ items, onPress, numbered = false, hint = 'খুলবে', tone = 'green' }:
-  { items: T[]; onPress: (x: T) => void; numbered?: boolean; hint?: string; tone?: 'green' | 'gold' }) {
+export function TileGrid<X extends Tile>({ items, onPress, numbered = false, hint, tone = 'green' }:
+  { items: X[]; onPress: (x: X) => void; numbered?: boolean; hint?: string; tone?: 'green' | 'gold' }) {
   return (
     <View style={st.grid}>
       {items.map((x, i) => (
         <View key={x.key} style={st.cell}>
         <Pressable onPress={() => onPress(x)} style={({ pressed }) => [st.tile, { borderColor: tone === 'gold' ? C.gold : C.primary }, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button" accessibilityLabel={`${numbered ? toBn(i + 1) + '। ' : ''}${x.title} খুলুন${x.what ? '। ' + x.what : ''}`} accessibilityHint={hint}>
+          accessibilityRole="button" accessibilityLabel={T.tile.a11y(numbered ? toBn(i + 1) : '', x.title, x.what || '')} accessibilityHint={hint || T.common.opens}>
           {numbered ? <View style={st.num} importantForAccessibility="no"><Text style={st.numT}>{toBn(i + 1)}</Text></View> : null}
           <Text style={st.ic} importantForAccessibility="no">{x.icon}</Text>
           <Text style={st.t}>{x.title}</Text>

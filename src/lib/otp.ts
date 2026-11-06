@@ -1,3 +1,4 @@
+import { T } from '../strings';
 // Phone verification and "forgot password" through the phone-otp server function (supabase/functions/phone-otp).
 // Returns { ok: true, ... } or { ok: false, error } — never throws, so screens can always show a clear message.
 import { supabase } from './supabase';
@@ -32,26 +33,16 @@ export async function otp(action: string, body: Record<string, unknown> = {}): P
   }
 }
 
-// Plain Bengali for every answer the server can give.
+// Plain words (Bengali or English, by the chosen language) for every answer the server can give.
 export function otpText(answer: OtpAnswer | null | undefined): string {
   const r: OtpAnswer = answer || { ok: false };
+  const O = T.otp;
   switch (r.error) {
-    case 'wait': return `একটু অপেক্ষা করুন। ${r.retry_in ? `${String(r.retry_in).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)])} সেকেন্ড` : '১ মিনিট'} পরে আবার কোড চাইতে পারবেন।`;
-    case 'too_many': return 'অনেকবার কোড চাওয়া হয়েছে। ১ ঘণ্টা পরে আবার চেষ্টা করুন।';
-    case 'daily_cap': return 'আজ আর কোড পাঠানো যাচ্ছে না। কাল আবার চেষ্টা করুন, অথবা হেল্পলাইনে যোগাযোগ করুন।';
-    case 'sms_failed': return 'এসএমএস পাঠানো যায়নি। একটু পরে আবার চেষ্টা করুন।';
-    case 'bad_code': return 'কোডটি ৬ সংখ্যার। এসএমএস দেখে ঠিকমতো লিখুন।';
-    case 'wrong_code': return `কোড মেলেনি।${r.tries_left != null ? ` আর ${String(r.tries_left).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)])} বার চেষ্টা করতে পারবেন।` : ''}`;
-    case 'too_many_tries': return 'অনেকবার ভুল কোড দেওয়া হয়েছে। নতুন কোড চান।';
-    case 'expired': return 'কোডের মেয়াদ শেষ বা কোডটি আর কাজ করছে না। নতুন কোড চান।';
-    case 'weak_password': return 'পাসওয়ার্ড অন্তত ৮ অক্ষরের দিন, সহজে আন্দাজ করা যায় এমন নয়।';
-    case 'bad_email': return 'ইমেইল ঠিকমতো লিখুন, যেমন: name@gmail.com';
-    case 'email_failed': return 'ইমেইল পাঠানো যায়নি। ঠিকানাটি ঠিক আছে কি না দেখে একটু পরে আবার চেষ্টা করুন।';
-    case 'email_taken': return 'এই ইমেইল অন্য একটি "আমি হাজী" অ্যাকাউন্টে যুক্ত আছে। অন্য ইমেইল দিন, অথবা হেল্পলাইনে যোগাযোগ করুন।';
-    case 'bad_phone': return 'সঠিক ১১ সংখ্যার মোবাইল নম্বর লিখুন (০১ দিয়ে শুরু)।';
-    case 'not_signed_in': return 'আবার লগইন করে চেষ্টা করুন।';
-    case 'network': return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।';
-    case 'not_ready': return 'এসএমএস কোড পাঠানোর সুবিধা এখন পাওয়া যাচ্ছে না (শীঘ্রই চালু হবে)। পরে আবার চেষ্টা করুন, অথবা হেল্পলাইনে যোগাযোগ করুন।';
-    default: return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
+    case 'wait': return O.wait(r.retry_in ? Number(r.retry_in) : null);
+    case 'wrong_code': return O.wrong_code(r.tries_left != null ? Number(r.tries_left) : null);
+    case 'too_many': case 'daily_cap': case 'sms_failed': case 'bad_code': case 'too_many_tries': case 'expired': case 'weak_password':
+    case 'bad_email': case 'email_failed': case 'email_taken': case 'bad_phone': case 'not_signed_in': case 'network': case 'not_ready':
+      return O[r.error];
+    default: return O.other;
   }
 }

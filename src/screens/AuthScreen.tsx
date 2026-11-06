@@ -8,21 +8,21 @@ import { T } from '../strings';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
-import { normalizePhone, isValidBdPhone, toBn } from '../lib/phone';
+import { normalizePhone, isValidBdPhone } from '../lib/phone';
 import { loginEmailFor, newLoginEmail, looksLikeEmail, normalizeEmail, isValidEmail, emailTypoFix, PENDING_EMAIL } from '../lib/login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeyboardHeight } from '../lib/keyboard';
-import { passwordStrength, STRENGTH_LABEL, type Strength } from '../lib/password';
+import { passwordStrength, strengthLabel, type Strength } from '../lib/password';
 import ForgotPassword from './ForgotPassword';
 import { rememberReferral, getTerms, rememberTermsAgreement, type TermsText } from '../lib/market';
 import { Modal } from 'react-native';
 
-const A = T.auth;
 
 type Errs = Partial<Record<'name' | 'phone' | 'email' | 'pw' | 'ref' | 'agree', string>>;
 type AccType = 'haji' | 'leader' | null;
 
 export default function AuthScreen(): JSX.Element {
+  const A = T.auth; const A2 = T.auth2;   // read at draw time, so a language change shows at once
   const ins = useSafeAreaInsets();
   const [reg, setReg] = useState(false);
   const [name, setName] = useState('');
@@ -48,7 +48,7 @@ export default function AuthScreen(): JSX.Element {
     getTerms('leader').then((t) => setAllTerms((x) => ({ ...x, leader: t }))).catch(() => {});
   }, []);
   const terms = accType === 'leader' ? allTerms.leader : allTerms.haji;      // the terms for the account type being opened
-  const termsName = accType === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
+  const termsName = accType === 'leader' ? A2.termsLeader : A2.termsHaji;
   useEffect(() => { setAgree(false); }, [accType]);                       // a different type means different terms: tick again
   const phoneRef = useRef<ComponentRef<typeof TextInput> | null>(null);
   const pwRef = useRef<ComponentRef<typeof TextInput> | null>(null);
@@ -70,12 +70,12 @@ export default function AuthScreen(): JSX.Element {
     if (!reg && looksLikeEmail(phone)) { if (!isValidEmail(normalizeEmail(phone))) e.phone = A.errEmail; }
     else if (!isValidBdPhone(normalizePhone(phone))) e.phone = reg ? A.errPhone : A.errIdent;
     if (reg && email.trim() && !isValidEmail(normalizeEmail(email))) e.email = A.errEmail;
-    else if (reg && email.trim() && emailTypoFix(email)) e.email = `বানানে ভুল আছে মনে হচ্ছে। ঠিক ঠিকানা কি ${emailTypoFix(email)}? ঠিক করে লিখুন।`;
-    if (!reg && looksLikeEmail(phone) && emailTypoFix(phone)) e.phone = `বানানে ভুল আছে মনে হচ্ছে। ঠিক ঠিকানা কি ${emailTypoFix(phone)}?`;
+    else if (reg && email.trim() && emailTypoFix(email)) e.email = A2.emailTypo(emailTypoFix(email) || '');
+    if (!reg && looksLikeEmail(phone) && emailTypoFix(phone)) e.phone = A2.loginTypo(emailTypoFix(phone) || '');
     if (pw.length < 8) e.pw = A.errPw;
     else if (reg && strength.level === 0) e.pw = A.errPwEasy;
-    if (reg && refCode.trim() && !/^TL-?\d{1,8}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = 'রেফারেল কোড এমন হয়: TL-00012। না থাকলে ঘরটি খালি রাখুন।';
-    if (reg && terms && !agree) e.agree = 'শর্তাবলি পড়ে টিক দিন।';
+    if (reg && refCode.trim() && !/^TL-?\d{1,8}$/i.test(refCode.trim().replace(/\s/g, ''))) e.ref = A2.errRef;
+    if (reg && terms && !agree) e.agree = A2.errAgree;
     setErrs(e);
     return Object.keys(e).length === 0;
   }
@@ -146,20 +146,20 @@ export default function AuthScreen(): JSX.Element {
 
         {reg && !accType ? (
           <>
-            <Text style={[st.tag, { textAlign: 'left', marginBottom: S.sm }]}>আপনি কে? একটি বাছুন:</Text>
-            <Pressable onPress={() => setAccType('haji')} style={st.choice} accessibilityRole="button" accessibilityLabel="আমি হাজী, হজ বা ওমরাহ যাত্রী">
+            <Text style={[st.tag, { textAlign: 'left', marginBottom: S.sm }]}>{A2.who}</Text>
+            <Pressable onPress={() => setAccType('haji')} style={st.choice} accessibilityRole="button" accessibilityLabel={A2.hajiA11y}>
               <Text style={st.choiceIc} importantForAccessibility="no">🕋</Text>
-              <View style={{ flex: 1 }}><Text style={st.choiceT}>আমি হাজী</Text><Text style={st.choiceW}>হজ বা ওমরাহ যাত্রী</Text></View>
+              <View style={{ flex: 1 }}><Text style={st.choiceT}>{A2.hajiT}</Text><Text style={st.choiceW}>{A2.hajiW}</Text></View>
             </Pressable>
-            <Pressable onPress={() => setAccType('leader')} style={st.choice} accessibilityRole="button" accessibilityLabel="আমি গ্রুপ লিডার বা এজেন্সি">
+            <Pressable onPress={() => setAccType('leader')} style={st.choice} accessibilityRole="button" accessibilityLabel={A2.leaderA11y}>
               <Text style={st.choiceIc} importantForAccessibility="no">🧭</Text>
-              <View style={{ flex: 1 }}><Text style={st.choiceT}>আমি গ্রুপ লিডার</Text><Text style={st.choiceW}>হজ/ওমরাহ এজেন্সি। লাইসেন্স ও কাগজ দিয়ে নিবন্ধন, অ্যাডমিন যাচাই করবেন।</Text></View>
+              <View style={{ flex: 1 }}><Text style={st.choiceT}>{A2.leaderT}</Text><Text style={st.choiceW}>{A2.leaderW}</Text></View>
             </Pressable>
           </>
         ) : null}
         {reg && accType ? (
-          <Pressable onPress={() => !busy && setAccType(null)} style={st.chosen} accessibilityRole="button" accessibilityLabel={`অ্যাকাউন্টের ধরন: ${accType === 'leader' ? 'গ্রুপ লিডার' : 'হাজী'}। বদলাতে চাপুন`}>
-            <Text style={st.chosenT}>{accType === 'leader' ? '🧭 গ্রুপ লিডার অ্যাকাউন্ট' : '🕋 হাজী অ্যাকাউন্ট'} · <Text style={{ textDecorationLine: 'underline' }}>বদলান</Text></Text>
+          <Pressable onPress={() => !busy && setAccType(null)} style={st.chosen} accessibilityRole="button" accessibilityLabel={A2.typeA11y(accType === 'leader')}>
+            <Text style={st.chosenT}>{A2.typeT(accType === 'leader')} · <Text style={{ textDecorationLine: 'underline' }}>{A2.change}</Text></Text>
           </Pressable>
         ) : null}
 
@@ -182,7 +182,7 @@ export default function AuthScreen(): JSX.Element {
         <Field inputRef={pwRef} label={A.pwLabel} hint={A.pwHint} value={pw} onChangeText={setPw} error={errs.pw}
           secureTextEntry={!showPw} maxLength={72} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onFocus={keepVisible} onSubmitEditing={submit}
           right={
-            <Pressable onPress={() => setShowPw(!showPw)} style={st.eye} accessibilityRole="button" accessibilityLabel={showPw ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}>
+            <Pressable onPress={() => setShowPw(!showPw)} style={st.eye} accessibilityRole="button" accessibilityLabel={showPw ? A2.pwHideA11y : A2.pwShowA11y}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={{ fontSize: 16 }} importantForAccessibility="no">{showPw ? '🙈' : '👁️'}</Text>
                 <Text key={showPw ? 'pw-hide' : 'pw-show'} style={st.eyeT}>{showPw ? A.hide : A.show}</Text>
@@ -193,23 +193,23 @@ export default function AuthScreen(): JSX.Element {
         {reg && pw.length > 0 ? <StrengthMeter s={strength} /> : null}
 
         {reg && accType === 'haji' ? (
-          <Field label="লিডারের রেফারেল কোড (থাকলে)" hint="যেমন: TL-00012" value={refCode} onChangeText={(v: string) => setRefCode(v.toUpperCase())} error={errs.ref}
+          <Field label={A2.refLabel} hint={A2.refHint} value={refCode} onChangeText={(v: string) => setRefCode(v.toUpperCase())} error={errs.ref}
             maxLength={12} autoCapitalize="characters" autoCorrect={false} onFocus={keepVisible} />
         ) : null}
-        {reg && accType === 'leader' ? <Notice kind="info" title="অ্যাকাউন্ট খোলার পর শেষ ধাপ" text="এজেন্সির নাম, ওমরাহ ও হজ লাইসেন্স নম্বর এবং লাইসেন্সের ছবি দিতে হবে। অ্যাডমিন যাচাই করে অনুমোদন দিলে লিডার প্যানেল চালু হবে।" /> : null}
+        {reg && accType === 'leader' ? <Notice kind="info" title={A2.leaderNoteT} text={A2.leaderNote} /> : null}
         {reg && terms ? (
           <View style={{ marginBottom: S.md }}>
-            <Pressable onPress={() => setAgree(!agree)} style={st.agree} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel={`আমি ${termsName} পড়েছি ও মেনে নিচ্ছি`}>
-              <Text style={st.agreeT}>{agree ? '☑️' : '⬜'} আমি {termsName} পড়েছি ও মেনে নিচ্ছি</Text>
+            <Pressable onPress={() => setAgree(!agree)} style={st.agree} accessibilityRole="checkbox" accessibilityState={{ checked: agree }} accessibilityLabel={A2.agree(termsName)}>
+              <Text style={st.agreeT}>{agree ? '☑️' : '⬜'} {A2.agree(termsName)}</Text>
             </Pressable>
-            <Pressable onPress={() => setShowTerms(true)} style={st.forgotBtn} accessibilityRole="button"><Text style={st.forgotT}>📜 {termsName} পড়ুন</Text></Pressable>
+            <Pressable onPress={() => setShowTerms(true)} style={st.forgotBtn} accessibilityRole="button"><Text style={st.forgotT}>📜 {A2.read(termsName)}</Text></Pressable>
             {errs.agree ? <Text style={st.agreeErr}>⚠️ {errs.agree}</Text> : null}
           </View>
         ) : null}
 
         {formErr ? <Notice kind="bad" title={formErr} /> : null}
 
-        <Button title={busy ? A.working : waitLeft > 0 ? `${toBn(waitLeft)} সেকেন্ড পরে আবার চাপুন` : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} disabled={waitLeft > 0} />
+        <Button title={busy ? A.working : waitLeft > 0 ? A2.waitBtn(waitLeft) : (reg ? A.registerBtn : A.loginBtn)} onPress={submit} loading={busy} disabled={waitLeft > 0} />
 
         {!reg ? (
           <Pressable onPress={() => !busy && setForgot(true)} style={st.forgotBtn} accessibilityRole="button" accessibilityLabel={A.forgot}>
@@ -221,8 +221,8 @@ export default function AuthScreen(): JSX.Element {
           <ScrollView contentContainerStyle={[st.wrap, { paddingTop: ins.top + S.lg }]}>
             <Text style={st.title}>📜 {termsName}</Text>
             <Text style={st.termsT} selectable>{terms ? terms.body : ''}</Text>
-            <Button title="পড়েছি, মেনে নিচ্ছি" icon="✅" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
-            <Button title="বন্ধ করুন (টিক দেব না)" kind="secondary" onPress={() => setShowTerms(false)} style={{ marginTop: S.sm, marginBottom: S.xl }} />
+            <Button title={A2.agreeBtn} icon="✅" onPress={() => { setShowTerms(false); setAgree(true); }} style={{ marginTop: S.lg }} />
+            <Button title={A2.closeNoTick} kind="secondary" onPress={() => setShowTerms(false)} style={{ marginTop: S.sm, marginBottom: S.xl }} />
           </ScrollView>
         </Modal>
       </ScrollView>
@@ -232,23 +232,21 @@ export default function AuthScreen(): JSX.Element {
 
 function StrengthMeter({ s }: { s: Strength }): JSX.Element {
   const col = [C.bad, C.warn, C.ok][s.level];
-  const tip = s.tooEasy ? 'এটা সহজে অনুমান করা যায় (যেমন 12345678 বা নিজের মোবাইল নম্বর)।'
-    : s.level === 0 ? 'আরও অক্ষর লিখুন।'
-    : s.level === 1 ? 'চলবে। আরও নিরাপদ করতে ১২ অক্ষর বা কোনো চিহ্ন (! @ #) যোগ করুন।'
-    : 'খুব ভালো পাসওয়ার্ড।';
+  const A2 = T.auth2;
+  const tip = s.tooEasy ? A2.tipEasy : s.level === 0 ? A2.tip0 : s.level === 1 ? A2.tip1 : A2.tip2;
   const Row = ({ ok, text }: { ok: boolean; text: string }) => <Text style={st.chk}>{ok ? '✅' : '⬜'} {text}</Text>;
   return (
-    <View style={st.meter} accessible accessibilityLiveRegion="polite" accessibilityLabel={`পাসওয়ার্ডের শক্তি: ${STRENGTH_LABEL[s.level]}। ${tip}`}>
+    <View style={st.meter} accessible accessibilityLiveRegion="polite" accessibilityLabel={A2.strengthA11y(strengthLabel(s.level), tip)}>
       <View style={st.meterTop}>
-        <Text style={st.meterH}>পাসওয়ার্ডের শক্তি:</Text>
-        <Text style={[st.meterL, { color: col }]}>{STRENGTH_LABEL[s.level]}</Text>
+        <Text style={st.meterH}>{A2.strength}</Text>
+        <Text style={[st.meterL, { color: col }]}>{strengthLabel(s.level)}</Text>
       </View>
       <View style={st.bars}>
         {[0, 1, 2].map((i) => <View key={i} style={[st.bar, { backgroundColor: i <= s.level ? col : C.line }]} />)}
       </View>
-      <Row ok={s.checks.length} text="কমপক্ষে ৮ অক্ষর" />
-      <Row ok={s.checks.mixed} text="অক্ষর ও সংখ্যা মিশিয়ে" />
-      <Row ok={s.checks.long} text="১২ অক্ষর বা কোনো চিহ্ন (! @ #)" />
+      <Row ok={s.checks.length} text={A2.chk8} />
+      <Row ok={s.checks.mixed} text={A2.chkMix} />
+      <Row ok={s.checks.long} text={A2.chkLong} />
       <Text style={st.tip}>{tip}</Text>
     </View>
   );

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, Animated, AccessibilityInfo, AppState, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, type NavigationState } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { pushSupported, syncPush, isPushTap } from './src/lib/push';
 import { refreshUnread } from './src/lib/notifications';
@@ -17,6 +17,9 @@ import { TutorialCtx, useTutorial } from './src/tutorial';
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import Onboarding from './src/screens/Onboarding';
+import LanguageChoice from './src/screens/LanguageChoice';
+import { LangButton } from './src/components/LangButton';
+import { loadLang, setLang, onLang, type Lang } from './src/lib/lang';
 import Logo from './src/components/Logo';
 import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
@@ -102,13 +105,11 @@ function UpdateNeeded({ storeUrl, onSkip }: { storeUrl: string | null; onSkip?: 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: S.lg, paddingTop: 64, justifyContent: 'center' }}>
       <Text style={{ fontSize: 56, textAlign: 'center' }} importantForAccessibility="no">⬆️</Text>
-      <Text style={{ fontSize: F.title, fontWeight: '700', color: C.primary, textAlign: 'center', marginVertical: S.md }} accessibilityRole="header">নতুন সংস্করণ নিন</Text>
-      <Text style={{ fontSize: F.body, color: C.text, textAlign: 'center', lineHeight: F.body * 1.5, marginBottom: S.lg }}>
-        আপনার নিরাপত্তার জন্য "আমি হাজী" অ্যাপের নতুন সংস্করণ দরকার। আপনার তথ্য নিরাপদ আছে; নতুন সংস্করণ নিলে আগের মতোই সব পাবেন। (এই ফোনে আছে: {APP_VERSION})
-      </Text>
-      {storeUrl ? <Button title="নতুন সংস্করণ নিন" icon="⬇️" onPress={() => Linking.openURL(storeUrl).catch(() => {})} />
-        : <Text style={{ fontSize: F.body, color: C.muted, textAlign: 'center' }}>নতুন সংস্করণের জন্য Travel Adda হেল্পলাইনে যোগাযোগ করুন।</Text>}
-      {onSkip ? <Button title="অ্যাডমিন হিসেবে চালিয়ে যান" kind="secondary" onPress={onSkip} style={{ marginTop: S.md }} /> : null}
+      <Text style={{ fontSize: F.title, fontWeight: '700', color: C.primary, textAlign: 'center', marginVertical: S.md }} accessibilityRole="header">{T.update.title}</Text>
+      <Text style={{ fontSize: F.body, color: C.text, textAlign: 'center', lineHeight: F.body * 1.5, marginBottom: S.lg }}>{T.update.text(APP_VERSION)}</Text>
+      {storeUrl ? <Button title={T.update.get} icon="⬇️" onPress={() => Linking.openURL(storeUrl).catch(() => {})} />
+        : <Text style={{ fontSize: F.body, color: C.muted, textAlign: 'center' }}>{T.update.helpline}</Text>}
+      {onSkip ? <Button title={T.update.skip} kind="secondary" onPress={onSkip} style={{ marginTop: S.md }} /> : null}
     </View>
   );
 }
@@ -186,42 +187,43 @@ function Main() {
       screenLayout={({ children, route }) => <View style={{ flex: 1 }}><VideoBar route={route.name} />{children}</View>}
       screenOptions={({ navigation, route }) => ({
         headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' },
-        headerRight: route.name === 'Notifications' ? undefined : () => <Bell onPress={() => navigation.navigate('Notifications')} />,
+        // language switch (EN / বাং) next to the bell on every page (owner request, Nov 2026)
+        headerRight: () => <View style={{ flexDirection: 'row', alignItems: 'center' }}><LangButton />{route.name === 'Notifications' ? null : <Bell onPress={() => navigation.navigate('Notifications')} />}</View>,
       })}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: T.appName, headerTitle: () => <HeaderBrand /> }} />
-      <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: 'জরুরি সাহায্য' }} />
-      <Tab.Screen name="Dua" component={DuaScreen} options={{ title: 'দোয়া ভল্ট' }} />
-      <Tab.Screen name="Offers" component={OffersScreen} options={{ title: 'অফার ও প্যাকেজ' }} />
+      <Tab.Screen name="Map" component={EmergencyScreen} options={{ title: T.titles.Map }} />
+      <Tab.Screen name="Dua" component={DuaScreen} options={{ title: T.titles.Dua }} />
+      <Tab.Screen name="Offers" component={OffersScreen} options={{ title: T.titles.Offers }} />
       <Tab.Screen name="Account" component={Account} options={{ title: T.tabs.Account }} />
-      <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: 'মীকাত ও ইহরাম গাইড' }} />
-      <Tab.Screen name="Umrah" component={UmrahScreen} options={{ title: 'ওমরাহ ধাপে ধাপে' }} />
-      <Tab.Screen name="Hajj" component={HajjScreen} options={{ title: 'হজের দিনগুলো' }} />
-      <Tab.Screen name="Prayer" component={PrayerScreen} options={{ title: 'নামাজের সময় ও কিবলা' }} />
-      <Tab.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'গোপনীয়তা নীতি' }} />
-      <Tab.Screen name="Guides" component={GuidesScreen} options={{ title: 'আরও গাইড ও তথ্য' }} />
-      <Tab.Screen name="Docs" component={DocsScreen} options={{ title: 'আমার কাগজপত্র' }} />
-      <Tab.Screen name="Trip" component={TripScreen} options={{ title: 'আমার সফর' }} />
-      <Tab.Screen name="Salah" component={SalahScreen} options={{ title: 'নামাজের রাকাত ও নিয়ম' }} />
-      <Tab.Screen name="Tasbih" component={TasbihScreen} options={{ title: 'তাসবিহ গণনা' }} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} options={{ title: 'ইসলামি দিনপঞ্জি' }} />
-      <Tab.Screen name="Group" component={GroupScreen} options={{ title: 'আমার দল ও লিডার' }} />
-      <Tab.Screen name="LeaderApply" component={LeaderApplyScreen} options={{ title: 'লিডার আবেদন' }} />
-      <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: 'লিডার প্যানেল' }} />
-      <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'অ্যাডমিন' }} />
-      <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: 'আমার প্যাকেজ' }} />
-      <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: 'অ্যাকাউন্ট যাচাই' }} />
-      <Tab.Screen name="MyLeader" component={MyLeaderScreen} options={{ title: 'লিডার ও চুক্তি' }} />
-      <Tab.Screen name="Leaders" component={LeadersScreen} options={{ title: 'যাচাই করা লিডার' }} />
-      <Tab.Screen name="LeaderContracts" component={LeaderContractsScreen} options={{ title: 'চুক্তি ও হাজী' }} />
-      <Tab.Screen name="LeaderMe" component={LeaderMeScreen} options={{ title: 'আমার লিডার প্রোফাইল' }} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'নোটিফিকেশন' }} />
-      <Tab.Screen name="Terms" component={TermsScreen} options={{ title: 'শর্তাবলি' }} />
-      <Tab.Screen name="HelpChat" component={HelpChatScreen} options={{ title: 'লিডারকে প্রশ্ন' }} />
-      <Tab.Screen name="HelpInbox" component={HelpInboxScreen} options={{ title: 'হাজীদের প্রশ্ন' }} />
-      <Tab.Screen name="GroupStaff" component={GroupStaffScreen} options={{ title: 'খাদেম ও তৈরি উত্তর' }} />
-      <Tab.Screen name="KhademHome" component={KhademHomeScreen} options={{ title: 'খাদেমের পাতা' }} />
-      <Tab.Screen name="ChatConsent" component={ChatConsentScreen} options={{ title: 'প্রশ্ন-উত্তর দেখার অনুমতি' }} />
-      <Tab.Screen name="Fund" component={FundScreen} options={{ title: 'হজ-ওমরাহ সহায়তা তহবিল' }} />
+      <Tab.Screen name="Ihram" component={IhramScreen} options={{ title: T.titles.Ihram }} />
+      <Tab.Screen name="Umrah" component={UmrahScreen} options={{ title: T.titles.Umrah }} />
+      <Tab.Screen name="Hajj" component={HajjScreen} options={{ title: T.titles.Hajj }} />
+      <Tab.Screen name="Prayer" component={PrayerScreen} options={{ title: T.titles.Prayer }} />
+      <Tab.Screen name="Privacy" component={PrivacyScreen} options={{ title: T.titles.Privacy }} />
+      <Tab.Screen name="Guides" component={GuidesScreen} options={{ title: T.titles.Guides }} />
+      <Tab.Screen name="Docs" component={DocsScreen} options={{ title: T.titles.Docs }} />
+      <Tab.Screen name="Trip" component={TripScreen} options={{ title: T.titles.Trip }} />
+      <Tab.Screen name="Salah" component={SalahScreen} options={{ title: T.titles.Salah }} />
+      <Tab.Screen name="Tasbih" component={TasbihScreen} options={{ title: T.titles.Tasbih }} />
+      <Tab.Screen name="Calendar" component={CalendarScreen} options={{ title: T.titles.Calendar }} />
+      <Tab.Screen name="Group" component={GroupScreen} options={{ title: T.titles.Group }} />
+      <Tab.Screen name="LeaderApply" component={LeaderApplyScreen} options={{ title: T.titles.LeaderApply }} />
+      <Tab.Screen name="Leader" component={LeaderScreen} options={{ title: T.titles.Leader }} />
+      <Tab.Screen name="Admin" component={AdminScreen} options={{ title: T.titles.Admin }} />
+      <Tab.Screen name="LeaderOffers" component={LeaderOffersScreen} options={{ title: T.titles.LeaderOffers }} />
+      <Tab.Screen name="VerifyPhone" component={VerifyPhoneScreen} options={{ title: T.titles.VerifyPhone }} />
+      <Tab.Screen name="MyLeader" component={MyLeaderScreen} options={{ title: T.titles.MyLeader }} />
+      <Tab.Screen name="Leaders" component={LeadersScreen} options={{ title: T.titles.Leaders }} />
+      <Tab.Screen name="LeaderContracts" component={LeaderContractsScreen} options={{ title: T.titles.LeaderContracts }} />
+      <Tab.Screen name="LeaderMe" component={LeaderMeScreen} options={{ title: T.titles.LeaderMe }} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: T.titles.Notifications }} />
+      <Tab.Screen name="Terms" component={TermsScreen} options={{ title: T.titles.Terms }} />
+      <Tab.Screen name="HelpChat" component={HelpChatScreen} options={{ title: T.titles.HelpChat }} />
+      <Tab.Screen name="HelpInbox" component={HelpInboxScreen} options={{ title: T.titles.HelpInbox }} />
+      <Tab.Screen name="GroupStaff" component={GroupStaffScreen} options={{ title: T.titles.GroupStaff }} />
+      <Tab.Screen name="KhademHome" component={KhademHomeScreen} options={{ title: T.titles.KhademHome }} />
+      <Tab.Screen name="ChatConsent" component={ChatConsentScreen} options={{ title: T.titles.ChatConsent }} />
+      <Tab.Screen name="Fund" component={FundScreen} options={{ title: T.titles.Fund }} />
     </Tab.Navigator>
   );
 }
@@ -234,6 +236,9 @@ export default function App() {
   const [handsOnPending, setHandsOnPending] = useState(false);
   const [photoGate, setPhotoGate] = useState<'missing' | 'ok' | 'skipped' | undefined>(undefined);   // undefined = checking | 'missing' | 'ok' | 'skipped'
   const [me, setMe] = useState<Me | null>(null);                      // profile: account type, role, status (offline copy if no internet)
+  const [lang, setLangState] = useState<Lang | null | undefined>(undefined);   // undefined = loading, null = not chosen yet (ask first)
+  const navState = useRef<NavigationState | undefined>(undefined);   // the open page, kept across a language change
+  useEffect(() => { loadLang().then((l) => setLangState(l)); return onLang((l) => setLangState(l)); }, []);
   const userId = session ? session.user.id : null;
 
   useEffect(() => {
@@ -326,8 +331,10 @@ export default function App() {
   const splash = <View style={s.splash}><Logo size={96} /><Text style={s.splashName}>{T.appName}</Text><Text style={s.splashBy}>{T.byline}</Text><ActivityIndicator color={C.gold} size="large" /></View>;
   const checkingPhoto = !!session && onboarded === true && photoGate === undefined;
   let body;
-  if (session === undefined || onboarded === undefined || checkingPhoto) {
+  if (session === undefined || onboarded === undefined || lang === undefined || checkingPhoto) {
     body = splash;
+  } else if (lang === null) {
+    body = <LanguageChoice onPick={(l) => { setLang(l); }} />;     // first start: the language before anything else
   } else if (!onboarded) {
     body = <Onboarding onDone={finishOnboarding} />;
   } else if (!session) {
@@ -342,14 +349,14 @@ export default function App() {
   } else if (photoGate === 'missing') {
     body = <PhotoCapture onDone={() => setPhotoGate('ok')} onSkip={() => setPhotoGate('skipped')} />;
   } else {
-    body = <KeyboardRoom><NavigationContainer ref={navRef} onReady={() => setNavReady((x) => x + 1)}><Main /></NavigationContainer></KeyboardRoom>;
+    body = <KeyboardRoom><NavigationContainer ref={navRef} initialState={navState.current} onStateChange={(x) => { navState.current = x; }} onReady={() => setNavReady((x) => x + 1)}><Main /></NavigationContainer></KeyboardRoom>;
   }
   return (
     <SafeAreaProvider>
       <MeCtx.Provider value={meCtx}>
       <TutorialCtx.Provider value={tutorial}>
         <StatusBar style={(session && onboarded && photoGate !== 'missing' && photoGate !== undefined) || session === undefined || onboarded === undefined || checkingPhoto ? 'light' : 'dark'} />
-        {body}
+        <React.Fragment key={lang || 'none'}>{body}</React.Fragment>
       </TutorialCtx.Provider>
       </MeCtx.Provider>
     </SafeAreaProvider>

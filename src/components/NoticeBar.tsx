@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { T } from '../strings';
 import { C, F, S, R, TOUCH } from '../theme';
-import { toBn } from '../lib/phone';
 import { KIND_ICON, listNotifications, useUnread } from '../lib/notifications';
 import type { Nav } from '../screens/navTypes';
 import type { NotificationRow } from '../lib/types';
@@ -23,10 +23,10 @@ export default function NoticeBar({ navigation }: { navigation: Nav }) {
   const more = unread - 1;
   return (
     <Pressable onPress={() => navigation.navigate('Notifications')} style={({ pressed }) => [b.bar, top.important && b.imp, pressed && { opacity: 0.9 }]}
-      accessibilityRole="button" accessibilityLabel={`নতুন নোটিফিকেশন${top.important ? ', জরুরি' : ''}: ${top.title}।${more > 0 ? ` আরও ${more}টি।` : ''} সব দেখতে চাপুন`}>
+      accessibilityRole="button" accessibilityLabel={T.noticeBar.a11y(!!top.important, String(top.title), more)}>
       <View style={b.ic}><Text style={{ fontSize: 22 }} importantForAccessibility="no">{top.important ? '⚠️' : KIND_ICON[top.kind] || '🔔'}</Text></View>
       <View style={{ flex: 1 }}>
-        <Text style={b.lbl}>{top.important ? 'জরুরি নোটিশ' : 'নতুন নোটিফিকেশন'}{more > 0 ? ` · আরও ${toBn(more)}টি` : ''}</Text>
+        <Text style={b.lbl}>{top.important ? T.noticeBar.urgent : T.noticeBar.fresh}{more > 0 ? T.noticeBar.more(more) : ''}</Text>
         <Text style={b.t} numberOfLines={2}>{top.title}</Text>
         {top.body ? <Text style={b.body} numberOfLines={2}>{top.body}</Text> : null}
       </View>
