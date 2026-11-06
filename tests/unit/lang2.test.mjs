@@ -55,7 +55,7 @@ export const STEP2 = [
   'src/screens/LeadersScreen.tsx', 'src/screens/HelpChatScreen.tsx', 'src/screens/ChatConsentScreen.tsx', 'src/screens/TermsScreen.tsx',
   'src/screens/TasbihScreen.tsx', 'src/screens/CalendarScreen.tsx', 'src/screens/FundScreen.tsx', 'src/lib/fund.ts', 'src/lib/market.ts',
   'src/lib/help.ts', 'src/lib/offers.ts', 'src/lib/groups.ts', 'src/components/market.tsx', 'src/components/PaymentBox.tsx',
-  'src/components/DistrictPicker.tsx', 'src/components/guide.tsx',
+  'src/components/DistrictPicker.tsx', 'src/components/guide.tsx', 'src/content/videos.ts',
 ];
 
 test('step 2 files: every Bengali text has its English next to it', () => {
@@ -109,4 +109,13 @@ test('help fund in English: rules, the unnamed person, statuses', async () => {
   assert.equal(F.personLabel({ name: null, district: 'নোয়াখালী', age: 65 }), 'A 65-year-old from Noakhali');
   assert.ok(F.helpStatusText('travelled').startsWith('🕋 Alhamdulillah'));
   assert.equal(F.recentDates(new Date('2026-10-31T10:00:00Z'), 2)[0].label, 'Today — 31 October 2026');
+});
+
+test('the "watch video" button on top of every page follows the language (seen on the phone in English)', async () => {
+  const { videoFor } = await import('../../src/content/videos.js');
+  assert.ok(videoFor('Offers').label.includes('শীঘ্রই আসছে'));
+  await setLang('en');
+  const v = videoFor('Offers');
+  assert.equal(v.label, '▶️ Watch video (coming soon)'); assert.ok(!BENGALI.test(v.title), v.title);
+  assert.equal(videoFor('Nope').title, 'this page');
 });

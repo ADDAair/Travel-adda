@@ -216,7 +216,7 @@ with sync_playwright() as p:
                     shot(hp, 'H00e-home-english')
                     # step 2: the haji's other pages in English too (prayer, SOS, offers)
                     hp.get_by_role('button', name=re.compile('Prayer times and Qibla')).first.click(); hp.wait_for_timeout(2500)
-                    step('ইংরেজি ধাপ ২: নামাজের পাতা ইংরেজিতে ("Prayer times", "Qibla")', has(hp, 'Qibla', 3000) and hp.get_by_text('কিবলা').count() == 0)
+                    step('ইংরেজি ধাপ ২: নামাজের পাতা ইংরেজিতে ("Prayer times", "Qibla")', has(hp, 'Qibla', 3000) and has(hp, 'Watch video', 2000) and hp.get_by_text('কিবলা').count() == 0)
                     shot(hp, 'H00e2-prayer-english')
                     tab(hp, 'SOS'); hp.wait_for_timeout(1500)
                     step('ইংরেজি ধাপ ২: জরুরি পাতা ইংরেজিতে', has(hp, 'Call if you are in danger', 3000))
