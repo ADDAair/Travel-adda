@@ -27,9 +27,10 @@ test('if the server step is not run yet (or no internet), nothing breaks and it 
   assert.equal(calls().length, 2, 'tried again because the first one did not work');
 });
 
-test('notices: my own get their English, general ones and unknown ones stay as written', () => {
+// (Step 6 / 037: a general notice gets English too, but only when the server gives it — see notice_admin_en.test.mjs.)
+test('notices: my own get their English, ones the server gives no English for stay as written', () => {
   const rows = [{ id: 'a', source: 'me', title: 'নতুন চুক্তির অনুরোধ এসেছে', body: 'x' }, { id: 'b', source: 'all', title: 'ঈদ মোবারক', body: null }];
-  const out = withEnglish(rows, [{ id: 'a', title: 'New contract request', body: 'English body' }, { id: 'b', title: 'NO', body: 'NO' }]);
+  const out = withEnglish(rows, [{ id: 'a', title: 'New contract request', body: 'English body' }, { id: 'z', title: 'NO', body: 'NO' }]);
   assert.deepEqual(out.map((r) => [r.title, r.body]), [['New contract request', 'English body'], ['ঈদ মোবারক', null]]);
   assert.equal(rows[0].title, 'নতুন চুক্তির অনুরোধ এসেছে', 'the original list is not changed');
 });

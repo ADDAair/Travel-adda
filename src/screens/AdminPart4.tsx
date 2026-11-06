@@ -10,6 +10,7 @@ import { notReady, telBd } from '../lib/groups';
 import { moneyAlerts, alertText, SERVICE_KINDS, serviceKindLabel, addServiceCost, serviceResultText, deleteServiceCost, serviceCosts, leaderBalance, contractChoices,
   type LeaderBalance, type LedgerRow, type ServiceCost } from '../lib/adminMoney';
 import { ledger, leaderRates } from '../lib/payments';
+import { noEnYet } from '../lib/notifications';
 import { auditSearch, auditActors, listAudit, adminGroups, segmentSize, notifySegment, monthOk } from '../lib/admin';
 import { supabase } from '../lib/supabase';
 import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
@@ -119,7 +120,7 @@ function LeaderCosts({ leader, onBack }: { leader: Rate; onBack: () => void }): 
     try {
       const [b, r, l] = await Promise.all([leaderBalance(id), serviceCosts(id), ledger()]);
       setBal(b); setRows(r); setContracts(l as LedgerRow[]);
-    } catch (e) { setRows([]); setMsg({ kind: 'bad', text: errMsg(e) }); }
+    } catch (e) { setRows([]); setMsg({ kind: 'bad', text: titleEn.trim() && notReady(e) ? noEnYet() : errMsg(e) }); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
   const set = (k: 'contract' | 'kind' | 'amount' | 'note') => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -213,6 +214,8 @@ export function SegmentNotifyBox(): JSX.Element {
   const [size, setSize] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [titleEn, setTitleEn] = useState('');   // optional English (037)
+  const [bodyEn, setBodyEn] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   useEffect(() => { adminGroups(null).then(setGroups).catch(() => setGroups([])); }, []);
@@ -225,8 +228,9 @@ export function SegmentNotifyBox(): JSX.Element {
   }, [kind, value]);
   const send = async () => {
     if (busy) return;
+    if (bodyEn.trim() && !titleEn.trim()) { setMsg({ kind: 'bad', text: tr('ইংরেজি বিস্তারিত দিলে ইংরেজি শিরোনামও লিখুন।', 'If you write English details, write the English title too.') }); return; }
     setBusy(true); setMsg(null);
-    try { const n = await notifySegment(kind, kind === 'district' ? value.trim() : value, title, body); setMsg({ kind: 'ok', text: tr(`✅ ${toBn(n)} জনকে পাঠানো হয়েছে।`, `✅ Sent to ${n} people.`) }); setTitle(''); setBody(''); }
+    try { const n = await notifySegment(kind, kind === 'district' ? value.trim() : value, title, body, titleEn, bodyEn); setMsg({ kind: 'ok', text: tr(`✅ ${toBn(n)} জনকে পাঠানো হয়েছে।`, `✅ Sent to ${n} people.`) }); setTitle(''); setBody(''); setTitleEn(''); setBodyEn(''); }
     catch (e) {
       setMsg({ kind: 'bad', text: (e as Coded)?.code === 'title' ? tr('শিরোনাম লিখুন (অন্তত ২ অক্ষর)।', 'Write a title (at least 2 letters).') : (e as Coded)?.code === 'too_many' ? tr('এক ঘণ্টায় ২০টির বেশি পাঠানো যায় না। একটু পরে চেষ্টা করুন।', 'No more than 20 can be sent in an hour. Try a little later.') : errMsg(e) });
     }
@@ -245,9 +249,12 @@ export function SegmentNotifyBox(): JSX.Element {
       ) : null}
       {kind === 'month' ? <Pills label={tr("যে মাসে যাত্রা (চালু চুক্তির হাজীরা পাবেন)", 'Travel month (hajis with active contracts get it)')} options={nextMonths()} value={value} onChange={setValue} /> : null}
       {kind === 'district' ? <Field label={tr("জেলার নাম (ওই জেলার লিডাররা পাবেন)", 'District name (that district\'s leaders get it)')} hint={tr("যেমন: ঢাকা", 'e.g. Dhaka')} value={value} onChangeText={setValue} /> : null}
-      {size !== null ? <Text style={[st.p, { marginBottom: S.sm }]}>{tr('👥 পাবেন:', '👥 Will get it:')} {toBn(size)} {tr('জন', '')}</Text> : null}
+      {size !== null ? <Text style={[st.p, { marginBottom: S.sm }]}>{tr('👥 পাবেন:', '👥 Will get it:')} {toBn(size)} {tr('জন', 'people')}</Text> : null}
       <Field label={tr("শিরোনাম", 'Title')} hint={tr("যেমন: কাল সকাল ৮টায় বাস ছাড়বে", 'e.g. the bus leaves at 8am tomorrow')} value={title} onChangeText={setTitle} maxLength={120} editable={!busy} />
       <Field label={tr("বিস্তারিত (ইচ্ছা হলে)", 'Details (optional)')} value={body} onChangeText={setBody} multiline maxLength={1000} editable={!busy} />
+      <Text style={[st.small, { marginBottom: S.xs }]}>{tr('🌐 যাঁরা অ্যাপ ইংরেজিতে চালান, তাঁরা ইংরেজি লেখা দেখবেন। খালি রাখলে সবাই বাংলাই দেখবেন।', '🌐 People who use the app in English will see the English text. If left empty, everyone sees the Bengali.')}</Text>
+      <Field label={tr('ইংরেজি শিরোনাম (ইচ্ছা করলে)', 'English title (optional)')} hint={tr('যেমন: The bus leaves at 8am tomorrow', 'e.g. The bus leaves at 8am tomorrow')} value={titleEn} onChangeText={setTitleEn} maxLength={120} editable={!busy} />
+      <Field label={tr('ইংরেজি বিস্তারিত (ইচ্ছা করলে)', 'English details (optional)')} value={bodyEn} onChangeText={setBodyEn} multiline maxLength={1000} editable={!busy} />
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       <Button title={tr("পাঠান", 'Send')} icon="📣" onPress={ask} loading={busy} disabled={!size || title.trim().length < 2} />
     </View>

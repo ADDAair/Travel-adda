@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import { notReady } from './groups';
 
 import { rpc as call, rows as typedRows } from './rpc';
-import { getLang } from './lang';
+import { getLang, tr } from './lang';
 import type { NotificationRow } from './types';
 
 type Row = Pick<NotificationRow, 'id' | 'source' | 'is_read'>;   // what marking needs
@@ -56,15 +56,15 @@ export function useUnread(): Unread {
 
 export function resetUnread() { unread = 0; ready = false; last = 0; emit(); }
 
-// ---------- English (036): the server's own notices in English; general notices from Travel Adda stay as written ----
+// ---------- English (036 + 037): the server's own notices, and hand-written ones the admin also wrote in English ----
 type EnRow = { id: string; title: string; body: string | null };
 export function withEnglish<R extends { id: string; source: string; title: string; body: string | null }>(rows: R[], en: EnRow[] | null): R[] {
   const m = new Map((en || []).map((x) => [x.id, x]));
-  return rows.map((r) => { const x = r.source === 'me' ? m.get(r.id) : undefined; return x ? ({ ...r, title: x.title || r.title, body: x.body ?? r.body } as R) : r; });
+  return rows.map((r) => { const x = m.get(r.id); return x ? ({ ...r, title: x.title || r.title, body: x.body ?? r.body } as R) : r; });
 }
 async function inEnglishIfChosen(rows: NotificationRow[]): Promise<NotificationRow[]> {
   if (getLang() !== 'en') return rows;
-  const ids = rows.filter((r) => r.source === 'me').map((r) => r.id).slice(0, 200);
+  const ids = rows.map((r) => r.id).slice(0, 200);
   if (!ids.length) return rows;
   try {
     const { data, error } = await supabase.rpc('my_notices_en', { p_ids: ids });
@@ -101,8 +101,14 @@ export async function markAllRead(): Promise<void> {
 
 // ---------- admin / 'notify' staff ----------
 export const audienceSize = (aud: string) => rpc('admin_audience_size', { p_audience: aud });
-export const sendNotification = (aud: string, title: string, body?: string | null, target?: string | null, important?: boolean) => rpc('admin_send_notification', {
-  p_audience: aud, p_title: title, p_body: body || null, p_target: target || null, p_important: !!important,
+// The English title / details are sent only when written, so sending works the same before step 037 is run.
+export const enArgs = (titleEn?: string | null, bodyEn?: string | null): { p_title_en?: string; p_body_en?: string | null } => {
+  const t = String(titleEn || '').trim(), b = String(bodyEn || '').trim();
+  return t ? { p_title_en: t, p_body_en: b || null } : {};
+};
+export const noEnYet = (): string => tr('ইংরেজি অংশের ডেটাবেস ধাপ (০৩৭) এখনো চালানো হয়নি। ইংরেজি ঘর খালি রেখে পাঠান।', 'The database step (037) for the English part has not been run yet. Send with the English boxes empty.');
+export const sendNotification = (aud: string, title: string, body?: string | null, target?: string | null, important?: boolean, titleEn?: string | null, bodyEn?: string | null) => rpc('admin_send_notification', {
+  p_audience: aud, p_title: title, p_body: body || null, p_target: target || null, p_important: !!important, ...enArgs(titleEn, bodyEn),
 });
 export const listBroadcasts = () => typedRows('admin_list_broadcasts');
 export const withdrawBroadcast = (id: string) => rpc('admin_withdraw_broadcast', { p_id: id });

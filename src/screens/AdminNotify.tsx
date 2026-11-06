@@ -5,7 +5,7 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
-import { audienceSize, sendNotification, listBroadcasts, withdrawBroadcast } from '../lib/notifications';
+import { audienceSize, sendNotification, listBroadcasts, withdrawBroadcast, noEnYet } from '../lib/notifications';
 import { st, errText, confirm, fmtWhen } from './GroupScreen';
 import type { Msg } from './navTypes';
 import type { Res, Item } from '../lib/types';
@@ -19,6 +19,8 @@ export default function NotifyTab(): JSX.Element {
   const [target, setTarget] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [titleEn, setTitleEn] = useState('');   // optional: people who chose English see these (037)
+  const [bodyEn, setBodyEn] = useState('');
   const [important, setImportant] = useState(false);
   const [size, setSize] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,6 +42,7 @@ export default function NotifyTab(): JSX.Element {
     if (busy) return;
     const e: Record<string, string> = {};
     if (title.trim().length < 2) e.title = tr('শিরোনাম লিখুন।', 'Write a title.');
+    if (bodyEn.trim() && !titleEn.trim()) e.titleEn = tr('ইংরেজি বিস্তারিত দিলে ইংরেজি শিরোনামও লিখুন।', 'If you write English details, write the English title too.');
     if (aud === 'one' && target.trim().length < 5) e.target = tr('হাজী/লিডার আইডি (যেমন TA-00123) বা মোবাইল নম্বর লিখুন।', 'Write the haji/leader ID (e.g. TA-00123) or mobile number.');
     setErr(e); setMsg(null);
     if (Object.keys(e).length) return;
@@ -49,12 +52,12 @@ export default function NotifyTab(): JSX.Element {
 It cannot be changed after sending; if wrong, you can take it back.`), tr('হ্যাঁ, পাঠান', 'Yes, send'), async () => {
       setBusy(true);
       try {
-        const r = await sendNotification(aud, title.trim(), body.trim(), target.trim(), important);
-        if (r === 'ok') { setTitle(''); setBody(''); setTarget(''); setImportant(false); setMsg({ kind: 'ok', text: tr('নোটিফিকেশন পাঠানো হয়েছে। সবাই অ্যাপের 🔔 ঘণ্টায় দেখবেন।', 'Notification sent. Everyone will see it in the app\'s 🔔 bell.') }); loadSent(); }
+        const r = await sendNotification(aud, title.trim(), body.trim(), target.trim(), important, titleEn, bodyEn);
+        if (r === 'ok') { setTitle(''); setBody(''); setTitleEn(''); setBodyEn(''); setTarget(''); setImportant(false); setMsg({ kind: 'ok', text: tr('নোটিফিকেশন পাঠানো হয়েছে। সবাই অ্যাপের 🔔 ঘণ্টায় দেখবেন।', 'Notification sent. Everyone will see it in the app\'s 🔔 bell.') }); loadSent(); }
         else if (r === 'not_found') setErr({ target: tr('এই আইডি বা নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি।', 'No account found with this ID or number.') });
         else if (r === 'too_many') setMsg({ kind: 'warn', text: tr('এক ঘণ্টায় অনেক নোটিফিকেশন পাঠানো হয়েছে। একটু পরে আবার চেষ্টা করুন।', 'Many notifications were sent in one hour. Try again a little later.') });
         else setMsg({ kind: 'bad', text: tr('তথ্য ঠিক নেই।', 'The details are not right.') });
-      } catch (x) { setMsg({ kind: 'bad', text: errText(x) }); }   // the text stays
+      } catch (x) { setMsg({ kind: 'bad', text: titleEn.trim() && notReady(x) ? noEnYet() : errText(x) }); }   // the text stays
       finally { setBusy(false); }
     });
   };
@@ -77,6 +80,9 @@ It cannot be changed after sending; if wrong, you can take it back.`), tr('হ�
         {aud === 'one' ? <Field label={tr("আইডি বা মোবাইল নম্বর", 'ID or mobile number')} hint={tr("যেমন: TA-00123 বা 01712345678", 'e.g. TA-00123 or 01712345678')} value={target} onChangeText={setTarget} maxLength={20} autoCapitalize="characters" error={err.target} /> : null}
         <Field label={tr("শিরোনাম", 'Title')} hint={tr("যেমন: হজ নিবন্ধনের শেষ তারিখ ৩০ নভেম্বর", 'e.g. last date for Hajj registration is 30 November')} value={title} onChangeText={setTitle} maxLength={120} error={err.title} />
         <Field label={tr("বিস্তারিত (ইচ্ছা করলে)", 'Details (optional)')} value={body} onChangeText={setBody} multiline maxLength={1000} />
+        <Text style={[st.small, { marginBottom: S.xs }]}>{tr('🌐 যাঁরা অ্যাপ ইংরেজিতে চালান, তাঁরা ইংরেজি লেখা দেখবেন। খালি রাখলে সবাই বাংলাই দেখবেন।', '🌐 People who use the app in English will see the English text. If left empty, everyone sees the Bengali.')}</Text>
+        <Field label={tr('ইংরেজি শিরোনাম (ইচ্ছা করলে)', 'English title (optional)')} hint={tr('যেমন: Last date for Hajj registration is 30 November', 'e.g. Last date for Hajj registration is 30 November')} value={titleEn} onChangeText={setTitleEn} maxLength={120} error={err.titleEn} />
+        <Field label={tr('ইংরেজি বিস্তারিত (ইচ্ছা করলে)', 'English details (optional)')} value={bodyEn} onChangeText={setBodyEn} multiline maxLength={1000} />
         {aud !== 'one' ? (
           <Pressable onPress={() => setImportant(!important)} style={{ minHeight: TOUCH, flexDirection: 'row', alignItems: 'center', marginBottom: S.sm }}
             accessibilityRole="checkbox" accessibilityState={{ checked: important }} accessibilityLabel={tr("জরুরি নোটিশ হিসেবে দেখান", 'Show as an urgent notice')}>
@@ -88,6 +94,9 @@ It cannot be changed after sending; if wrong, you can take it back.`), tr('হ�
             <Text style={st.small}>{tr('দেখতে এমন হবে:', 'It will look like this:')}</Text>
             <Text style={[st.p, { fontWeight: '700' }]}>{important ? '⚠️ ' : '📣 '}{title.trim()}</Text>
             {body.trim() ? <Text style={st.small}>{body.trim()}</Text> : null}
+            {titleEn.trim() ? <Text style={[st.small, { marginTop: S.xs }]}>{tr('ইংরেজিতে:', 'In English:')}</Text> : null}
+            {titleEn.trim() ? <Text style={[st.p, { fontWeight: '700' }]}>{important ? '⚠️ ' : '📣 '}{titleEn.trim()}</Text> : null}
+            {titleEn.trim() && bodyEn.trim() ? <Text style={st.small}>{bodyEn.trim()}</Text> : null}
           </View>
         ) : null}
         <Button title={tr("পাঠান", 'Send')} icon="📨" onPress={send} loading={busy} />

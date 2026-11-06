@@ -8,6 +8,7 @@ import { supabase } from './supabase';
 import { toBn } from './phone';
 import { rpc, call, fail, rows } from './rpc';
 import { notReady } from './groups';
+import { enArgs } from './notifications';
 
 import type { ContractDetail, UserDetail } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
@@ -84,10 +85,10 @@ export const auditSearch = (actorId: string | null, action: unknown, days?: numb
 export const auditActors = () => list('admin_audit_actors');
 export const monthOk = (v: unknown): boolean => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(v || ''));
 export const segmentSize = async (kind: string, value: string): Promise<number> => Number(await rpc('admin_segment_size', { p_kind: kind, p_value: value })) || 0;
-export async function notifySegment(kind: string, value: string, title: unknown, body: unknown): Promise<number> {
+export async function notifySegment(kind: string, value: string, title: unknown, body: unknown, titleEn?: string | null, bodyEn?: string | null): Promise<number> {
   const t = String(title || '').trim();
   if (t.length < 2) throw fail('title');
-  const r = String(await rpc('admin_notify_segment', { p_kind: kind, p_value: value, p_title: t, p_body: q(body) }));
+  const r = String(await rpc('admin_notify_segment', { p_kind: kind, p_value: value, p_title: t, p_body: q(body), ...enArgs(titleEn, bodyEn) }));
   if (r.startsWith('ok:')) return Number(r.slice(3)) || 0;
   throw fail(r);
 }

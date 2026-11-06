@@ -6,7 +6,7 @@ import { placeName } from './location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ORDER, prayerTimes, tzFor, localYMD, fmtTime, isFriday } from './prayer';
-import { loadSavedLocation } from './location';
+import { loadSavedLocation, type Place } from './location';
 import { cancelPrayer } from './notify';
 
 const KEY = 'ta.reminders.v1';
@@ -70,7 +70,7 @@ export async function remindersOn(): Promise<boolean> {
   try { return (await AsyncStorage.getItem(KEY)) === '1'; } catch (e) { return false; }
 }
 
-export type ReminderPlace = { lat: number; lng: number; label?: string; kind?: 'gps' | 'city'; cityId?: string };
+export type ReminderPlace = Place;
 async function schedule(loc: ReminderPlace | null | undefined): Promise<number> {
   await cancelPrayer();   // document-expiry reminders are kept
   if (!loc) return 0;
@@ -83,7 +83,7 @@ async function schedule(loc: ReminderPlace | null | undefined): Promise<number> 
   if (Object.keys(alarms).length) await makeAlarmChannel();
   const now = Date.now();
   const tz = tzFor(loc.lat, loc.lng, -new Date(now).getTimezoneOffset());
-  const where = placeName({ kind: 'gps', label: '', ...loc });   // the place name in the chosen language
+  const where = placeName({ kind: 'gps', ...loc });   // the place name in the chosen language
   let n = 0;
   for (let d = 0; d < DAYS; d++) {
     const day = localYMD(now + d * 86400000, tz);
@@ -147,6 +147,6 @@ export async function refreshReminders(loc?: ReminderPlace | null): Promise<void
   try {
     const p = await Notifications.getPermissionsAsync();
     if (!p.granted) return;
-    await schedule(loc || ((await loadSavedLocation()) as ReminderPlace | null));
+    await schedule(loc || (await loadSavedLocation()));
   } catch (e) { /* keep the old schedule */ }
 }
