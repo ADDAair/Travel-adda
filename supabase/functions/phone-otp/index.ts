@@ -73,7 +73,7 @@ const ok = (body: Record<string, unknown>): Res => ({ status: 200, body: { ok: t
 const fail = (status: number, error: string, extra: Record<string, unknown> = {}): Res => ({ status, body: { ok: false, error, ...extra } });
 
 // target = a phone number (SMS) or an e-mail address (e-mail). userId binds an e-mail verification code to the account that asked.
-async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSend: boolean, ip: string | null, userId: string | null = null): Promise<Res> {
+async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSend: boolean, ip: string | null, userId: string | null = null, lang: 'bn' | 'en' = 'bn'): Promise<Res> {
   const now = d.now();
   const mail = isEmail(phone);
   if (ip && (await d.countIpSince(ip, now - 60 * 60 * 1000)) >= PER_IP_HOUR) return fail(429, 'too_many');
@@ -95,8 +95,11 @@ async function issue(d: Deps, phone: string, purpose: 'verify' | 'reset', realSe
   if (mine && first && first.id !== myId) { await d.deleteOtp(myId); return fail(429, 'wait', { retry_in: Math.ceil(MIN_GAP / 1000) }); }
   if (realSend) {
     const sent = mail
-      ? await d.sendEmail(phone, `আপনার "আমি হাজী" কোড: ${code}`,
-          `আপনার "আমি হাজী" (Ami Haji) কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, "আমি হাজী" বা Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Ami Haji code: ${code} (valid 5 minutes). Do not share it.`)
+      ? (lang === 'en'
+        ? await d.sendEmail(phone, `Your "Ami Haji" code: ${code}`,
+            `Your "Ami Haji" code: ${code}\n\nThe code works for 5 minutes. Do not tell anyone this code; "Ami Haji" and Travel Adda never ask for it.\n\nIf you did not ask for a code, delete this e-mail.\n\nআপনার "আমি হাজী" কোড: ${code} (৫ মিনিট কাজ করবে)। কাউকে বলবেন না।`)
+        : await d.sendEmail(phone, `আপনার "আমি হাজী" কোড: ${code}`,
+          `আপনার "আমি হাজী" (Ami Haji) কোড: ${code}\n\nকোডটি ৫ মিনিট কাজ করবে। কাউকে এই কোড বলবেন না, "আমি হাজী" বা Travel Adda কখনো কোড চায় না।\n\nআপনি কোড না চাইলে এই ই-মেইলটি মুছে দিন।\n\nYour Ami Haji code: ${code} (valid 5 minutes). Do not share it.`))
       : await d.sendSms(phone, `Ami Haji code: ${code}. Valid 5 minutes. Do not share it with anyone.`);
     // A failure on OUR side (company down, wrong key) must not use up a signed-in person's limits: that code row is removed.
     // (Not for "forgot password": there the limits must behave the same whether or not the number/e-mail has an account.)
@@ -123,6 +126,7 @@ async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: 
 
 export async function handle(d: Deps, body: Record<string, unknown>, jwt: string | null, ip: string | null = null): Promise<Res> {
   const action = String(body?.action ?? '');
+  const lang: 'bn' | 'en' = body?.lang === 'en' ? 'en' : 'bn';   // the app's language, for the e-mail code (English step 5)
   if (action === 'send_verify' || action === 'check_verify') {
     const uid = jwt ? await d.userFromJwt(jwt) : null;
     if (!uid) return fail(401, 'not_signed_in');
@@ -132,7 +136,7 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
       const e = cleanEmail(body.email);
       if (!EMAIL_RE.test(e)) return fail(400, 'bad_email');
       if (p.email === e && p.email_verified) return ok({ already: true, email: e, channel: 'email' });
-      if (action === 'send_verify') { const r = await issue(d, e, 'verify', true, ip, uid); r.body.channel = 'email'; return r; }
+      if (action === 'send_verify') { const r = await issue(d, e, 'verify', true, ip, uid, lang); r.body.channel = 'email'; return r; }
       const r = await check(d, e, 'verify', body.code, uid);
       if ('status' in r) return r;
       // Only the person who received the code learns that the address belongs to another account.
@@ -140,7 +144,7 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
       return ok({ verified: true, email: e, channel: 'email' });
     }
     if (p.phone_verified) return ok({ already: true });
-    if (action === 'send_verify') return issue(d, p.phone, 'verify', true, ip);
+    if (action === 'send_verify') return issue(d, p.phone, 'verify', true, ip, null, lang);
     const r = await check(d, p.phone, 'verify', body.code);
     if ('status' in r) return r;
     await d.setVerified(uid);
@@ -155,7 +159,7 @@ export async function handle(d: Deps, body: Record<string, unknown>, jwt: string
       const p = await findProfile();
       // Same answer whether or not the number has an account, so nobody can find out who uses the app.
       // A code row is still stored for unknown numbers so the rate limits behave the same, but no SMS is sent.
-      const r = await issue(d, phone, 'reset', !!p && p.status === 'active', ip);
+      const r = await issue(d, phone, 'reset', !!p && p.status === 'active', ip, null, lang);
       // An SMS failure or the daily cap only ever happen for numbers WITH an account, so they would tell a stranger
       // "this number uses Travel Adda". They get the same answer as everyone else (the app says "if an account exists").
       if (r.status === 200 || r.body.error === 'sms_failed' || r.body.error === 'email_failed' || r.body.error === 'daily_cap') {

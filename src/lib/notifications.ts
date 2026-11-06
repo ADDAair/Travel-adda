@@ -7,6 +7,7 @@ import { supabase } from './supabase';
 import { notReady } from './groups';
 
 import { rpc as call, rows as typedRows } from './rpc';
+import { getLang } from './lang';
 import type { NotificationRow } from './types';
 
 type Row = Pick<NotificationRow, 'id' | 'source' | 'is_read'>;   // what marking needs
@@ -55,10 +56,26 @@ export function useUnread(): Unread {
 
 export function resetUnread() { unread = 0; ready = false; last = 0; emit(); }
 
+// ---------- English (036): the server's own notices in English; general notices from Travel Adda stay as written ----
+type EnRow = { id: string; title: string; body: string | null };
+export function withEnglish<R extends { id: string; source: string; title: string; body: string | null }>(rows: R[], en: EnRow[] | null): R[] {
+  const m = new Map((en || []).map((x) => [x.id, x]));
+  return rows.map((r) => { const x = r.source === 'me' ? m.get(r.id) : undefined; return x ? ({ ...r, title: x.title || r.title, body: x.body ?? r.body } as R) : r; });
+}
+async function inEnglishIfChosen(rows: NotificationRow[]): Promise<NotificationRow[]> {
+  if (getLang() !== 'en') return rows;
+  const ids = rows.filter((r) => r.source === 'me').map((r) => r.id).slice(0, 200);
+  if (!ids.length) return rows;
+  try {
+    const { data, error } = await supabase.rpc('my_notices_en', { p_ids: ids });
+    return error ? rows : withEnglish(rows, (data || []) as EnRow[]);
+  } catch (e) { return rows; }            // server step not run yet or no internet: Bengali
+}
+
 // ---------- list (kept on the phone for reading without internet) ----------
 export async function listNotifications(): Promise<{ rows: NotificationRow[]; offline: boolean }> {
   try {
-    const rows = await typedRows('my_notifications', { p_limit: 100 });
+    const rows = await inEnglishIfChosen(await typedRows('my_notifications', { p_limit: 100 }));
     AsyncStorage.setItem(CACHE, JSON.stringify(rows)).catch(() => {});
     unread = rows.filter((r) => !r.is_read).length; ready = true; emit();
     return { rows, offline: false };

@@ -2,13 +2,14 @@ import { T } from '../strings';
 // Phone verification and "forgot password" through the phone-otp server function (supabase/functions/phone-otp).
 // Returns { ok: true, ... } or { ok: false, error } — never throws, so screens can always show a clear message.
 import { supabase } from './supabase';
+import { getLang } from './lang';
 
 export type OtpAnswer = { ok: boolean; error?: string; retry_in?: number; tries_left?: number; [k: string]: unknown };
 type FnError = { name?: string; message?: string; context?: { status?: number; json?: () => Promise<unknown> } };
 
 export async function otp(action: string, body: Record<string, unknown> = {}): Promise<OtpAnswer> {
   try {
-    const res = await supabase.functions.invoke('phone-otp', { body: { action, ...body } });
+    const res = await supabase.functions.invoke('phone-otp', { body: { action, lang: getLang(), ...body } });   // lang: e-mail code language
     const data = res.data as unknown; const error = res.error as FnError | null;
     if (!error) return data && typeof data === 'object' ? data as OtpAnswer : { ok: false, error: 'server' };
     // Non-2xx answers still carry our JSON body ({ ok:false, error }).

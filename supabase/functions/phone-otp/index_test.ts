@@ -297,3 +297,14 @@ Deno.test('code messages carry the new app name (e-mail sender, subject, text, S
   await sendEmailVia('brevo', (k) => ({ EMAIL_API_KEY: 'K', EMAIL_FROM: 'amihaji.bd@gmail.com' } as Record<string, string>)[k], 'to@x.com', 'S', 'T', f);
   assertEquals(JSON.parse(String(calls[0].init!.body)).sender.name, 'আমি হাজী');
 });
+
+// English step 5 (Nov 2026): a person who chose English gets the e-mail code in English first (Bengali below).
+Deno.test('the e-mail code comes in English first when the app is in English; Bengali stays the default', async () => {
+  const w = world();
+  await handle(w.d, { action: 'send_verify', channel: 'email', email: 'karim@example.com', lang: 'en' }, 'jwt-u1');
+  assert(w.mails[0].subject.startsWith('Your "Ami Haji" code:'), w.mails[0].subject);
+  assert(w.mails[0].text.startsWith('Your "Ami Haji" code:') && w.mails[0].text.includes('আমি হাজী'), w.mails[0].text);
+  const w2 = world();
+  await handle(w2.d, { action: 'send_verify', channel: 'email', email: 'karim@example.com', lang: 'xx' }, 'jwt-u1');
+  assert(w2.mails[0].subject.startsWith('আপনার "আমি হাজী" কোড:'), 'unknown language: Bengali');
+});

@@ -20,6 +20,7 @@ import Onboarding from './src/screens/Onboarding';
 import LanguageChoice from './src/screens/LanguageChoice';
 import { LangButton } from './src/components/LangButton';
 import { loadLang, setLang, onLang, type Lang } from './src/lib/lang';
+import { startLangSync } from './src/lib/langSync';
 import Logo from './src/components/Logo';
 import DuaScreen from './src/screens/DuaScreen';
 import { Soon, Account } from './src/screens/Placeholder';
@@ -250,6 +251,9 @@ export default function App() {
     prefs.isOnboarded().then((v) => { if (alive) setOnboarded(v); });
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
+
+  // After login: tell the server the chosen language (phone alerts from the server come in it; supabase/036).
+  useEffect(() => (userId ? startLangSync() : undefined), [userId]);
 
   // After login, offer the hands-on practice once.
   useEffect(() => {
