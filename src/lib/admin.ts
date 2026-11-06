@@ -1,6 +1,7 @@
 // Admin & staff tools (supabase/007_marketplace.sql). Each function is refused by the database unless the caller
 // has the matching permission; staff only see the parts the admin gave them.
 import { Platform } from 'react-native';
+import { tr } from './lang';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from './supabase';
@@ -12,14 +13,14 @@ import type { ContractDetail, UserDetail } from './types';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 
 export const PERMS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: 'applications', label: 'লিডার আবেদন যাচাই' },
-  { id: 'calls', label: 'ফোনের অনুরোধ' },
-  { id: 'offers', label: 'প্যাকেজ লুকানো/দেখানো' },
-  { id: 'complaints', label: 'অভিযোগ যাচাই' },
-  { id: 'reports', label: 'রিপোর্ট ও পরিসংখ্যান' },
-  { id: 'users', label: 'ব্যবহারকারী বন্ধ/চালু, রেফারেল বাতিল' },
-  { id: 'payments', label: 'টাকা জমা যাচাই, কমিশন ও লিডারকে টাকা' },
-  { id: 'notify', label: 'নোটিফিকেশন পাঠানো' },
+  { id: 'applications', get label() { return tr('লিডার আবেদন যাচাই', 'Check leader applications'); } },
+  { id: 'calls', get label() { return tr('ফোনের অনুরোধ', 'Call requests'); } },
+  { id: 'offers', get label() { return tr('প্যাকেজ লুকানো/দেখানো', 'Hide/show packages'); } },
+  { id: 'complaints', get label() { return tr('অভিযোগ যাচাই', 'Check complaints'); } },
+  { id: 'reports', get label() { return tr('রিপোর্ট ও পরিসংখ্যান', 'Reports and statistics'); } },
+  { id: 'users', get label() { return tr('ব্যবহারকারী বন্ধ/চালু, রেফারেল বাতিল', 'Stop/start users, cancel referrals'); } },
+  { id: 'payments', get label() { return tr('টাকা জমা যাচাই, কমিশন ও লিডারকে টাকা', 'Check payments, commission and leader payouts'); } },
+  { id: 'notify', get label() { return tr('নোটিফিকেশন পাঠানো', 'Send notifications'); } },
 ];
 
 export async function myPerms(): Promise<string[]> {
@@ -59,7 +60,7 @@ export async function exportCsv(kind: string): Promise<number> {
   if (Platform.OS === 'web') return rows.length;
   const path = `${FileSystem.cacheDirectory}travel-adda-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
   await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-  if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'স্প্রেডশিট সংরক্ষণ বা পাঠান' });
+  if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: tr('স্প্রেডশিট সংরক্ষণ বা পাঠান', 'Save or send the spreadsheet') });
   return rows.length;
 }
 

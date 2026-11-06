@@ -27,7 +27,7 @@ test('the ব্যবহারকারী tab shows the counts card above the 
   const s = readFileSync(new URL('../../src/screens/AdminScreen.tsx', import.meta.url), 'utf8');
   const tab = s.slice(s.indexOf('function UsersTab'), s.indexOf('function UsersTab') + 4000);
   assert.ok(tab.includes('<UserCountsCard'), 'UsersTab must show the card');
-  assert.ok(tab.indexOf('<UserCountsCard') < tab.indexOf('label="নাম, আইডি বা মোবাইল নম্বর"'), 'card comes before the search');
+  assert.ok(tab.indexOf('<UserCountsCard') < tab.indexOf("label={tr('নাম, আইডি বা মোবাইল নম্বর'"), 'card comes before the search');
   const card = s.slice(s.indexOf('function UserCountsCard'));
   assert.ok(card.includes('userCounts()') && card.includes('accessibilityLabel') && card.includes('হাজী') && card.includes('লিডার'));
 });

@@ -3,14 +3,15 @@
 // mistake on the server can never break a page. The app's own text is kept and comes back when a correction
 // is removed. Corrections are cached on the phone for offline use.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tr } from './lang';
 import { supabase } from './supabase';
 import { toBn } from './phone';
 
 const SKIP = new Set(['id', 'icon', 'type', 'kind', 'cat', 'to', 'route', 'screen', 'url', 'link']);
 type Obj = Record<string, unknown>;   // a guide or dua item (any shape; only its text is touched)
-const KEY: Record<string, string> = { title: 'শিরোনাম', what: 'ছোট বিবরণ', text: 'লেখা', tip: 'টিপস', bn: 'বাংলা অর্থ', ar: 'আরবি', pron: 'উচ্চারণ',
-  when: 'কখন পড়বেন', source: 'সূত্র', note: 'নোট', label: 'নাম', a11y: 'পড়ে শোনানোর লেখা' };
-const LIST: Record<string, string> = { blocks: 'অংশ', steps: 'ধাপ', parts: 'ভাগ', items: 'লাইন', rows: 'সারি' };
+const KEY: Record<string, string> = { get title() { return tr('শিরোনাম', 'Title'); }, get what() { return tr('ছোট বিবরণ', 'Short description'); }, get text() { return tr('লেখা', 'Text'); }, get tip() { return tr('টিপস', 'Tip'); }, get bn() { return tr('বাংলা অর্থ', 'Bengali meaning'); }, get ar() { return tr('আরবি', 'Arabic'); }, get pron() { return tr('উচ্চারণ', 'Pronunciation'); },
+  get when() { return tr('কখন পড়বেন', 'When to say it'); }, get source() { return tr('সূত্র', 'Source'); }, get note() { return tr('নোট', 'Note'); }, get label() { return tr('নাম', 'Name'); }, get a11y() { return tr('পড়ে শোনানোর লেখা', 'Text read aloud'); } };
+const LIST: Record<string, string> = { get blocks() { return tr('অংশ', 'Part'); }, get steps() { return tr('ধাপ', 'Step'); }, get parts() { return tr('ভাগ', 'Section'); }, get items() { return tr('লাইন', 'Line'); }, get rows() { return tr('সারি', 'Row'); } };
 const own = (o: unknown, k: string): o is Obj => o !== null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
 
 function label(path: string): string {

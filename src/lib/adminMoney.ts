@@ -1,5 +1,6 @@
 // Money alerts and service costs for Travel Adda's own leaders (supabase/026_admin_part4.sql).
 import { notReady } from './groups';
+import { tr } from './lang';
 import { parsePrice } from './offerRoute';
 import { normalizeDigits } from './phone';
 import { rpc, fail } from './rpc';
@@ -9,9 +10,9 @@ export type MoneyAlert = { kind: AlertKind; contract_id: string; contract_no: st
   leader_name: string; leader_code: string; travel_from: string | null; travel_to: string | null; amount: number | string };
 
 const ALERTS: Record<AlertKind, string> = {
-  haji_due: '⏳ যাত্রা কাছে, হাজীর টাকা বাকি',
-  leader_due: '↗️ লিডারকে তাঁর অংশ দেওয়া বাকি',
-  not_closed: '📕 সফর শেষ, কিন্তু হিসাব বন্ধ হয়নি',
+  get haji_due() { return tr('⏳ যাত্রা কাছে, হাজীর টাকা বাকি', '⏳ Departure near, haji still owes money'); },
+  get leader_due() { return tr('↗️ লিডারকে তাঁর অংশ দেওয়া বাকি', '↗️ Leader\'s share still to be paid'); },
+  get not_closed() { return tr('📕 সফর শেষ, কিন্তু হিসাব বন্ধ হয়নি', '📕 Journey over, but accounts not closed'); },
 };
 export const alertText = (k: string): string => ALERTS[k as AlertKind] || k;
 export async function moneyAlerts(): Promise<MoneyAlert[]> {
@@ -20,13 +21,13 @@ export async function moneyAlerts(): Promise<MoneyAlert[]> {
 
 export type ServiceKind = 'visa' | 'ticket' | 'hotel' | 'transport' | 'food' | 'ziyarah' | 'other';
 export const SERVICE_KINDS: ReadonlyArray<{ id: ServiceKind; label: string; icon: string }> = [
-  { id: 'visa', label: 'ভিসা', icon: '🛂' },
-  { id: 'ticket', label: 'বিমান টিকিট', icon: '✈️' },
-  { id: 'hotel', label: 'হোটেল', icon: '🏨' },
-  { id: 'transport', label: 'গাড়ি / যাতায়াত', icon: '🚌' },
-  { id: 'food', label: 'খাবার', icon: '🍽️' },
-  { id: 'ziyarah', label: 'যিয়ারত', icon: '🕌' },
-  { id: 'other', label: 'অন্যান্য', icon: '📦' },
+  { id: 'visa', get label() { return tr('ভিসা', 'Visa'); }, icon: '🛂' },
+  { id: 'ticket', get label() { return tr('বিমান টিকিট', 'Air ticket'); }, icon: '✈️' },
+  { id: 'hotel', get label() { return tr('হোটেল', 'Hotel'); }, icon: '🏨' },
+  { id: 'transport', get label() { return tr('গাড়ি / যাতায়াত', 'Car / transport'); }, icon: '🚌' },
+  { id: 'food', get label() { return tr('খাবার', 'Food'); }, icon: '🍽️' },
+  { id: 'ziyarah', get label() { return tr('যিয়ারত', 'Ziyarah'); }, icon: '🕌' },
+  { id: 'other', get label() { return tr('অন্যান্য', 'Other'); }, icon: '📦' },
 ];
 export const serviceKindLabel = (id: string): string => { const k = SERVICE_KINDS.find((x) => x.id === id); return k ? `${k.icon} ${k.label}` : id; };
 
@@ -40,11 +41,11 @@ export async function addServiceCost(leaderId: string, contractId: string | null
   return rpc<string>('admin_add_service_cost', { p_leader: leaderId, p_contract: contractId || null, p_kind: kind, p_amount: a, p_note: n });
 }
 const SERVICE_RESULTS: Record<string, string> = {
-  ok: '✅ খরচ লেখা হয়েছে। লিডারের পাওনা থেকে কাটা যাবে।',
-  not_own: 'এই খরচ শুধু Travel Adda-র নিজস্ব লিডারের জন্য লেখা যায়।',
-  mismatch: 'এই চুক্তিটি এই লিডারের নয়। সঠিক চুক্তি বাছুন।',
+  get ok() { return tr('✅ খরচ লেখা হয়েছে। লিডারের পাওনা থেকে কাটা যাবে।', '✅ Expense written. It will be taken from the leader\'s due.'); },
+  get not_own() { return tr('এই খরচ শুধু Travel Adda-র নিজস্ব লিডারের জন্য লেখা যায়।', 'This expense can be written only for Travel Adda\'s own leaders.'); },
+  get mismatch() { return tr('এই চুক্তিটি এই লিডারের নয়। সঠিক চুক্তি বাছুন।', 'This contract is not this leader\'s. Choose the right contract.'); },
 };
-export const serviceResultText = (r: string | null): string => (r && SERVICE_RESULTS[r]) || 'কাজটি হয়নি।';
+export const serviceResultText = (r: string | null): string => (r && SERVICE_RESULTS[r]) || tr('কাজটি হয়নি।', 'It did not work.');
 
 export async function deleteServiceCost(id: string, reason: unknown): Promise<string | null> {
   const r = String(reason || '').trim();

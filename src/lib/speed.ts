@@ -1,6 +1,7 @@
 // Speed check from this phone: how long the app's common server calls take on this phone and this internet.
 // Read-only calls only. Used by the admin panel to find out why loading feels slow.
 import { toBn } from './phone';
+import { tr } from './lang';
 
 export type Timing = { times: number[]; median: number | null; errors: number };
 type Answer = { error?: unknown } | null | undefined;
@@ -27,8 +28,8 @@ export const speedVerdict = (ms: number | null): Verdict => (ms == null ? 'faile
 
 export function speedText(t: { median: number | null; errors: number }): string {
   const v = speedVerdict(t.errors && t.median == null ? null : t.median);
-  if (v === 'failed') return '❌ হয়নি (ইন্টারনেট বা সার্ভারে সমস্যা)';
+  if (v === 'failed') return tr('❌ হয়নি (ইন্টারনেট বা সার্ভারে সমস্যা)', '❌ Failed (internet or server problem)');
   const sec = toBn(((t.median || 0) / 1000).toFixed(1));
-  const label = v === 'fast' ? '✅ দ্রুত' : v === 'okay' ? '🟡 চলনসই' : '🐢 ধীর';
-  return `${label} — ${sec} সেকেন্ড${t.errors ? ` (${toBn(t.errors)} বার ব্যর্থ)` : ''}`;
+  const label = v === 'fast' ? tr('✅ দ্রুত', '✅ Fast') : v === 'okay' ? tr('🟡 চলনসই', '🟡 OK') : tr('🐢 ধীর', '🐢 Slow');
+  return tr(`${label} — ${sec} সেকেন্ড${t.errors ? ` (${toBn(t.errors)} বার ব্যর্থ)` : ''}`, `${label} — ${sec} seconds${t.errors ? ` (${t.errors} failed)` : ''}`);
 }

@@ -22,7 +22,7 @@ test('brand green behind the icon and in the notification colour', () => {
 test('the in-app logo shows the real mark (no hand-drawn letter tile)', () => {
   const s = read('src/components/Logo.tsx');
   assert.ok(s.includes("require('../../assets/logo-mark.png')"));
-  assert.ok(s.includes('accessibilityLabel="আমি হাজী লোগো"'));
+  assert.ok(s.includes("accessibilityLabel={tr('আমি হাজী লোগো'"), 'the logo has a screen-reader label (Bengali and English)');
   assert.ok(!/>\s*(T|আ)\s*<\/Text>/.test(s), 'no letter tile');
 });
 test('the start screen uses the brand green and says who runs the app', () => {

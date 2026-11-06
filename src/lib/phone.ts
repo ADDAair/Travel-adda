@@ -2,7 +2,7 @@ import { getLang } from './lang';
 const BN = '০১২৩৪৫৬৭৮৯';   // i18n-ok: digits
 // Accepts Bengali or English digits; returns normalized English-digit string.
 export function normalizeDigits(s: unknown): string {
-  return String(s || '').replace(/[০-৯]/g, (d) => String(BN.indexOf(d))).replace(/\s|-/g, '');
+  return String(s || '').replace(/[০-৯]/g, (d) => String(BN.indexOf(d))).replace(/\s|-/g, '');   // i18n-ok: reads Bengali digits
 }
 export function normalizePhone(s: unknown): string {
   let p = normalizeDigits(s);

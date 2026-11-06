@@ -2,6 +2,7 @@
 // The database (supabase/023_admin_mfa.sql) refuses every admin / staff action until the session passed 2FA;
 // this file only drives the screens that let the admin set it up and type the 6-digit code.
 import { supabase } from './supabase';
+import { tr } from './lang';
 import { normalizeDigits } from './phone';
 import { check, fail, type DbError, type DbResult } from './rpc';
 
@@ -60,11 +61,11 @@ export async function verifyCode(factorId: string, code: unknown): Promise<true>
 
 export function mfaErrorText(e: (DbError & { code?: string }) | null | undefined): string {
   if (!e) return '';
-  if (e.code === 'format') return 'অথেনটিকেটর অ্যাপে দেখানো ৬ সংখ্যার কোডটি লিখুন।';
-  if (e.code === 'wrong') return 'কোডটি ভুল বা মেয়াদ শেষ। অ্যাপে এখন যে কোড দেখাচ্ছে, সেটি লিখুন।';
-  if (e.status === 429) return 'অনেকবার চেষ্টা হয়েছে। কয়েক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।';
-  if (isNetwork(e)) return 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।';
-  return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
+  if (e.code === 'format') return tr('অথেনটিকেটর অ্যাপে দেখানো ৬ সংখ্যার কোডটি লিখুন।', 'Type the 6-digit code shown in the authenticator app.');
+  if (e.code === 'wrong') return tr('কোডটি ভুল বা মেয়াদ শেষ। অ্যাপে এখন যে কোড দেখাচ্ছে, সেটি লিখুন।', 'The code is wrong or expired. Type the code the app shows now.');
+  if (e.status === 429) return tr('অনেকবার চেষ্টা হয়েছে। কয়েক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।', 'Too many tries. Wait a few minutes and try again.');
+  if (isNetwork(e)) return tr('ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।', 'No internet connection. Check the connection and try again.');
+  return tr('কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।', 'It did not work. Try again a little later.');
 }
 
 export const secretGroups = (s: unknown): string => (String(s || '').match(/.{1,4}/g) || []).join(' ');
