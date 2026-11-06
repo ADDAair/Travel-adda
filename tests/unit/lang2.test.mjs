@@ -11,27 +11,8 @@ const read = (f) => readFileSync(new URL(`../../${f}`, import.meta.url), 'utf8')
 const BENGALI = /[\u0980-\u09F2\u09F4-\u09FF]/;   // the taka sign ৳ (U+09F3) is used in English too
 beforeEach(async () => { await setLang('bn'); });
 
-// remove every tr(...) call (its arguments may hold quotes, backticks and ${...}) so only unpaired text is left
-export function stripTr(src) {
-  let out = ''; let i = 0;
-  while (i < src.length) {
-    const at = src.indexOf('tr(', i);
-    if (at < 0 || /[\w.$]/.test(src[at - 1] || '')) { if (at < 0) { out += src.slice(i); break; } out += src.slice(i, at + 3); i = at + 3; continue; }
-    out += src.slice(i, at) + 'tr(…)';
-    let j = at + 3; const stack = [')'];
-    while (j < src.length && stack.length) {
-      const c = src[j]; const top = stack[stack.length - 1];
-      if (top === "'" || top === '"') { if (c === '\\') j++; else if (c === top) stack.pop(); }
-      else if (top === '`') { if (c === '\\') j++; else if (c === '`') stack.pop(); else if (c === '$' && src[j + 1] === '{') { stack.push('}'); j++; } }
-      else if (c === "'" || c === '"' || c === '`') stack.push(c);
-      else if (c === '(') stack.push(')'); else if (c === '{') stack.push('}'); else if (c === '[') stack.push(']');
-      else if (c === top) stack.pop();
-      j++;
-    }
-    i = j;
-  }
-  return out;
-}
+import { stripTr } from './i18nCheck.mjs';
+
 const unpaired = (src) => stripTr(src).split('\n')
   .map((l) => (/^\s*\/\//.test(l) || /i18n-ok/.test(l) ? '' : l.replace(/\s\/\/ .*$/, '')))   // i18n-ok: Bengali the app reads (input words), not shows
   .map((l, n) => [n + 1, l]).filter(([, l]) => BENGALI.test(l) && !/\ben: ['"`]/.test(l));
