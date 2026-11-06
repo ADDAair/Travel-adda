@@ -1,6 +1,7 @@
 // Khadems and each group's private help chat with ready answers (supabase/018_khadem_help.sql).
 // Every function throws on failure, so screens never show a false success.
 import { normalizeDigits, toBn } from './phone';
+import { tr } from './lang';
 
 import { rpc, fail as err, rows } from './rpc';
 
@@ -10,15 +11,15 @@ export const MAX_MESSAGE = 1000;
 // null = fine; otherwise the Bengali reason.
 export function checkMessage(text: unknown): string | null {
   const t = String(text || '').trim();
-  if (!t) return 'কিছু লিখুন।';
-  if (t.length > MAX_MESSAGE) return `লেখা অনেক বড়। ${toBn(MAX_MESSAGE)} অক্ষরের মধ্যে লিখুন।`;
+  if (!t) return tr('কিছু লিখুন।', 'Write something.');
+  if (t.length > MAX_MESSAGE) return tr(`লেখা অনেক বড়। ${toBn(MAX_MESSAGE)} অক্ষরের মধ্যে লিখুন।`, `The text is too long. Write within ${MAX_MESSAGE} letters.`);
   return null;
 }
 
 export function roleLabel(role: string, mine = false): string {
-  if (role === 'leader') return '🧭 লিডার';
-  if (role === 'khadem') return '🤝 খাদেম';
-  return mine ? '🕋 আপনি' : '🕋 হাজী';
+  if (role === 'leader') return tr('🧭 লিডার', '🧭 Leader');
+  if (role === 'khadem') return tr('🤝 খাদেম', '🤝 Khadem');
+  return mine ? tr('🕋 আপনি', '🕋 You') : tr('🕋 হাজী', '🕋 Haji');
 }
 
 // Waiting questions (last message from the haji, still open) first; inside each part newest first.
@@ -29,12 +30,12 @@ export function sortInbox<T extends { status: string; last_from_haji?: boolean |
 
 export function helpErrorText(e: unknown): string {
   const m = String(((e || {}) as { message?: unknown }).message || '').toLowerCase();
-  if (m.includes('too many')) return 'অল্প সময়ে অনেক বার্তা পাঠানো হয়েছে। একটু পরে আবার লিখুন।';
-  if (m.includes('not a member')) return 'আপনি এখন এই দলে নেই, তাই এখানে লেখা যাবে না।';
-  if (m.includes('not allowed')) return 'এই কাজের অনুমতি আপনার নেই। লিডার আপনাকে সরিয়ে দিয়ে থাকতে পারেন।';
-  if (m.includes('bad message')) return 'বার্তাটি খালি বা অনেক বড়।';
-  if (m.includes('fetch') || m.includes('network')) return 'ইন্টারনেট সংযোগ নেই বা দুর্বল। আপনার লেখা ঘরেই আছে, সংযোগ পেলে আবার পাঠান।';
-  return 'কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।';
+  if (m.includes('too many')) return tr('অল্প সময়ে অনেক বার্তা পাঠানো হয়েছে। একটু পরে আবার লিখুন।', 'Too many messages in a short time. Write again a little later.');
+  if (m.includes('not a member')) return tr('আপনি এখন এই দলে নেই, তাই এখানে লেখা যাবে না।', 'You are no longer in this group, so you cannot write here.');
+  if (m.includes('not allowed')) return tr('এই কাজের অনুমতি আপনার নেই। লিডার আপনাকে সরিয়ে দিয়ে থাকতে পারেন।', 'You are not allowed to do this. The leader may have removed you.');
+  if (m.includes('bad message')) return tr('বার্তাটি খালি বা অনেক বড়।', 'The message is empty or too long.');
+  if (m.includes('fetch') || m.includes('network')) return tr('ইন্টারনেট সংযোগ নেই বা দুর্বল। আপনার লেখা ঘরেই আছে, সংযোগ পেলে আবার পাঠান।', 'No or weak internet. Your text is still in the box; send it again when connected.');
+  return tr('কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।', 'It did not work. Try again a little later.');
 }
 
 // ---- haji
@@ -68,19 +69,19 @@ export const removeKhadem = (groupId: string, userId: string) => rpc('leader_rem
 // Invitation answers never say whether an account exists (server step 021).
 export function khademResultText(r: string | null): string {
   return ({
-    sent: 'অনুরোধ পাঠানো হয়েছে। এই নম্বর বা আইডিতে অ্যাকাউন্ট থাকলে তিনি নোটিফিকেশন পাবেন; রাজি হলে নিচের খাদেম তালিকায় নাম দেখাবে।',
-    ok: 'খাদেম যোগ হয়েছে। তিনি নোটিফিকেশন পাবেন।',
-    self: 'নিজেকে খাদেম করা যায় না, আপনি তো লিডার।',
-    bad: 'আইডি (যেমন TA-00042) বা ১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন।',
-    limit: 'আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।',
-  } as Record<string, string>)[r || ''] || 'কাজটি হয়নি। আবার চেষ্টা করুন।';
+    sent: tr('অনুরোধ পাঠানো হয়েছে। এই নম্বর বা আইডিতে অ্যাকাউন্ট থাকলে তিনি নোটিফিকেশন পাবেন; রাজি হলে নিচের খাদেম তালিকায় নাম দেখাবে।', 'Request sent. If this number or ID has an account, they will get a notification; if they agree, the name shows in the khadem list below.'),
+    ok: tr('খাদেম যোগ হয়েছে। তিনি নোটিফিকেশন পাবেন।', 'Khadem added. They will get a notification.'),
+    self: tr('নিজেকে খাদেম করা যায় না, আপনি তো লিডার।', 'You cannot make yourself a khadem; you are the leader.'),
+    bad: tr('আইডি (যেমন TA-00042) বা ১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন।', 'Write the ID (e.g. TA-00042) or the 11-digit mobile number correctly.'),
+    limit: tr('আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।', '50 invitations have been sent today. You can send more tomorrow.'),
+  } as Record<string, string>)[r || ''] || tr('কাজটি হয়নি। আবার চেষ্টা করুন।', 'It did not work. Try again.');
 }
 export function inviteResultText(r: string | null): string {
   return ({
-    sent: 'আমন্ত্রণ পাঠানো হয়েছে। এই নম্বরে হাজীর অ্যাকাউন্ট থাকলে তিনি "আমার দল" পাতায় আমন্ত্রণ দেখবেন; রাজি হলে দলের তালিকায় নাম আসবে।',
-    bad: '১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন (যেমন 01712345678)।',
-    limit: 'আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।',
-  } as Record<string, string>)[r || ''] || 'কাজটি হয়নি। আবার চেষ্টা করুন।';
+    sent: tr('আমন্ত্রণ পাঠানো হয়েছে। এই নম্বরে হাজীর অ্যাকাউন্ট থাকলে তিনি "আমার দল" পাতায় আমন্ত্রণ দেখবেন; রাজি হলে দলের তালিকায় নাম আসবে।', 'Invitation sent. If this number has a haji account, they will see it on the "My group" page; if they agree, the name joins the group list.'),
+    bad: tr('১১ অঙ্কের মোবাইল নম্বর ঠিকভাবে লিখুন (যেমন 01712345678)।', 'Write the 11-digit mobile number correctly (e.g. 01712345678).'),
+    limit: tr('আজ ৫০টি আমন্ত্রণ পাঠানো হয়ে গেছে। কাল আবার পাঠাতে পারবেন।', '50 invitations have been sent today. You can send more tomorrow.'),
+  } as Record<string, string>)[r || ''] || tr('কাজটি হয়নি। আবার চেষ্টা করুন।', 'It did not work. Try again.');
 }
 export const myKhademInvites = () => list('my_khadem_invites');
 export const khademRespond = async (groupId: string, accept: boolean) => rpc<string>('khadem_respond', { p_group: groupId, p_accept: !!accept });

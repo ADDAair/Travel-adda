@@ -197,7 +197,7 @@ function LostCard({ info, me, onClose }: { info: Info; me: Who | null; onClose: 
       <Row ar="رقم الحاج" en="Pilgrim ID" v={me && me.haji_code} />
       <Row ar="قائد المجموعة" en="Group leader" v={[info.leaderName, info.leaderPhone].filter(Boolean).join(' – ')} />
       {LOST_CARD_ROWS.map((r) => <Row key={r.k} ar={r.ar} en={r.en} v={info[r.k]} />)}
-      {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title={tr('হোটেল ও লিডারের তথ্য লেখা নেই', 'Hotel and leader details are not written')} text=tr('কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।', 'Close the card, tap "Write details" and write them.') /> : null}
+      {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title={tr('হোটেল ও লিডারের তথ্য লেখা নেই', 'Hotel and leader details are not written')} text={tr('কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।', 'Close the card, tap "Write details" and write them.')} /> : null}
       <Button title={speaking ? tr('থামান', 'Stop') : tr('আরবিতে বলে শোনান', 'Say it aloud in Arabic')} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak} style={{ marginTop: S.md }} />
       {ttsErr ? <Notice kind="warn" title={ttsErr} /> : null}
       {info.leaderPhone ? <Button title={tr('লিডারকে ফোন করুন', 'Call the leader')} icon="📞" onPress={() => call(info.leaderPhone)} style={{ marginTop: S.sm }} /> : null}

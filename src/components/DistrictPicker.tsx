@@ -4,14 +4,15 @@ import ScrollView from './KbScroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Button, Field } from './ui';
-import { DISTRICTS } from '../lib/market';
+import { DISTRICTS, districtName, districtMatch } from '../lib/market';
+import { tr } from '../lib/lang';
 
 // A big, searchable list. By default Bangladesh's 64 districts; allowAll adds "সব জেলা" (for filters).
 // options: another list (e.g. the upazilas of one district). allowOther: if a name is missing, the person can type it.
 // disabled + disabledText: shown greyed with a reason (e.g. "আগে জেলা বাছুন").
 export default function DistrictPicker({
-  label = 'জেলা', value, onChange, allowAll = false, error,
-  options = DISTRICTS, placeholder = 'জেলা বাছুন', searchHint = 'যেমন: সিলেট', noun = 'জেলা',
+  label, value, onChange, allowAll = false, error,
+  options = DISTRICTS, placeholder, searchHint, noun,
   allowOther = false, disabled = false, disabledText,
 }: {
   label?: string; value?: string | null; onChange: (v: string) => void; allowAll?: boolean; error?: string;
@@ -19,22 +20,27 @@ export default function DistrictPicker({
   allowOther?: boolean; disabled?: boolean; disabledText?: string;
 }): JSX.Element {
   const ins = useSafeAreaInsets();
+  const lab = label || tr('জেলা', 'District');
+  const what = noun || tr('জেলা', 'district');
+  const ph = placeholder || tr('জেলা বাছুন', 'Choose a district');
+  const hint = searchHint || tr('যেমন: সিলেট', 'e.g. Sylhet');
+  const all = tr('সব জেলা', 'All districts');
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const typed = q.trim();
-  const list = options.filter((d) => !typed || d.includes(typed));
+  const list = options.filter((d) => !typed || districtMatch(d, typed));
   const exact = options.includes(typed);
   const pick = (d: string) => { onChange(d); setOpen(false); setQ(''); };
-  const shown = value || (allowAll ? 'সব জেলা' : disabled && disabledText ? disabledText : placeholder);
+  const shown = value ? districtName(value) : (allowAll ? all : disabled && disabledText ? disabledText : ph);
   return (
     <View style={{ marginBottom: S.md }}>
-      <Text style={p.label}>{label}</Text>
+      <Text style={p.label}>{lab}</Text>
       <Pressable
         onPress={() => { if (!disabled) setOpen(true); }}
         style={[p.box, disabled && p.boxOff, error ? { borderColor: C.bad, borderWidth: 2 } : null]}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        accessibilityLabel={`${label}: ${value || (allowAll ? 'সব জেলা' : 'বাছাই করা হয়নি')}। ${disabled ? (disabledText || '') : 'বদলাতে চাপুন'}`}
+        accessibilityLabel={`${lab}: ${value ? districtName(value) : (allowAll ? all : tr('বাছাই করা হয়নি', 'not chosen'))}. ${disabled ? (disabledText || '') : tr('বদলাতে চাপুন', 'Tap to change')}`}
       >
         <Text style={[p.val, (!value || disabled) && { color: C.muted }]}>{shown}</Text>
         {disabled ? null : <Text style={p.arrow}>▾</Text>}
@@ -42,29 +48,29 @@ export default function DistrictPicker({
       {error ? <Text style={p.err}>⚠️ {error}</Text> : null}
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top + S.md, paddingHorizontal: S.md }}>
-          <Text style={p.title}>{label} বাছুন</Text>
-          <Field label="খুঁজুন" hint={searchHint} value={q} onChangeText={setQ} maxLength={60} />
+          <Text style={p.title}>{tr(`${lab} বাছুন`, `Choose: ${lab}`)}</Text>
+          <Field label={tr('খুঁজুন', 'Search')} hint={hint} value={q} onChangeText={setQ} maxLength={60} />
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: ins.bottom + S.xl }}>
-            {allowAll ? <Pressable onPress={() => pick('')} style={p.row} accessibilityRole="button"><Text style={p.rowT}>🇧🇩 সব জেলা</Text></Pressable> : null}
+            {allowAll ? <Pressable onPress={() => pick('')} style={p.row} accessibilityRole="button"><Text style={p.rowT}>🇧🇩 {all}</Text></Pressable> : null}
             {list.map((d) => (
               <Pressable key={d} onPress={() => pick(d)} style={[p.row, d === value && p.rowOn]} accessibilityRole="button" accessibilityState={{ selected: d === value }}>
-                <Text style={p.rowT}>{d === value ? '✅ ' : ''}{d}</Text>
+                <Text style={p.rowT}>{d === value ? '✅ ' : ''}{districtName(d)}</Text>
               </Pressable>
             ))}
-            {list.length === 0 && !allowOther ? <Text style={p.err}>এই নামে কোনো {noun} নেই।</Text> : null}
+            {list.length === 0 && !allowOther ? <Text style={p.err}>{tr(`এই নামে কোনো ${what} নেই।`, `No ${what} with this name.`)}</Text> : null}
             {allowOther ? (
               <View style={p.other}>
                 {typed && !exact ? (
                   <>
-                    {list.length === 0 ? <Text style={p.otherT}>তালিকায় "{typed}" নেই।</Text> : null}
-                    <Button title={`"${typed}" লিখে রাখুন`} icon="✍️" kind="secondary" onPress={() => pick(typed)} />
+                    {list.length === 0 ? <Text style={p.otherT}>{tr(`তালিকায় "${typed}" নেই।`, `"${typed}" is not in the list.`)}</Text> : null}
+                    <Button title={tr(`"${typed}" লিখে রাখুন`, `Save "${typed}"`)} icon="✍️" kind="secondary" onPress={() => pick(typed)} />
                   </>
                 ) : (
-                  <Text style={p.otherT}>তালিকায় নাম না পেলে ওপরের "খুঁজুন" ঘরে পুরো নাম লিখুন, তারপর "লিখে রাখুন" চাপুন।</Text>
+                  <Text style={p.otherT}>{tr('তালিকায় নাম না পেলে ওপরের "খুঁজুন" ঘরে পুরো নাম লিখুন, তারপর "লিখে রাখুন" চাপুন।', 'If the name is not in the list, type the full name in "Search" above, then tap "Save".')}</Text>
                 )}
               </View>
             ) : null}
-            <Button title="বন্ধ করুন" kind="secondary" onPress={() => setOpen(false)} style={{ marginTop: S.md }} />
+            <Button title={tr('বন্ধ করুন', 'Close')} kind="secondary" onPress={() => setOpen(false)} style={{ marginTop: S.md }} />
           </ScrollView>
         </View>
       </Modal>

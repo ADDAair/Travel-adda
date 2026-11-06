@@ -76,3 +76,27 @@ test('place names on the prayer page follow the language (also for a place saved
   const s = read('src/screens/PrayerScreen.tsx');
   assert.ok(!s.includes('{loc.label}') && !s.includes('${loc.label}'), 'the page never shows the saved (Bengali) label');
 });
+
+test('hadith and Quran references read in English too (book names and digits)', async () => {
+  const { refText } = await import('../../src/lib/lang.js');
+  assert.equal(refText('মুসলিম ১১৬২, ১১৩৪'), 'মুসলিম ১১৬২, ১১৩৪');
+  await setLang('en');
+  assert.equal(refText('মুসলিম ১১৬২, ১১৩৪'), 'Muslim 1162, 1134');
+  assert.equal(refText('সূরা বাকারা ২:১৮৫'), 'Surah al-Baqarah 2:185');
+  assert.equal(refText('আবু দাউদ ৫০৯৫, তিরমিযি ৩৪২৬; বুখারি ৯৬৯'), 'Abu Dawud 5095, Tirmidhi 3426; Bukhari 969');
+  assert.equal(refText('তিরমিজি ১৪৯; ইবনে মাজাহ ৩০৩৮; নাসায়ি ৩০৫৭'), 'Tirmidhi 149; Ibn Majah 3038; Nasa\'i 3057');
+  assert.equal(refText(''), '');
+});
+
+test('district names: the saved value stays Bengali, the name shown follows the language; search works in both', async () => {
+  const { DISTRICTS, DISTRICTS_EN, districtName, districtMatch } = await import('../../src/lib/market.js');
+  assert.equal(DISTRICTS.length, 64); assert.equal(DISTRICTS_EN.length, 64);
+  assert.equal(new Set(DISTRICTS_EN).size, 64);
+  assert.equal(districtName('সিলেট'), 'সিলেট');
+  await setLang('en');
+  assert.equal(districtName('সিলেট'), 'Sylhet'); assert.equal(districtName('কক্সবাজার'), "Cox's Bazar");
+  assert.equal(districtName('নতুন জায়গা'), 'নতুন জায়গা', 'a typed name (not in the list) is shown as typed');
+  assert.ok(districtMatch('সিলেট', 'syl') && districtMatch('সিলেট', 'সিল') && !districtMatch('ঢাকা', 'syl'));
+  const p = read('src/components/DistrictPicker.tsx');
+  assert.ok(p.includes('districtName(') && p.includes('districtMatch('), 'the picker shows and searches both');
+});

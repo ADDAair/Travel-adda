@@ -64,3 +64,17 @@ export const takaText = (n: unknown, maxFrac = 0): string => {
   const s = Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: maxFrac });
   return current === 'en' ? `Tk ${s}` : `${dig(s)} টাকা`;
 };
+
+// Hadith and Quran references ("মুসলিম ১১৬২") in the chosen language: book names and digits only.
+const BOOKS: [string, string][] = [   // i18n-ok: Bengali book names the app reads and turns into English
+  ['সহিহ বুখারি', 'Sahih al-Bukhari'], ['বুখারি', 'Bukhari'], ['মুসলিম', 'Muslim'], ['আবু দাউদ', 'Abu Dawud'], ['তিরমিযি', 'Tirmidhi'], ['তিরমিজি', 'Tirmidhi'],   // i18n-ok
+  ['ইবনে মাজাহ', 'Ibn Majah'], ['নাসায়ি', "Nasa'i"], ['বাইহাকি', 'Bayhaqi'], ['দারাকুতনি', 'Daraqutni'], ['আহমদ', 'Ahmad'],   // i18n-ok
+  ['সূরা বাকারা', 'Surah al-Baqarah'], ['সূরা আলে ইমরান', 'Surah Al Imran'], ['সূরা হজ', 'Surah al-Hajj'], ['সূরা তাওবা', 'Surah at-Tawbah'], ['সূরা ফাতহ', 'Surah al-Fath'], ['সূরা', 'Surah'],   // i18n-ok
+];
+export const refText = (s: string | null | undefined): string => {
+  const v = String(s || '');
+  if (current !== 'en') return v;
+  let out = v;
+  for (const [b, e] of BOOKS) out = out.split(b).join(e);
+  return out.replace(/[০-৯]/g, (d) => String(BN_D.indexOf(d)));
+};

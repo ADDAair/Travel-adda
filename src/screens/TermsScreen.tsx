@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { tr, getLang } from '../lib/lang';
 import { C, S } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { getTerms, agreeTerms, myTermsStatus, type TermsText } from '../lib/market';
@@ -32,35 +33,36 @@ export default function TermsScreen({ navigation }: { navigation: Nav }) {
     setBusy(true); setMsg(null);
     try {
       const r = await agreeTerms(kind);
-      if (r === 'ok') { setMsg({ kind: 'ok', text: 'ধন্যবাদ। আপনার সম্মতি সংরক্ষণ হয়েছে।' }); setStatus(await myTermsStatus().catch(() => status)); }
-      else setMsg({ kind: 'info', text: 'এখন সম্মতি দেওয়ার কিছু নেই।' });
+      if (r === 'ok') { setMsg({ kind: 'ok', text: tr('ধন্যবাদ। আপনার সম্মতি সংরক্ষণ হয়েছে।', 'Thank you. Your agreement is saved.') }); setStatus(await myTermsStatus().catch(() => status)); }
+      else setMsg({ kind: 'info', text: tr('এখন সম্মতি দেওয়ার কিছু নেই।', 'There is nothing to agree to now.') });
     } catch (e) { setMsg({ kind: 'bad', text: errText(e) }); }
     finally { setBusy(false); }
   };
 
   const s = status ? status[kind] : null;
-  const name = kind === 'leader' ? 'লিডারদের শর্তাবলি' : 'হাজীদের শর্তাবলি';
+  const name = kind === 'leader' ? tr('লিডারদের শর্তাবলি', 'Terms for leaders') : tr('হাজীদের শর্তাবলি', 'Terms for hajis');
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.navigate('Account')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার তথ্য পাতায় ফিরে যান"><Text style={st.backT}>‹ আমার তথ্য</Text></Pressable>
-      <Text style={st.title} accessibilityRole="header">📜 শর্তাবলি</Text>
-      <Segmented value={kind} onChange={setKind} options={[{ id: 'haji', label: 'হাজীদের জন্য' }, { id: 'leader', label: 'লিডারদের জন্য' }]} />
+      <Pressable onPress={() => navigation.navigate('Account')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('আমার তথ্য পাতায় ফিরে যান', 'Back to the My info page')}><Text style={st.backT}>{tr('‹ আমার তথ্য', '‹ My info')}</Text></Pressable>
+      <Text style={st.title} accessibilityRole="header">{tr('📜 শর্তাবলি', '📜 Terms')}</Text>
+      <Segmented value={kind} onChange={setKind} options={[{ id: 'haji', label: tr('হাজীদের জন্য', 'For hajis') }, { id: 'leader', label: tr('লিডারদের জন্য', 'For leaders') }]} />
       <View style={{ height: S.md }} />
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
       {t === undefined ? <ActivityIndicator color={C.primary} /> : null}
-      {t === null ? <Notice kind="info" title="শর্তাবলি শীঘ্রই যুক্ত হবে" /> : null}
-      {t && kind === mine && s && s.current ? <Notice kind="ok" title={`আপনি ${fmtDay(s.at)} তারিখে এই শর্তাবলি মেনে নিয়েছেন।`} /> : null}
+      {t === null ? <Notice kind="info" title={tr('শর্তাবলি শীঘ্রই যুক্ত হবে', 'The terms will be added soon')} /> : null}
+      {t && kind === mine && s && s.current ? <Notice kind="ok" title={tr(`আপনি ${fmtDay(s.at)} তারিখে এই শর্তাবলি মেনে নিয়েছেন।`, `You accepted these terms on ${fmtDay(s.at)}.`)} /> : null}
       {t && kind === mine && s && !s.current ? (
-        <Notice kind="warn" title="শর্তাবলি বদলেছে" text="আপনি আগের শর্তাবলি মেনে নিয়েছিলেন। নিচে নতুনটি পড়ে মেনে নিন।" />
+        <Notice kind="warn" title={tr('শর্তাবলি বদলেছে', 'The terms have changed')} text={tr('আপনি আগের শর্তাবলি মেনে নিয়েছিলেন। নিচে নতুনটি পড়ে মেনে নিন।', 'You accepted the earlier terms. Read the new ones below and accept them.')} />
       ) : null}
       {t ? (
         <View style={st.card}>
-          <Text style={st.small}>{name} · সর্বশেষ হালনাগাদ: {fmtDay(t.updated_at)}</Text>
+          <Text style={st.small}>{name} · {tr('সর্বশেষ হালনাগাদ', 'Last updated')}: {fmtDay(t.updated_at)}</Text>
+          {getLang() === 'en' ? <Notice kind="info" title="The terms are in Bengali for now" text="An English version is coming soon. The Bengali text below is the one that counts." /> : null}
           <Text style={[st.p, { marginTop: S.sm, lineHeight: 30 }]} selectable>{t.body}</Text>
         </View>
       ) : null}
       {t && kind === mine && status && (!s || !s.current) ? (
-        <Button title="পড়েছি, মেনে নিচ্ছি" icon="✅" onPress={agree} loading={busy} style={{ marginBottom: S.xl }} />
+        <Button title={tr('পড়েছি, মেনে নিচ্ছি', 'I have read and accept')} icon="✅" onPress={agree} loading={busy} style={{ marginBottom: S.xl }} />
       ) : null}
     </ScrollView>
   );

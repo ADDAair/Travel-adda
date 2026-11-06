@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Linking } from 'react-native';
+import { tr } from '../lib/lang';
 import ScrollView from '../components/KbScroll';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -63,7 +64,7 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
     try {
       await sendHelp(gid, text);
       setText('');
-      setMsg({ kind: 'ok', text: 'পাঠানো হয়েছে। লিডার বা খাদেম উত্তর দিলে নোটিফিকেশন পাবেন।' });
+      setMsg({ kind: 'ok', text: tr('পাঠানো হয়েছে। লিডার বা খাদেম উত্তর দিলে নোটিফিকেশন পাবেন।', 'Sent. You will get a notification when the leader or a khadem answers.') });
       await loadChat(true);
       setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 100);
     } catch (e) { setMsg({ kind: 'bad', text: helpErrorText(e) }); }   // the text stays in the box
@@ -73,38 +74,38 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
   const g = (groups || []).find((x) => x.group_id === gid);
   return (
     <ScrollView ref={scroller} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Group')} style={st.back} accessibilityRole="button" accessibilityLabel="আমার দল পাতায় ফিরে যান"><Text style={st.backT}>‹ আমার দল</Text></Pressable>
-      <Text style={st.title} accessibilityRole="header">💬 লিডার ও খাদেমকে জিজ্ঞেস করুন</Text>
+      <Pressable onPress={() => navigation.navigate('Group')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('আমার দল পাতায় ফিরে যান', 'Back to the My group page')}><Text style={st.backT}>{tr('‹ আমার দল', '‹ My group')}</Text></Pressable>
+      <Text style={st.title} accessibilityRole="header">{tr('💬 লিডার ও খাদেমকে জিজ্ঞেস করুন', '💬 Ask the leader and khadems')}</Text>
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
-      {state === 'soon' ? <Notice kind="info" title="শীঘ্রই আসছে" text="দলের লিডার ও খাদেমকে প্রশ্ন করার সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে।" /> : null}
-      {state === 'err' ? <Notice kind="bad" title="তথ্য আনা যায়নি" text="ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"><Button title="আবার চেষ্টা করুন" icon="🔄" kind="secondary" onPress={() => { loadGroups(); loadChat(); }} style={{ marginTop: S.sm }} /></Notice> : null}
+      {state === 'soon' ? <Notice kind="info" title={tr('শীঘ্রই আসছে', 'Coming soon')} text={tr('দলের লিডার ও খাদেমকে প্রশ্ন করার সুবিধা চালু হওয়ার শেষ ধাপ বাকি আছে।', 'The last step to turn on questions to the group leader and khadems is still to come.')} /> : null}
+      {state === 'err' ? <Notice kind="bad" title={tr('তথ্য আনা যায়নি', 'Could not load the information')} text={tr('ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।', 'Check the internet connection and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={() => { loadGroups(); loadChat(); }} style={{ marginTop: S.sm }} /></Notice> : null}
       {state === 'ok' && groups && groups.length === 0 ? (
-        <Notice kind="info" title="আপনি এখনো কোনো দলে নেই" text="দলে যোগ দিলে এখানে লিডার ও খাদেমকে প্রশ্ন করতে পারবেন।">
-          <Button title="আমার দল পাতা খুলুন" icon="👥" kind="secondary" onPress={() => navigation.navigate('Group')} style={{ marginTop: S.sm }} />
+        <Notice kind="info" title={tr('আপনি এখনো কোনো দলে নেই', 'You are not in a group yet')} text={tr('দলে যোগ দিলে এখানে লিডার ও খাদেমকে প্রশ্ন করতে পারবেন।', 'Once you join a group, you can ask the leader and khadems here.')}>
+          <Button title={tr('আমার দল পাতা খুলুন', 'Open the My group page')} icon="👥" kind="secondary" onPress={() => navigation.navigate('Group')} style={{ marginTop: S.sm }} />
         </Notice>
       ) : null}
       {state === 'ok' && g ? (
         <>
           {groups && groups.length > 1 ? (
             <View style={{ marginBottom: S.md }}>
-              <Text style={st.lbl}>কোন দলের লিডারকে লিখবেন?</Text>
+              <Text style={st.lbl}>{tr('কোন দলের লিডারকে লিখবেন?', 'Which group\'s leader do you want to write to?')}</Text>
               {groups.map((x) => (
                 <Pressable key={x.group_id} onPress={() => { setGid(x.group_id); setMsg(null); }} style={[st.card, { paddingVertical: S.sm, marginBottom: S.xs, borderWidth: x.group_id === gid ? 2 : 1, borderColor: x.group_id === gid ? C.primary : C.line }]}
-                  accessibilityRole="button" accessibilityState={{ selected: x.group_id === gid }} accessibilityLabel={`${x.group_name} দল`}>
+                  accessibilityRole="button" accessibilityState={{ selected: x.group_id === gid }} accessibilityLabel={tr(`${x.group_name} দল`, `Group ${x.group_name}`)}>
                   <Text style={st.val}>{x.group_id === gid ? '✅ ' : ''}{x.group_name}</Text>
                 </Pressable>
               ))}
             </View>
-          ) : <Text style={[st.small, { marginBottom: S.sm }]}>দল: {g.group_name} · লিডার: {g.leader_name}</Text>}
-          <Text style={[st.small, { marginBottom: S.md }]}>🔒 এখানে যা লিখবেন তা শুধু এই দলের লিডার ও খাদেমরা দেখবেন, অন্য হাজীরা দেখবেন না।</Text>
+          ) : <Text style={[st.small, { marginBottom: S.sm }]}>{tr('দল', 'Group')}: {g.group_name} · {tr('লিডার', 'Leader')}: {g.leader_name}</Text>}
+          <Text style={[st.small, { marginBottom: S.md }]}>{tr('🔒 এখানে যা লিখবেন তা শুধু এই দলের লিডার ও খাদেমরা দেখবেন, অন্য হাজীরা দেখবেন না।', '🔒 Only this group\'s leader and khadems see what you write here; other hajis do not.')}</Text>
 
           {faq.length ? (
             <View style={st.card}>
-              <Text style={st.h}>📋 আগে দেখে নিন: সাধারণ প্রশ্নের উত্তর</Text>
+              <Text style={st.h}>{tr('📋 আগে দেখে নিন: সাধারণ প্রশ্নের উত্তর', '📋 First look: answers to common questions')}</Text>
               {faq.map((f) => (
                 <View key={f.id} style={{ borderTopWidth: 1, borderColor: C.line }}>
                   <Pressable onPress={() => setOpenQ(openQ === f.id ? null : f.id)} style={{ minHeight: 48, justifyContent: 'center', paddingVertical: S.xs }}
-                    accessibilityRole="button" accessibilityState={{ expanded: openQ === f.id }} accessibilityLabel={`প্রশ্ন: ${f.question}। উত্তর ${openQ === f.id ? 'লুকাতে' : 'দেখতে'} চাপুন`}>
+                    accessibilityRole="button" accessibilityState={{ expanded: openQ === f.id }} accessibilityLabel={tr(`প্রশ্ন: ${f.question}। উত্তর ${openQ === f.id ? 'লুকাতে' : 'দেখতে'} চাপুন`, `Question: ${f.question}. Tap to ${openQ === f.id ? 'hide' : 'see'} the answer`)}>
                     <Text style={[st.p, { fontWeight: '700', color: C.primary }]}>{openQ === f.id ? '▾' : '▸'} {f.question}</Text>
                   </Pressable>
                   {openQ === f.id ? <Text style={[st.p, { marginBottom: S.sm }]} selectable>{f.answer}</Text> : null}
@@ -115,26 +116,26 @@ export default function HelpChatScreen({ navigation, route }: { navigation: Nav;
 
           {khadems.length ? (
             <View style={st.card}>
-              <Text style={st.h}>🤝 এই দলের খাদেম</Text>
-              <Text style={st.small}>লিডারের অনুপস্থিতিতে মক্কা-মদিনায় এঁরা আপনাকে সাহায্য করবেন।</Text>
+              <Text style={st.h}>{tr('🤝 এই দলের খাদেম', '🤝 This group\'s khadems')}</Text>
+              <Text style={st.small}>{tr('লিডারের অনুপস্থিতিতে মক্কা-মদিনায় এঁরা আপনাকে সাহায্য করবেন।', 'They help you in Makkah and Madinah when the leader is not there.')}</Text>
               {khadems.map((k) => (
                 <View key={k.user_id} style={{ borderTopWidth: 1, borderColor: C.line, paddingVertical: S.sm }}>
                   <Text style={st.val}>🤝 {k.full_name}</Text>
-                  {k.phone ? <Button title={`ফোন করুন (${toBn(k.phone)})`} icon="📞" kind="secondary" onPress={() => Linking.openURL(`tel:${telBd(k.phone)}`).catch(() => {})} style={{ marginTop: S.xs }} />
-                    : <Text style={st.small}>🔒 লিডারের সাথে চুক্তি চালু হলে খাদেমের নম্বর দেখাবে।</Text>}
+                  {k.phone ? <Button title={tr(`ফোন করুন (${toBn(k.phone)})`, `Call (${k.phone})`)} icon="📞" kind="secondary" onPress={() => Linking.openURL(`tel:${telBd(k.phone)}`).catch(() => {})} style={{ marginTop: S.xs }} />
+                    : <Text style={st.small}>{tr('🔒 লিডারের সাথে চুক্তি চালু হলে খাদেমের নম্বর দেখাবে।', '🔒 The khadem\'s number shows once your contract with the leader is active.')}</Text>}
                 </View>
               ))}
             </View>
           ) : null}
 
           <View style={st.card}>
-            <Text style={st.h}>🗨️ আপনার কথোপকথন</Text>
-            {msgs.length === 0 ? <Text style={st.p}>এখনো কিছু লেখেননি। সমস্যা বা পরামর্শ নিচে লিখে পাঠান।</Text> : <ChatBubbles rows={msgs} viewer="haji" />}
+            <Text style={st.h}>{tr('🗨️ আপনার কথোপকথন', '🗨️ Your conversation')}</Text>
+            {msgs.length === 0 ? <Text style={st.p}>{tr('এখনো কিছু লেখেননি। সমস্যা বা পরামর্শ নিচে লিখে পাঠান।', 'You have not written anything yet. Write a problem or suggestion below and send it.')}</Text> : <ChatBubbles rows={msgs} viewer="haji" />}
           </View>
           {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-          <Field label="আপনার প্রশ্ন, সমস্যা বা পরামর্শ" hint="যেমন: আমার রুমের এসি কাজ করছে না" value={text} onChangeText={setText} multiline maxLength={MAX_MESSAGE} editable={!busy} />
-          <Button title="পাঠান" icon="📨" onPress={send} loading={busy} />
-          <Text style={[st.small, { marginTop: S.sm, marginBottom: S.xl }]}>খুব জরুরি হলে (অসুস্থ, হারিয়ে গেছেন) এখানে অপেক্ষা না করে নিচের "জরুরি" বোতাম থেকে ফোন করুন।</Text>
+          <Field label={tr('আপনার প্রশ্ন, সমস্যা বা পরামর্শ', 'Your question, problem or suggestion')} hint={tr('যেমন: আমার রুমের এসি কাজ করছে না', 'e.g. the AC in my room is not working')} value={text} onChangeText={setText} multiline maxLength={MAX_MESSAGE} editable={!busy} />
+          <Button title={tr('পাঠান', 'Send')} icon="📨" onPress={send} loading={busy} />
+          <Text style={[st.small, { marginTop: S.sm, marginBottom: S.xl }]}>{tr('খুব জরুরি হলে (অসুস্থ, হারিয়ে গেছেন) এখানে অপেক্ষা না করে নিচের "জরুরি" বোতাম থেকে ফোন করুন।', 'If it is very urgent (ill, lost), do not wait here; call from the "SOS" button below.')}</Text>
         </>
       ) : null}
     </ScrollView>

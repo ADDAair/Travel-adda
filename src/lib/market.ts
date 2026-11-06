@@ -8,34 +8,56 @@ import { rpc, check, rows, firstRow } from './rpc';
 
 
 import type { MyContract } from './types';
+import { tr, getLang } from './lang';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 const first = firstRow;
 
 // Bangladesh's 64 districts, for the leader's address and the directory filter.
 export const DISTRICTS: readonly string[] = [
-  'ঢাকা', 'গাজীপুর', 'নারায়ণগঞ্জ', 'নরসিংদী', 'মুন্সিগঞ্জ', 'মানিকগঞ্জ', 'টাঙ্গাইল', 'কিশোরগঞ্জ', 'ফরিদপুর', 'গোপালগঞ্জ', 'মাদারীপুর', 'শরীয়তপুর', 'রাজবাড়ী',
-  'চট্টগ্রাম', 'কক্সবাজার', 'কুমিল্লা', 'ব্রাহ্মণবাড়িয়া', 'চাঁদপুর', 'নোয়াখালী', 'ফেনী', 'লক্ষ্মীপুর', 'রাঙ্গামাটি', 'খাগড়াছড়ি', 'বান্দরবান',
-  'সিলেট', 'মৌলভীবাজার', 'হবিগঞ্জ', 'সুনামগঞ্জ',
-  'রাজশাহী', 'নাটোর', 'নওগাঁ', 'চাঁপাইনবাবগঞ্জ', 'পাবনা', 'সিরাজগঞ্জ', 'বগুড়া', 'জয়পুরহাট',
-  'খুলনা', 'যশোর', 'সাতক্ষীরা', 'বাগেরহাট', 'নড়াইল', 'মাগুরা', 'ঝিনাইদহ', 'কুষ্টিয়া', 'চুয়াডাঙ্গা', 'মেহেরপুর',
-  'বরিশাল', 'পটুয়াখালী', 'ভোলা', 'পিরোজপুর', 'বরগুনা', 'ঝালকাঠি',
-  'রংপুর', 'দিনাজপুর', 'কুড়িগ্রাম', 'গাইবান্ধা', 'নীলফামারী', 'লালমনিরহাট', 'ঠাকুরগাঁও', 'পঞ্চগড়',
-  'ময়মনসিংহ', 'জামালপুর', 'শেরপুর', 'নেত্রকোনা',
+  'ঢাকা', 'গাজীপুর', 'নারায়ণগঞ্জ', 'নরসিংদী', 'মুন্সিগঞ্জ', 'মানিকগঞ্জ', 'টাঙ্গাইল', 'কিশোরগঞ্জ', 'ফরিদপুর', 'গোপালগঞ্জ', 'মাদারীপুর', 'শরীয়তপুর', 'রাজবাড়ী',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'চট্টগ্রাম', 'কক্সবাজার', 'কুমিল্লা', 'ব্রাহ্মণবাড়িয়া', 'চাঁদপুর', 'নোয়াখালী', 'ফেনী', 'লক্ষ্মীপুর', 'রাঙ্গামাটি', 'খাগড়াছড়ি', 'বান্দরবান',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'সিলেট', 'মৌলভীবাজার', 'হবিগঞ্জ', 'সুনামগঞ্জ',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'রাজশাহী', 'নাটোর', 'নওগাঁ', 'চাঁপাইনবাবগঞ্জ', 'পাবনা', 'সিরাজগঞ্জ', 'বগুড়া', 'জয়পুরহাট',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'খুলনা', 'যশোর', 'সাতক্ষীরা', 'বাগেরহাট', 'নড়াইল', 'মাগুরা', 'ঝিনাইদহ', 'কুষ্টিয়া', 'চুয়াডাঙ্গা', 'মেহেরপুর',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'বরিশাল', 'পটুয়াখালী', 'ভোলা', 'পিরোজপুর', 'বরগুনা', 'ঝালকাঠি',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'রংপুর', 'দিনাজপুর', 'কুড়িগ্রাম', 'গাইবান্ধা', 'নীলফামারী', 'লালমনিরহাট', 'ঠাকুরগাঁও', 'পঞ্চগড়',   // i18n-ok: saved value (English in DISTRICTS_EN)
+  'ময়মনসিংহ', 'জামালপুর', 'শেরপুর', 'নেত্রকোনা',   // i18n-ok: saved value (English in DISTRICTS_EN)
 ];
+// Same order as DISTRICTS. The saved value stays Bengali; only the name shown follows the language.
+export const DISTRICTS_EN: readonly string[] = [
+  'Dhaka', 'Gazipur', 'Narayanganj', 'Narsingdi', 'Munshiganj', 'Manikganj', 'Tangail', 'Kishoreganj', 'Faridpur', 'Gopalganj', 'Madaripur', 'Shariatpur', 'Rajbari',
+  'Chattogram', "Cox's Bazar", 'Cumilla', 'Brahmanbaria', 'Chandpur', 'Noakhali', 'Feni', 'Lakshmipur', 'Rangamati', 'Khagrachhari', 'Bandarban',
+  'Sylhet', 'Moulvibazar', 'Habiganj', 'Sunamganj',
+  'Rajshahi', 'Natore', 'Naogaon', 'Chapai Nawabganj', 'Pabna', 'Sirajganj', 'Bogura', 'Joypurhat',
+  'Khulna', 'Jashore', 'Satkhira', 'Bagerhat', 'Narail', 'Magura', 'Jhenaidah', 'Kushtia', 'Chuadanga', 'Meherpur',
+  'Barishal', 'Patuakhali', 'Bhola', 'Pirojpur', 'Barguna', 'Jhalokati',
+  'Rangpur', 'Dinajpur', 'Kurigram', 'Gaibandha', 'Nilphamari', 'Lalmonirhat', 'Thakurgaon', 'Panchagarh',
+  'Mymensingh', 'Jamalpur', 'Sherpur', 'Netrokona',
+];
+export const districtName = (d: string | null | undefined): string => {
+  const v = String(d || ''); const k = DISTRICTS.indexOf(v);
+  return getLang() === 'en' && k >= 0 ? DISTRICTS_EN[k] : v;
+};
+// Search in Bengali or English ("syl" finds সিলেট).
+export const districtMatch = (d: string, q: string): boolean => {
+  const t = q.trim().toLowerCase(); if (!t) return true;
+  const k = DISTRICTS.indexOf(d);
+  return d.includes(q.trim()) || (k >= 0 && DISTRICTS_EN[k].toLowerCase().includes(t));
+};
 export const REPORT_REASONS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: 'fraud', label: 'প্রতারণা বা টাকা নিয়ে সমস্যা' },
-  { id: 'abuse', label: 'খারাপ ব্যবহার বা হুমকি' },
-  { id: 'fake', label: 'ভুয়া তথ্য বা ভুয়া পরিচয়' },
-  { id: 'spam', label: 'বিরক্তিকর বার্তা' },
-  { id: 'other', label: 'অন্য কারণ' },
+  { id: 'fraud', get label() { return tr('প্রতারণা বা টাকা নিয়ে সমস্যা', 'Fraud or a money problem'); } },
+  { id: 'abuse', get label() { return tr('খারাপ ব্যবহার বা হুমকি', 'Bad behaviour or threats'); } },
+  { id: 'fake', get label() { return tr('ভুয়া তথ্য বা ভুয়া পরিচয়', 'False information or a fake identity'); } },
+  { id: 'spam', get label() { return tr('বিরক্তিকর বার্তা', 'Annoying messages'); } },
+  { id: 'other', get label() { return tr('অন্য কারণ', 'Another reason'); } },
 ];
 export const CONTRACT_STATUS: Record<string, { icon: string; label: string }> = {
-  sent: { icon: '📩', label: 'হাজীর উত্তরের অপেক্ষায়' },
-  accepted: { icon: '✅', label: 'চুক্তি চালু আছে' },
-  declined: { icon: '✖️', label: 'হাজী রাজি হননি' },
-  withdrawn: { icon: '↩️', label: 'লিডার ফিরিয়ে নিয়েছেন' },
-  cancelled: { icon: '⛔', label: 'চুক্তি বাতিল' },
-  completed: { icon: '🏁', label: 'সফর শেষ, চুক্তি সম্পন্ন' },
+  sent: { icon: '📩', get label() { return tr('হাজীর উত্তরের অপেক্ষায়', 'Waiting for the haji\'s answer'); } },
+  accepted: { icon: '✅', get label() { return tr('চুক্তি চালু আছে', 'Contract active'); } },
+  declined: { icon: '✖️', get label() { return tr('হাজী রাজি হননি', 'The haji declined'); } },
+  withdrawn: { icon: '↩️', get label() { return tr('লিডার ফিরিয়ে নিয়েছেন', 'The leader withdrew it'); } },
+  cancelled: { icon: '⛔', get label() { return tr('চুক্তি বাতিল', 'Contract cancelled'); } },
+  completed: { icon: '🏁', get label() { return tr('সফর শেষ, চুক্তি সম্পন্ন', 'Trip over, contract completed'); } },
 };
 
 // ---------- Directory ----------
@@ -64,9 +86,9 @@ export async function processPendingReferral(): Promise<{ kind: 'ok' | 'warn'; t
   try {
     const r = await setReferral(code);
     await AsyncStorage.removeItem(REF_KEY).catch(() => {});
-    if (r === 'ok') return { kind: 'ok', text: 'রেফারেল কোড যুক্ত হয়েছে। লিডার নিশ্চিত করলে "লিডার ও চুক্তি" পাতায় দেখবেন।' };
+    if (r === 'ok') return { kind: 'ok', text: tr('রেফারেল কোড যুক্ত হয়েছে। লিডার নিশ্চিত করলে "লিডার ও চুক্তি" পাতায় দেখবেন।', 'Referral code added. When the leader confirms, you will see it on the "Leader and contract" page.') };
     if (r === 'already') return null;
-    return { kind: 'warn', text: `"${code}" কোডে কোনো লিডার পাওয়া যায়নি। "লিডার ও চুক্তি" পাতা থেকে সঠিক কোড দিন।` };
+    return { kind: 'warn', text: tr(`"${code}" কোডে কোনো লিডার পাওয়া যায়নি। "লিডার ও চুক্তি" পাতা থেকে সঠিক কোড দিন।`, `No leader found for code "${code}". Enter the right code on the "Leader and contract" page.`) };
   } catch (e) {
     if (notReady(e)) return null;          // database step not run yet: keep the code and try again later
     return null;                           // no internet: try again next time

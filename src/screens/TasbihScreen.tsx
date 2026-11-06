@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Vibration, Platform } from 'react-native';
+import { tr, lbl } from '../lib/lang';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, F, S, R, TOUCH } from '../theme';
 import { Notice } from '../components/ui';
@@ -9,18 +10,19 @@ import type { Nav } from './navTypes';
 const KEY = 'ta.tasbih.v1';
 // "after" = after-prayer tasbih: 33 + 33 + 34, moves to the next phrase by itself.
 // A preset is either one phrase (with a target count) or a sequence of phrases (steps).
-type Preset = { id: string; label: string; ar?: string; pron?: string; bn?: string; target?: number; steps?: string[]; source?: string };
+// Each Bengali text has its English next to it (en, pronEn, meanEn, sourceEn).
+type Preset = { id: string; label: string; en?: string; ar?: string; pron?: string; pronEn?: string; bn?: string; meanEn?: string; target?: number; steps?: string[]; source?: string; sourceEn?: string };
 type Count = { n: number; step: number };
 const PRESETS: Preset[] = [
-  { id: 'after', label: 'নামাজের পরের তাসবিহ', steps: ['subhan', 'hamd', 'akbar'], source: 'মুসলিম ৫৯৬' },
-  { id: 'subhan', label: 'সুবহানাল্লাহ', ar: 'سُبْحَانَ اللَّهِ', pron: 'সুবহানাল্লাহ', bn: 'আল্লাহ পবিত্র', target: 33 },
-  { id: 'hamd', label: 'আলহামদুলিল্লাহ', ar: 'الْحَمْدُ لِلَّهِ', pron: 'আলহামদুলিল্লাহ', bn: 'সব প্রশংসা আল্লাহর', target: 33 },
-  { id: 'akbar', label: 'আল্লাহু আকবার', ar: 'اللَّهُ أَكْبَرُ', pron: 'আল্লাহু আকবার', bn: 'আল্লাহ সবচেয়ে বড়', target: 34 },
-  { id: 'tahlil', label: 'লা ইলাহা ইল্লাল্লাহ', ar: 'لَا إِلَٰهَ إِلَّا اللَّهُ', pron: 'লা ইলাহা ইল্লাল্লাহ', bn: 'আল্লাহ ছাড়া কোনো উপাস্য নেই', target: 100 },
-  { id: 'istighfar', label: 'আস্তাগফিরুল্লাহ', ar: 'أَسْتَغْفِرُ اللَّهَ', pron: 'আস্তাগফিরুল্লাহ', bn: 'আমি আল্লাহর কাছে ক্ষমা চাই', target: 100, source: 'মুসলিম ২৭০২' },
-  { id: 'bihamdihi', label: 'সুবহানাল্লাহি ওয়া বিহামদিহী', ar: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', pron: 'সুবহানাল্লাহি ওয়া বিহামদিহী', bn: 'আল্লাহ পবিত্র, সব প্রশংসা তাঁর', target: 100, source: 'বুখারি ৬৪০৫' },
-  { id: 'durood', label: 'দরুদ', ar: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', pron: 'আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ', bn: 'হে আল্লাহ, মুহাম্মাদ (সা.)-এর ওপর রহমত বর্ষণ করুন', target: 100 },
-  { id: 'free', label: 'নিজের মতো গোনা', ar: '', pron: 'যেকোনো জিকির', bn: 'যত খুশি গুনুন', target: 0 },
+  { id: 'after', label: 'নামাজের পরের তাসবিহ', steps: ['subhan', 'hamd', 'akbar'], source: 'মুসলিম ৫৯৬', en: 'Tasbih after prayer', sourceEn: 'Muslim 596' },
+  { id: 'subhan', label: 'সুবহানাল্লাহ', ar: 'سُبْحَانَ اللَّهِ', pron: 'সুবহানাল্লাহ', bn: 'আল্লাহ পবিত্র', target: 33, en: 'SubhanAllah', pronEn: 'SubhanAllah', meanEn: 'Glory be to Allah' },
+  { id: 'hamd', label: 'আলহামদুলিল্লাহ', ar: 'الْحَمْدُ لِلَّهِ', pron: 'আলহামদুলিল্লাহ', bn: 'সব প্রশংসা আল্লাহর', target: 33, en: 'Alhamdulillah', pronEn: 'Alhamdulillah', meanEn: 'All praise is for Allah' },
+  { id: 'akbar', label: 'আল্লাহু আকবার', ar: 'اللَّهُ أَكْبَرُ', pron: 'আল্লাহু আকবার', bn: 'আল্লাহ সবচেয়ে বড়', target: 34, en: 'Allahu Akbar', pronEn: 'Allahu Akbar', meanEn: 'Allah is the Greatest' },
+  { id: 'tahlil', label: 'লা ইলাহা ইল্লাল্লাহ', ar: 'لَا إِلَٰهَ إِلَّا اللَّهُ', pron: 'লা ইলাহা ইল্লাল্লাহ', bn: 'আল্লাহ ছাড়া কোনো উপাস্য নেই', target: 100, en: 'La ilaha illallah', pronEn: 'La ilaha illallah', meanEn: 'There is no god but Allah' },
+  { id: 'istighfar', label: 'আস্তাগফিরুল্লাহ', ar: 'أَسْتَغْفِرُ اللَّهَ', pron: 'আস্তাগফিরুল্লাহ', bn: 'আমি আল্লাহর কাছে ক্ষমা চাই', target: 100, source: 'মুসলিম ২৭০২', en: 'Astaghfirullah', pronEn: 'Astaghfirullah', meanEn: 'I ask Allah for forgiveness', sourceEn: 'Muslim 2702' },
+  { id: 'bihamdihi', label: 'সুবহানাল্লাহি ওয়া বিহামদিহী', ar: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', pron: 'সুবহানাল্লাহি ওয়া বিহামদিহী', bn: 'আল্লাহ পবিত্র, সব প্রশংসা তাঁর', target: 100, source: 'বুখারি ৬৪০৫', en: 'SubhanAllahi wa bihamdihi', pronEn: 'SubhanAllahi wa bihamdihi', meanEn: 'Glory be to Allah, and all praise is His' },
+  { id: 'durood', label: 'দরুদ', ar: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', pron: 'আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ', bn: 'হে আল্লাহ, মুহাম্মাদ (সা.)-এর ওপর রহমত বর্ষণ করুন', target: 100, en: 'Durud', pronEn: 'Allahumma salli \'ala Muhammad', meanEn: 'O Allah, send blessings upon Muhammad (peace be upon him)' },
+  { id: 'free', label: 'নিজের মতো গোনা', ar: '', pron: 'যেকোনো জিকির', bn: 'যত খুশি গুনুন', target: 0, en: 'Count freely', pronEn: 'Any dhikr', meanEn: 'Count as many as you like' },
 ];
 const P = (id: string): Preset => PRESETS.find((p) => p.id === id) || PRESETS[0];   // a preset or a single phrase
 
@@ -53,53 +55,53 @@ export default function TasbihScreen({ navigation }: { navigation: Nav }) {
   const reset = () => {
     const doIt = () => save({ ...state, [sel]: { n: 0, step: 0 } });
     if (Platform.OS === 'web') { doIt(); return; }
-    Alert.alert('গণনা শূন্য করবেন?', '', [{ text: 'না', style: 'cancel' }, { text: 'হ্যাঁ, শূন্য করুন', style: 'destructive', onPress: doIt }]);
+    Alert.alert(tr('গণনা শূন্য করবেন?', 'Reset the count to zero?'), '', [{ text: tr('না', 'No'), style: 'cancel' }, { text: tr('হ্যাঁ, শূন্য করুন', 'Yes, reset'), style: 'destructive', onPress: doIt }]);
   };
   const choose = (id: string) => { setSel(id); save(state, id); };
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
-      <Pressable onPress={() => navigation.goBack?.()} style={st.back} accessibilityRole="button" accessibilityLabel="ফিরে যান">
-        <Text style={st.backT}>‹ ফিরে যান</Text>
+      <Pressable onPress={() => navigation.goBack?.()} style={st.back} accessibilityRole="button" accessibilityLabel={tr('ফিরে যান', 'Go back')}>
+        <Text style={st.backT}>{tr('‹ ফিরে যান', '‹ Back')}</Text>
       </Pressable>
-      <Text style={st.title} accessibilityRole="header">📿 তাসবিহ গণনা</Text>
+      <Text style={st.title} accessibilityRole="header">{tr('📿 তাসবিহ গণনা', '📿 Tasbih counter')}</Text>
       <View style={st.chips}>
         {PRESETS.map((p) => {
           const on = p.id === sel;
           return (
-            <Pressable key={p.id} onPress={() => choose(p.id)} style={[st.chip, on && st.chipOn]} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={p.label}>
-              <Text style={[st.chipT, on && { color: C.primary }]}>{on ? '✓ ' : ''}{p.label}</Text>
+            <Pressable key={p.id} onPress={() => choose(p.id)} style={[st.chip, on && st.chipOn]} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={lbl(p)}>
+              <Text style={[st.chipT, on && { color: C.primary }]}>{on ? '✓ ' : ''}{lbl(p)}</Text>
             </Pressable>
           );
         })}
       </View>
 
       {preset.steps ? (
-        <Text style={st.seq}>{preset.steps.map((id: string, i: number) => `${i < cur.step ? '✅' : i === cur.step ? '▶' : '•'} ${P(id).label} ${toBn(P(id).target)}`).join('   ')}</Text>
+        <Text style={st.seq}>{preset.steps.map((id: string, i: number) => `${i < cur.step ? '✅' : i === cur.step ? '▶' : '•'} ${lbl(P(id))} ${toBn(P(id).target)}`).join('   ')}</Text>
       ) : null}
       {!allDone && phrase.ar ? <Text style={st.ar} accessibilityLanguage="ar">{phrase.ar}</Text> : null}
-      {!allDone ? <Text style={st.pron}>{phrase.pron}</Text> : null}
-      {!allDone ? <Text style={st.bn}>{phrase.bn}</Text> : null}
+      {!allDone ? <Text style={st.pron}>{tr(phrase.pron || '', phrase.pronEn || phrase.pron || '')}</Text> : null}
+      {!allDone ? <Text style={st.bn}>{tr(phrase.bn || '', phrase.meanEn || phrase.bn || '')}</Text> : null}
 
-      {allDone ? <Notice kind="ok" title="মাশাআল্লাহ, পূর্ণ হয়েছে" text='আবার শুরু করতে নিচের "শূন্য করুন" চাপুন।' /> : (
+      {allDone ? <Notice kind="ok" title={tr('মাশাআল্লাহ, পূর্ণ হয়েছে', 'MashaAllah, completed')} text={tr('আবার শুরু করতে নিচের "শূন্য করুন" চাপুন।', 'To start again, tap "Reset" below.')} /> : (
         <Pressable onPress={tap} style={({ pressed }) => [st.big, pressed && st.bigPressed]} accessibilityRole="button"
-          accessibilityLabel={`গুনুন। এখন ${cur.n}${target ? `, লক্ষ্য ${target}` : ''}`} accessibilityHint="প্রতিবার জিকির বলে একবার চাপুন">
+          accessibilityLabel={tr(`গুনুন। এখন ${cur.n}${target ? `, লক্ষ্য ${target}` : ''}`, `Count. Now ${cur.n}${target ? `, target ${target}` : ''}`)} accessibilityHint={tr('প্রতিবার জিকির বলে একবার চাপুন', 'Tap once each time you say the dhikr')}>
           <Text style={st.bigN}>{toBn(cur.n)}</Text>
           {target ? <Text style={st.bigOf}>/ {toBn(target)}</Text> : null}
-          <Text style={st.bigHint}>এখানে চাপুন</Text>
+          <Text style={st.bigHint}>{tr('এখানে চাপুন', 'Tap here')}</Text>
         </Pressable>
       )}
 
       <View style={st.row}>
-        <Pressable onPress={undo} disabled={cur.n === 0} style={[st.small, cur.n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel="ভুল চাপ, এক কমান">
-          <Text style={st.smallT}>− ভুল চাপ, এক কমান</Text>
+        <Pressable onPress={undo} disabled={cur.n === 0} style={[st.small, cur.n === 0 && { opacity: 0.4 }]} accessibilityRole="button" accessibilityLabel={tr('ভুল চাপ, এক কমান', 'Wrong tap, take one off')}>
+          <Text style={st.smallT}>{tr('− ভুল চাপ, এক কমান', '− Wrong tap, take one off')}</Text>
         </Pressable>
-        <Pressable onPress={reset} style={st.small} accessibilityRole="button" accessibilityLabel="গণনা শূন্য করুন">
-          <Text style={st.smallT}>↺ শূন্য করুন</Text>
+        <Pressable onPress={reset} style={st.small} accessibilityRole="button" accessibilityLabel={tr('গণনা শূন্য করুন', 'Reset the count')}>
+          <Text style={st.smallT}>{tr('↺ শূন্য করুন', '↺ Reset')}</Text>
         </Pressable>
       </View>
-      <Text style={st.note}>লক্ষ্য পূর্ণ হলে ফোন একটু বেশি কাঁপবে। অ্যাপ বন্ধ করলেও গণনা মনে থাকবে।</Text>
-      {(preset.source || phrase.source) ? <Text style={st.note}>📚 সূত্র: {preset.source || phrase.source}</Text> : null}
+      <Text style={st.note}>{tr('লক্ষ্য পূর্ণ হলে ফোন একটু বেশি কাঁপবে। অ্যাপ বন্ধ করলেও গণনা মনে থাকবে।', 'The phone vibrates a little more when the target is reached. The count is kept even if you close the app.')}</Text>
+      {(preset.source || phrase.source) ? <Text style={st.note}>📚 {tr('সূত্র', 'Source')}: {tr(preset.source || phrase.source || '', preset.sourceEn || phrase.sourceEn || preset.source || phrase.source || '')}</Text> : null}
     </ScrollView>
   );
 }
