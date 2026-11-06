@@ -1,6 +1,7 @@
 // The second lock for admin & staff (2FA). Shown before the admin menu until this session typed a valid
 // 6-digit code from an authenticator app. The database refuses all admin work without it (023_admin_mfa.sql).
 import React, { useCallback, useEffect, useState, type JSX } from 'react';
+import { tr } from '../lib/lang';
 import { View, Text, Linking, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice } from '../components/ui';
@@ -47,25 +48,25 @@ export default function AdminMfa({ onDone, again = false }: { onDone: () => void
     setBusy(false);
   };
 
-  if (step === 'load') return <ActivityIndicator color={C.primary} accessibilityLabel="যাচাই হচ্ছে" />;
+  if (step === 'load') return <ActivityIndicator color={C.primary} accessibilityLabel={tr("যাচাই হচ্ছে", 'Checking')} />;
   if (step === 'err') return (
     <View>
-      <Notice kind="bad" title="যাচাই করা যায়নি" text={msg} />
-      <Button title="আবার চেষ্টা করুন" icon="🔄" onPress={load} />
+      <Notice kind="bad" title={tr("যাচাই করা যায়নি", 'Could not check')} text={msg} />
+      <Button title={tr("আবার চেষ্টা করুন", 'Try again')} icon="🔄" onPress={load} />
     </View>
   );
 
   const codeBox = (
     <View>
-      <Field label="৬ সংখ্যার কোড" hint="যেমন: ১২৩৪৫৬" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={7}
+      <Field label={tr("৬ সংখ্যার কোড", '6-digit code')} hint={tr("যেমন: ১২৩৪৫৬", 'e.g. 123456')} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={7}
         autoComplete="one-time-code" textContentType="oneTimeCode" error={msg || undefined} />
-      <Button title="কোড যাচাই করে অ্যাডমিন প্যানেল খুলুন" icon="🔓" onPress={submit} loading={busy} disabled={!code.trim()} />
+      <Button title={tr("কোড যাচাই করে অ্যাডমিন প্যানেল খুলুন", 'Check the code and open the admin panel')} icon="🔓" onPress={submit} loading={busy} disabled={!code.trim()} />
     </View>
   );
 
   if (step === 'verify') return (
     <View>
-      <Notice kind="info" title="🔐 দ্বিতীয় তালা (2FA)" text="নিরাপত্তার জন্য অথেনটিকেটর অ্যাপে (Google Authenticator) Travel Adda-র পাশে যে ৬ সংখ্যার কোড দেখাচ্ছে, সেটি লিখুন। কোড প্রতি ৩০ সেকেন্ডে বদলায়।" />
+      <Notice kind="info" title={tr("🔐 দ্বিতীয় তালা (2FA)", '🔐 Second lock (2FA)')} text={tr("নিরাপত্তার জন্য অথেনটিকেটর অ্যাপে (Google Authenticator) Travel Adda-র পাশে যে ৬ সংখ্যার কোড দেখাচ্ছে, সেটি লিখুন। কোড প্রতি ৩০ সেকেন্ডে বদলায়।", 'For safety, write the 6-digit code shown next to Travel Adda in the authenticator app (Google Authenticator). The code changes every 30 seconds.')} />
       {codeBox}
     </View>
   );
@@ -73,27 +74,27 @@ export default function AdminMfa({ onDone, again = false }: { onDone: () => void
   // enroll
   if (!setup) return (
     <View>
-      <Notice kind="warn" title="🔐 দ্বিতীয় তালা চালু করুন (একবারই)"
-        text="অ্যাডমিন ও স্টাফের কাজ এখন শুধু পাসওয়ার্ড দিয়ে হবে না — ফোনের অথেনটিকেটর অ্যাপের কোডও লাগবে। পাসওয়ার্ড চুরি হলেও কেউ অ্যাডমিন কাজ করতে পারবে না।" />
-      <Text style={st.p}>১. Play Store থেকে "Google Authenticator" অ্যাপ নামান (আগে থাকলে দরকার নেই)।</Text>
-      <Button title="Google Authenticator নামান" icon="⬇️" kind="secondary" onPress={() => Linking.openURL(PLAY).catch(() => {})} style={{ marginBottom: S.md }} />
-      <Text style={st.p}>২. নিচের বোতাম চাপুন — একটি গোপন চাবি তৈরি হবে।</Text>
-      {msg ? <Notice kind="bad" title="কাজটি হয়নি" text={msg} /> : null}
-      <Button title="গোপন চাবি তৈরি করুন" icon="🔑" onPress={begin} loading={busy} />
+      <Notice kind="warn" title={tr("🔐 দ্বিতীয় তালা চালু করুন (একবারই)", '🔐 Turn on the second lock (only once)')}
+        text={tr("অ্যাডমিন ও স্টাফের কাজ এখন শুধু পাসওয়ার্ড দিয়ে হবে না — ফোনের অথেনটিকেটর অ্যাপের কোডও লাগবে। পাসওয়ার্ড চুরি হলেও কেউ অ্যাডমিন কাজ করতে পারবে না।", 'Admin and staff work now needs more than the password — the code from the phone\'s authenticator app is also needed. Even if the password is stolen, nobody can do admin work.')} />
+      <Text style={st.p}>{tr('১. Play Store থেকে "Google Authenticator" অ্যাপ নামান (আগে থাকলে দরকার নেই)।', '1. Install the "Google Authenticator" app from the Play Store (not needed if you already have it).')}</Text>
+      <Button title={tr("Google Authenticator নামান", 'Install Google Authenticator')} icon="⬇️" kind="secondary" onPress={() => Linking.openURL(PLAY).catch(() => {})} style={{ marginBottom: S.md }} />
+      <Text style={st.p}>{tr('২. নিচের বোতাম চাপুন — একটি গোপন চাবি তৈরি হবে।', '2. Press the button below — a secret key will be made.')}</Text>
+      {msg ? <Notice kind="bad" title={tr("কাজটি হয়নি", 'It did not work')} text={msg} /> : null}
+      <Button title={tr("গোপন চাবি তৈরি করুন", 'Make the secret key')} icon="🔑" onPress={begin} loading={busy} />
     </View>
   );
   return (
     <View>
-      <Notice kind="info" title="অথেনটিকেটর অ্যাপে যোগ করুন" text="নিচের বোতাম চাপলে অ্যাপটি খুলে যাবে, সেখানে যোগ করুন। না খুললে অ্যাপে “Enter a setup key” বেছে নিচের চাবিটি হুবহু লিখুন।" />
-      <Button title="অথেনটিকেটর অ্যাপে যোগ করুন" icon="📲" kind="secondary" onPress={openApp} style={{ marginBottom: S.md }} />
-      {appMissing ? <Notice kind="warn" title="অথেনটিকেটর অ্যাপ পাওয়া যায়নি" text="আগে Google Authenticator নামান, অথবা নিচের চাবি নিজে লিখে দিন।" /> : null}
+      <Notice kind="info" title={tr("অথেনটিকেটর অ্যাপে যোগ করুন", 'Add to the authenticator app')} text={tr("নিচের বোতাম চাপলে অ্যাপটি খুলে যাবে, সেখানে যোগ করুন। না খুললে অ্যাপে “Enter a setup key” বেছে নিচের চাবিটি হুবহু লিখুন।", 'Pressing the button below opens the app; add it there. If it does not open, choose “Enter a setup key” in the app and type the key below exactly.')} />
+      <Button title={tr("অথেনটিকেটর অ্যাপে যোগ করুন", 'Add to the authenticator app')} icon="📲" kind="secondary" onPress={openApp} style={{ marginBottom: S.md }} />
+      {appMissing ? <Notice kind="warn" title={tr("অথেনটিকেটর অ্যাপ পাওয়া যায়নি", 'Authenticator app not found')} text={tr("আগে Google Authenticator নামান, অথবা নিচের চাবি নিজে লিখে দিন।", 'First install Google Authenticator, or type the key below yourself.')} /> : null}
       <View style={[st.card, { alignItems: 'center' }]}>
-        <Text style={st.p}>গোপন চাবি (কাউকে দেখাবেন না):</Text>
+        <Text style={st.p}>{tr('গোপন চাবি (কাউকে দেখাবেন না):', 'Secret key (do not show anyone):')}</Text>
         <Text selectable style={{ fontSize: 22, fontWeight: '700', letterSpacing: 1, color: C.text, textAlign: 'center' }}
-          accessibilityLabel={`গোপন চাবি: ${setup.secret.split('').join(' ')}`}>{secretGroups(setup.secret)}</Text>
+          accessibilityLabel={tr(`গোপন চাবি: ${setup.secret.split('').join(' ')}`, `Secret key: ${setup.secret.split('').join(' ')}`)}>{secretGroups(setup.secret)}</Text>
       </View>
-      <Notice kind="warn" title="ফোন হারালে যেন আটকে না যান" text="একই চাবি দ্বিতীয় একটি ফোনেও (বিশ্বস্ত) যোগ করে রাখুন। দুটোই হারালে Supabase ড্যাশবোর্ড থেকে 2FA মুছে আবার চালু করতে হবে।" />
-      <Text style={st.p}>৩. অ্যাপে দেখানো ৬ সংখ্যার কোডটি লিখুন:</Text>
+      <Notice kind="warn" title={tr("ফোন হারালে যেন আটকে না যান", 'So you are not locked out if the phone is lost')} text={tr("একই চাবি দ্বিতীয় একটি ফোনেও (বিশ্বস্ত) যোগ করে রাখুন। দুটোই হারালে Supabase ড্যাশবোর্ড থেকে 2FA মুছে আবার চালু করতে হবে।", 'Add the same key to a second (trusted) phone too. If both are lost, 2FA must be removed from the Supabase dashboard and turned on again.')} />
+      <Text style={st.p}>{tr('৩. অ্যাপে দেখানো ৬ সংখ্যার কোডটি লিখুন:', '3. Write the 6-digit code shown in the app:')}</Text>
       {codeBox}
     </View>
   );

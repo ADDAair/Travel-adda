@@ -1,6 +1,7 @@
 // Admin: correct guide and dua text without an app update (supabase/024_admin_part3.sql).
 // Only existing text can be changed; phones get the change the next time the app opens with internet.
 import React, { useCallback, useEffect, useState, type JSX } from 'react';
+import { tr } from '../lib/lang';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { C, S } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
@@ -26,7 +27,7 @@ export default function ContentTab(): JSX.Element {
   const [err, setErr] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     try { const r = await listOverrides(); Object.entries(LISTS).forEach(([k, l]) => applyOverrides(l, r, k)); setRows(r); setErr(null); }
-    catch (e) { setRows([]); setErr(notReady(e) ? 'এই অংশের ডেটাবেস ধাপ (০২৪) এখনো চালানো হয়নি।' : errText(e)); }
+    catch (e) { setRows([]); setErr(notReady(e) ? tr('এই অংশের ডেটাবেস ধাপ (০২৪) এখনো চালানো হয়নি।', 'The database step (024) for this part has not been run yet.') : errText(e)); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -36,25 +37,25 @@ export default function ContentTab(): JSX.Element {
 
   if (cur) return (
     <>
-      <Button title="তালিকায় ফিরে যান" icon="‹" kind="secondary" onPress={() => setItem(null)} style={{ marginBottom: S.md }} />
+      <Button title={tr("তালিকায় ফিরে যান", 'Back to the list')} icon="‹" kind="secondary" onPress={() => setItem(null)} style={{ marginBottom: S.md }} />
       <Text style={st.gName}>{iconOf(cur)}{cur.title}</Text>
-      <Notice kind="warn" title="ধর্মীয় লেখা বদলানোর আগে আলিমের সাথে মিলিয়ে নিন" text="সংরক্ষণ করলে সবার ফোনে পরের বার অ্যাপ খোলার সময় নতুন লেখা দেখাবে।" />
+      <Notice kind="warn" title={tr("ধর্মীয় লেখা বদলানোর আগে আলিমের সাথে মিলিয়ে নিন", 'Check with an alim before changing religious text')} text={tr("সংরক্ষণ করলে সবার ফোনে পরের বার অ্যাপ খোলার সময় নতুন লেখা দেখাবে।", 'After saving, everyone\'s phone shows the new text the next time the app is opened.')} />
       {textFields(cur).map((f) => <FieldEditor key={`${kind}/${cur.id}/${f.path}`} kind={kind} item={cur.id} f={f}
         overridden={(rows || []).some((r) => r.kind === kind && r.item_id === cur.id && r.path === f.path)} onSaved={refresh} />)}
     </>
   );
   return (
     <>
-      <Text style={[st.p, { marginBottom: S.sm }]}>ভুল বানান বা তথ্য ঠিক করতে গাইড বা দোয়া বেছে নিন। নতুন গাইড যোগ করতে অ্যাপ আপডেট লাগবে।</Text>
-      <Segmented value={kind} onChange={(v: Kind) => { setKind(v); setItem(null); setQ(''); }} options={[{ id: 'guide', label: 'গাইড' }, { id: 'dua', label: 'দোয়া' }]} />
+      <Text style={[st.p, { marginBottom: S.sm }]}>{tr('ভুল বানান বা তথ্য ঠিক করতে গাইড বা দোয়া বেছে নিন। নতুন গাইড যোগ করতে অ্যাপ আপডেট লাগবে।', 'Choose a guide or dua to fix a spelling mistake or wrong information. Adding a new guide needs an app update.')}</Text>
+      <Segmented value={kind} onChange={(v: Kind) => { setKind(v); setItem(null); setQ(''); }} options={[{ id: 'guide', label: tr('গাইড', 'Guides') }, { id: 'dua', label: tr('দোয়া', 'Duas') }]} />
       {err ? <Notice kind="info" title={err} /> : null}
       {rows === null ? <ActivityIndicator color={C.primary} /> : null}
-      <Field label="নাম দিয়ে খুঁজুন" hint={kind === 'guide' ? 'যেমন: স্বাস্থ্য' : 'যেমন: ছানা'} value={q} onChangeText={setQ} />
+      <Field label={tr("নাম দিয়ে খুঁজুন", 'Search by name')} hint={kind === 'guide' ? tr('যেমন: স্বাস্থ্য', 'e.g. health') : tr('যেমন: ছানা', 'e.g. Thana')} value={q} onChangeText={setQ} />
       {list.map((x) => (
         <Pressable key={x.id} onPress={() => setItem(x.id)} style={st.card} accessibilityRole="button"
-          accessibilityLabel={`${x.title}${changed(x.id) ? `, ${changed(x.id)}টি লেখা বদলানো` : ''}। খুলতে চাপুন`}>
+          accessibilityLabel={tr(`${x.title}${changed(x.id) ? `, ${changed(x.id)}টি লেখা বদলানো` : ''}। খুলতে চাপুন`, `${x.title}${changed(x.id) ? `, ${changed(x.id)} texts changed` : ''}. Tap to open`)}>
           <Text style={st.val}>{iconOf(x)}{x.title}</Text>
-          {changed(x.id) ? <Text style={[st.small, { color: C.warn, fontWeight: '700' }]}>✏️ বদলানো লেখা আছে</Text> : null}
+          {changed(x.id) ? <Text style={[st.small, { color: C.warn, fontWeight: '700' }]}>{tr('✏️ বদলানো লেখা আছে', '✏️ Has changed text')}</Text> : null}
         </Pressable>
       ))}
     </>
@@ -71,18 +72,18 @@ function FieldEditor({ kind, item, f, overridden, onSaved }: { kind: Kind; item:
     if (busy) return;
     setBusy(true); setMsg(null);
     try { await setContent(kind, item, f.path, body); await onSaved(); setMsg({ kind: 'ok', text: ok }); }
-    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'empty' ? 'লেখা খালি রাখা যাবে না।' : errText(e) }); }   // the draft stays
+    catch (e) { setMsg({ kind: 'bad', text: (e as { code?: string }).code === 'empty' ? tr('লেখা খালি রাখা যাবে না।', 'The text cannot be left empty.') : errText(e) }); }   // the draft stays
     finally { setBusy(false); }
   };
   return (
     <View style={st.card}>
       <Field label={f.label} value={draft} onChangeText={setDraft} multiline={f.value.length > 40} maxLength={4000} editable={!busy} />
-      {overridden && orig != null ? <Text style={st.small}>অ্যাপের আসল লেখা: {orig}</Text> : null}
+      {overridden && orig != null ? <Text style={st.small}>{tr('অ্যাপের আসল লেখা:', 'The app\'s original text:')} {orig}</Text> : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
-      <Button title="এই লেখা সংরক্ষণ করুন" icon="💾" onPress={() => run(draft, 'সংরক্ষণ হয়েছে।')} loading={busy} disabled={draft.trim() === f.value.trim()} style={{ marginBottom: overridden ? S.sm : 0 }} />
+      <Button title={tr("এই লেখা সংরক্ষণ করুন", 'Save this text')} icon="💾" onPress={() => run(draft, tr('সংরক্ষণ হয়েছে।', 'Saved.'))} loading={busy} disabled={draft.trim() === f.value.trim()} style={{ marginBottom: overridden ? S.sm : 0 }} />
       {overridden ? (
-        <Button title="অ্যাপের আসল লেখায় ফেরত নিন" icon="↩️" kind="secondary" disabled={busy}
-          onPress={() => confirm('আসল লেখায় ফেরত নেবেন?', 'আপনার বদলানো লেখা মুছে যাবে।', 'ফেরত নিন', () => run(null, 'আসল লেখায় ফেরত নেওয়া হয়েছে।'))} />
+        <Button title={tr("অ্যাপের আসল লেখায় ফেরত নিন", 'Go back to the app\'s original text')} icon="↩️" kind="secondary" disabled={busy}
+          onPress={() => confirm(tr('আসল লেখায় ফেরত নেবেন?', 'Go back to the original text?'), tr('আপনার বদলানো লেখা মুছে যাবে।', 'Your changed text will be deleted.'), tr('ফেরত নিন', 'Go back'), () => run(null, tr('আসল লেখায় ফেরত নেওয়া হয়েছে।', 'Went back to the original text.')))} />
       ) : null}
     </View>
   );
