@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, Modal, BackHandler } from 'react-native';
+import { tr } from '../lib/lang';
 import ScrollView from '../components/KbScroll';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
@@ -28,13 +29,13 @@ const PROFILE_CACHE = 'ta.profileCache.v1';
 const MAIN = EMERGENCY_MAIN;
 const MORE = EMERGENCY_MORE;
 const FIELDS = EMERGENCY_FIELDS;
-const LOST_TIPS = [
-  'ভয় পাবেন না, যেখানে আছেন সেখানেই থাকুন। ঘোরাঘুরি করলে খুঁজে পাওয়া কঠিন হয়।',
-  'কাছের গেট নম্বর বা বড় চিহ্ন দেখে লিডারকে ফোন করে জানান।',
-  'নিচের "পথ হারিয়েছি কার্ড" খুলে পুলিশ, স্বেচ্ছাসেবক বা ট্যাক্সিচালককে দেখান।',
-  'আপনার হজ কার্ডে (নুসুক কার্ড) আপনার তথ্য আছে। সেটাও দেখাতে পারেন।',
-  'দলের সাথে আগে থেকেই একটা দেখা করার জায়গা ঠিক করে রাখুন।',
-];
+const lostTips = (): string[] => [
+  tr('ভয় পাবেন না, যেখানে আছেন সেখানেই থাকুন। ঘোরাঘুরি করলে খুঁজে পাওয়া কঠিন হয়।', 'Do not be afraid; stay where you are. Walking around makes you harder to find.'),
+  tr('কাছের গেট নম্বর বা বড় চিহ্ন দেখে লিডারকে ফোন করে জানান।', 'Look at the nearest gate number or a big sign and call your leader to tell them.'),
+  tr('নিচের "পথ হারিয়েছি কার্ড" খুলে পুলিশ, স্বেচ্ছাসেবক বা ট্যাক্সিচালককে দেখান।', 'Open the "I am lost card" below and show it to the police, a volunteer or a taxi driver.'),
+  tr('আপনার হজ কার্ডে (নুসুক কার্ড) আপনার তথ্য আছে। সেটাও দেখাতে পারেন।', 'Your Hajj card (Nusuk card) has your details. You can show it too.'),
+  tr('দলের সাথে আগে থেকেই একটা দেখা করার জায়গা ঠিক করে রাখুন।', 'Agree on a meeting place with your group in advance.'),
+]
 
 const call = (n: string) => Linking.openURL(`tel:${String(n).replace(/[^\d+]/g, '')}`).catch(() => {});
 // Emergency numbers: open the dialer FIRST, then quietly tell Travel Adda (never delays the call).
@@ -68,14 +69,14 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
 
   const startEdit = () => { setDraft({ ...info }); setErr(''); setMsg(''); setEditing(true); };
   const save = async () => {
-    if (draft.leaderPhone && !phoneOk(draft.leaderPhone)) { setErr('লিডারের মোবাইল নম্বর ঠিক নেই। দেশের কোডসহ পুরো নম্বর লিখুন।'); return; }
+    if (draft.leaderPhone && !phoneOk(draft.leaderPhone)) { setErr(tr('লিডারের মোবাইল নম্বর ঠিক নেই। দেশের কোডসহ পুরো নম্বর লিখুন।', 'The leader\'s mobile number is not right. Write the full number with the country code.')); return; }
     const clean: Record<string, string> = {};
     FIELDS.forEach((f) => { const v = String(draft[f.k] || '').trim(); if (v) clean[f.k] = v.slice(0, 120); });
     try {
       await AsyncStorage.setItem(KEY, JSON.stringify(clean));
-      setInfo(clean); setEditing(false); setErr(''); setMsg('তথ্য এই ফোনে সংরক্ষণ হয়েছে।');
+      setInfo(clean); setEditing(false); setErr(''); setMsg(tr('তথ্য এই ফোনে সংরক্ষণ হয়েছে।', 'Saved on this phone.'));
     } catch (e) {
-      setErr('সংরক্ষণ হয়নি। আবার চেষ্টা করুন। আপনার লেখা মুছে যায়নি।');   // draft stays on screen
+      setErr(tr('সংরক্ষণ হয়নি। আবার চেষ্টা করুন। আপনার লেখা মুছে যায়নি।', 'Not saved. Try again. What you wrote is still here.'));   // draft stays on screen
     }
   };
 
@@ -85,11 +86,11 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
       <View style={st.sos}>
-        <Text style={st.sosH} accessibilityRole="header">🆘 বিপদে পড়লে ফোন করুন</Text>
-        <Text style={st.sosSub}>বাটনে চাপলে ফোনের ডায়ালে নম্বর বসে যাবে, তারপর কল বাটন চাপুন। এই নম্বরগুলো শুধু সৌদি আরবের ভেতরে কাজ করে।</Text>
+        <Text style={st.sosH} accessibilityRole="header">{tr('🆘 বিপদে পড়লে ফোন করুন', '🆘 Call if you are in danger')}</Text>
+        <Text style={st.sosSub}>{tr('বাটনে চাপলে ফোনের ডায়ালে নম্বর বসে যাবে, তারপর কল বাটন চাপুন। এই নম্বরগুলো শুধু সৌদি আরবের ভেতরে কাজ করে।', 'Tap a button and the number goes into the phone\'s dialler; then press call. These numbers work only inside Saudi Arabia.')}</Text>
         {MAIN.map((x) => (
           <Pressable key={x.n} onPress={() => callSos(x)} style={({ pressed }) => [st.callBtn, pressed && { opacity: 0.85 }]}
-            accessibilityRole="button" accessibilityLabel={`${x.n} নম্বরে ফোন করুন। ${x.t}। ${x.w}`}>
+            accessibilityRole="button" accessibilityLabel={tr(`${x.n} নম্বরে ফোন করুন। ${x.t}। ${x.w}`, `Call ${x.n}. ${x.t}. ${x.w}`)}>
             <Text style={st.callN}>📞 {x.n}</Text>
             <View style={{ flex: 1 }}>
               <Text style={st.callT}>{x.t}</Text>
@@ -98,27 +99,27 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
           </Pressable>
         ))}
         <Pressable onPress={() => setShowMore(!showMore)} style={st.moreBtn} accessibilityRole="button" accessibilityState={{ expanded: showMore }}
-          accessibilityLabel={showMore ? 'অন্য নম্বর লুকান' : 'আরও জরুরি নম্বর দেখুন'}>
-          <Text style={st.moreT}>{showMore ? 'অন্য নম্বর লুকান ▲' : 'আরও নম্বর ▼'}</Text>
+          accessibilityLabel={showMore ? tr('অন্য নম্বর লুকান', 'Hide other numbers') : tr('আরও জরুরি নম্বর দেখুন', 'See more emergency numbers')}>
+          <Text style={st.moreT}>{showMore ? tr('অন্য নম্বর লুকান ▲', 'Hide other numbers ▲') : tr('আরও নম্বর ▼', 'More numbers ▼')}</Text>
         </Pressable>
         {showMore ? MORE.map((x) => (
-          <Pressable key={x.n} onPress={() => callSos(x)} style={st.smallCall} accessibilityRole="button" accessibilityLabel={`${x.n} নম্বরে ফোন করুন। ${x.t}`}>
+          <Pressable key={x.n} onPress={() => callSos(x)} style={st.smallCall} accessibilityRole="button" accessibilityLabel={tr(`${x.n} নম্বরে ফোন করুন। ${x.t}`, `Call ${x.n}. ${x.t}`)}>
             <Text style={st.smallCallT}>📞 {x.n} · {x.t}</Text>
           </Pressable>
         )) : null}
-        {showMore ? <Text style={st.sosSub}>বাংলাদেশে থাকলে: জাতীয় জরুরি সেবা ৯৯৯।</Text> : null}
+        {showMore ? <Text style={st.sosSub}>{tr('বাংলাদেশে থাকলে: জাতীয় জরুরি সেবা ৯৯৯।', 'In Bangladesh: national emergency service 999.')}</Text> : null}
       </View>
       <SosLocationToggle />
 
       {lead.phone ? (
-        <Button title={`লিডারকে ফোন করুন${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone || '')} style={{ marginBottom: S.sm }} />
+        <Button title={`${tr('লিডারকে ফোন করুন', 'Call the leader')}${lead.name ? ` (${lead.name})` : ''}`} icon="📞" onPress={() => call(lead.phone || '')} style={{ marginBottom: S.sm }} />
       ) : help && help.phone ? (
-        <Button title="Travel Adda হেল্পলাইনে ফোন করুন" icon="📞" onPress={() => call(help.phone)} a11yHint="চুক্তি করা লিডার না থাকায় হেল্পলাইনে কল যাবে" style={{ marginBottom: S.sm }} />
+        <Button title={tr('Travel Adda হেল্পলাইনে ফোন করুন', 'Call the Travel Adda helpline')} icon="📞" onPress={() => call(help.phone)} a11yHint={tr('চুক্তি করা লিডার না থাকায় হেল্পলাইনে কল যাবে', 'With no contracted leader, the call goes to the helpline')} style={{ marginBottom: S.sm }} />
       ) : null}
-      <Button title="পথ হারিয়েছি কার্ড দেখান" icon="🪪" kind="gold" onPress={() => setLost(true)} a11yHint="পুলিশ বা ট্যাক্সিচালককে দেখানোর জন্য আরবি ও ইংরেজি কার্ড খুলবে" />
+      <Button title={tr('পথ হারিয়েছি কার্ড দেখান', 'Show the I am lost card')} icon="🪪" kind="gold" onPress={() => setLost(true)} a11yHint={tr('পুলিশ বা ট্যাক্সিচালককে দেখানোর জন্য আরবি ও ইংরেজি কার্ড খুলবে', 'Opens an Arabic and English card to show the police or a taxi driver')} />
 
-      <Text style={st.h}>আমার জরুরি তথ্য</Text>
-      <Text style={st.small}>🔒 এই তথ্য শুধু আপনার ফোনে থাকে, কোথাও পাঠানো হয় না। "পথ হারিয়েছি কার্ড"-এ এগুলো দেখানো হবে।</Text>
+      <Text style={st.h}>{tr('আমার জরুরি তথ্য', 'My emergency details')}</Text>
+      <Text style={st.small}>{tr('🔒 এই তথ্য শুধু আপনার ফোনে থাকে, কোথাও পাঠানো হয় না। "পথ হারিয়েছি কার্ড"-এ এগুলো দেখানো হবে।', '🔒 These details stay only on your phone and are not sent anywhere. They are shown on the "I am lost card".')}</Text>
       {msg ? <Notice kind="ok" title={msg} /> : null}
       {editing ? (
         <View style={st.card}>
@@ -128,8 +129,8 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
               onChangeText={(v) => setDraft({ ...draft, [f.k]: f.phone ? cleanPhone(v) : v })} />
           ))}
           {err ? <Notice kind="bad" title={err} /> : null}
-          <Button title="সংরক্ষণ করুন" icon="💾" onPress={save} />
-          <Button title="বাতিল" kind="secondary" onPress={() => { setEditing(false); setErr(''); }} style={{ marginTop: S.sm }} />
+          <Button title={tr('সংরক্ষণ করুন', 'Save')} icon="💾" onPress={save} />
+          <Button title={tr('বাতিল', 'Cancel')} kind="secondary" onPress={() => { setEditing(false); setErr(''); }} style={{ marginTop: S.sm }} />
         </View>
       ) : (
         <View style={st.card}>
@@ -138,19 +139,19 @@ export default function EmergencyScreen({ navigation }: { navigation: Nav }) {
               <Text style={st.lbl}>{f.label}</Text>
               <Text style={st.val}>{f.phone ? toBn(info[f.k]) : info[f.k]}</Text>
             </View>
-          )) : <Text style={st.p}>এখনো কিছু লেখা হয়নি। হারিয়ে গেলে কাজে লাগবে, তাই সফরের আগেই লিখে রাখুন।</Text>}
-          <Button title={has ? 'তথ্য বদলান' : 'তথ্য লিখুন'} icon="✏️" kind={has ? 'secondary' : 'primary'} onPress={startEdit} />
+          )) : <Text style={st.p}>{tr('এখনো কিছু লেখা হয়নি। হারিয়ে গেলে কাজে লাগবে, তাই সফরের আগেই লিখে রাখুন।', 'Nothing written yet. It helps if you get lost, so write it before the trip.')}</Text>}
+          <Button title={has ? tr('তথ্য বদলান', 'Change details') : tr('তথ্য লিখুন', 'Write details')} icon="✏️" kind={has ? 'secondary' : 'primary'} onPress={startEdit} />
         </View>
       )}
 
-      <Text style={st.h}>পথ হারালে কী করবেন</Text>
-      {LOST_TIPS.map((t, i) => (
+      <Text style={st.h}>{tr('পথ হারালে কী করবেন', 'What to do if you get lost')}</Text>
+      {lostTips().map((t, i) => (
         <View key={i} style={st.tipRow}>
           <View style={st.tipNum}><Text style={st.tipNumT}>{toBn(i + 1)}</Text></View>
           <Text style={[st.p, { flex: 1 }]}>{t}</Text>
         </View>
       ))}
-      <Notice kind="info" title="ম্যাপ ও লাইভ লোকেশন শেয়ার শীঘ্রই আসছে" text="লিডারের সাথে নিজের অবস্থান শেয়ার করার সুবিধা এখনো তৈরি হচ্ছে।" />
+      <Notice kind="info" title={tr('ম্যাপ ও লাইভ লোকেশন শেয়ার শীঘ্রই আসছে', 'Map and live location sharing coming soon')} text={tr('লিডারের সাথে নিজের অবস্থান শেয়ার করার সুবিধা এখনো তৈরি হচ্ছে।', 'Sharing your location with the leader is still being built.')} />
 
       <Modal visible={lost} animationType="slide" onRequestClose={() => setLost(false)}>
         <SafeAreaProvider><LostCard info={{ ...info, leaderName: lead.name || '', leaderPhone: lead.phone || '' }} me={me} onClose={() => setLost(false)} /></SafeAreaProvider>
@@ -178,7 +179,7 @@ function LostCard({ info, me, onClose }: { info: Info; me: Who | null; onClose: 
     Speech.speak(AR, {
       language: 'ar-SA', rate: 0.85,
       onDone: () => { if (alive.current) setSpeaking(false); }, onStopped: () => { if (alive.current) setSpeaking(false); },
-      onError: () => { if (alive.current) { setSpeaking(false); setTtsErr('আরবিতে শোনানো যায়নি। কার্ডটি দেখান।'); } },
+      onError: () => { if (alive.current) { setSpeaking(false); setTtsErr(tr('আরবিতে শোনানো যায়নি। কার্ডটি দেখান।', 'Could not speak in Arabic. Show the card.')); } },
     });
   };
   const Row = ({ ar, en, v }: { ar: string; en: string; v?: string | null }) => (v ? (
@@ -191,16 +192,16 @@ function LostCard({ info, me, onClose }: { info: Info; me: Who | null; onClose: 
     <ScrollView style={{ backgroundColor: '#FFFFFF' }} contentContainerStyle={[lc.wrap, { paddingTop: ins.top + S.md, paddingBottom: ins.bottom + S.lg }]}>
       <Text style={lc.ar} accessibilityLanguage="ar">{AR}</Text>
       <Text style={lc.en} accessibilityLanguage="en">{EN}</Text>
-      <Text style={lc.bn}>আমি বাংলাদেশের হাজী, পথ হারিয়েছি। আমাকে হোটেলে পৌঁছাতে বা লিডারকে ফোন করতে সাহায্য করুন।</Text>
+      <Text style={lc.bn}>{/* i18n-ok: the Bengali line on the card stays Bengali */}আমি বাংলাদেশের হাজী, পথ হারিয়েছি। আমাকে হোটেলে পৌঁছাতে বা লিডারকে ফোন করতে সাহায্য করুন।</Text>
       <Row ar="الاسم" en="Name" v={me && me.full_name} />
       <Row ar="رقم الحاج" en="Pilgrim ID" v={me && me.haji_code} />
       <Row ar="قائد المجموعة" en="Group leader" v={[info.leaderName, info.leaderPhone].filter(Boolean).join(' – ')} />
       {LOST_CARD_ROWS.map((r) => <Row key={r.k} ar={r.ar} en={r.en} v={info[r.k]} />)}
-      {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title="হোটেল ও লিডারের তথ্য লেখা নেই" text='কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।' /> : null}
-      <Button title={speaking ? 'থামান' : 'আরবিতে বলে শোনান'} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak} style={{ marginTop: S.md }} />
+      {!info.hotelName && !info.madHotel && !info.leaderPhone ? <Notice kind="warn" title={tr('হোটেল ও লিডারের তথ্য লেখা নেই', 'Hotel and leader details are not written')} text=tr('কার্ড বন্ধ করে "তথ্য লিখুন" চেপে লিখে রাখুন।', 'Close the card, tap "Write details" and write them.') /> : null}
+      <Button title={speaking ? tr('থামান', 'Stop') : tr('আরবিতে বলে শোনান', 'Say it aloud in Arabic')} icon={speaking ? '⏹️' : '🔊'} kind="secondary" onPress={speak} style={{ marginTop: S.md }} />
       {ttsErr ? <Notice kind="warn" title={ttsErr} /> : null}
-      {info.leaderPhone ? <Button title="লিডারকে ফোন করুন" icon="📞" onPress={() => call(info.leaderPhone)} style={{ marginTop: S.sm }} /> : null}
-      <Button title="কার্ড বন্ধ করুন" icon="✖️" kind="secondary" onPress={onClose} style={{ marginTop: S.sm }} />
+      {info.leaderPhone ? <Button title={tr('লিডারকে ফোন করুন', 'Call the leader')} icon="📞" onPress={() => call(info.leaderPhone)} style={{ marginTop: S.sm }} /> : null}
+      <Button title={tr('কার্ড বন্ধ করুন', 'Close the card')} icon="✖️" kind="secondary" onPress={onClose} style={{ marginTop: S.sm }} />
     </ScrollView>
   );
 }
@@ -250,18 +251,18 @@ function SosLocationToggle() {
     try {
       if (!on) {
         const p = await Location.requestForegroundPermissionsAsync();
-        if (!p || p.status !== 'granted') { setMsg('ফোন অবস্থান দেওয়ার অনুমতি দেয়নি। ফোনের সেটিংসে "আমি হাজী" অ্যাপকে অবস্থানের অনুমতি দিয়ে আবার চেষ্টা করুন।'); return; }
+        if (!p || p.status !== 'granted') { setMsg(tr('ফোন অবস্থান দেওয়ার অনুমতি দেয়নি। ফোনের সেটিংসে "আমি হাজী" অ্যাপকে অবস্থানের অনুমতি দিয়ে আবার চেষ্টা করুন।', 'The phone did not allow location. Give the "Ami Haji" app location permission in the phone settings and try again.')); return; }
       }
       await setSosLocationWanted(!on); setOn(!on);
-    } catch (e) { setMsg('কাজটি হয়নি। আবার চেষ্টা করুন।'); }
+    } catch (e) { setMsg(tr('কাজটি হয়নি। আবার চেষ্টা করুন।', 'That did not work. Try again.')); }
     finally { setBusy(false); }
   };
   return (
     <View style={{ marginBottom: S.md }}>
-      <Notice kind={on ? 'ok' : 'info'} title={on ? '📍 জরুরি ফোনের সময় অবস্থান পাঠানো চালু' : '📍 জরুরি ফোনের সময় অবস্থান পাঠানো বন্ধ'}
-        text="জরুরি নম্বরে ফোন করলে Travel Adda জানতে পারে, যেন দ্রুত সাহায্য করতে পারে। চালু করলে আপনার অবস্থানও পাঠানো হবে। ফোন করতে কোনো দেরি হবে না।" />
+      <Notice kind={on ? 'ok' : 'info'} title={on ? tr('📍 জরুরি ফোনের সময় অবস্থান পাঠানো চালু', '📍 Sending location with emergency calls: on') : tr('📍 জরুরি ফোনের সময় অবস্থান পাঠানো বন্ধ', '📍 Sending location with emergency calls: off')}
+        text={tr('জরুরি নম্বরে ফোন করলে Travel Adda জানতে পারে, যেন দ্রুত সাহায্য করতে পারে। চালু করলে আপনার অবস্থানও পাঠানো হবে। ফোন করতে কোনো দেরি হবে না।', 'When you call an emergency number, Travel Adda is told so it can help fast. Turn this on and your location is sent too. The call is never delayed.')} />
       {msg ? <Text style={{ color: C.bad, fontSize: F.body, marginBottom: S.sm }} accessibilityLiveRegion="polite">⚠️ {msg}</Text> : null}
-      <Button title={on ? 'অবস্থান পাঠানো বন্ধ করুন' : 'অবস্থান পাঠানো চালু করুন'} icon="📍" kind="secondary" onPress={toggle} loading={busy} />
+      <Button title={on ? tr('অবস্থান পাঠানো বন্ধ করুন', 'Turn off sending location') : tr('অবস্থান পাঠানো চালু করুন', 'Turn on sending location')} icon="📍" kind="secondary" onPress={toggle} loading={busy} />
     </View>
   );
 }
