@@ -1,0 +1,32 @@
+# npm audit report
+
+glob  9.0.0 - 14.0.1
+Severity: moderate
+Glob: AbortSignal cancellation bypass allows post-timeout filesystem traversal - https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
+Depends on vulnerable versions of minimatch
+fix available via `npm audit fix --force`
+Will install expo@53.0.11, which is a breaking change
+node_modules/glob
+  @expo/cli  0.19.0-canary-20240625-2333e70 - 57.0.32 || >=58.0.0-canary-20260806-8c2d007
+  Depends on vulnerable versions of glob
+  node_modules/@expo/cli
+    expo  >=52.0.0-canary-20240625-2333e70
+    Depends on vulnerable versions of @expo/cli
+    Depends on vulnerable versions of @expo/fingerprint
+    node_modules/expo
+  @expo/fingerprint  >=0.11.12-canary-20250303-4dba60e
+  Depends on vulnerable versions of glob
+  Depends on vulnerable versions of minimatch
+  node_modules/@expo/fingerprint
+
+minimatch  7.0.0 - 11.0.0
+Severity: moderate
+minimatch has potential denial of service via globparts amplification - https://github.com/advisories/GHSA-g3hv-75wg-m249
+fix available via `npm audit fix --force`
+Will install expo@53.0.11, which is a breaking change
+node_modules/minimatch
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
