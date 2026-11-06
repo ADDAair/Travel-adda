@@ -7,7 +7,7 @@ import NoticeBar from '../components/NoticeBar';
 import { toBn } from '../lib/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '../tutorial';
-import { loadSavedLocation, type Place } from '../lib/location';
+import { loadSavedLocation, placeName, type Place } from '../lib/location';
 import { finishStartup } from '../lib/startup';
 import { dayPlan, fmtTime, fmtLeft, prayerName } from '../lib/prayer';
 import { useMe, isLeaderAccount, PROFILE_CACHE as ME_CACHE, type Me } from '../lib/me';
@@ -120,7 +120,7 @@ export default function HomeScreen({ navigation }: { navigation: Nav }) {
           accessibilityLabel={H.nextA11y(next.nm, next.t.part, next.t.time, fmtLeft(next.nextAt - now))}>
           <Text style={st.npIc} importantForAccessibility="no">🕌</Text>
           <View style={{ flex: 1 }}>
-            <Text style={st.npL}>{H.next(String(ploc?.label || ''))}</Text>
+            <Text style={st.npL}>{H.next(placeName(ploc))}</Text>
             <Text style={st.npT}>{next.nm} {next.t.time} <Text style={st.npP}>{next.t.part}</Text></Text>
             <Text style={st.npLeft}>{H.left(fmtLeft(next.nextAt - now))}</Text>
           </View>

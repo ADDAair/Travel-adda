@@ -10,9 +10,9 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pt-'));
 // .mts: Node strips the TypeScript types itself (no build step)
 // phone.ts asks lang.ts for the language (digits); here a tiny stand-in that always says Bengali
-fs.writeFileSync(path.join(tmp, 'lang.mts'), "export const getLang = () => 'bn';\n");
+fs.writeFileSync(path.join(tmp, 'lang.mts'), "export const getLang = () => 'bn';\nexport const tr = (bn, en) => bn;\n");
 fs.writeFileSync(path.join(tmp, 'phone.mts'), fs.readFileSync(path.join(root, 'src/lib/phone.ts'), 'utf8').replace("from './lang'", "from './lang.mts'"));
-fs.writeFileSync(path.join(tmp, 'prayer.mts'), fs.readFileSync(path.join(root, 'src/lib/prayer.ts'), 'utf8').replace("from './phone'", "from './phone.mts'"));
+fs.writeFileSync(path.join(tmp, 'prayer.mts'), fs.readFileSync(path.join(root, 'src/lib/prayer.ts'), 'utf8').replace("from './phone'", "from './phone.mts'").replace("from './lang'", "from './lang.mts'"));
 const P = await import(pathToFileURL(path.join(tmp, 'prayer.mts')).href);
 const adhan = createRequire(path.join(process.argv[2] || '.', 'x.js'))('adhan');
 

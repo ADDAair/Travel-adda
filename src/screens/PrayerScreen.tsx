@@ -1,21 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking, ActivityIndicator, Vibration, BackHandler, Platform } from 'react-native';
+import { tr, getLang } from '../lib/lang';
 import { C, F, S, R, TOUCH, shadow } from '../theme';
 import { Button, Notice, Segmented } from '../components/ui';
 import { toBn } from '../lib/phone';
 import { CITIES, CITY_GROUPS } from '../content/cities';
 import { remindersSupported, remindersOn, enableReminders, disableReminders, refreshReminders, getAlarms, setAlarm } from '../lib/reminders';
-import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, watchHeading, type Place } from '../lib/location';
+import { loadSavedLocation, saveLocation, getGpsLocation, nearLabel, placeName, watchHeading, type Place } from '../lib/location';
 import { smoothHeading, qiblaTurn, compassWeak } from '../lib/qibla';
 import { ORDER, dayPlan, fmtTime, fmtLeft, fmtDate, qiblaBearing, distanceKm, directionName, inSaudiRegion, isFriday, prayerName, makruhWindows } from '../lib/prayer';
 import { SALAH } from '../content/salah';
 import type { Nav } from './navTypes';
 
 const GPS_ERR: Record<string, string> = {
-  denied: 'অবস্থানের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
-  blocked: 'অবস্থানের অনুমতি বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের "Location" চালু করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
-  off: 'ফোনের লোকেশন (GPS) বন্ধ। ওপর থেকে নিচে টেনে "Location" চালু করে আবার চাপুন।',
-  nofix: 'অবস্থান পাওয়া যায়নি। খোলা জায়গায় গিয়ে আবার চেষ্টা করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।',
+  get denied() { return tr('অবস্থানের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।', 'Location permission was not given. Tap again and choose "Allow", or pick a city from the list below.'); },
+  get blocked() { return tr('অবস্থানের অনুমতি বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের "Location" চালু করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।', 'Location permission is off. Turn on "Location" for this app in the phone settings, or pick a city from the list below.'); },
+  get off() { return tr('ফোনের লোকেশন (GPS) বন্ধ। ওপর থেকে নিচে টেনে "Location" চালু করে আবার চাপুন।', 'The phone location (GPS) is off. Swipe down from the top, turn on "Location" and tap again.'); },
+  get nofix() { return tr('অবস্থান পাওয়া যায়নি। খোলা জায়গায় গিয়ে আবার চেষ্টা করুন, অথবা নিচের তালিকা থেকে শহর বেছে নিন।', 'Your location was not found. Go to an open place and try again, or pick a city from the list below.'); },
 };
 
 export default function PrayerScreen({ navigation }: { navigation: Nav }) {
@@ -38,8 +39,8 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel="হোমে ফিরে যান">
-        <Text style={st.backT}>‹ হোম</Text>
+      <Pressable onPress={() => navigation.navigate('Home')} style={st.back} accessibilityRole="button" accessibilityLabel={tr('হোমে ফিরে যান', 'Back to Home')}>
+        <Text style={st.backT}>{tr('‹ হোম', '‹ Home')}</Text>
       </Pressable>
       {!loc || picking ? (
         <LocationPicker hasLoc={!!loc} onChoose={choose} onCancel={() => setPicking(false)} />
@@ -47,14 +48,14 @@ export default function PrayerScreen({ navigation }: { navigation: Nav }) {
         <>
           <View style={st.locRow}>
             <View style={{ flex: 1 }}>
-              <Text style={st.locL}>{loc.kind === 'gps' ? '📍 আপনার অবস্থান' : '🏙️ বেছে নেওয়া শহর'}</Text>
-              <Text style={st.locT}>{loc.label}</Text>
+              <Text style={st.locL}>{loc.kind === 'gps' ? tr('📍 আপনার অবস্থান', '📍 Your location') : tr('🏙️ বেছে নেওয়া শহর', '🏙️ Chosen city')}</Text>
+              <Text style={st.locT}>{placeName(loc)}</Text>
             </View>
-            <Pressable onPress={() => setPicking(true)} style={st.change} accessibilityRole="button" accessibilityLabel="জায়গা বদলান">
-              <Text style={st.changeT}>জায়গা বদলান</Text>
+            <Pressable onPress={() => setPicking(true)} style={st.change} accessibilityRole="button" accessibilityLabel={tr('জায়গা বদলান', 'Change place')}>
+              <Text style={st.changeT}>{tr('জায়গা বদলান', 'Change place')}</Text>
             </Pressable>
           </View>
-          <Segmented value={mode} onChange={setMode} options={[{ id: 'times', icon: '🕌', label: 'নামাজের সময়' }, { id: 'qibla', icon: '🧭', label: 'কিবলা' }]} />
+          <Segmented value={mode} onChange={setMode} options={[{ id: 'times', icon: '🕌', label: tr('নামাজের সময়', 'Prayer times') }, { id: 'qibla', icon: '🧭', label: tr('কিবলা', 'Qibla') }]} />
           {mode === 'times' ? <Times loc={loc} now={now} navigation={navigation} /> : <Qibla loc={loc} />}
         </>
       )}
@@ -75,31 +76,31 @@ function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onCho
   };
   return (
     <>
-      <Text style={st.title} accessibilityRole="header">🕌 নামাজের সময় ও কিবলা</Text>
-      <Text style={st.p}>সঠিক সময় দেখাতে আপনি কোথায় আছেন জানা দরকার। দুইভাবে জানাতে পারেন:</Text>
-      <Text style={st.h3}>১. ফোনের GPS দিয়ে (সবচেয়ে সঠিক)</Text>
-      <Button title={busy ? 'অবস্থান খোঁজা হচ্ছে…' : 'আমার অবস্থান বের করুন'} icon="📍" onPress={useGps} loading={busy} a11yHint="ফোন অবস্থানের অনুমতি চাইবে" />
-      <Text style={st.small}>🔒 আপনার অবস্থান শুধু এই ফোনেই থাকে, কোথাও পাঠানো হয় না।</Text>
+      <Text style={st.title} accessibilityRole="header">{tr('🕌 নামাজের সময় ও কিবলা', '🕌 Prayer times and Qibla')}</Text>
+      <Text style={st.p}>{tr('সঠিক সময় দেখাতে আপনি কোথায় আছেন জানা দরকার। দুইভাবে জানাতে পারেন:', 'To show the right times, the app needs to know where you are. You can tell it in two ways:')}</Text>
+      <Text style={st.h3}>{tr('১. ফোনের GPS দিয়ে (সবচেয়ে সঠিক)', '1. With the phone\'s GPS (most accurate)')}</Text>
+      <Button title={busy ? tr('অবস্থান খোঁজা হচ্ছে…', 'Finding your location…') : tr('আমার অবস্থান বের করুন', 'Find my location')} icon="📍" onPress={useGps} loading={busy} a11yHint={tr('ফোন অবস্থানের অনুমতি চাইবে', 'The phone will ask for location permission')} />
+      <Text style={st.small}>{tr('🔒 আপনার অবস্থান শুধু এই ফোনেই থাকে, কোথাও পাঠানো হয় না।', '🔒 Your location stays only on this phone and is not sent anywhere.')}</Text>
       {err ? (
         <Notice kind="warn" title={GPS_ERR[err] || GPS_ERR.nofix}>
-          {err === 'blocked' ? <Button title="ফোনের সেটিংস খুলুন" icon="⚙️" kind="secondary" onPress={() => Linking.openSettings().catch(() => {})} style={{ marginTop: S.sm }} /> : null}
+          {err === 'blocked' ? <Button title={tr('ফোনের সেটিংস খুলুন', 'Open phone settings')} icon="⚙️" kind="secondary" onPress={() => Linking.openSettings().catch(() => {})} style={{ marginTop: S.sm }} /> : null}
         </Notice>
       ) : null}
-      <Text style={[st.h3, { marginTop: S.lg }]}>২. তালিকা থেকে শহর বেছে নিন</Text>
+      <Text style={[st.h3, { marginTop: S.lg }]}>{tr('২. তালিকা থেকে শহর বেছে নিন', '2. Pick a city from the list')}</Text>
       {CITY_GROUPS.map((g) => (
         <View key={g.id}>
-          <Text style={st.group}>{g.title}</Text>
+          <Text style={st.group}>{tr(g.title, g.en)}</Text>
           <View style={st.grid}>
             {CITIES.filter((c) => c.group === g.id).map((c) => (
-              <Pressable key={c.id} onPress={() => onChoose({ kind: 'city', lat: c.lat, lng: c.lng, label: c.name, cityId: c.id })}
-                style={({ pressed }) => [st.city, pressed && { opacity: 0.8 }]} accessibilityRole="button" accessibilityLabel={`${c.name} বেছে নিন`}>
-                <Text style={st.cityT}>{c.name}</Text>
+              <Pressable key={c.id} onPress={() => onChoose({ kind: 'city', lat: c.lat, lng: c.lng, label: tr(c.name, c.en), cityId: c.id })}
+                style={({ pressed }) => [st.city, pressed && { opacity: 0.8 }]} accessibilityRole="button" accessibilityLabel={tr(`${c.name} বেছে নিন`, `Choose ${c.en}`)}>
+                <Text style={st.cityT}>{tr(c.name, c.en)}</Text>
               </Pressable>
             ))}
           </View>
         </View>
       ))}
-      {hasLoc ? <Button title="বাতিল, আগের জায়গাই থাকুক" kind="secondary" onPress={onCancel} style={{ marginTop: S.md }} /> : null}
+      {hasLoc ? <Button title={tr('বাতিল, আগের জায়গাই থাকুক', 'Cancel, keep the earlier place')} kind="secondary" onPress={onCancel} style={{ marginTop: S.md }} /> : null}
     </>
   );
 }
@@ -107,7 +108,7 @@ function LocationPicker({ hasLoc, onChoose, onCancel }: { hasLoc: boolean; onCho
 function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: Nav }) {
   let plan;
   try { plan = dayPlan(loc, now); } catch (e) { plan = null; }
-  if (!plan) return <Notice kind="bad" title="সময় হিসাব করা যায়নি" text="জায়গা বদলে আবার চেষ্টা করুন।" />;
+  if (!plan) return <Notice kind="bad" title={tr('সময় হিসাব করা যায়নি', 'Could not calculate the times')} text={tr('জায়গা বদলে আবার চেষ্টা করুন।', 'Change the place and try again.')} />;
   const { tz, today, times, next, nextAt } = plan;
   const date = fmtDate(today.y, today.m, today.d);
   const nt = fmtTime(nextAt, tz, next.key);
@@ -126,18 +127,18 @@ function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: 
   return (
     <>
       <Text style={st.date}>{date.greg}</Text>
-      <Text style={st.hijri}>{date.hijri} (আনুমানিক)</Text>
-      <View style={st.hero} accessible accessibilityLabel={`পরের নামাজ ${nextName}, ${nt.part} ${nt.time}। আর ${fmtLeft(nextAt - now)} বাকি।`}>
-        <Text style={st.heroNow}>{between ? 'এখন কোনো ফরজ নামাজের ওয়াক্ত নেই' : `এখন ${cur.gen} ওয়াক্ত চলছে`}</Text>
-        <Text style={st.heroL}>পরের নামাজ</Text>
+      <Text style={st.hijri}>{date.hijri} ({tr('আনুমানিক', 'approximate')})</Text>
+      <View style={st.hero} accessible accessibilityLabel={tr(`পরের নামাজ ${nextName}, ${nt.part} ${nt.time}। আর ${fmtLeft(nextAt - now)} বাকি।`, `Next prayer ${nextName}, ${nt.time} ${nt.part}. ${fmtLeft(nextAt - now)} left.`)}>
+        <Text style={st.heroNow}>{between ? tr('এখন কোনো ফরজ নামাজের ওয়াক্ত নেই', 'No fard prayer time right now') : tr(`এখন ${cur.gen} ওয়াক্ত চলছে`, `${cur.gen} time now`)}</Text>
+        <Text style={st.heroL}>{tr('পরের নামাজ', 'Next prayer')}</Text>
         <Text style={st.heroN}>{next.icon} {nextName}  <Text style={st.heroT}>{nt.time}</Text> <Text style={st.heroP}>{nt.part}</Text></Text>
-        <View style={st.leftPill}><Text style={st.leftT}>⏳ আর {fmtLeft(nextAt - now)} বাকি</Text></View>
+        <View style={st.leftPill}><Text style={st.leftT}>{tr(`⏳ আর ${fmtLeft(nextAt - now)} বাকি`, `⏳ ${fmtLeft(nextAt - now)} left`)}</Text></View>
       </View>
-      {mkNow ? <Notice kind="warn" title={`এখন নামাজ পড়ার মাকরুহ সময় (${mkNow.label})`} text={`আর প্রায় ${fmtLeft(mkNow.to - now)} পর নামাজ পড়ুন।`} /> : null}
-      {friday ? <Notice kind="info" title="আজ শুক্রবার: জুমার দিন" text="যোহরের ওয়াক্তে জুমার নামাজ। জামাতের সময় মসজিদ ঠিক করে, আগে আগে যান। গোসল, সূরা কাহফ ও বেশি বেশি দরুদ পড়া সুন্নত।">
-        <Button title="জুমার নিয়ম ও রাকাত" icon="🕌" kind="secondary" onPress={() => openSalah('jumuah')} style={{ marginTop: S.sm }} />
+      {mkNow ? <Notice kind="warn" title={tr(`এখন নামাজ পড়ার মাকরুহ সময় (${mkNow.label})`, `Now is a makruh time for prayer (${mkNow.label})`)} text={tr(`আর প্রায় ${fmtLeft(mkNow.to - now)} পর নামাজ পড়ুন।`, `Pray after about ${fmtLeft(mkNow.to - now)}.`)} /> : null}
+      {friday ? <Notice kind="info" title={tr('আজ শুক্রবার: জুমার দিন', 'Today is Friday: the day of Jumu\'ah')} text={tr('যোহরের ওয়াক্তে জুমার নামাজ। জামাতের সময় মসজিদ ঠিক করে, আগে আগে যান। গোসল, সূরা কাহফ ও বেশি বেশি দরুদ পড়া সুন্নত।', 'Jumu\'ah is prayed in the Dhuhr time. The mosque sets the congregation time, so go early. Bathing, reading Surah al-Kahf and sending many durud are sunnah.')}>
+        <Button title={tr('জুমার নিয়ম ও রাকাত', 'Jumu\'ah rules and rak\'ahs')} icon="🕌" kind="secondary" onPress={() => openSalah('jumuah')} style={{ marginTop: S.sm }} />
       </Notice> : null}
-      <Text style={st.tapHint}>👇 যেকোনো নামাজে চাপ দিলে তার রাকাত ও নিয়ম দেখাবে।</Text>
+      <Text style={st.tapHint}>{tr('👇 যেকোনো নামাজে চাপ দিলে তার রাকাত ও নিয়ম দেখাবে।', '👇 Tap any prayer to see its rak\'ahs and rules.')}</Text>
       {ORDER.map((o) => {
         const t = fmtTime(times[o.key], tz, o.key);
         const isNext = o.key === next.key && times[o.key] === nextAt;
@@ -149,14 +150,14 @@ function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: 
           <Pressable key={o.key} disabled={o.notPrayer} onPress={() => openSalah(section)}
             style={({ pressed }) => [st.row, isNext && st.rowNext, o.notPrayer && st.rowSun, pressed && { opacity: 0.85 }]}
             accessibilityRole={o.notPrayer ? 'text' : 'button'}
-            accessibilityLabel={`${name}${o.notPrayer ? ' (নামাজ নয়, ফজরের শেষ সময়)' : ''}, ${t.part} ${t.time}${isNext ? ', পরের নামাজ' : ''}${info ? `। ${info.what}` : ''}`}
-            accessibilityHint={o.notPrayer ? undefined : 'রাকাত ও নিয়ম খুলবে'}>
+            accessibilityLabel={`${name}${o.notPrayer ? tr(' (নামাজ নয়, ফজরের শেষ সময়)', ' (not a prayer; end of Fajr time)') : ''}, ${getLang() === 'en' ? `${t.time} ${t.part}` : `${t.part} ${t.time}`}${isNext ? tr(', পরের নামাজ', ', next prayer') : ''}${info ? `. ${info.what}` : ''}`}
+            accessibilityHint={o.notPrayer ? undefined : tr('রাকাত ও নিয়ম খুলবে', 'Opens the rak\'ahs and rules')}>
             <Text style={st.rowIc} importantForAccessibility="no">{o.icon}</Text>
             <View style={{ flex: 1 }}>
               <Text style={[st.rowN, past && { color: C.muted }]}>{name}</Text>
-              {o.notPrayer ? <Text style={st.rowSub}>ফজরের সময় শেষ</Text> : null}
+              {o.notPrayer ? <Text style={st.rowSub}>{tr('ফজরের সময় শেষ', 'End of Fajr time')}</Text> : null}
               {info ? <Text style={st.rowSub}>{info.what} ›</Text> : null}
-              {isNext ? <Text style={st.nextTag}>▶ পরের নামাজ</Text> : null}
+              {isNext ? <Text style={st.nextTag}>{tr('▶ পরের নামাজ', '▶ Next prayer')}</Text> : null}
             </View>
             <Text style={[st.rowT, past && { color: C.muted }]}>{t.time}</Text>
             <Text style={st.rowP}>{t.part}</Text>
@@ -164,36 +165,36 @@ function Times({ loc, now, navigation }: { loc: Place; now: number; navigation: 
         );
       })}
       <Reminders loc={loc} />
-      {saudi ? <Notice kind="info" title={`হানাফি মতে আসর শুরু: ${alt.part} ${alt.time}`} text="ওপরের আসরের সময় সৌদি আরবের সরকারি সময় (হারামের আজান)। হারামের জামাতে নামাজ পড়া নিয়ে আপনার আলেমের পরামর্শ মেনে চলুন।" /> : null}
-      {times.ramadan && saudi ? <Notice kind="info" title="রমজানে এশা" text="রমজানে মক্কা-মদিনায় এশার আজান মাগরিবের প্রায় দুই ঘণ্টা পরে হয়। ওপরের সময় সেভাবেই হিসাব করা।" /> : null}
+      {saudi ? <Notice kind="info" title={tr(`হানাফি মতে আসর শুরু: ${alt.part} ${alt.time}`, `Asr starts by the Hanafi view: ${alt.time} ${alt.part}`)} text={tr('ওপরের আসরের সময় সৌদি আরবের সরকারি সময় (হারামের আজান)। হারামের জামাতে নামাজ পড়া নিয়ে আপনার আলেমের পরামর্শ মেনে চলুন।', 'The Asr time above is the official Saudi time (the Haram\'s adhan). Follow your scholar\'s advice about praying with the Haram congregation.')} /> : null}
+      {times.ramadan && saudi ? <Notice kind="info" title={tr('রমজানে এশা', 'Isha in Ramadan')} text={tr('রমজানে মক্কা-মদিনায় এশার আজান মাগরিবের প্রায় দুই ঘণ্টা পরে হয়। ওপরের সময় সেভাবেই হিসাব করা।', 'In Ramadan the Isha adhan in Makkah and Madinah is about two hours after Maghrib. The time above is calculated that way.')} /> : null}
       <View style={st.mk}>
-        <Text style={st.mkH}>⛔ আজ যে সময় নামাজ পড়া নিষেধ (আনুমানিক)</Text>
+        <Text style={st.mkH}>{tr('⛔ আজ যে সময় নামাজ পড়া নিষেধ (আনুমানিক)', '⛔ Times when prayer is not allowed today (approximate)')}</Text>
         {mk.map((w) => {
           const a = fmtTime(w.from, tz); const b = fmtTime(w.to, tz);
           const on = now >= w.from && now < w.to;
           return (
-            <View key={w.key} style={[st.mkRow, on && st.mkOn]} accessible accessibilityLabel={`${w.label}: ${a.part} ${a.time} থেকে ${b.time}${on ? ', এখন চলছে' : ''}`}>
-              <Text style={st.mkL}>{w.label}{on ? ' · এখন চলছে' : ''}</Text>
+            <View key={w.key} style={[st.mkRow, on && st.mkOn]} accessible accessibilityLabel={tr(`${w.label}: ${a.part} ${a.time} থেকে ${b.time}${on ? ', এখন চলছে' : ''}`, `${w.label}: ${a.time} to ${b.time} ${a.part}${on ? ', now' : ''}`)}>
+              <Text style={st.mkL}>{w.label}{on ? tr(' · এখন চলছে', ' · now') : ''}</Text>
               <Text style={st.mkT}>{a.time} – {b.time} <Text style={st.rowP}>{b.part}</Text></Text>
             </View>
           );
         })}
-        <Text style={st.infoT}>এছাড়া ফজরের পর সূর্যোদয় পর্যন্ত এবং আসরের পর সূর্যাস্ত পর্যন্ত নফল নামাজ নয় (কাজা পড়া যায়)। (মুসলিম ৮৩১; বুখারি ৫৮৬)</Text>
+        <Text style={st.infoT}>{tr('এছাড়া ফজরের পর সূর্যোদয় পর্যন্ত এবং আসরের পর সূর্যাস্ত পর্যন্ত নফল নামাজ নয় (কাজা পড়া যায়)। (মুসলিম ৮৩১; বুখারি ৫৮৬)', 'Also, no nafl prayer from after Fajr until sunrise and from after Asr until sunset (missed prayers may be made up). (Muslim 831; Bukhari 586)')}</Text>
       </View>
-      <Button title="নামাজের রাকাত ও নিয়ম (সব নামাজ)" icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { t: Date.now() })} style={{ marginTop: S.sm }} />
+      <Button title={tr('নামাজের রাকাত ও নিয়ম (সব নামাজ)', 'Prayer rak\'ahs and rules (all prayers)')} icon="📖" kind="secondary" onPress={() => navigation.navigate('Salah', { t: Date.now() })} style={{ marginTop: S.sm }} />
       <View style={st.info}>
-        <Text style={st.infoT}>🧮 হিসাবের পদ্ধতি: {times.method.name}।</Text>
-        <Text style={st.infoT}>ℹ️ স্থানীয় মসজিদের সময়সূচির সাথে ১-৩ মিনিট পার্থক্য হতে পারে। মসজিদের আজান অনুযায়ী জামাতে শরিক হোন।</Text>
+        <Text style={st.infoT}>🧮 {tr('হিসাবের পদ্ধতি', 'Calculation method')}: {times.method.name}.</Text>
+        <Text style={st.infoT}>{tr('ℹ️ স্থানীয় মসজিদের সময়সূচির সাথে ১-৩ মিনিট পার্থক্য হতে পারে। মসজিদের আজান অনুযায়ী জামাতে শরিক হোন।', 'ℹ️ There may be a 1-3 minute difference from the local mosque timetable. Join the congregation by the mosque\'s adhan.')}</Text>
       </View>
     </>
   );
 }
 
 const REM_ERR: Record<string, string> = {
-  unsupported: 'এই ফোনে রিমাইন্ডার চালু করা যায় না।',
-  denied: 'নোটিফিকেশনের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন।',
-  blocked: 'নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।',
-  failed: 'রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।',
+  get unsupported() { return tr('এই ফোনে রিমাইন্ডার চালু করা যায় না।', 'Reminders cannot be turned on on this phone.'); },
+  get denied() { return tr('নোটিফিকেশনের অনুমতি দেওয়া হয়নি। আবার চাপুন এবং "অনুমতি দিন" বাছুন।', 'Notification permission was not given. Tap again and choose "Allow".'); },
+  get blocked() { return tr('নোটিফিকেশন বন্ধ করা আছে। ফোনের সেটিংসে গিয়ে এই অ্যাপের নোটিফিকেশন চালু করুন।', 'Notifications are off. Turn on notifications for this app in the phone settings.'); },
+  get failed() { return tr('রিমাইন্ডার চালু করা যায়নি। আবার চেষ্টা করুন।', 'Could not turn on reminders. Try again.'); },
 };
 function Reminders({ loc }: { loc: Place }) {
   const [on, setOn] = useState<boolean | null>(null);
@@ -211,14 +212,14 @@ function Reminders({ loc }: { loc: Place }) {
   const turnOff = async () => { if (busy) return; setBusy(true); await disableReminders(); setBusy(false); setOn(false); };
   return (
     <View style={[st.rem, on && st.remOn]}>
-      <Text style={st.remH}>🔔 নামাজের রিমাইন্ডার: {on ? 'চালু আছে' : 'বন্ধ'}</Text>
-      <Text style={st.remT}>{on ? `প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে (${loc.label} অনুযায়ী)। কয়েক মিনিট এদিক-ওদিক হতে পারে।` : 'চালু করলে প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে। ইন্টারনেট লাগবে না।'}</Text>
+      <Text style={st.remH}>🔔 {tr('নামাজের রিমাইন্ডার', 'Prayer reminders')}: {on ? tr('চালু আছে', 'on') : tr('বন্ধ', 'off')}</Text>
+      <Text style={st.remT}>{on ? tr(`প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে (${placeName(loc)} অনুযায়ী)। কয়েক মিনিট এদিক-ওদিক হতে পারে।`, `A notification comes at the start of each prayer time (for ${placeName(loc)}). It may be off by a few minutes.`) : tr('চালু করলে প্রতি ওয়াক্তের শুরুতে ফোনে নোটিফিকেশন আসবে। ইন্টারনেট লাগবে না।', 'Turn on to get a notification at the start of each prayer time. No internet needed.')}</Text>
       {err ? <Notice kind="warn" title={REM_ERR[err] || REM_ERR.failed}>
-        {err === 'blocked' ? <Button title="ফোনের সেটিংস খুলুন" icon="⚙️" kind="secondary" onPress={() => Linking.openSettings().catch(() => {})} style={{ marginTop: S.sm }} /> : null}
+        {err === 'blocked' ? <Button title={tr('ফোনের সেটিংস খুলুন', 'Open phone settings')} icon="⚙️" kind="secondary" onPress={() => Linking.openSettings().catch(() => {})} style={{ marginTop: S.sm }} /> : null}
       </Notice> : null}
       {remindersSupported ? (on
-        ? <Button title="রিমাইন্ডার বন্ধ করুন" icon="🔕" kind="secondary" onPress={turnOff} loading={busy} />
-        : <Button title="রিমাইন্ডার চালু করুন" icon="🔔" onPress={turnOn} loading={busy} a11yHint="ফোন নোটিফিকেশনের অনুমতি চাইতে পারে" />)
+        ? <Button title={tr('রিমাইন্ডার বন্ধ করুন', 'Turn off reminders')} icon="🔕" kind="secondary" onPress={turnOff} loading={busy} />
+        : <Button title={tr('রিমাইন্ডার চালু করুন', 'Turn on reminders')} icon="🔔" onPress={turnOn} loading={busy} a11yHint={tr('ফোন নোটিফিকেশনের অনুমতি চাইতে পারে', 'The phone may ask for notification permission')} />)
         : <Text style={st.remT}>{REM_ERR.unsupported}</Text>}
       {on && remindersSupported ? <Alarms loc={loc} /> : null}
     </View>
@@ -238,15 +239,15 @@ function Alarms({ loc }: { loc: Place }) {
   };
   return (
     <View style={{ marginTop: S.md }}>
-      <Text style={st.remH}>⏰ অ্যালার্ম (জোরে, লম্বা শব্দ)</Text>
-      <Text style={st.remT}>যে ওয়াক্তে ঘুম ভাঙাতে বা নিশ্চিত মনে করাতে চান, সেটির অ্যালার্ম চালু করুন। ফোন প্রায় ২০ সেকেন্ড বাজবে ও কাঁপবে; "১০ মিনিট পরে আবার" চাপা যাবে। ফোন নীরব (silent) থাকলে শুধু কাঁপতে পারে।</Text>
+      <Text style={st.remH}>{tr('⏰ অ্যালার্ম (জোরে, লম্বা শব্দ)', '⏰ Alarm (loud, long sound)')}</Text>
+      <Text style={st.remT}>{tr('যে ওয়াক্তে ঘুম ভাঙাতে বা নিশ্চিত মনে করাতে চান, সেটির অ্যালার্ম চালু করুন। ফোন প্রায় ২০ সেকেন্ড বাজবে ও কাঁপবে; "১০ মিনিট পরে আবার" চাপা যাবে। ফোন নীরব (silent) থাকলে শুধু কাঁপতে পারে।', 'Turn on the alarm for the prayer you want to wake up for or be surely reminded of. The phone rings and vibrates for about 20 seconds; you can tap "again in 10 minutes". If the phone is silent it may only vibrate.')}</Text>
       {ORDER.filter((o) => !o.notPrayer).map((o) => (
         <Pressable key={o.key} onPress={() => toggle(o.key)} disabled={!!busy} accessibilityRole="switch" accessibilityState={{ checked: !!a[o.key], busy: busy === o.key }}
-          accessibilityLabel={`${o.name}-এর অ্যালার্ম ${a[o.key] ? 'চালু' : 'বন্ধ'}`}
+          accessibilityLabel={tr(`${o.name}-এর অ্যালার্ম ${a[o.key] ? 'চালু' : 'বন্ধ'}`, `${o.name} alarm ${a[o.key] ? 'on' : 'off'}`)}
           style={{ minHeight: TOUCH, flexDirection: 'row', alignItems: 'center', paddingHorizontal: S.md, marginTop: S.xs, borderRadius: R.md, borderWidth: 2,
             borderColor: a[o.key] ? C.primary : C.line, backgroundColor: a[o.key] ? C.primarySoft : C.card }}>
           <Text style={[st.remT, { flex: 1 }]}>{o.icon} {o.name}</Text>
-          <Text style={st.remT}>{busy === o.key ? '…' : a[o.key] ? '⏰ চালু' : '🔕 বন্ধ'}</Text>
+          <Text style={st.remT}>{busy === o.key ? '…' : a[o.key] ? tr('⏰ চালু', '⏰ On') : tr('🔕 বন্ধ', '🔕 Off')}</Text>
         </Pressable>
       ))}
     </View>
@@ -280,23 +281,23 @@ function Qibla({ loc }: { loc: Place }) {
   }, [aligned]);
 
   if (km < 1) {
-    return <Notice kind="ok" title="আপনি কাবার একদম কাছে আছেন" text="মসজিদুল হারামে কম্পাসের দরকার নেই। সরাসরি কাবার দিকে মুখ করে নামাজ পড়ুন।" />;
+    return <Notice kind="ok" title={tr('আপনি কাবার একদম কাছে আছেন', 'You are very close to the Kaaba')} text={tr('মসজিদুল হারামে কম্পাসের দরকার নেই। সরাসরি কাবার দিকে মুখ করে নামাজ পড়ুন।', 'No compass is needed in Masjid al-Haram. Face the Kaaba directly and pray.')} />;
   }
   return (
     <>
       <View style={st.qInfo}>
         <Text style={st.qBig}>{toBn(Math.round(q))}°</Text>
-        <Text style={st.p}>উত্তর দিক থেকে ঘড়ির কাঁটার দিকে {toBn(Math.round(q))} ডিগ্রি, মোটামুটি <Text style={{ fontWeight: '700' }}>{directionName(q)}</Text> দিকে। কাবা এখান থেকে প্রায় {toBn(Math.round(km))} কিলোমিটার দূরে।</Text>
+        <Text style={st.p}>{tr(`উত্তর দিক থেকে ঘড়ির কাঁটার দিকে ${toBn(Math.round(q))} ডিগ্রি, মোটামুটি `, `${Math.round(q)} degrees clockwise from north, roughly `)}<Text style={{ fontWeight: '700' }}>{directionName(q)}</Text>{tr(` দিকে। কাবা এখান থেকে প্রায় ${toBn(Math.round(km))} কিলোমিটার দূরে।`, `. The Kaaba is about ${Math.round(km)} km from here.`)}</Text>
       </View>
       {state === 'on' && h ? (
         <>
           <View style={st.dialWrap} accessible accessibilityLiveRegion="polite"
-            accessibilityLabel={aligned ? 'আপনি এখন কিবলামুখী' : `${turn?.side === 'right' ? 'ডান' : 'বাঁ'} দিকে ${turn?.deg ?? 0} ডিগ্রি ঘুরুন`}>
+            accessibilityLabel={aligned ? tr('আপনি এখন কিবলামুখী', 'You are facing the Qibla now') : tr(`${turn?.side === 'right' ? 'ডান' : 'বাঁ'} দিকে ${turn?.deg ?? 0} ডিগ্রি ঘুরুন`, `Turn ${turn?.deg ?? 0} degrees to the ${turn?.side === 'right' ? 'right' : 'left'}`)}>
             <Text style={st.pointer} importantForAccessibility="no">▲</Text>
             <View style={[st.dial, aligned && st.dialOk, { transform: [{ rotate: `${-h.heading}deg` }] }]}>
-              {[['উ', 0], ['পূ', 90], ['দ', 180], ['প', 270]].map(([l, a]) => (
+              {(getLang() === 'en' ? [['N', 0], ['E', 90], ['S', 180], ['W', 270]] : [['উ', 0], ['পূ', 90], ['দ', 180], ['প', 270]]).map(([l, a]) => (   // i18n-ok: English first
                 <View key={l} style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${a}deg` }] }]}>
-                  <Text style={[st.cardinal, l === 'উ' && { color: C.bad }]}>{l}</Text>
+                  <Text style={[st.cardinal, a === 0 && { color: C.bad }]}>{l}</Text>
                 </View>
               ))}
               <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${q}deg` }] }]}>
@@ -305,17 +306,17 @@ function Qibla({ loc }: { loc: Place }) {
               </View>
             </View>
           </View>
-          {aligned ? <Notice kind="ok" title="আপনি এখন কিবলামুখী" text="ফোনের ওপরের দিক যেদিকে, সেদিকে মুখ করে দাঁড়ান।" />
-            : <Text style={st.turn}>{turn?.side === 'right' ? '↻ ডান দিকে' : '↺ বাঁ দিকে'} আরও {toBn(turn?.deg ?? 0)}° ঘুরুন</Text>}
-          {compassWeak(h.accuracy, Platform.OS) ? <Notice kind="warn" title="কম্পাস ঠিকমতো কাজ করছে না" text="ফোনটা বাতাসে ইংরেজি 8-এর মতো করে কয়েকবার ঘুরান, তারপর আবার দেখুন।" /> : null}
-          <Text style={st.small}>ফোনটা টেবিলের মতো সমান করে ধরুন। লোহা, গাড়ি বা চুম্বক থেকে দূরে থাকুন। 🕋 চিহ্ন ওপরের ▲ বরাবর এলে আপনি কিবলামুখী।</Text>
+          {aligned ? <Notice kind="ok" title={tr('আপনি এখন কিবলামুখী', 'You are facing the Qibla now')} text={tr('ফোনের ওপরের দিক যেদিকে, সেদিকে মুখ করে দাঁড়ান।', 'Stand facing the way the top of the phone points.')} />
+            : <Text style={st.turn}>{turn?.side === 'right' ? tr(`↻ ডান দিকে আরও ${toBn(turn?.deg ?? 0)}° ঘুরুন`, `↻ Turn ${turn?.deg ?? 0}° more to the right`) : tr(`↺ বাঁ দিকে আরও ${toBn(turn?.deg ?? 0)}° ঘুরুন`, `↺ Turn ${turn?.deg ?? 0}° more to the left`)}</Text>}
+          {compassWeak(h.accuracy, Platform.OS) ? <Notice kind="warn" title={tr('কম্পাস ঠিকমতো কাজ করছে না', 'The compass is not working well')} text={tr('ফোনটা বাতাসে ইংরেজি 8-এর মতো করে কয়েকবার ঘুরান, তারপর আবার দেখুন।', 'Move the phone in the air in a figure 8 a few times, then look again.')} /> : null}
+          <Text style={st.small}>{tr('ফোনটা টেবিলের মতো সমান করে ধরুন। লোহা, গাড়ি বা চুম্বক থেকে দূরে থাকুন। 🕋 চিহ্ন ওপরের ▲ বরাবর এলে আপনি কিবলামুখী।', 'Hold the phone flat like a table. Keep away from iron, cars or magnets. When 🕋 lines up with the ▲ at the top, you face the Qibla.')}</Text>
         </>
       ) : state === 'start' ? (
-        <View style={st.center2}><ActivityIndicator color={C.primary} /><Text style={st.small}>কম্পাস চালু হচ্ছে…</Text></View>
+        <View style={st.center2}><ActivityIndicator color={C.primary} /><Text style={st.small}>{tr('কম্পাস চালু হচ্ছে…', 'Starting the compass…')}</Text></View>
       ) : (
-        <Notice kind="warn" title="এই ফোনে কম্পাস পাওয়া যায়নি" text={`ওপরের ডিগ্রি দেখে দিক ঠিক করুন, অথবা মসজিদ বা হোটেলে কিবলার চিহ্ন দেখে নিন। ${directionName(q)} দিক।`} />
+        <Notice kind="warn" title={tr('এই ফোনে কম্পাস পাওয়া যায়নি', 'No compass found on this phone')} text={tr(`ওপরের ডিগ্রি দেখে দিক ঠিক করুন, অথবা মসজিদ বা হোটেলে কিবলার চিহ্ন দেখে নিন। ${directionName(q)} দিক।`, `Use the degrees above to find the direction, or look for the Qibla sign in a mosque or hotel. Direction: ${directionName(q)}.`)} />
       )}
-      <Text style={st.small}>📚 কিবলার দিক মেনে নামাজ: সূরা বাকারা ২:১৪৪</Text>
+      <Text style={st.small}>{tr('📚 কিবলার দিক মেনে নামাজ: সূরা বাকারা ২:১৪৪', '📚 Praying towards the Qibla: Surah al-Baqarah 2:144')}</Text>
     </>
   );
 }

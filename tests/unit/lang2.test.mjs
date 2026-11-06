@@ -63,3 +63,16 @@ test('step 2 files: every Bengali text has its English next to it', () => {
   for (const f of STEP2) for (const [n, l] of unpaired(read(f))) bad.push(`${f}:${n}: ${l.trim().slice(0, 120)}`);
   assert.deepEqual(bad, []);
 });
+
+test('place names on the prayer page follow the language (also for a place saved before English existed)', async () => {
+  const { placeName } = await import('../../src/lib/location.js');
+  const city = { kind: 'city', lat: 21.4225, lng: 39.8262, label: 'মক্কা', cityId: 'makkah' };
+  const gps = { kind: 'gps', lat: 21.43, lng: 39.83, label: 'মক্কার কাছে' };
+  const far = { kind: 'gps', lat: 0, lng: 0, label: 'আপনার বর্তমান অবস্থান' };
+  assert.equal(placeName(city), 'মক্কা'); assert.equal(placeName(gps), 'মক্কার কাছে');
+  await setLang('en');
+  assert.equal(placeName(city), 'Makkah'); assert.equal(placeName(gps), 'Near Makkah'); assert.equal(placeName(far), 'Your current location');
+  assert.equal(placeName(null), '');
+  const s = read('src/screens/PrayerScreen.tsx');
+  assert.ok(!s.includes('{loc.label}') && !s.includes('${loc.label}'), 'the page never shows the saved (Bengali) label');
+});

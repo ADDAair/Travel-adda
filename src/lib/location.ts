@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CITIES } from '../content/cities';
 import { distanceKm } from './prayer';
+import { tr } from './lang';
 
 const KEY = 'ta.prayerLoc.v1';
 
@@ -27,7 +28,16 @@ export function nearLabel(lat: number, lng: number): string {
     const km = distanceKm(lat, lng, c.lat, c.lng);
     if (km <= 60 && (!best || km < best.km)) best = { km, c };
   }
-  return best ? best.c.near : 'আপনার বর্তমান অবস্থান';
+  return best ? tr(best.c.near, best.c.nearEn) : tr('আপনার বর্তমান অবস্থান', 'Your current location');
+}
+
+// The place name in the chosen language, worked out again each time (the saved label may be in the other language).
+export function placeName(loc: Place | null | undefined): string {
+  if (!loc) return '';
+  const c = loc.cityId ? CITIES.find((x) => x.id === loc.cityId) : undefined;
+  if (c) return tr(c.name, c.en);
+  if (loc.kind === 'gps' && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) return nearLabel(loc.lat, loc.lng);
+  return loc.label || '';
 }
 
 const timeout = (ms: number) => new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));

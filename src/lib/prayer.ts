@@ -2,6 +2,7 @@
 // Astronomy follows the well-known PrayTimes.org method; results are checked in CI against the "adhan" library
 // (tests/prayer.test.mjs). Times can differ from a local mosque timetable by 1-3 minutes (precaution minutes).
 import { toBn } from './phone';
+import { tr, getLang } from './lang';
 
 const KAABA = { lat: 21.422487, lng: 39.826206 };
 const rad = (d: number): number => (d * Math.PI) / 180;
@@ -38,8 +39,8 @@ function sunPosition(jd: number): { decl: number; eqt: number } {
 // which Islamic Foundation Bangladesh uses, with Hanafi Asr.
 export type Method = { id: string; name: string; fajr: number; isha?: number; ishaMin?: number; asr: number };
 export const METHODS: { ummalqura: Method; karachi: Method } = {
-  ummalqura: { id: 'ummalqura', name: 'উম্মুল কুরা (সৌদি আরবের সরকারি পদ্ধতি)', fajr: 18.5, ishaMin: 90, asr: 1 },
-  karachi: { id: 'karachi', name: 'করাচি পদ্ধতি, হানাফি আসর (ইসলামিক ফাউন্ডেশন বাংলাদেশ যেভাবে হিসাব করে)', fajr: 18, isha: 18, asr: 2 },
+  ummalqura: { id: 'ummalqura', get name() { return tr('উম্মুল কুরা (সৌদি আরবের সরকারি পদ্ধতি)', 'Umm al-Qura (the official Saudi method)'); }, fajr: 18.5, ishaMin: 90, asr: 1 },
+  karachi: { id: 'karachi', get name() { return tr('করাচি পদ্ধতি, হানাফি আসর (ইসলামিক ফাউন্ডেশন বাংলাদেশ যেভাবে হিসাব করে)', 'Karachi method, Hanafi Asr (as Islamic Foundation Bangladesh calculates)'); }, fajr: 18, isha: 18, asr: 2 },
 };
 
 // Saudi Arabia and the nearby +3 hour area (Kuwait, Bahrain, Yemen, south Iraq, Jordan) - rough box, excludes UAE/Qatar.
@@ -142,18 +143,20 @@ export function distanceKm(lat1: number, lng1: number, lat2: number = KAABA.lat,
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const DIRS = ['উত্তর', 'উত্তর-পূর্ব', 'পূর্ব', 'দক্ষিণ-পূর্ব', 'দক্ষিণ', 'দক্ষিণ-পশ্চিম', 'পশ্চিম', 'উত্তর-পশ্চিম'];
-export const directionName = (b: number): string => DIRS[Math.round(fixAngle(b) / 45) % 8];
+const DIRS = ['উত্তর', 'উত্তর-পূর্ব', 'পূর্ব', 'দক্ষিণ-পূর্ব', 'দক্ষিণ', 'দক্ষিণ-পশ্চিম', 'পশ্চিম', 'উত্তর-পশ্চিম'];   // i18n-ok: English below
+const DIRS_EN = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+export const directionName = (b: number): string => (getLang() === 'en' ? DIRS_EN : DIRS)[Math.round(fixAngle(b) / 45) % 8];
 
 // "৫:১২" and a Bengali part-of-day word, shown in the location's own time. With a prayer key the word follows the
 // prayer (Isha is always "রাত", Maghrib "সন্ধ্যা"), so it never looks odd in long summer evenings.
-const PART: Record<string, string> = { fajr: 'ভোর', sunrise: 'সকাল', dhuhr: 'দুপুর', asr: 'বিকাল', maghrib: 'সন্ধ্যা', isha: 'রাত' };
+const PART: Record<string, string> = { fajr: 'ভোর', sunrise: 'সকাল', dhuhr: 'দুপুর', asr: 'বিকাল', maghrib: 'সন্ধ্যা', isha: 'রাত' };   // i18n-ok: English uses AM/PM
 export function fmtTime(ms: number, tzMin: number, key?: string): { time: string; part: string } {
   const t = new Date(ms + tzMin * 60000);
   const H = t.getUTCHours();
   const mi = t.getUTCMinutes();
   const mins = H * 60 + mi;
-  const part = mins < 240 ? 'রাত' : mins < 360 ? 'ভোর' : mins < 720 ? 'সকাল' : mins < 900 ? 'দুপুর' : mins < 1050 ? 'বিকাল' : mins < 1140 ? 'সন্ধ্যা' : 'রাত';
+  if (getLang() === 'en') return { time: `${H % 12 === 0 ? 12 : H % 12}:${String(mi).padStart(2, '0')}`, part: H < 12 ? 'AM' : 'PM' };
+  const part = mins < 240 ? 'রাত' : mins < 360 ? 'ভোর' : mins < 720 ? 'সকাল' : mins < 900 ? 'দুপুর' : mins < 1050 ? 'বিকাল' : mins < 1140 ? 'সন্ধ্যা' : 'রাত';   // i18n-ok: English above
   const h12 = H % 12 === 0 ? 12 : H % 12;
   return { time: toBn(`${h12}:${String(mi).padStart(2, '0')}`), part: (key && PART[key]) || part };
 }
@@ -163,40 +166,44 @@ export function fmtLeft(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 60000));
   const h = Math.floor(total / 60);
   const mi = total % 60;
-  if (h === 0) return `${toBn(mi)} মিনিট`;
-  return mi === 0 ? `${toBn(h)} ঘণ্টা` : `${toBn(h)} ঘণ্টা ${toBn(mi)} মিনিট`;
+  if (h === 0) return tr(`${toBn(mi)} মিনিট`, `${mi} min`);
+  return mi === 0 ? tr(`${toBn(h)} ঘণ্টা`, `${h} h`) : tr(`${toBn(h)} ঘণ্টা ${toBn(mi)} মিনিট`, `${h} h ${mi} min`);
 }
 
-const BN_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-const BN_DAYS = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
-const HIJRI_MONTHS = ['মুহাররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি', 'জমাদিউল আউয়াল', 'জমাদিউস সানি', 'রজব', 'শাবান', 'রমজান', 'শাওয়াল', 'জিলকদ', 'জিলহজ'];
+const BN_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];   // i18n-ok: English below
+const BN_DAYS = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];   // i18n-ok
+const HIJRI_MONTHS = ['মুহাররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি', 'জমাদিউল আউয়াল', 'জমাদিউস সানি', 'রজব', 'শাবান', 'রমজান', 'শাওয়াল', 'জিলকদ', 'জিলহজ'];   // i18n-ok
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const EN_HIJRI = ['Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani', 'Jumada al-Ula', 'Jumada al-Akhirah', 'Rajab', 'Shaban', 'Ramadan', 'Shawwal', 'Dhul Qadah', 'Dhul Hijjah'];
 export function fmtDate(y: number, m: number, d: number): { greg: string; hijri: string } {
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   const h = hijri(y, m, d);
-  return { greg: `${BN_DAYS[wd]}, ${toBn(d)} ${BN_MONTHS[m - 1]} ${toBn(y)}`, hijri: `${toBn(h.d)} ${HIJRI_MONTHS[h.m - 1]} ${toBn(h.y)} হিজরি` };
+  if (getLang() === 'en') return { greg: `${EN_DAYS[wd]}, ${d} ${EN_MONTHS[m - 1]} ${y}`, hijri: `${h.d} ${EN_HIJRI[h.m - 1]} ${h.y} AH` };
+  return { greg: `${BN_DAYS[wd]}, ${toBn(d)} ${BN_MONTHS[m - 1]} ${toBn(y)}`, hijri: `${toBn(h.d)} ${HIJRI_MONTHS[h.m - 1]} ${toBn(h.y)} হিজরি` };   // i18n-ok: English above
 }
 
 // Today's list plus which prayer is next. After Isha the next prayer is tomorrow's Fajr.
 export type PrayerRow = { key: PrayerKey; name: string; gen: string; icon: string; notPrayer?: boolean };
 export const ORDER: PrayerRow[] = [
-  { key: 'fajr', name: 'ফজর', gen: 'ফজরের', icon: '🌄' },
-  { key: 'sunrise', name: 'সূর্যোদয়', gen: 'সূর্যোদয়ের', icon: '🌅', notPrayer: true },
-  { key: 'dhuhr', name: 'যোহর', gen: 'যোহরের', icon: '☀️' },
-  { key: 'asr', name: 'আসর', gen: 'আসরের', icon: '🌤️' },
-  { key: 'maghrib', name: 'মাগরিব', gen: 'মাগরিবের', icon: '🌇' },
-  { key: 'isha', name: 'এশা', gen: 'এশার', icon: '🌙' },
+  { key: 'fajr', get name() { return tr('ফজর', 'Fajr'); }, get gen() { return tr('ফজরের', 'Fajr'); }, icon: '🌄' },
+  { key: 'sunrise', get name() { return tr('সূর্যোদয়', 'Sunrise'); }, get gen() { return tr('সূর্যোদয়ের', 'Sunrise'); }, icon: '🌅', notPrayer: true },
+  { key: 'dhuhr', get name() { return tr('যোহর', 'Dhuhr'); }, get gen() { return tr('যোহরের', 'Dhuhr'); }, icon: '☀️' },
+  { key: 'asr', get name() { return tr('আসর', 'Asr'); }, get gen() { return tr('আসরের', 'Asr'); }, icon: '🌤️' },
+  { key: 'maghrib', get name() { return tr('মাগরিব', 'Maghrib'); }, get gen() { return tr('মাগরিবের', 'Maghrib'); }, icon: '🌇' },
+  { key: 'isha', get name() { return tr('এশা', 'Isha'); }, get gen() { return tr('এশার', 'Isha'); }, icon: '🌙' },
 ];
 export const isFriday = (ymd: YMD): boolean => new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d)).getUTCDay() === 5;
 // On Fridays the Dhuhr slot is Jumu'ah.
-export const prayerName = (o: PrayerRow, ymd?: YMD | null): string => (o.key === 'dhuhr' && ymd && isFriday(ymd) ? 'জুমা' : o.name);
+export const prayerName = (o: PrayerRow, ymd?: YMD | null): string => (o.key === 'dhuhr' && ymd && isFriday(ymd) ? tr('জুমা', 'Jumu\'ah') : o.name);
 
 // Today's makruh (forbidden) prayer windows, approximate: ~15 min after sunrise, a few minutes before Dhuhr, ~15 min
 // before sunset. Returns [{ label, from, to }] in UTC ms.
 export function makruhWindows(times: Times): { key: string; label: string; from: number; to: number }[] {
   return [
-    { key: 'sunrise', label: 'সূর্যোদয়ের সময়', from: times.sunrise, to: times.sunrise + 15 * 60000 },
-    { key: 'zawal', label: 'ঠিক দুপুর', from: times.dhuhr - 6 * 60000, to: times.dhuhr },
-    { key: 'sunset', label: 'সূর্যাস্তের আগে', from: times.maghrib - 15 * 60000, to: times.maghrib },
+    { key: 'sunrise', label: tr('সূর্যোদয়ের সময়', 'At sunrise'), from: times.sunrise, to: times.sunrise + 15 * 60000 },
+    { key: 'zawal', label: tr('ঠিক দুপুর', 'Exact noon'), from: times.dhuhr - 6 * 60000, to: times.dhuhr },
+    { key: 'sunset', label: tr('সূর্যাস্তের আগে', 'Before sunset'), from: times.maghrib - 15 * 60000, to: times.maghrib },
   ];
 }
 

@@ -207,7 +207,7 @@ export const en: Strings = {
     heroA11y: (name: string, id: string) => `As-salamu alaykum, ${name}. Your haji ID is ${id}`,
     leaderId: 'Leader ID', hajiId: 'Haji ID', offlineT: 'No internet connection',
     offlineOld: 'Your last saved details are shown. The guides, duas and prayer times below work without internet.', offline: 'The guides, duas and prayer times below work without internet.',
-    nextA11y: (nm: string, part: string, time: string, left: string) => `Next prayer ${nm}, ${part} ${time}. ${left} left. Open prayer times and Qibla`,
+    nextA11y: (nm: string, part: string, time: string, left: string) => `Next prayer ${nm}, ${time} ${part}. ${left} left. Open prayer times and Qibla`,
     next: (place: string) => `Next prayer · ${place}`, left: (l: string) => `⏳ ${l} left`,
     tryT: '✋ Try it once', try1: 'Tap the ', tryGold: 'golden "Dua"', try2: ' button in the middle at the bottom once.', later: 'Not now, later',
     mailT: '📧 Email not verified yet', mail: (e: string) => `Verify ${e} and you can log in with this email too.`, mailBtn: 'Verify email',
