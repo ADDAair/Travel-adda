@@ -1,5 +1,6 @@
 import React, { type JSX } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { tr } from '../lib/lang';
 import { C, F, S, R } from '../theme';
 import { Field } from './ui';
 import DistrictPicker from './DistrictPicker';
@@ -14,25 +15,25 @@ export default function WorkAreaFields({ value, onChange, errors = {} }: { value
   const set = (k: keyof Area) => (x: string) => onChange({ ...v, [k]: x, ...(k === 'district' && x !== v.district ? { upazila: '' } : null) });
   return (
     <View style={w.box}>
-      <Text style={w.h} accessibilityRole="header">📍 কাজের এলাকা</Text>
-      <Text style={w.t}>অফিসের ঠিকানা নয়। আপনি যে এলাকার হাজীদের নিয়ে কাজ করেন, সেটি দিন। হাজীরা এলাকা দিয়ে আপনাকে খুঁজে পাবেন।</Text>
-      <DistrictPicker label="১. জেলা" value={v.district} onChange={set('district')} error={errors.district} />
+      <Text style={w.h} accessibilityRole="header">{tr('📍 কাজের এলাকা', '📍 Work area')}</Text>
+      <Text style={w.t}>{tr('অফিসের ঠিকানা নয়। আপনি যে এলাকার হাজীদের নিয়ে কাজ করেন, সেটি দিন। হাজীরা এলাকা দিয়ে আপনাকে খুঁজে পাবেন।', 'Not the office address. Give the area whose hajis you work with. Hajis will find you by the area.')}</Text>
+      <DistrictPicker label={tr('১. জেলা', '1. District')} value={v.district} onChange={set('district')} error={errors.district} />
       <DistrictPicker
-        label="২. উপজেলা"
+        label={tr('২. উপজেলা', '2. Upazila')}
         value={v.upazila}
         onChange={set('upazila')}
         error={errors.upazila}
         options={upazilasOf(v.district || '')}
-        placeholder="উপজেলা বাছুন"
-        searchHint="যেমন: কোম্পানীগঞ্জ"
-        noun="উপজেলা"
+        placeholder={tr('উপজেলা বাছুন', 'Choose an upazila')}
+        searchHint={tr('যেমন: কোম্পানীগঞ্জ', 'e.g. Companiganj')}
+        noun={tr('উপজেলা', 'upazila')}
         allowOther
         disabled={!v.district}
-        disabledText="আগে জেলা বাছুন"
+        disabledText={tr('আগে জেলা বাছুন', 'Choose the district first')}
       />
       <Field
-        label="৩. ইউনিয়ন"
-        hint="যেমন: চরহাজারী। একাধিক হলে কমা দিয়ে লিখুন"
+        label={tr('৩. ইউনিয়ন', '3. Union')}
+        hint={tr('যেমন: চরহাজারী। একাধিক হলে কমা দিয়ে লিখুন', 'e.g. Char Hazari. If more than one, separate with commas')}
         value={v.union || ''}
         onChangeText={set('union')}
         maxLength={120}

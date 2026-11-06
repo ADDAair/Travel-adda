@@ -8,7 +8,7 @@ import { Button, Field, Notice } from '../components/ui';
 import WorkAreaFields, { areaText, type Area } from '../components/WorkAreaFields';
 import DistrictPicker from '../components/DistrictPicker';
 import { applyLeader, myApplication, notReady, leaderKindsReady } from '../lib/groups';
-import { LEADER_KINDS, PROFESSIONS, validateApplication } from '../lib/leaderKinds';
+import { LEADER_KINDS, PROFESSIONS, professionName, validateApplication } from '../lib/leaderKinds';
 import { useMe } from '../lib/me';
 import { getTerms, agreeTerms, type TermsText } from '../lib/market';
 import { DocCamera } from './DocsScreen';
@@ -180,7 +180,7 @@ export default function LeaderApplyScreen({ navigation }: { navigation: Nav }): 
           {kindsOk ? (
             <View style={{ marginBottom: S.sm }}>
               <DistrictPicker label="আপনার পেশা (ঐচ্ছিক)" value={profession} onChange={setProfession} options={PROFESSIONS}
-                placeholder="পেশা বাছুন" searchHint="যেমন: ইমাম" noun="পেশা" allowOther />
+                placeholder="পেশা বাছুন" searchHint="যেমন: ইমাম" noun="পেশা" allowOther nameOf={professionName} />
               {profession ? (
                 <Pressable onPress={() => setProfession('')} style={{ minHeight: 48, justifyContent: 'center', marginTop: -S.sm }} accessibilityRole="button" accessibilityLabel="পেশা মুছে দিন">
                   <Text style={[st.small, { color: C.primary, textDecorationLine: 'underline' }]}>পেশা মুছে দিন</Text>

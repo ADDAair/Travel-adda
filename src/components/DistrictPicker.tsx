@@ -13,13 +13,15 @@ import { tr } from '../lib/lang';
 export default function DistrictPicker({
   label, value, onChange, allowAll = false, error,
   options = DISTRICTS, placeholder, searchHint, noun,
-  allowOther = false, disabled = false, disabledText,
+  allowOther = false, disabled = false, disabledText, nameOf,
 }: {
   label?: string; value?: string | null; onChange: (v: string) => void; allowAll?: boolean; error?: string;
   options?: readonly string[]; placeholder?: string; searchHint?: string; noun?: string;
   allowOther?: boolean; disabled?: boolean; disabledText?: string;
+  nameOf?: (v: string) => string;   // the name shown for a saved value (default: district names)
 }): JSX.Element {
   const ins = useSafeAreaInsets();
+  const nm = nameOf || districtName;
   const lab = label || tr('জেলা', 'District');
   const what = noun || tr('জেলা', 'district');
   const ph = placeholder || tr('জেলা বাছুন', 'Choose a district');
@@ -28,10 +30,10 @@ export default function DistrictPicker({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const typed = q.trim();
-  const list = options.filter((d) => !typed || districtMatch(d, typed));
+  const list = options.filter((d) => !typed || districtMatch(d, typed) || nm(d).toLowerCase().includes(typed.toLowerCase()));
   const exact = options.includes(typed);
   const pick = (d: string) => { onChange(d); setOpen(false); setQ(''); };
-  const shown = value ? districtName(value) : (allowAll ? all : disabled && disabledText ? disabledText : ph);
+  const shown = value ? nm(value) : (allowAll ? all : disabled && disabledText ? disabledText : ph);
   return (
     <View style={{ marginBottom: S.md }}>
       <Text style={p.label}>{lab}</Text>
@@ -40,7 +42,7 @@ export default function DistrictPicker({
         style={[p.box, disabled && p.boxOff, error ? { borderColor: C.bad, borderWidth: 2 } : null]}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        accessibilityLabel={`${lab}: ${value ? districtName(value) : (allowAll ? all : tr('বাছাই করা হয়নি', 'not chosen'))}. ${disabled ? (disabledText || '') : tr('বদলাতে চাপুন', 'Tap to change')}`}
+        accessibilityLabel={`${lab}: ${value ? nm(value) : (allowAll ? all : tr('বাছাই করা হয়নি', 'not chosen'))}. ${disabled ? (disabledText || '') : tr('বদলাতে চাপুন', 'Tap to change')}`}
       >
         <Text style={[p.val, (!value || disabled) && { color: C.muted }]}>{shown}</Text>
         {disabled ? null : <Text style={p.arrow}>▾</Text>}
@@ -54,7 +56,7 @@ export default function DistrictPicker({
             {allowAll ? <Pressable onPress={() => pick('')} style={p.row} accessibilityRole="button"><Text style={p.rowT}>🇧🇩 {all}</Text></Pressable> : null}
             {list.map((d) => (
               <Pressable key={d} onPress={() => pick(d)} style={[p.row, d === value && p.rowOn]} accessibilityRole="button" accessibilityState={{ selected: d === value }}>
-                <Text style={p.rowT}>{d === value ? '✅ ' : ''}{districtName(d)}</Text>
+                <Text style={p.rowT}>{d === value ? '✅ ' : ''}{nm(d)}</Text>
               </Pressable>
             ))}
             {list.length === 0 && !allowOther ? <Text style={p.err}>{tr(`এই নামে কোনো ${what} নেই।`, `No ${what} with this name.`)}</Text> : null}

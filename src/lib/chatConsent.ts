@@ -1,6 +1,7 @@
 // Reading a haji's help chat during a dispute — only after the haji agrees (supabase/024_admin_part3.sql).
 // The database decides; this file only calls it and turns answers into plain Bengali.
 import { notReady } from './groups';
+import { tr } from './lang';
 import { rpc, fail } from './rpc';
 
 export type ConsentStatus = 'asked' | 'granted' | 'declined' | 'revoked';
@@ -18,15 +19,15 @@ export const adminChatConsents = async (contractId: string): Promise<AdminConsen
 export const viewHelpChat = async (consentId: string): Promise<ChatLine[]> => (await rpc<ChatLine[]>('admin_view_help_chat', { p_consent: consentId })) || [];
 
 export const requestResultText = (r: string | null): string => (r === 'sent'
-  ? '✅ অনুমতি চেয়ে হাজীর কাছে নোটিফিকেশন পাঠানো হয়েছে। তিনি রাজি হলে এখানে "দেখুন" বোতাম আসবে।'
-  : r === 'exists' ? 'এই চুক্তির জন্য আগেই অনুমতি চাওয়া হয়েছে বা অনুমতি চালু আছে।' : 'কাজটি হয়নি।');
+  ? tr('✅ অনুমতি চেয়ে হাজীর কাছে নোটিফিকেশন পাঠানো হয়েছে। তিনি রাজি হলে এখানে "দেখুন" বোতাম আসবে।', '✅ A notification asking for permission was sent to the haji. If they agree, a "See" button will appear here.')
+  : r === 'exists' ? tr('এই চুক্তির জন্য আগেই অনুমতি চাওয়া হয়েছে বা অনুমতি চালু আছে।', 'Permission for this contract has already been asked for or is already on.') : tr('কাজটি হয়নি।', 'It did not work.'));
 
 export function consentStatusText(k: { status: string; active?: boolean } | null | undefined): string {
   if (!k) return '';
-  if (k.status === 'asked') return '⏳ হাজীর উত্তরের অপেক্ষায়';
-  if (k.status === 'granted') return k.active ? '✅ হাজী অনুমতি দিয়েছেন (৭ দিনের জন্য)' : '⌛ অনুমতির মেয়াদ শেষ';
-  if (k.status === 'declined') return '✖️ হাজী রাজি হননি';
-  if (k.status === 'revoked') return '↩️ হাজী অনুমতি ফিরিয়ে নিয়েছেন';
+  if (k.status === 'asked') return tr('⏳ হাজীর উত্তরের অপেক্ষায়', '⏳ Waiting for the haji\'s answer');
+  if (k.status === 'granted') return k.active ? tr('✅ হাজী অনুমতি দিয়েছেন (৭ দিনের জন্য)', '✅ The haji gave permission (for 7 days)') : tr('⌛ অনুমতির মেয়াদ শেষ', '⌛ The permission has expired');
+  if (k.status === 'declined') return tr('✖️ হাজী রাজি হননি', '✖️ The haji did not agree');
+  if (k.status === 'revoked') return tr('↩️ হাজী অনুমতি ফিরিয়ে নিয়েছেন', '↩️ The haji took the permission back');
   return k.status;
 }
 
