@@ -9,6 +9,8 @@ import { umrahL } from '../content/umrah';
 import { ihramL, CONTENT_REVIEWED } from '../content/ihram';
 import { tr } from '../lib/lang';
 
+type Counters = ReturnType<typeof umrahL>['COUNTERS'];
+type Counter = Counters[keyof Counters];
 const UM = umrahL; const IH = ihramL;   // in the chosen language
 import type { ScrollRef } from '../components/KbScroll';
 import type { Nav } from './navTypes';
@@ -30,7 +32,7 @@ export default function UmrahScreen({ navigation }: { navigation: Nav }) {
   };
   const s = UM().UMRAH_STEPS[i];
   const last = i === UM().UMRAH_STEPS.length - 1;
-  const counter = s.counter ? (UM().COUNTERS as Record<string, (typeof UM().COUNTERS)[keyof typeof UM().COUNTERS]>)[s.counter] : null;
+  const counter = s.counter ? (UM().COUNTERS as Record<string, Counter>)[s.counter] : null;
 
   return (
     <ScrollView ref={scrollRef} style={{ backgroundColor: C.bg }} contentContainerStyle={st.wrap}>
