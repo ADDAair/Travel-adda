@@ -4,6 +4,7 @@ import { C, F, S, R } from '../theme';
 import { Field } from './ui';
 import DistrictPicker from './DistrictPicker';
 import { upazilasOf } from '../lib/upazilas';
+import { districtName } from '../lib/market';
 
 // A leader's WORK AREA (not the office address): district (list) > upazila (list of that district) > union (typed).
 // value = { district, upazila, union }; onChange gets the whole new value. Changing the district clears the upazila.
@@ -42,7 +43,7 @@ export default function WorkAreaFields({ value, onChange, errors = {} }: { value
 }
 
 // "চরহাজারী, কোম্পানীগঞ্জ, নোয়াখালী" (whatever is filled in), for lists and cards.
-export const areaText = (x: { union_name?: string | null; upazila?: string | null; district?: string | null } | null | undefined): string => (x ? [x.union_name, x.upazila, x.district].map((s) => (s || '').trim()).filter(Boolean).join(', ') : '');
+export const areaText = (x: { union_name?: string | null; upazila?: string | null; district?: string | null } | null | undefined): string => (x ? [x.union_name, x.upazila, districtName(x.district)].map((s) => (s || '').trim()).filter(Boolean).join(', ') : '');
 
 const w = StyleSheet.create({
   box: { backgroundColor: C.card, borderRadius: R.lg, borderWidth: 1, borderColor: C.line, padding: S.md, marginBottom: S.md },

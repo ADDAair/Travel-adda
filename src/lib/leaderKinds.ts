@@ -3,10 +3,12 @@
 //  * travel_adda  – works directly with Travel Adda: no office or licence; a picture of the national ID (NID) instead
 // Both may give a profession (Imam, Muazzin, Madrasa teacher ...) and must give their work area.
 
+import { tr } from './lang';
+
 export type LeaderKind = { icon: string; title: string; what: string; badge?: string };
 export const LEADER_KINDS: Record<string, LeaderKind> = {
   agency: { icon: '🏢', title: 'আমার নিজের এজেন্সি আছে', what: 'হজ/ওমরাহ এজেন্সির নাম, লাইসেন্স নম্বর ও লাইসেন্সের ছবি দিতে হবে।' },
-  travel_adda: { icon: '🤝', title: 'আমি Travel Adda-র সাথে সরাসরি কাজ করব', what: 'অফিস বা লাইসেন্স লাগবে না। জাতীয় পরিচয়পত্রের (NID) ছবি দিতে হবে।', badge: '✅ Travel Adda-র নিজস্ব লিডার' },
+  travel_adda: { icon: '🤝', title: 'আমি Travel Adda-র সাথে সরাসরি কাজ করব', what: 'অফিস বা লাইসেন্স লাগবে না। জাতীয় পরিচয়পত্রের (NID) ছবি দিতে হবে।', get badge() { return tr('✅ Travel Adda-র নিজস্ব লিডার', "✅ Travel Adda's own leader"); } },
 };
 
 export const PROFESSIONS = [
