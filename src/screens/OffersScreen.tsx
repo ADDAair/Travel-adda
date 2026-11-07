@@ -5,7 +5,9 @@ import { C, S, R, TOUCH } from '../theme';
 import { Button, Field, Notice, Segmented } from '../components/ui';
 import { notReady } from '../lib/groups';
 import { KIND, refOf, type Helpline, getHelpline, listOffers, myInterests, requestCallback, cancelCallback } from '../lib/offers';
-import { st, errText, confirm, fmtDay, fmtTaka } from './GroupScreen';
+import { st, errText, confirm, fmtDay, fmtTaka, fmtWhen } from './GroupScreen';
+import { withCopy } from '../lib/offlineStore';
+import { OfflineNote } from '../components/OfflineNote';
 import { useMe, isLeaderAccount } from '../lib/me';
 import LeaderOffersScreen from './LeaderOffersScreen';
 
@@ -144,6 +146,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
   const [state, setState] = useState('load');
   const [help, setHelp] = useState<Helpline | null>(null);
   const [mine, setMine] = useState<Res<typeof myInterests>>({});
+  const [offAt, setOffAt] = useState<number | null>(null);   // showing the list saved on this phone (no internet)
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [q, setQ] = useState(route?.params?.leader || '');
@@ -162,8 +165,9 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
     setState((x) => (x === 'ok' ? 'ok' : 'load'));
     getHelpline().then(setHelp).catch(() => {});
     try {
-      const [r, m] = await Promise.all([listOffers(k), myInterests()]);
-      setRows(r); setMine(m); setState('ok');
+      const x = await withCopy(`offers.${k}`, () => Promise.all([listOffers(k), myInterests()]));   // offline step 2
+      const [r, m] = x.data;
+      setRows(r); setMine(m); setOffAt(x.offline ? x.at : null); setState('ok');
     } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, []);
   useEffect(() => { load(kind); }, [kind, load]);
@@ -265,6 +269,7 @@ function HajiOffers({ navigation, route }: { navigation: Nav; route?: Route }) {
         </View>
       ) : null}
       {msg ? <Notice kind={msg.kind} title={msg.text} /> : null}
+      {state === 'ok' && offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {state === 'load' || (state === 'ok' && rows === null) ? <ActivityIndicator color={C.primary} style={{ marginTop: S.lg }} /> : null}
       {state === 'soon' ? <Notice kind="info" title={tr('শীঘ্রই আসছে', 'Coming soon')} text={tr('যাচাই করা গ্রুপ লিডারদের হজ ও ওমরাহ প্যাকেজ এখানে দেখা যাবে।', 'Hajj and Umrah packages from verified group leaders will be shown here.')} /> : null}
       {state === 'err' ? <Notice kind="bad" title={tr('প্যাকেজ আনা যায়নি', 'Could not get the packages')} text={tr('ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।', 'Check the internet connection and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={() => load(kind)} style={{ marginTop: S.sm }} /></Notice> : null}

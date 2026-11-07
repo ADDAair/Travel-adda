@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import aesjs from 'aes-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
 import type { Database } from './dbTypes';   // every table and server function, typed (generated)
+import { trackedFetch } from './netState';   // offline step 2: notes whether the server is reachable
 
 // Session is stored encrypted: the AES key lives in the device's secure keystore,
 // the (large) encrypted session lives in AsyncStorage.
@@ -35,4 +36,5 @@ class LargeSecureStore {
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { storage: Platform.OS === 'web' ? AsyncStorage : new LargeSecureStore(), // web is only used for automated screenshots
           autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
+  global: { fetch: trackedFetch() },
 });

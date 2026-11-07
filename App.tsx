@@ -8,6 +8,7 @@ import { refreshUnread } from './src/lib/notifications';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { Session } from '@supabase/supabase-js';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NetStrip } from './src/components/NetStrip';
 import { supabase } from './src/lib/supabase';
 import { Button } from './src/components/ui';
 import { prefs } from './src/lib/prefs';
@@ -185,7 +186,7 @@ function Main() {
   return (
     <Tab.Navigator
       tabBar={(p) => <TabBar {...p} />}
-      screenLayout={({ children, route }) => <View style={{ flex: 1 }}><VideoBar route={route.name} />{children}</View>}
+      screenLayout={({ children, route }) => <View style={{ flex: 1 }}><NetStrip /><VideoBar route={route.name} />{children}</View>}
       screenOptions={({ navigation, route }) => ({
         headerStyle: { backgroundColor: C.primary }, headerTintColor: C.onPrimary, headerTitleStyle: { fontSize: F.large, fontWeight: '700' },
         // language switch (EN / বাং) next to the bell on every page (owner request, Nov 2026)

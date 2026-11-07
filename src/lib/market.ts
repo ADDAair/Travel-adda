@@ -63,6 +63,14 @@ export const CONTRACT_STATUS: Record<string, { icon: string; label: string }> = 
 
 // ---------- Directory ----------
 export const listLeaders = (district?: string | null, search?: string | null) => list('list_leaders', { p_district: district || null, p_search: search || null });
+// Offline step 2: one saved copy per district (the search text never makes new copies); offline, the search runs on it.
+export const leaderCopyName = (district: string, _q: string): string => `leaders.${district.trim() || 'all'}`;
+type LeaderText = { full_name?: string | null; agency_name?: string | null; leader_code?: string | null; upazila?: string | null; union_name?: string | null };
+export function filterLeadersLocal<T extends LeaderText>(rows: T[], q: string): T[] {
+  const n = q.trim().toLowerCase();
+  if (!n) return rows;
+  return rows.filter((r) => [r.full_name, r.agency_name, r.leader_code, r.upazila, r.union_name].some((x) => String(x || '').toLowerCase().includes(n)));
+}
 export const leaderPublic = (id: string) => first('leader_public', { p_leader: id });
 export const leaderReviews = (id: string) => list('leader_reviews', { p_leader: id });
 export async function myLeaderCallRequest(leaderId: string): Promise<{ id: string; status: string; created_at: string } | null> {

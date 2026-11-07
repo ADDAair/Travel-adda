@@ -12,8 +12,10 @@ import { toBn } from '../lib/phone';
 import { notReady } from '../lib/groups';
 import { signedAvatarUrl } from '../lib/avatar';
 import { getHelpline } from '../lib/offers';
-import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall } from '../lib/market';
-import { st, confirm, errText, fmtDay } from './GroupScreen';
+import { listLeaders, leaderPublic, leaderReviews, myLeaderCallRequest, requestLeaderCall, leaderCopyName, filterLeadersLocal } from '../lib/market';
+import { withCopy, lastCopy } from '../lib/offlineStore';
+import { OfflineNote } from '../components/OfflineNote';
+import { st, confirm, errText, fmtDay, fmtWhen } from './GroupScreen';
 import type { Msg, Nav, Route } from './navTypes';
 import type { Res } from '../lib/types';
 import type { Helpline } from '../lib/offers';
@@ -33,9 +35,23 @@ export default function LeadersScreen({ navigation, route }: { navigation: Nav; 
   const [state, setState] = useState<'load' | 'ok' | 'soon' | 'err'>('load');
   const [open, setOpen] = useState<string | null>(route?.params?.id || null);
 
+  const [offAt, setOffAt] = useState<number | null>(null);   // showing the list saved on this phone (no internet)
   const load = useCallback(async () => {
-    try { setRows(await listLeaders(district, q)); setState('ok'); }
-    catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
+    try {
+      if (!q.trim()) {                                         // the district's whole list: kept for use without internet
+        const x = await withCopy(leaderCopyName(district, ''), () => listLeaders(district, ''));
+        setRows(x.data); setOffAt(x.offline ? x.at : null);
+      } else {
+        try { setRows(await listLeaders(district, q)); setOffAt(null); }
+        catch (e) {                                            // offline: search inside the saved list of this district
+          if (notReady(e)) throw e;
+          const c = await lastCopy<Res<typeof listLeaders>>(leaderCopyName(district, ''));
+          if (!c) throw e;
+          setRows(filterLeadersLocal(c.data, q)); setOffAt(c.at);
+        }
+      }
+      setState('ok');
+    } catch (e) { setState(notReady(e) ? 'soon' : 'err'); }
   }, [district, q]);
   useEffect(() => { const t = setTimeout(load, 350); return () => clearTimeout(t); }, [load]);
 
@@ -53,6 +69,7 @@ export default function LeadersScreen({ navigation, route }: { navigation: Nav; 
           <Field label={tr('নাম, এজেন্সি, উপজেলা, ইউনিয়ন বা আইডি দিয়ে খুঁজুন', 'Search by name, agency, upazila, union or ID')} hint={tr('যেমন: আল-হারামাইন', 'e.g. Al-Haramain')} value={q} onChangeText={setQ} />
         </>
       )}
+      {state === 'ok' && offAt ? <OfflineNote when={fmtWhen(offAt)} /> : null}
       {state === 'load' ? <ActivityIndicator color={C.primary} /> : null}
       {state === 'soon' ? <Notice kind="info" title={tr('শীঘ্রই চালু হবে', 'Coming soon')} text={tr('লিডারের তালিকা চালু হওয়ার শেষ ধাপ বাকি আছে।', 'The last step to turn on the leader list is still to come.')} /> : null}
       {state === 'err' ? <Notice kind="bad" title={tr('তালিকা আনা যায়নি', 'Could not load the list')} text={tr('ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।', 'Check the internet connection and try again.')}><Button title={tr('আবার চেষ্টা করুন', 'Try again')} icon="🔄" kind="secondary" onPress={load} style={{ marginTop: S.sm }} /></Notice> : null}
