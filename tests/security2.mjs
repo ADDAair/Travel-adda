@@ -5,6 +5,7 @@
 // Accounts: H = haji A (existing CI haji), B = haji B (CI haji 2, made here on first run), L = approved CI leader.
 // Only synthetic data; everything created is removed or cancelled at the end (cleanup). Hard request limit below.
 import fs from 'node:fs';
+import { createHmac } from 'node:crypto';
 
 const cfg = fs.readFileSync('src/config.ts', 'utf8');
 const URL = cfg.match(/SUPABASE_URL\s*=\s*'([^']+)'/)[1];
@@ -34,7 +35,7 @@ async function signIn(phone, pw) {
 }
 
 // ---------- accounts ----------
-const { H_PHONE, H_PW, L_PHONE, L_PW, B_PHONE, B_PW } = process.env;
+const { H_PHONE, H_PW, L_PHONE, L_PW, B_PHONE, B_PW, D_PHONE, D_PW } = process.env;
 if (!B_PW || !H_PW || !L_PW) { console.error('test passwords missing'); process.exit(1); }
 const h = await signIn(H_PHONE, H_PW), l = await signIn(L_PHONE, L_PW);
 let b = await signIn(B_PHONE, B_PW);
@@ -48,7 +49,19 @@ if (h.r.error || l.r.error || b.r.error) { console.error('login failed', err(h.r
 const H = h.c, L = l.c, B = b.c;
 const hid = h.r.data.user.id, bid = b.r.data.user.id;
 const bcode = (await B.from('profiles').select('haji_code').single()).data?.haji_code;
-const made = { docPath: null, docId: null, rcptPath: null, contract: null };
+const made = { docPath: null, docId: null, rcptPath: null, contract: null, factor: null };
+let D = null;
+
+// 6-digit authenticator code (RFC 6238), computed here from the secret the server just gave the CI admin.
+// No code is ever typed, shown or shared.
+function totp(base32, at = Date.now()) {
+  const al = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; let bits = '';
+  for (const ch of base32.replace(/=+$/, '').toUpperCase()) bits += al.indexOf(ch).toString(2).padStart(5, '0');
+  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)));
+  const ctr = Buffer.alloc(8); ctr.writeBigUInt64BE(BigInt(Math.floor(at / 30000)));
+  const hm = createHmac('sha1', key).update(ctr).digest(); const o = hm[hm.length - 1] & 15;
+  return String((hm.readUInt32BE(o) & 0x7fffffff) % 1000000).padStart(6, '0');
+}
 
 try {
   // ---------- T05 / T09: haji A cannot see haji B's documents ----------
@@ -188,11 +201,64 @@ try {
   check('T12', 'লগআউটের পর সেই সেশনের রিফ্রেশ টোকেন চলে না', !!r.error, err(r) || 'still works!');
   r = await mk({ Authorization: `Bearer ${at2}` }).from('profiles').select('id');
   info('T12', 'লগআউটের পর পুরনো access token', empty(r) ? 'refused right away' : 'still works until it expires (Supabase default: up to 1 hour)');
+
+  // ---------- T07 (2FA): the CI test admin (made admin by the owner on the TEST server only) ----------
+  let d = await signIn(D_PHONE, D_PW);
+  if (d.r.error) {
+    const c = mk(); const rnd = [...crypto.getRandomValues(new Uint8Array(10))].map((x) => x.toString(16).padStart(2, '0')).join('');
+    const s = await c.auth.signUp({ email: `u${rnd}@users.traveladda.app`, password: D_PW, options: { data: { full_name: 'CI পরীক্ষা অ্যাডমিন (আসল নয়)', phone: D_PHONE, account_type: 'haji' } } });
+    console.log('made CI admin account:', s.error ? s.error.message : 'ok');
+    d = await signIn(D_PHONE, D_PW);
+  }
+  D = d.c;
+  const st = d.r.error ? null : (await D.rpc('my_mfa_state')).data;
+  if (!st?.staff) info('T07', 'অ্যাডমিন 2FA পরীক্ষা', 'waiting: the owner has not yet made the CI admin (test-server-make-ci-admin.sql)');
+  else {
+    check('T07', 'শুধু পাসওয়ার্ডে লগইন করা অ্যাডমিনের সেশন 2FA ছাড়া (aal1)', st.aal === 'aal1', st.aal);
+    r = await D.rpc('is_admin');
+    check('T07', '2FA ছাড়া অ্যাডমিনও "অ্যাডমিন" নন', r.data === false, err(r) || r.data);
+    r = await D.rpc('my_perms');
+    check('T07', '2FA ছাড়া অ্যাডমিন মেনু ফাঁকা', !r.error && Array.isArray(r.data) && r.data.length === 0, err(r) || JSON.stringify(r.data));
+    r = await D.rpc('admin_list_payments', { p_status: null });
+    check('T07', '2FA ছাড়া অ্যাডমিন টাকার তালিকা দেখতে পান না', !!r.error, err(r));
+    // a forged token that claims aal2 is refused
+    const tk = d.r.data.session.access_token.split('.');
+    const pp = JSON.parse(Buffer.from(tk[1], 'base64url').toString());
+    const fake = [tk[0], Buffer.from(JSON.stringify({ ...pp, aal: 'aal2' })).toString('base64url'), tk[2]].join('.');
+    r = await mk({ Authorization: `Bearer ${fake}` }).rpc('is_admin');
+    check('T07', 'নকল টোকেনে "2FA হয়েছে" লিখে দিলে চলে না', !!r.error || r.data !== true, err(r) || r.data);
+    // old factors from a run that stopped half-way: unverified ones can be removed with the password session
+    for (const f of (await D.auth.mfa.listFactors()).data?.all || []) if (f.status !== 'verified') await D.auth.mfa.unenroll({ factorId: f.id });
+    const en = await D.auth.mfa.enroll({ factorType: 'totp', friendlyName: `ci-${stamp}` });
+    if (en.error) info('T07', '2FA চালু করা', `could not enroll: ${err(en)}`);
+    else {
+      made.factor = en.data.id; const secret = en.data.totp.secret;
+      let ch = await D.auth.mfa.challenge({ factorId: made.factor });
+      r = await D.auth.mfa.verify({ factorId: made.factor, challengeId: ch.data?.id, code: totp(secret) === '000000' ? '111111' : '000000' });
+      check('T07', 'ভুল ৬ অঙ্কের কোড চলে না', !!r.error, err(r));
+      ch = await D.auth.mfa.challenge({ factorId: made.factor });
+      r = await D.auth.mfa.verify({ factorId: made.factor, challengeId: ch.data?.id, code: totp(secret) });
+      check('T07', 'সঠিক কোডে 2FA হয় (প্রস্তুতি)', !r.error, err(r));
+      const a2 = (await D.rpc('my_mfa_state')).data;
+      check('T07', '2FA-র পর সেশন aal2', a2?.aal === 'aal2', a2?.aal);
+      r = await D.rpc('is_admin');
+      check('T07', '2FA-র পর অ্যাডমিন কাজ করতে পারেন', r.data === true, err(r) || r.data);
+      r = await D.rpc('admin_list_payments', { p_status: null });
+      check('T07', '2FA-র পর অ্যাডমিন টাকার তালিকা দেখেন', !r.error, err(r));
+      const sp = await signIn(D_PHONE, D_PW);   // a thief with only the password, while the factor is on
+      r = await sp.c.rpc('is_admin');
+      check('T07', '2FA চালু থাকলেও শুধু পাসওয়ার্ডে নতুন লগইন অ্যাডমিন নয়', r.data === false, err(r) || r.data);
+      r = await sp.c.auth.mfa.unenroll({ factorId: made.factor });
+      check('T07', 'শুধু পাসওয়ার্ডওয়ালা কেউ 2FA মুছে ফেলতে পারে না', !!r.error, err(r));
+      await sp.c.auth.signOut({ scope: 'local' });
+    }
+  }
 } catch (e) {
   check('RUN', 'পরীক্ষা মাঝপথে থেমে গেছে', false, e.message);
 } finally {
   // ---------- cleanup: remove/cancel everything this run made (all on the test server) ----------
   const c = [];
+  if (made.factor && D) c.push(['admin 2FA factor', err(await D.auth.mfa.unenroll({ factorId: made.factor })) || 'ok']);
   if (made.contract) c.push(['contract', (await B.rpc('cancel_contract', { p_id: made.contract, p_reason: 'নিরাপত্তা-পরীক্ষা শেষ, চুক্তি বন্ধ' })).data]);
   if (made.docId) c.push(['doc row', err(await B.from('user_documents').delete().eq('id', made.docId)) || 'ok']);
   if (made.docPath) c.push(['doc file', err(await B.storage.from('documents').remove([made.docPath])) || 'ok']);

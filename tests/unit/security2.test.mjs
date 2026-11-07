@@ -35,3 +35,14 @@ test('the script cleans up what it creates and caps its own request count', () =
   assert.match(s, /storage\.from\('documents'\)\.remove/, 'the test document file is removed');
   assert.match(s, /MAX_REQUESTS\s*=\s*\d+/, 'a hard request limit');
 });
+
+test('admin 2FA part: the test admin needs a real authenticator code, and the factor is removed again at the end', () => {
+  const s = read('tests/security2.mjs');
+  assert.match(s, /mfa\.enroll\(/, 'enrolls an authenticator (TOTP) for the CI test admin');
+  assert.match(s, /mfa\.unenroll\(/, 'and removes it in the cleanup');
+  assert.match(s, /function totp\(/, 'computes the 6-digit code itself (no code is ever typed or shared)');
+  assert.ok(s.lastIndexOf('mfa.unenroll(') > s.indexOf('} finally {'), 'unenroll is part of the cleanup');
+  const sql = read('tests/sql/test-server-make-ci-admin.sql');
+  assert.match(sql, /count\(\*\)[\s\S]*> 20[\s\S]*raise exception/, 'stops on the real server (more than 20 users)');
+  assert.match(sql, /01300000007/, 'only the CI test admin phone');
+});
