@@ -2,7 +2,7 @@ name: groups-e2e
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 20 * * *'      # every night 02:30 Bangladesh time: full two-phone test + security checks on the real database
+    - cron: '30 20 * * *'      # every night 02:30 Bangladesh time: full two-phone test + security checks on the TEST server (ami-haji-test)
 permissions:
   contents: write
 jobs:
@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: use the test server, never the real one (security review F1, Nov 2026)
+        run: |
+          node tools/use_test_server.mjs
+          grep -q yhavfnaljbiefzofcduj src/config.ts || exit 1
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - uses: actions/setup-python@v5
