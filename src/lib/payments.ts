@@ -6,6 +6,7 @@ import { supabase } from './supabase';
 import { uid, randomId, shrink } from './docs';
 import { rpc, check, fail, type DbResult, rows } from './rpc';
 import { tr } from './lang';
+import { checkFile } from './fileCheck';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -75,6 +76,7 @@ export async function submitPayment({ contractId, amount, method, ref, paidOn, f
     const src: string = pdf ? file.uri : await shrink(file.uri);
     const buf = await (await fetch(src)).arrayBuffer();
     if (buf.byteLength > MAX_BYTES) throw fail('too-big');
+    checkFile(buf, pdf ? 'pdf' : 'image');
     path = `${me}/${randomId()}.${pdf ? 'pdf' : 'jpg'}`;
     const up = await db.storage.from('receipts').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg' });
     if (up.error) throw up.error;

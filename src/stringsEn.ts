@@ -61,6 +61,7 @@ export const en: Strings = {
     errCamera: 'The camera did not start. Close the app and open it again.',
     errNet: 'No internet or a weak connection. The photo is still on your phone; check the connection and tap "Use this photo" again.',
     errBig: 'The photo file is too big. Tap "Take again".',
+    errBadFile: 'The file is not a real photo. Tap "Take again".',
     errSave: 'The photo was not saved. It is still on your phone; tap "Use this photo" again.',
     savedOk: 'Photo saved.',
     accountMissingTitle: 'Your photo has not been added yet',

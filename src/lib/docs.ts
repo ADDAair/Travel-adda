@@ -9,6 +9,7 @@ import * as IM from 'expo-image-manipulator';
 import { supabase } from './supabase';
 
 import type { TableRow } from './types';
+import { checkFile } from './fileCheck';
 export type DocRow = Pick<TableRow<'user_documents'>, 'id' | 'doc_type' | 'file_path' | 'created_at'> & { expires_on?: string | null };
 const coded = (msg: string, code: string): Error & { code: string } => Object.assign(new Error(msg), { code });
 // expo-image-manipulator changed its API between SDKs; both the new and the old one are tried below.
@@ -83,6 +84,7 @@ export async function uploadDoc(type: string, file: { uri: string; kind: 'image'
   const src = pdf ? file.uri : await shrink(file.uri);
   const buf = await (await fetch(src)).arrayBuffer();
   if (buf.byteLength > MAX_BYTES) throw coded('too big', 'too-big');
+  checkFile(buf, pdf ? 'pdf' : 'image');
   const path = `${me}/${randomId()}.${pdf ? 'pdf' : 'jpg'}`;
   const up = await supabase.storage.from('documents').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg', upsert: false });
   if (up.error) throw up.error;

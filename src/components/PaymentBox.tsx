@@ -116,7 +116,8 @@ function PayForm({ contract, onClose, onSaved }: { contract: Contract; onClose: 
       catch (err0) {
         const x = err0 as { code?: string; message?: string } | null;
         const m = String(x?.message || '');
-        setFail(x?.code === 'too-big' ? tr('রসিদের ফাইল ৫ এমবির বেশি বড়।', 'The receipt file is larger than 5 MB.')
+        setFail(x?.code === 'bad-file' ? tr('রসিদের ফাইলটি আসল ছবি বা PDF নয়। রসিদের ছবি তুলে আবার দিন।', 'The receipt file is not a real picture or PDF. Take a photo of the receipt and try again.')
+          : x?.code === 'too-big' ? tr('রসিদের ফাইল ৫ এমবির বেশি বড়।', 'The receipt file is larger than 5 MB.')
           : x?.code === '23505' ? tr('এই লেনদেন নম্বর আগেই জমা দেওয়া হয়েছে।', 'This transaction number has already been sent.')
             : x?.code === '42501' || /row-level security/i.test(m) ? tr('জমা দেওয়া যায়নি। চুক্তিটি এখন চালু আছে কি না দেখুন, বা আজ অনেকবার জমা দেওয়া হয়েছে।', 'Could not send. Check that the contract is active, or too many were sent today.')
               : errText(x));      // everything typed stays

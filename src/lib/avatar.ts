@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { checkFile } from './fileCheck';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -13,6 +14,7 @@ export async function uploadAvatar(uri: string): Promise<string> {
   const res = await fetch(uri);
   const buf = await res.arrayBuffer();
   if (buf.byteLength > MAX_BYTES) throw coded('too-big');
+  checkFile(buf, 'image');
   const path = `${uid}/profile.jpg`;
   const up = await supabase.storage.from('avatars').upload(path, buf, { contentType: 'image/jpeg', upsert: true });
   if (up.error) throw up.error;

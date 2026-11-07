@@ -22,6 +22,7 @@ const fmtDay = (iso: string) => { const d = new Date(iso); return Number.isNaN(d
 const errText = (err: unknown) => {
   const e = (err || {}) as { message?: string; code?: string };
   const m = String(e.message || '').toLowerCase();
+  if (e.code === 'bad-file') return tr('এই ফাইলটি আসল ছবি বা PDF নয়, তাই রাখা হয়নি। ক্যামেরায় ছবি তুলুন বা অন্য ফাইল বাছুন।', 'This file is not a real picture or PDF, so it was not saved. Take a photo with the camera or choose another file.');
   if (e.code === 'too-big') return tr('ফাইলটি ৫ MB-এর বেশি বড়। ছোট ফাইল বাছুন বা ক্যামেরায় ছবি তুলুন।', 'The file is bigger than 5 MB. Choose a smaller file or take a photo with the camera.');
   if (m.includes('network') || m.includes('fetch') || m.includes('timeout')) return tr('ইন্টারনেট সংযোগ নেই বা দুর্বল। সংযোগ দেখে আবার চেষ্টা করুন।', 'No internet or a weak connection. Check the connection and try again.');
   return tr('কাজটি হয়নি। একটু পরে আবার চেষ্টা করুন।', 'That did not work. Try again a little later.');

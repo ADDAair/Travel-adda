@@ -9,6 +9,7 @@ import { rpc, check, rows, firstRow } from './rpc';
 
 import type { MyContract } from './types';
 import { tr, getLang } from './lang';
+import { checkFile } from './fileCheck';
 const list = rows;      // typed by the function name (src/lib/dbTypes.ts)
 const first = firstRow;
 
@@ -140,6 +141,7 @@ export async function fileComplaint(contractId: string, body: string, files: Evi
       const src: string = f.kind === 'image' ? await shrink(f.uri) : f.uri;
       const buf = await (await fetch(src)).arrayBuffer();
       if (buf.byteLength > MAX_EVIDENCE) { failed++; continue; }
+      try { checkFile(buf, f.kind); } catch (e) { failed++; continue; }   // not really a picture / sound / video
       const ext = f.kind === 'image' ? 'jpg' : (String(f.name || '').split('.').pop() || (f.kind === 'audio' ? 'm4a' : 'mp4')).toLowerCase().slice(0, 5);
       const path = `${me}/${randomId()}.${ext}`;
       const mime = f.kind === 'image' ? 'image/jpeg' : (f.mime || MIME[f.kind]);

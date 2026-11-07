@@ -48,6 +48,7 @@ export default function PhotoCapture({ onDone, onSkip, onCancel }: { onDone: () 
       const e = err as { code?: string; message?: string } | null;
       const m = String((e && e.message) || '').toLowerCase();
       if (e && e.code === 'too-big') setErr(P.errBig);
+      else if (e && e.code === 'bad-file') setErr(P.errBadFile);
       else if (m.includes('network') || m.includes('fetch') || m.includes('failed')) setErr(P.errNet);
       else setErr(P.errSave);
     } finally {

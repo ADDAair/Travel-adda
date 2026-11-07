@@ -77,6 +77,7 @@ export default function LeaderApplyScreen({ navigation }: { navigation: Nav }): 
       const m = String((x && x.message) || '');
       if (notReady(x)) setMsg({ kind: 'info', text: tr('লিডার নিবন্ধন শীঘ্রই চালু হবে।', 'Leader registration is coming soon.') });
       else if (x && x.code === 'kinds-soon') { setKindsOk(false); setMsg({ kind: 'info', text: tr('Travel Adda-র নিজস্ব লিডার হিসেবে নিবন্ধন শীঘ্রই চালু হবে। নিজের এজেন্সি থাকলে সেই ধরনটি বেছে জমা দিতে পারেন।', 'Registration as Travel Adda\'s own leader is coming soon. If you have your own agency, choose that kind and send.') }); }
+      else if (x && x.code === 'bad-file') setMsg({ kind: 'bad', text: tr('ফাইলটি আসল ছবি বা PDF নয়। কাগজের ছবি তুলে আবার জমা দিন।', 'The file is not a real picture or PDF. Take a photo of the paper and send again.') });
       else if (x && x.code === 'too-big') setMsg({ kind: 'bad', text: tr('ছবি বা ফাইলটি ৫ এমবির বেশি বড়।', 'The picture or file is larger than 5 MB.') });
       else if (x && x.code === '23505') { setMsg({ kind: 'info', text: tr('আপনার একটি আবেদন আগে থেকেই যাচাই হচ্ছে।', 'An application of yours is already being checked.') }); load(); }
       else if ((x && x.code === '42501') || /row-level security|not allowed/i.test(m)) setMsg({ kind: 'warn', text: tr('এখন জমা দেওয়া যাচ্ছে না। যাচাই বাধ্যতামূলক থাকলে আগে "আমার তথ্য" থেকে মোবাইল নম্বর বা ইমেইল যাচাই করুন।', 'Cannot send now. If verification is required, first verify your mobile number or email from "My info".') });

@@ -10,6 +10,7 @@ import { fail, rpc } from './rpc';
 
 import type { RpcRow } from './dbTypes';
 import type { Loose, TableRow, TableInsert } from './types';
+import { checkFile } from './fileCheck';
 type Res = { data: unknown; error: { code?: string; message?: string } | null };
 export type Profile = Loose<TableRow<'profiles'>> & { verified?: boolean | null };
 export type Application = Loose<TableRow<'leader_applications'>>;
@@ -63,6 +64,7 @@ export async function applyLeader({ kind = 'agency', agency, umrah, hajj, area =
     const src: string = pdf ? file.uri : await shrink(file.uri);
     const buf = await (await fetch(src)).arrayBuffer();
     if (buf.byteLength > MAX_BYTES) throw fail('too-big');
+    checkFile(buf, pdf ? 'pdf' : 'image');
     path = `${me}/${randomId()}.${pdf ? 'pdf' : 'jpg'}`;
     const up = await supabase.storage.from('leader-docs').upload(path, buf, { contentType: pdf ? 'application/pdf' : 'image/jpeg' });
     if (up.error) throw up.error;
