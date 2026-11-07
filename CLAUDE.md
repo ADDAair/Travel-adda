@@ -24,7 +24,7 @@ Priority order: clarity > ease > accessibility > reliability > speed > beauty > 
 - Unit tests (app logic, src/lib): tests/unit/*.test.mjs, `npm run test:unit` (node:test; tests/unit/register.mjs fakes React Native/Expo/Supabase).
 - Database integration tests: tests/sql/tNN.sh (one suite per SQL step), all run by `npm run test:db` (tests/sql/run_all.sh). Every new SQL file gets a suite.
 - Server function tests: supabase/functions/*/index_test.ts (Deno).
-- End-to-end on the real database: tests/groups_e2e.py + tests/groups_api.mjs (workflow groups-e2e, also every night).
+- End-to-end on the TEST server: tests/groups_e2e.py + tests/groups_api.mjs (workflow groups-e2e, every night) and tests/security2.mjs (workflow security-tests, by hand). CI test accounts (01300000001/3/5/7) exist only on the test server; they were deleted from the real one on 7 Nov 2026.
 - CI runs unit + static + export (check.yml), database suites (db-tests.yml) and function tests (otp-test.yml) on EVERY push; all must be green before telling the owner something works.
 
 ## Latest technology (permanent rule — owner request Oct 2026)
