@@ -1,5 +1,5 @@
 name: perf-probe
-# Times the app's common server calls on the real database (read-only, test accounts). Results as a notice.
+# Times the app's common server calls on the TEST server (read-only, test accounts; they exist only there). Results as a notice.
 on: workflow_dispatch
 permissions: { contents: read }
 jobs:
@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: use the test server, never the real one (CI test accounts live only there)
+        run: |
+          node tools/use_test_server.mjs
+          grep -q yhavfnaljbiefzofcduj src/config.ts || exit 1
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: time server calls

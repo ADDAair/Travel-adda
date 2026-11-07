@@ -1,4 +1,4 @@
-// How long the app's most common server calls take on the real database (owner: "loading feels slow", Oct 2026).
+// How long the app's most common server calls take on the TEST server (CI accounts live only there since Nov 2026) (owner: "loading feels slow", Oct 2026).
 // Read-only calls with the haji (H) and leader (L) test accounts. Prints one line per call: median and slowest of 5.
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';

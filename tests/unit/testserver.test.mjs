@@ -2,7 +2,7 @@
 // checks run on a separate Supabase project (ami-haji-test, Mumbai), never on the real one. Written first (TDD).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { pointConfig, TEST_SERVER, REAL_URL } from '../../tools/use_test_server.mjs';
 
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -30,4 +30,17 @@ test('the nightly e2e switches to the test server before building and before any
     assert.ok(w.indexOf(later) > sw, `${later} runs after the switch`);
   assert.ok(w.includes('lmwsfnzpgujozkxkmkwu') === false, 'the workflow never names the real server');
   assert.match(w, /grep -q yhavfnaljbiefzofcduj src\/config\.ts \|\| exit 1/, 'and checks the switch really happened');
+});
+
+test('every workflow that logs in with the CI test accounts runs on the test server (accounts no longer exist on the real one)', () => {
+  const dir = ROOT + '.github/workflows/';
+  const files = readdirSync(dir).filter((f) => f.endsWith('.yml'));
+  const users = files.filter((f) => readFileSync(dir + f, 'utf8').includes('tests/ci_pw.sh'));
+  assert.ok(users.length >= 4, users.join(','));
+  for (const f of users) {
+    const w = readFileSync(dir + f, 'utf8');
+    const sw = w.indexOf('node tools/use_test_server.mjs');
+    assert.ok(sw > 0 && sw < w.indexOf('tests/ci_pw.sh'), `${f}: switches to the test server before logging in`);
+    assert.match(w, /grep -q yhavfnaljbiefzofcduj src\/config\.ts \|\| exit 1/, `${f}: checks the switch`);
+  }
 });
