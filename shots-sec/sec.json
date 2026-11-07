@@ -1,0 +1,356 @@
+{
+ "stamp": "261107142210",
+ "requests": 90,
+ "cleanup": [
+  [
+   "admin 2FA factor",
+   "ok"
+  ],
+  [
+   "contract",
+   "ok"
+  ],
+  [
+   "doc row",
+   "ok"
+  ],
+  [
+   "doc file",
+   "ok"
+  ],
+  [
+   "receipt file",
+   "ok"
+  ]
+ ],
+ "checks": [
+  {
+   "id": "T10",
+   "check": "নিজের ফোল্ডারে ছোট ছবি রাখা যায় (পরীক্ষার শুরু)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T05",
+   "check": "হাজী খ নিজের কাগজের তথ্য রাখতে পারেন",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T05",
+   "check": "হাজী ক, খ-এর কাগজের তালিকা দেখতে পান না",
+   "ok": true,
+   "note": "[]"
+  },
+  {
+   "id": "T05",
+   "check": "হাজী ক, খ-এর কাগজের ফাইল নামাতে পারেন না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T05",
+   "check": "হাজী ক, খ-এর ফোল্ডারের ফাইলের নাম দেখতে পান না",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T09",
+   "check": "হাজী ক, খ-এর কাগজের লিংক বানাতে পারেন না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T09",
+   "check": "লিডারও হাজীর কাগজের লিংক বানাতে পারেন না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T09",
+   "check": "লগইন ছাড়া কাগজের লিংক বানানো যায় না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T09",
+   "check": "হাজী ক, খ-এর ফাইলকে নিজের কাগজ বলে লিখতে পারেন না",
+   "ok": true,
+   "note": "new row violates row-level security policy for table \"user_documents\""
+  },
+  {
+   "id": "T05",
+   "check": "হাজী খ নিজের রসিদ রাখতে পারেন",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T05",
+   "check": "হাজী ক, খ-এর রসিদ নামাতে পারেন না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T09",
+   "check": "লিডার হাজীর রসিদের লিংক বানাতে পারেন না",
+   "ok": true,
+   "note": "Object not found"
+  },
+  {
+   "id": "T06",
+   "check": "হাজী ক, খ-এর ফোল্ডারে ফাইল রাখতে পারেন না",
+   "ok": true,
+   "note": "new row violates row-level security policy"
+  },
+  {
+   "id": "T06",
+   "check": "হাজী ক, খ-এর ফাইলের ওপর অন্য ফাইল বসাতে পারেন না",
+   "ok": true,
+   "note": "new row violates row-level security policy"
+  },
+  {
+   "id": "T06",
+   "check": "হাজী ক, খ-এর কাগজ মুছতে পারেন না (তথ্য ও ফাইল দুটোই আছে)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T06",
+   "check": "হাজী ক, খ-এর নাম বদলাতে পারেন না",
+   "ok": true,
+   "note": "CI পরীক্ষা হাজী খ (আসল নয়)"
+  },
+  {
+   "id": "T10",
+   "check": "ওয়েব-পাতা (HTML) কাগজ হিসেবে রাখা যায় না",
+   "ok": true,
+   "note": "mime type text/html is not supported"
+  },
+  {
+   "id": "T10",
+   "check": "SVG ছবি (ভেতরে কোড থাকতে পারে) রাখা যায় না",
+   "ok": true,
+   "note": "mime type image/svg+xml is not supported"
+  },
+  {
+   "id": "T10",
+   "check": "৫ MB-এর বেশি ফাইল রাখা যায় না",
+   "ok": true,
+   "note": "The object exceeded the maximum allowed size"
+  },
+  {
+   "id": "T10",
+   "check": "ছবি বলে দাবি করা অন্য ফাইল",
+   "ok": null,
+   "info": true,
+   "note": "accepted: the server trusts the declared type (it does not look inside the file)"
+  },
+  {
+   "id": "T11",
+   "check": "নকল টোকেন (অন্যের আইডি বসানো) দিয়ে কিছু পাওয়া যায় না",
+   "ok": true,
+   "note": "No suitable key or wrong key type"
+  },
+  {
+   "id": "T11",
+   "check": "ভাঙা টোকেন দিয়ে কিছু পাওয়া যায় না",
+   "ok": true,
+   "note": "JWT cryptographic operation failed"
+  },
+  {
+   "id": "T11",
+   "check": "সই ছাড়া (\"alg none\") টোকেন চলে না",
+   "ok": true,
+   "note": "Wrong or unsupported encoding algorithm"
+  },
+  {
+   "id": "T11",
+   "check": "লগইন ছাড়া কাগজের তালিকা পাওয়া যায় না",
+   "ok": true,
+   "note": "permission denied for table user_documents"
+  },
+  {
+   "id": "T21",
+   "check": "পরীক্ষার চুক্তি তৈরি ও রাজি (প্রস্তুতি)",
+   "ok": true,
+   "note": "sent"
+  },
+  {
+   "id": "T08",
+   "check": "হাজী চুক্তির দাম নিজে বদলাতে পারেন না",
+   "ok": true,
+   "note": "100000"
+  },
+  {
+   "id": "T21",
+   "check": "হাজী খ নিজের চুক্তিতে টাকা জমার তথ্য দিতে পারেন (প্রস্তুতি)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T21",
+   "check": "একই লেনদেন নম্বর দুবার জমা দেওয়া যায় না",
+   "ok": true,
+   "note": "duplicate key value violates unique constraint \"haji_payments_ref_uq\""
+  },
+  {
+   "id": "T21",
+   "check": "হাজী ক, খ-এর চুক্তিতে টাকা জমা লিখতে পারেন না",
+   "ok": true,
+   "note": "new row violates row-level security policy for table \"haji_payments\""
+  },
+  {
+   "id": "T08",
+   "check": "জমার সময় নিজে \"নিশ্চিত\" লেখা যায় না",
+   "ok": true,
+   "note": "permission denied for table haji_payments"
+  },
+  {
+   "id": "T21",
+   "check": "অন্যের নামে টাকা জমা লেখা যায় না",
+   "ok": true,
+   "note": "permission denied for table haji_payments"
+  },
+  {
+   "id": "T07",
+   "check": "হাজী টাকা \"নিশ্চিত\" করার অ্যাডমিন-কাজ চালাতে পারেন না",
+   "ok": true,
+   "note": "not allowed"
+  },
+  {
+   "id": "T07",
+   "check": "লিডার টাকা \"নিশ্চিত\" করার অ্যাডমিন-কাজ চালাতে পারেন না",
+   "ok": true,
+   "note": "not allowed"
+  },
+  {
+   "id": "T08",
+   "check": "টাকার অবস্থা এখনো \"জমা দেওয়া\" (কেউ নিজে নিশ্চিত করতে পারেনি)",
+   "ok": true,
+   "note": "submitted"
+  },
+  {
+   "id": "T12",
+   "check": "রিফ্রেশ টোকেন একবার চলে (প্রস্তুতি)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T12",
+   "check": "ঠিক আগের রিফ্রেশ টোকেন আবার দিলে",
+   "ok": null,
+   "info": true,
+   "note": "returns the same current token (Supabase design), no new one"
+  },
+  {
+   "id": "T12",
+   "check": "ঠিক আগের টোকেন দিয়ে নতুন টোকেন বানানো যায় না",
+   "ok": true,
+   "note": "new token issued"
+  },
+  {
+   "id": "T12",
+   "check": "আসল ফোন আবার নবায়ন করতে পারে (প্রস্তুতি)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T12",
+   "check": "আরও পুরনো (চুরি করা) রিফ্রেশ টোকেন চলে না",
+   "ok": true,
+   "note": "Invalid Refresh Token: Already Used"
+  },
+  {
+   "id": "T12",
+   "check": "চুরি ধরা পড়ার পর সেই সেশনের নতুন টোকেন",
+   "ok": null,
+   "info": true,
+   "note": "still works"
+  },
+  {
+   "id": "T12",
+   "check": "লগআউটের পর সেই সেশনের রিফ্রেশ টোকেন চলে না",
+   "ok": true,
+   "note": "Invalid Refresh Token: Refresh Token Not Found"
+  },
+  {
+   "id": "T12",
+   "check": "লগআউটের পর পুরনো access token",
+   "ok": null,
+   "info": true,
+   "note": "still works until it expires (Supabase default: up to 1 hour)"
+  },
+  {
+   "id": "T07",
+   "check": "শুধু পাসওয়ার্ডে লগইন করা অ্যাডমিনের সেশন 2FA ছাড়া (aal1)",
+   "ok": true,
+   "note": "aal1"
+  },
+  {
+   "id": "T07",
+   "check": "2FA ছাড়া অ্যাডমিনও \"অ্যাডমিন\" নন",
+   "ok": true,
+   "note": "false"
+  },
+  {
+   "id": "T07",
+   "check": "2FA ছাড়া অ্যাডমিন মেনু ফাঁকা",
+   "ok": true,
+   "note": "[]"
+  },
+  {
+   "id": "T07",
+   "check": "2FA ছাড়া অ্যাডমিন টাকার তালিকা দেখতে পান না (একটাও সারি নয়)",
+   "ok": true,
+   "note": "0 rows"
+  },
+  {
+   "id": "T07",
+   "check": "নকল টোকেনে \"2FA হয়েছে\" লিখে দিলে চলে না",
+   "ok": true,
+   "note": "No suitable key or wrong key type"
+  },
+  {
+   "id": "T07",
+   "check": "ভুল ৬ অঙ্কের কোড চলে না",
+   "ok": true,
+   "note": "Invalid TOTP code entered"
+  },
+  {
+   "id": "T07",
+   "check": "সঠিক কোডে 2FA হয় (প্রস্তুতি)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "T07",
+   "check": "2FA-র পর সেশন aal2",
+   "ok": true,
+   "note": "aal2"
+  },
+  {
+   "id": "T07",
+   "check": "2FA-র পর অ্যাডমিন কাজ করতে পারেন",
+   "ok": true,
+   "note": "true"
+  },
+  {
+   "id": "T07",
+   "check": "2FA-র পর অ্যাডমিন টাকার তালিকা দেখেন (এই পরীক্ষার জমাসহ)",
+   "ok": true,
+   "note": "5 rows"
+  },
+  {
+   "id": "T07",
+   "check": "2FA চালু থাকলেও শুধু পাসওয়ার্ডে নতুন লগইন অ্যাডমিন নয়",
+   "ok": true,
+   "note": "false"
+  },
+  {
+   "id": "T07",
+   "check": "শুধু পাসওয়ার্ডওয়ালা কেউ 2FA মুছে ফেলতে পারে না",
+   "ok": true,
+   "note": "AAL2 required to unenroll verified factor"
+  }
+ ]
+}
