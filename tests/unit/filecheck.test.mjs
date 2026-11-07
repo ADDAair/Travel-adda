@@ -59,3 +59,11 @@ test('a refused file gets a plain Bengali message on every screen that uploads',
   for (const f of ['src/screens/DocsScreen.tsx', 'src/components/PaymentBox.tsx', 'src/screens/LeaderApplyScreen.tsx', 'src/screens/PhotoCapture.tsx'])
     assert.ok(read(f).includes("'bad-file'"), `${f} explains a refused file`);
 });
+
+test('F6: the OTP function compares code hashes with safeEqual and has no wildcard CORS', () => {
+  const src = read('supabase/functions/phone-otp/index.ts');
+  assert.doesNotMatch(src, /\)\) === o\.code_hash/, 'no plain === on the code hash');
+  assert.ok(src.includes('safeEqual(await d.hash('), 'safeEqual is used for the code check');
+  assert.ok(!src.includes("'Access-Control-Allow-Origin': '*'"), 'no wildcard CORS left');
+  assert.ok(src.includes("corsHeaders(req.headers.get('Origin'))"), 'CORS decided per request origin');
+});
