@@ -219,8 +219,8 @@ try {
     check('T07', '2FA ছাড়া অ্যাডমিনও "অ্যাডমিন" নন', r.data === false, err(r) || r.data);
     r = await D.rpc('my_perms');
     check('T07', '2FA ছাড়া অ্যাডমিন মেনু ফাঁকা', !r.error && Array.isArray(r.data) && r.data.length === 0, err(r) || JSON.stringify(r.data));
-    r = await D.rpc('admin_list_payments', { p_status: null });
-    check('T07', '2FA ছাড়া অ্যাডমিন টাকার তালিকা দেখতে পান না', !!r.error, err(r));
+    r = await D.rpc('admin_list_payments', { p_status: null });   // the function answers an empty list without 2FA
+    check('T07', '2FA ছাড়া অ্যাডমিন টাকার তালিকা দেখতে পান না (একটাও সারি নয়)', empty(r), err(r) || `${r.data?.length} rows`);
     // a forged token that claims aal2 is refused
     const tk = d.r.data.session.access_token.split('.');
     const pp = JSON.parse(Buffer.from(tk[1], 'base64url').toString());
@@ -244,7 +244,7 @@ try {
       r = await D.rpc('is_admin');
       check('T07', '2FA-র পর অ্যাডমিন কাজ করতে পারেন', r.data === true, err(r) || r.data);
       r = await D.rpc('admin_list_payments', { p_status: null });
-      check('T07', '2FA-র পর অ্যাডমিন টাকার তালিকা দেখেন', !r.error, err(r));
+      check('T07', '2FA-র পর অ্যাডমিন টাকার তালিকা দেখেন (এই পরীক্ষার জমাসহ)', !r.error && r.data?.length > 0, err(r) || `${r.data?.length} rows`);
       const sp = await signIn(D_PHONE, D_PW);   // a thief with only the password, while the factor is on
       r = await sp.c.rpc('is_admin');
       check('T07', '2FA চালু থাকলেও শুধু পাসওয়ার্ডে নতুন লগইন অ্যাডমিন নয়', r.data === false, err(r) || r.data);
