@@ -166,9 +166,21 @@ try {
   const old = s1.r.data.session.refresh_token;
   r = await s1.c.auth.refreshSession({ refresh_token: old });
   check('T12', 'রিফ্রেশ টোকেন একবার চলে (প্রস্তুতি)', !r.error, err(r));
+  const r1 = r.data?.session?.refresh_token;
   await sleep(12000);   // past the server's short grace window for retries
+  // Supabase by design lets the token JUST before the current one return the SAME current token (for a phone that
+  // lost the answer of its last refresh). It must never make a new one, and anything older must be refused.
   r = await mk().auth.refreshSession({ refresh_token: old });
-  check('T12', 'পুরনো রিফ্রেশ টোকেন দ্বিতীয়বার চলে না', !!r.error, err(r) || 'reused!');
+  info('T12', 'ঠিক আগের রিফ্রেশ টোকেন আবার দিলে', r.error ? `refused: ${err(r)}` : (r.data?.session?.refresh_token === r1 ? 'returns the same current token (Supabase design), no new one' : 'gave a NEW token'));
+  check('T12', 'ঠিক আগের টোকেন দিয়ে নতুন টোকেন বানানো যায় না', !!r.error || r.data?.session?.refresh_token === r1, 'new token issued');
+  r = await s1.c.auth.refreshSession({ refresh_token: r1 });
+  const rt3 = r.data?.session?.refresh_token;
+  check('T12', 'আসল ফোন আবার নবায়ন করতে পারে (প্রস্তুতি)', !!rt3, err(r));
+  await sleep(12000);
+  r = await mk().auth.refreshSession({ refresh_token: old });
+  check('T12', 'আরও পুরনো (চুরি করা) রিফ্রেশ টোকেন চলে না', !!r.error, err(r) || 'reused!');
+  r = await mk().auth.refreshSession({ refresh_token: rt3 });
+  info('T12', 'চুরি ধরা পড়ার পর সেই সেশনের নতুন টোকেন', r.error ? `revoked too: ${err(r)}` : 'still works');
   const s2 = await signIn(B_PHONE, B_PW);
   const at2 = s2.r.data.session.access_token, rt2 = s2.r.data.session.refresh_token;
   await s2.c.auth.signOut({ scope: 'local' });
