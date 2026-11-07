@@ -4,10 +4,10 @@
 # accounts from the old to the new password automatically the first time the secret exists.
 old_pw() { echo "ci-$(echo -n "${GITHUB_REPOSITORY_ID}-travel-adda-$1" | sha256sum | cut -c1-24)"; }
 new_pw() { echo "ci-$(echo -n "${CI_TEST_SECRET}-$1" | sha256sum | cut -c1-32)"; }
-export H_PHONE=01300000001 L_PHONE=01300000003
+export H_PHONE=01300000001 L_PHONE=01300000003 B_PHONE=01300000005   # B = second CI haji (security tests, test server only)
 export H_OLD_PW="$(old_pw screens)" L_OLD_PW="$(old_pw leader2)"
 if [ -n "${CI_TEST_SECRET:-}" ]; then
-  export H_PW="$(new_pw haji)" L_PW="$(new_pw leader)"
+  export H_PW="$(new_pw haji)" L_PW="$(new_pw leader)" B_PW="$(new_pw haji-b)"
 else
   echo "::warning title=CI_TEST_SECRET not set::test accounts still use the old password scheme"
   export H_PW="$H_OLD_PW" L_PW="$L_OLD_PW"
@@ -15,5 +15,5 @@ fi
 export TEST_PHONE="$H_PHONE" TEST_PW="$H_PW"
 # GitHub hides secrets in logs, but not passwords made FROM a secret: hide them too (the code is public).
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
-  echo "::add-mask::$H_PW"; echo "::add-mask::$L_PW"; echo "::add-mask::$H_OLD_PW"; echo "::add-mask::$L_OLD_PW"
+  echo "::add-mask::$H_PW"; echo "::add-mask::$L_PW"; [ -n "${B_PW:-}" ] && echo "::add-mask::$B_PW"; echo "::add-mask::$H_OLD_PW"; echo "::add-mask::$L_OLD_PW"
 fi

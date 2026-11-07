@@ -1,0 +1,33 @@
+name: security-tests
+# Security step 2 (owner approval 7 Nov 2026): active authorization tests T05-T12, T21.
+# Started by hand only (each run is an approved test). Runs ONLY against the test server (ami-haji-test).
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  sec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: use the test server, never the real one
+        run: |
+          node tools/use_test_server.mjs
+          grep -q yhavfnaljbiefzofcduj src/config.ts || exit 1
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: install the server library only
+        run: npm install --no-save --ignore-scripts --legacy-peer-deps @supabase/supabase-js@$(node -p "require('./package-lock.json').packages['node_modules/@supabase/supabase-js'].version")
+      - name: authorization tests (synthetic accounts, cleanup at the end)
+        env: { CI_TEST_SECRET: '${{ secrets.CI_TEST_SECRET }}' }
+        run: |
+          . tests/ci_pw.sh
+          node tests/security2.mjs
+      - name: publish results to ci-security branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp -r shots-sec /tmp/out/ 2>/dev/null || true
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci-security
+          git rm -rfq . && cp -r /tmp/out/shots-sec . 2>/dev/null || mkdir shots-sec
+          git add shots-sec && git commit -qm "security ${GITHUB_SHA}" --allow-empty && git push -f origin ci-security
