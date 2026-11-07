@@ -37,3 +37,10 @@ Priority order: clarity > ease > accessibility > reliability > speed > beauty > 
 - Push to main triggers .github/workflows/check.yml. Read failures via check-run annotations (logs API is blocked).
 - APK: dispatch .github/workflows/build-apk.yml (REST: POST actions/workflows/build-apk.yml/dispatches).
 - DB changes: new numbered SQL file in supabase/, idempotent, RLS on every table; owner runs it in SQL Editor.
+
+## Test server & security (permanent rules — owner approval Nov 2026, security review)
+- Real server `lmwsfnzpgujozkxkmkwu` (travel-adda, Mumbai): NEVER delete; never run test SQL or active tests on it.
+- Test server `yhavfnaljbiefzofcduj` (ami-haji-test, Mumbai): nightly groups-e2e and all active security tests run ONLY here (tools/use_test_server.mjs switches src/config.ts inside the CI checkout; the app itself keeps the real server). Identify a project by its address, not by Supabase's "PRODUCTION" label.
+- Security assessment rules: read-only first; active tests only on the test server with owner approval (target, limits, cleanup); synthetic data; never write "Passed" without a test; never claim "100% secure" / "OWASP certified"; ask before dependency changes; propose and ask before remediation.
+- Test APK is signed with Travel Adda's own test key made from secret CI_TEST_SECRET (tools/test_signing_key.mjs); the Play Store needs its own upload key + Play App Signing. Documents page blocks screenshots.
+- Before Play Store release: make the repo private.
