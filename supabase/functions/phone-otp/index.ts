@@ -117,7 +117,7 @@ async function check(d: Deps, phone: string, purpose: 'verify' | 'reset', code: 
   const seen = o.attempts;            // the value this request read (the row may change meanwhile)
   if (seen >= MAX_TRIES) { await d.updateOtp(o.id, { used: true }); return fail(400, 'too_many_tries'); }
   const tries = seen + 1;
-  const right = (await d.hash(`${purpose}:${phone}:${c}`)) === o.code_hash;
+  const right = safeEqual(await d.hash(`${purpose}:${phone}:${c}`), o.code_hash);
   // Every guess is counted atomically BEFORE the answer is given; a guess that lost the race is refused unchecked.
   if (!(await d.claimTry(o.id, seen, { attempts: tries, used: right || tries >= MAX_TRIES }))) return fail(429, 'wait', { retry_in: 2 });
   if (!right) return fail(400, 'wrong_code', { tries_left: Math.max(0, MAX_TRIES - tries) });
@@ -235,6 +235,24 @@ export async function sendEmailVia(provider: string, env: (k: string) => string 
   return false;
 }
 
+
+// Security step 3 (F6): compare code hashes without an early exit, so timing never hints how much was right.
+export function safeEqual(a: string, b: string): boolean {
+  const x = String(a ?? ''), y = String(b ?? '');
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+// The phone app sends no Origin and needs no CORS. Only the local web preview used by the tests gets an allow-origin;
+// any other website calling this function from a browser is refused by the browser.
+const WEB_ORIGINS = ['http://localhost:8080', 'http://localhost:8081'];
+export function corsHeaders(origin: string | null): Record<string, string> {
+  const h: Record<string, string> = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json', Vary: 'Origin' };
+  if (origin && WEB_ORIGINS.includes(origin)) h['Access-Control-Allow-Origin'] = origin;
+  return h;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Real wiring (runs only on Supabase).
 if (import.meta.main) {
@@ -284,9 +302,9 @@ if (import.meta.main) {
     dailyCap: Number(env('OTP_DAILY_CAP') ?? 300) || 300,
     emailDailyCap: Number(env('EMAIL_DAILY_CAP') ?? 250) || 250,
   };
-  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json' };
 
   Deno.serve(async (req) => {
+    const cors = corsHeaders(req.headers.get('Origin'));
     if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
     if (req.method !== 'POST') return new Response(JSON.stringify({ ok: false, error: 'bad_method' }), { status: 405, headers: cors });
     try {

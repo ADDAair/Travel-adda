@@ -308,3 +308,25 @@ Deno.test('the e-mail code comes in English first when the app is in English; Be
   await handle(w2.d, { action: 'send_verify', channel: 'email', email: 'karim@example.com', lang: 'xx' }, 'jwt-u1');
   assert(w2.mails[0].subject.startsWith('আপনার "আমি হাজী" কোড:'), 'unknown language: Bengali');
 });
+
+// Security step 3 (F6, owner choice 7 Nov 2026)
+Deno.test('codes are compared in constant time (same answer, no early exit)', async () => {
+  const { safeEqual } = await import('./index.ts');
+  assert(safeEqual('abc123', 'abc123'));
+  assert(!safeEqual('abc123', 'abc124'));
+  assert(!safeEqual('abc123', 'abc12'));
+  assert(!safeEqual('', 'a'));
+  const src = await Deno.readTextFile(new URL('./index.ts', import.meta.url));
+  assert(!/\)\) === o\.code_hash/.test(src), 'the code hash is no longer compared with ===');
+  assert(src.includes('safeEqual(await d.hash('), 'safeEqual is used for the code check');
+});
+
+Deno.test('CORS: no wildcard; only the local web preview gets an allow-origin, phones need none', async () => {
+  const { corsHeaders } = await import('./index.ts');
+  assertEquals(corsHeaders(null)['Access-Control-Allow-Origin'], undefined);
+  assertEquals(corsHeaders('https://evil.example')['Access-Control-Allow-Origin'], undefined);
+  assertEquals(corsHeaders('http://localhost:8080')['Access-Control-Allow-Origin'], 'http://localhost:8080');
+  assertEquals(corsHeaders('http://localhost:8080').Vary, 'Origin');
+  const src = await Deno.readTextFile(new URL('./index.ts', import.meta.url));
+  assert(!src.includes("'Access-Control-Allow-Origin': '*'"), 'no wildcard left');
+});
